@@ -5,11 +5,11 @@ Notification management API endpoints.
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.security import get_current_active_user
+from app.core.zero_trust import require_permissions
 from app.models.user import User
 from app.services.notification_service import (
     NotificationService, NotificationCreate, NotificationResponse,
@@ -21,10 +21,11 @@ router = APIRouter()
 
 @router.get("/", response_model=List[NotificationResponse])
 async def get_notifications(
+    request: Request,
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
     unread_only: bool = Query(False),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permissions("notifications", "read")),
     db: AsyncSession = Depends(get_db)
 ):
     """Get user's notifications."""
@@ -42,7 +43,8 @@ async def get_notifications(
 
 @router.get("/unread-count")
 async def get_unread_count(
-    current_user: User = Depends(get_current_active_user),
+    request: Request,
+    current_user: User = Depends(require_permissions("notifications", "read")),
     db: AsyncSession = Depends(get_db)
 ):
     """Get count of unread notifications."""
@@ -56,7 +58,8 @@ async def get_unread_count(
 @router.post("/", response_model=NotificationResponse)
 async def create_notification(
     notification_data: NotificationCreate,
-    current_user: User = Depends(get_current_active_user),
+    request: Request,
+    current_user: User = Depends(require_permissions("notifications", "create")),
     db: AsyncSession = Depends(get_db)
 ):
     """Create a notification (admin/system use)."""
@@ -75,7 +78,8 @@ async def create_notification(
 @router.post("/bulk", response_model=List[NotificationResponse])
 async def create_bulk_notifications(
     bulk_data: BulkNotificationCreate,
-    current_user: User = Depends(get_current_active_user),
+    request: Request,
+    current_user: User = Depends(require_permissions("notifications", "create")),
     db: AsyncSession = Depends(get_db)
 ):
     """Create bulk notifications (admin/system use)."""
@@ -94,7 +98,8 @@ async def create_bulk_notifications(
 @router.put("/{notification_id}/read", response_model=NotificationResponse)
 async def mark_notification_read(
     notification_id: UUID,
-    current_user: User = Depends(get_current_active_user),
+    request: Request,
+    current_user: User = Depends(require_permissions("notifications", "update")),
     db: AsyncSession = Depends(get_db)
 ):
     """Mark a notification as read."""
@@ -116,7 +121,8 @@ async def mark_notification_read(
 
 @router.put("/mark-all-read")
 async def mark_all_notifications_read(
-    current_user: User = Depends(get_current_active_user),
+    request: Request,
+    current_user: User = Depends(require_permissions("notifications", "update")),
     db: AsyncSession = Depends(get_db)
 ):
     """Mark all notifications as read."""
@@ -130,7 +136,8 @@ async def mark_all_notifications_read(
 @router.delete("/{notification_id}")
 async def delete_notification(
     notification_id: UUID,
-    current_user: User = Depends(get_current_active_user),
+    request: Request,
+    current_user: User = Depends(require_permissions("notifications", "delete")),
     db: AsyncSession = Depends(get_db)
 ):
     """Delete a notification."""
@@ -152,7 +159,8 @@ async def delete_notification(
 
 @router.post("/cleanup")
 async def cleanup_expired_notifications(
-    current_user: User = Depends(get_current_active_user),
+    request: Request,
+    current_user: User = Depends(require_permissions("notifications", "admin")),
     db: AsyncSession = Depends(get_db)
 ):
     """Clean up expired notifications (admin use)."""

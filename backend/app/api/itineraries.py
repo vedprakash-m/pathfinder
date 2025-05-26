@@ -4,12 +4,12 @@ Handles AI-generated itinerary creation, customization, and management.
 """
 
 from typing import List, Optional, Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
 
 from ..core.database import get_db
-from ..core.security import get_current_user
+from ..core.zero_trust import require_permissions
 from ..models.user import User
 from ..models.trip import Trip, TripParticipation
 from ..services.ai_service import AIService
@@ -75,9 +75,10 @@ class ItineraryResponse(BaseModel):
 @router.post("/{trip_id}/generate", response_model=ItineraryResponse)
 async def generate_itinerary(
     trip_id: int,
-    request: ItineraryRequest,
+    request_data: ItineraryRequest,
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permissions("itineraries", "create")),
     ai_service: AIService = Depends(lambda: AIService())
 ):
     """Generate an AI-powered itinerary for a trip."""
@@ -176,9 +177,10 @@ async def generate_itinerary(
 async def customize_itinerary(
     trip_id: int,
     customization: ItineraryCustomization,
+    request: Request,
     base_itinerary: Optional[Dict[str, Any]] = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permissions("itineraries", "update")),
     ai_service: AIService = Depends(lambda: AIService())
 ):
     """Customize an existing itinerary based on user preferences."""
@@ -258,11 +260,12 @@ async def customize_itinerary(
 @router.get("/{trip_id}/suggestions")
 async def get_activity_suggestions(
     trip_id: int,
+    request: Request,
     activity_type: Optional[str] = Query(None, description="Type of activity to suggest"),
     location: Optional[str] = Query(None, description="Specific location within trip destination"),
     budget_range: Optional[str] = Query(None, description="Budget range (low, medium, high)"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permissions("itineraries", "read")),
     ai_service: AIService = Depends(lambda: AIService())
 ):
     """Get AI-powered activity suggestions for a trip."""
@@ -321,9 +324,10 @@ async def get_activity_suggestions(
 async def optimize_itinerary(
     trip_id: int,
     itinerary: Dict[str, Any],
+    request: Request,
     optimization_criteria: Optional[List[str]] = Query(None, description="Optimization criteria"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permissions("itineraries", "update")),
     ai_service: AIService = Depends(lambda: AIService())
 ):
     """Optimize an existing itinerary for better efficiency, cost, or experience."""
@@ -402,10 +406,11 @@ async def optimize_itinerary(
 @router.get("/{trip_id}/alternatives")
 async def get_itinerary_alternatives(
     trip_id: int,
+    request: Request,
     current_itinerary: Optional[Dict[str, Any]] = None,
     variation_type: Optional[str] = Query("budget", description="Type of variation (budget, activity, timeline)"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permissions("itineraries", "read")),
     ai_service: AIService = Depends(lambda: AIService())
 ):
     """Get alternative itinerary options for a trip."""

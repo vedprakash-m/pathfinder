@@ -4,14 +4,14 @@ Handles accommodation and activity reservations for trips.
 """
 
 from typing import List, Optional, Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
 from datetime import datetime, date
 from enum import Enum
 
 from ..core.database import get_db
-from ..core.security import get_current_user
+from ..core.zero_trust import require_permissions
 from ..models.user import User
 from ..models.trip import Trip, TripParticipation
 from ..core.logging_config import get_logger
@@ -123,8 +123,9 @@ class Reservation:
 @router.post("/", response_model=ReservationResponse, status_code=status.HTTP_201_CREATED)
 async def create_reservation(
     reservation_data: ReservationCreate,
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_permissions("reservations", "create"))
 ):
     """Create a new reservation for a trip."""
     try:
@@ -205,6 +206,7 @@ async def create_reservation(
 @router.get("/trip/{trip_id}", response_model=List[ReservationResponse])
 async def get_trip_reservations(
     trip_id: int,
+    request: Request,
     reservation_type: Optional[ReservationType] = Query(None, description="Filter by reservation type"),
     status_filter: Optional[ReservationStatus] = Query(None, description="Filter by status"),
     date_from: Optional[date] = Query(None, description="Filter reservations from this date"),
@@ -212,7 +214,7 @@ async def get_trip_reservations(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_permissions("reservations", "read"))
 ):
     """Get all reservations for a trip."""
     try:
@@ -332,8 +334,9 @@ async def get_trip_reservations(
 @router.get("/{reservation_id}", response_model=ReservationResponse)
 async def get_reservation(
     reservation_id: int,
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_permissions("reservations", "read"))
 ):
     """Get a specific reservation by ID."""
     try:
@@ -405,8 +408,9 @@ async def get_reservation(
 async def update_reservation(
     reservation_id: int,
     reservation_data: ReservationUpdate,
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_permissions("reservations", "update"))
 ):
     """Update a reservation."""
     try:
@@ -496,8 +500,9 @@ async def update_reservation(
 @router.delete("/{reservation_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def cancel_reservation(
     reservation_id: int,
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_permissions("reservations", "delete"))
 ):
     """Cancel a reservation."""
     try:
@@ -554,8 +559,9 @@ async def cancel_reservation(
 async def add_participants(
     reservation_id: int,
     participant_ids: List[int],
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_permissions("reservations", "update"))
 ):
     """Add participants to a reservation."""
     try:
@@ -650,8 +656,9 @@ async def add_participants(
 async def remove_participant(
     reservation_id: int,
     user_id: int,
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_permissions("reservations", "update"))
 ):
     """Remove a participant from a reservation."""
     try:
