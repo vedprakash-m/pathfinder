@@ -32,6 +32,7 @@ class User(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
     # Relationships
+    administered_families = relationship("Family", foreign_keys="Family.admin_user_id", back_populates="admin")
     family_memberships = relationship("FamilyMember", back_populates="user")
     trip_participations = relationship("TripParticipation", back_populates="user")
     created_trips = relationship("Trip", back_populates="creator")

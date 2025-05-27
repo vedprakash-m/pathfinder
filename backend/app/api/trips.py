@@ -9,7 +9,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.security import get_current_active_user
+# from app.core.security import get_current_active_user  # No longer needed
+from app.core.zero_trust import require_permissions
 from app.models.user import User
 from app.models.trip import (
     TripCreate, TripUpdate, TripResponse, TripDetail, TripStats,
@@ -17,6 +18,7 @@ from app.models.trip import (
     TripInvitation
 )
 from app.services.trip_service import TripService
+from app.services.trip_cosmos import TripCosmosOperations
 
 router = APIRouter()
 
@@ -24,7 +26,7 @@ router = APIRouter()
 @router.post("/", response_model=TripResponse)
 async def create_trip(
     trip_data: TripCreate,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permissions("trips", "create")),
     db: AsyncSession = Depends(get_db)
 ):
     """Create a new trip."""
@@ -45,7 +47,7 @@ async def get_trips(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     status_filter: Optional[str] = Query(None),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permissions("trips", "read")),
     db: AsyncSession = Depends(get_db)
 ):
     """Get user's trips with optional filtering."""
@@ -61,7 +63,7 @@ async def get_trips(
 @router.get("/{trip_id}", response_model=TripDetail)
 async def get_trip(
     trip_id: UUID,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permissions("trips", "read")),
     db: AsyncSession = Depends(get_db)
 ):
     """Get trip details by ID."""
@@ -81,7 +83,7 @@ async def get_trip(
 async def update_trip(
     trip_id: UUID,
     trip_update: TripUpdate,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permissions("trips", "update")),
     db: AsyncSession = Depends(get_db)
 ):
     """Update trip details."""
@@ -105,7 +107,7 @@ async def update_trip(
 @router.delete("/{trip_id}")
 async def delete_trip(
     trip_id: UUID,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permissions("trips", "delete")),
     db: AsyncSession = Depends(get_db)
 ):
     """Delete a trip."""
@@ -129,7 +131,7 @@ async def delete_trip(
 @router.get("/{trip_id}/stats", response_model=TripStats)
 async def get_trip_stats(
     trip_id: UUID,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permissions("trips", "read")),
     db: AsyncSession = Depends(get_db)
 ):
     """Get trip statistics."""
@@ -151,7 +153,7 @@ async def get_trip_stats(
 async def add_participant(
     trip_id: UUID,
     participation_data: ParticipationCreate,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permissions("trips", "update")),
     db: AsyncSession = Depends(get_db)
 ):
     """Add a family to the trip."""
@@ -173,7 +175,7 @@ async def add_participant(
 @router.get("/{trip_id}/participants", response_model=List[ParticipationResponse])
 async def get_participants(
     trip_id: UUID,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permissions("trips", "read")),
     db: AsyncSession = Depends(get_db)
 ):
     """Get trip participants."""
@@ -186,7 +188,7 @@ async def update_participation(
     trip_id: UUID,
     participation_id: UUID,
     participation_update: ParticipationUpdate,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permissions("trips", "update")),
     db: AsyncSession = Depends(get_db)
 ):
     """Update family participation status."""
@@ -213,7 +215,7 @@ async def update_participation(
 async def remove_participant(
     trip_id: UUID,
     participation_id: UUID,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permissions("trips", "delete")),
     db: AsyncSession = Depends(get_db)
 ):
     """Remove a family from the trip."""
@@ -240,7 +242,7 @@ async def remove_participant(
 async def send_invitation(
     trip_id: UUID,
     invitation_data: TripInvitation,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permissions("trips", "update")),
     db: AsyncSession = Depends(get_db)
 ):
     """Send trip invitation to a family."""
@@ -257,3 +259,22 @@ async def send_invitation(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
+
+
+@router.get("/{trip_id}/messages")
+async def get_trip_messages(
+    trip_id: UUID,
+    current_user: User = Depends(require_permissions("trips", "read")),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get trip messages."""
+    cosmos_service = TripCosmosOperations()
+    
+    messages = await cosmos_service.get_trip_messages(str(trip_id))
+    if messages is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Trip messages not found"
+        )
+    
+    return messages

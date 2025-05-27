@@ -14,6 +14,8 @@ import tiktoken
 
 from app.core.config import get_settings
 from app.core.logging_config import create_logger
+from app.services.cost_monitoring import cost_monitoring_service, ai_model_selector
+from app.core.telemetry import monitoring
 
 settings = get_settings()
 logger = create_logger(__name__)
@@ -438,6 +440,58 @@ class AIService:
             "budget_remaining": settings.AI_DAILY_BUDGET_LIMIT - today_usage["cost"],
             "models_available": list(self.cost_tracker.MODEL_COSTS.keys())
         }
+
+    async def generate_with_cost_tracking(self, prompt: str, model: str = "gpt-4o-mini") -> Dict[str, Any]:
+        """Generate AI response with cost tracking."""
+        # Check budget limit
+        if not self.cost_tracker.check_budget_limit():
+            raise ValueError("Daily AI budget limit exceeded")
+        
+        # Count input tokens
+        input_tokens = self.count_tokens(prompt)
+        
+        logger.info(
+            f"Generating AI response",
+            model=model,
+            input_tokens=input_tokens
+        )
+        
+        try:
+            response = await asyncio.to_thread(
+                client.chat.completions.create,
+                model=model,
+                messages=[
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=settings.OPENAI_MAX_TOKENS,
+                temperature=settings.OPENAI_TEMPERATURE,
+                timeout=settings.OPENAI_TIMEOUT
+            )
+            
+            # Extract response data
+            content = response.choices[0].message.content
+            output_tokens = response.usage.completion_tokens
+            
+            # Track costs
+            cost = self.cost_tracker.track_usage(model, input_tokens, output_tokens)
+            
+            return {
+                "content": content,
+                "model": model,
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
+                "cost": cost
+            }
+            
+        except openai.RateLimitError:
+            logger.error("OpenAI rate limit exceeded")
+            raise ValueError("AI service temporarily unavailable due to rate limits")
+        except openai.APITimeoutError:
+            logger.error("OpenAI API timeout")
+            raise ValueError("AI service timeout - please try again")
+        except Exception as e:
+            logger.error(f"OpenAI API error: {e}")
+            raise ValueError(f"AI service error: {str(e)}")
 
 
 # Global AI service instance

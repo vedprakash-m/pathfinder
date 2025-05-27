@@ -6,15 +6,18 @@ This module handles WebSocket connections for real-time features like:
 - Live itinerary updates
 - Real-time notifications
 - User presence tracking
+- Real-time messaging with Cosmos DB integration
 """
 
 import json
 import logging
 from typing import Dict, List, Set, Optional, Any
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import WebSocket, WebSocketDisconnect
 from app.core.config import settings
+from app.services.trip_cosmos import TripCosmosOperations
+from app.models.cosmos.message import MessageType, MessageStatus
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +32,8 @@ class ConnectionManager:
         self.user_connections: Dict[str, WebSocket] = {}
         # Connection metadata
         self.connection_metadata: Dict[WebSocket, Dict[str, Any]] = {}
+        # Cosmos service for messaging
+        self.cosmos_ops = TripCosmosOperations()
     
     async def startup(self):
         """Initialize the connection manager."""
@@ -257,7 +262,101 @@ class ConnectionManager:
         if trip_id not in self.trip_connections:
             return 0
         return len(self.trip_connections[trip_id])
-
+    
+    async def send_trip_message(
+        self, 
+        websocket: WebSocket,
+        text: str,
+        message_type: MessageType = MessageType.CHAT,
+        room_id: Optional[str] = None
+    ) -> bool:
+        """
+        Send a new message to a trip chat and store it in Cosmos DB.
+        
+        Args:
+            websocket: The WebSocket connection of the sender
+            text: The message text
+            message_type: The type of message (default: chat)
+            room_id: Optional room ID for focused discussions
+            
+        Returns:
+            True if sent successfully, False otherwise
+        """
+        if websocket not in self.connection_metadata:
+            return False
+        
+        metadata = self.connection_metadata[websocket]
+        trip_id = metadata.get("trip_id")
+        user_id = metadata.get("user_id")
+        
+        if not trip_id or not user_id:
+            return False
+        
+        try:
+            # Save message to Cosmos DB
+            message = await self.cosmos_ops.send_trip_message(
+                trip_id=trip_id,
+                sender_id=user_id,
+                sender_name=metadata.get("user_name", user_id),
+                text=text,
+                message_type=message_type,
+                room_id=room_id
+            )
+            
+            if message:
+                # Broadcast the message to all users in the trip
+                await self.broadcast_to_trip({
+                    "type": "new_message",
+                    "message": message.dict(exclude={"_resource_id", "_etag", "_ts"}),
+                    "trip_id": trip_id,
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }, trip_id)
+                
+                return True
+            return False
+        except Exception as e:
+            logger.error(f"Error sending trip message: {e}")
+            return False
+            
+    async def get_trip_recent_messages(
+        self,
+        websocket: WebSocket,
+        limit: int = 20
+    ) -> None:
+        """
+        Get and send recent messages for the current trip to a user.
+        
+        Args:
+            websocket: The WebSocket connection requesting messages
+            limit: Maximum number of messages to retrieve
+        """
+        if websocket not in self.connection_metadata:
+            return
+        
+        metadata = self.connection_metadata[websocket]
+        trip_id = metadata.get("trip_id")
+        
+        if not trip_id:
+            return
+        
+        try:
+            # Get messages from Cosmos DB
+            messages = await self.cosmos_ops.get_trip_messages(
+                trip_id=trip_id,
+                limit=limit
+            )
+            
+            if messages:
+                # Send messages to the requesting client
+                await self.send_personal_message({
+                    "type": "message_history",
+                    "messages": [m.dict(exclude={"_resource_id", "_etag", "_ts"}) for m in messages],
+                    "trip_id": trip_id,
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }, websocket)
+        except Exception as e:
+            logger.error(f"Error getting trip messages: {e}")
+    
 
 # Global connection manager instance
 websocket_manager = ConnectionManager()
@@ -295,8 +394,30 @@ async def handle_websocket_message(
                     "type": "trip_updated",
                     "user_id": user_id,
                     "data": message.get("data", {}),
-                    "timestamp": datetime.utcnow().isoformat()
+                    "timestamp": datetime.now(timezone.utc).isoformat()
                 }, trip_id, exclude=websocket)
+        
+        elif message_type == "chat_message":
+            # Handle chat messages with Cosmos DB integration
+            text = message.get("text")
+            room_id = message.get("room_id")
+            msg_type = message.get("message_type", "chat")
+            
+            if text:
+                await websocket_manager.send_trip_message(
+                    websocket=websocket,
+                    text=text,
+                    message_type=MessageType(msg_type),
+                    room_id=room_id
+                )
+        
+        elif message_type == "get_messages":
+            # Handle message history requests
+            limit = message.get("limit", 20)
+            await websocket_manager.get_trip_recent_messages(
+                websocket=websocket,
+                limit=limit
+            )
         
         elif message_type == "itinerary_update":
             # Handle itinerary updates
@@ -307,7 +428,7 @@ async def handle_websocket_message(
                     "user_id": user_id,
                     "itinerary_id": message.get("itinerary_id"),
                     "data": message.get("data", {}),
-                    "timestamp": datetime.utcnow().isoformat()
+                    "timestamp": datetime.now(timezone.utc).isoformat()
                 }, trip_id, exclude=websocket)
         
         elif message_type == "typing":
@@ -320,6 +441,28 @@ async def handle_websocket_message(
                     "component": message.get("component"),
                     "timestamp": datetime.utcnow().isoformat()
                 }, trip_id, exclude=websocket)
+        
+        elif message_type == "send_message":
+            # Handle sending a message
+            trip_id = message.get("trip_id")
+            if trip_id:
+                # Save message to Cosmos DB
+                await websocket_manager.cosmos_ops.create_message({
+                    "trip_id": trip_id,
+                    "sender_id": user_id,
+                    "content": message.get("content"),
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "status": MessageStatus.SENT
+                })
+                
+                # Broadcast message to trip members
+                await websocket_manager.broadcast_to_trip({
+                    "type": "new_message",
+                    "user_id": user_id,
+                    "trip_id": trip_id,
+                    "content": message.get("content"),
+                    "timestamp": datetime.utcnow().isoformat()
+                }, trip_id)
         
         else:
             logger.warning(f"Unknown message type: {message_type}")

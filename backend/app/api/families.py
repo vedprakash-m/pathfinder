@@ -4,12 +4,13 @@ Handles family creation, member management, and family-related operations.
 """
 
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
 
 from ..core.database import get_db
-from ..core.security import get_current_user, require_permission
+from ..core.zero_trust import require_permissions
+from ..core.security import get_current_user
 from ..models.user import User
 from ..models.family import Family, FamilyMember, FamilyRole, FamilyCreate, FamilyUpdate, FamilyResponse, FamilyMemberCreate, FamilyMemberUpdate, FamilyMemberResponse
 from ..core.logging_config import get_logger
@@ -20,9 +21,10 @@ logger = get_logger(__name__)
 
 @router.post("/", response_model=FamilyResponse, status_code=status.HTTP_201_CREATED)
 async def create_family(
+    request: Request,
     family_data: FamilyCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_permissions("families", "create"))
 ):
     """Create a new family."""
     try:
@@ -70,10 +72,11 @@ async def create_family(
 
 @router.get("/", response_model=List[FamilyResponse])
 async def get_user_families(
+    request: Request,
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_permissions("families", "read"))
 ):
     """Get all families for the current user."""
     try:
@@ -93,9 +96,10 @@ async def get_user_families(
 
 @router.get("/{family_id}", response_model=FamilyResponse)
 async def get_family(
+    request: Request,
     family_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_permissions("families", "read"))
 ):
     """Get a specific family by ID."""
     try:
@@ -137,7 +141,7 @@ async def update_family(
     family_id: int,
     family_data: FamilyUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_permissions("families", "update"))
 ):
     """Update a family (admin only)."""
     try:
@@ -189,7 +193,7 @@ async def update_family(
 async def delete_family(
     family_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_permissions("families", "delete"))
 ):
     """Delete a family (admin only)."""
     try:
@@ -239,7 +243,7 @@ async def add_family_member(
     family_id: int,
     member_data: FamilyMemberCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_permissions("families", "update"))
 ):
     """Add a member to a family (admin only)."""
     try:
@@ -314,7 +318,7 @@ async def add_family_member(
 async def get_family_members(
     family_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_permissions("families", "read"))
 ):
     """Get all members of a family."""
     try:
@@ -354,7 +358,7 @@ async def update_family_member(
     member_id: int,
     member_data: FamilyMemberUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_permissions("families", "update"))
 ):
     """Update a family member (admin only, or self for limited fields)."""
     try:

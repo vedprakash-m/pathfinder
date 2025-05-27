@@ -2,7 +2,18 @@
 Authentication service for user management and Auth0 integration.
 
 This module handles:
-- User authentication with Auth0
+- User a            db_user = User(
+                email=user_data.email,
+                name=user_data.name,  # User DB model uses 'name'
+                hashed_password=hashed_password,
+                auth0_id=user_data.auth0_id,  # Both User DB model and UserCreate use 'auth0_id'
+                picture=None,  # Not provided in UserCreate
+                phone=user_data.phone,  # Both use 'phone'
+                preferences=str(user_data.preferences) if user_data.preferences else None,  # User DB model stores as string
+                is_active=True,
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow()
+            )ith Auth0
 - JWT token validation
 - User profile management
 - Session management
@@ -17,10 +28,11 @@ from urllib.parse import urlencode
 import httpx
 from jose import jwt, JWTError
 from passlib.context import CryptContext
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
+from sqlalchemy import select
 
 from app.core.config import settings
-from app.core.database import get_db
 from app.models.user import User, UserCreate, UserUpdate, UserResponse
 from app.core.security import create_access_token
 
@@ -80,8 +92,8 @@ class AuthService:
             # This would involve fetching the JWKS from Auth0 and validating the signature
             payload = jwt.decode(
                 token,
-                settings.JWT_SECRET_KEY,
-                algorithms=[settings.JWT_ALGORITHM],
+                settings.SECRET_KEY,
+                algorithms=["HS256"],
                 audience=self.auth0_audience
             )
             return payload
@@ -90,58 +102,54 @@ class AuthService:
             logger.error(f"JWT decode error: {e}")
             return None
     
-    def create_user(self, db: Session, user_data: UserCreate) -> User:
+    async def create_user(self, db: AsyncSession, user_data: UserCreate) -> User:
         """Create a new user."""
         try:
-            # Hash password if provided (for local users)
-            hashed_password = None
-            if user_data.password:
-                hashed_password = self.get_password_hash(user_data.password)
+            # OAuth users via Auth0 - no password needed
             
             db_user = User(
                 email=user_data.email,
-                full_name=user_data.full_name,
-                hashed_password=hashed_password,
-                auth0_user_id=user_data.auth0_user_id,
-                profile_picture_url=user_data.profile_picture_url,
-                phone_number=user_data.phone_number,
-                date_of_birth=user_data.date_of_birth,
-                emergency_contact_name=user_data.emergency_contact_name,
-                emergency_contact_phone=user_data.emergency_contact_phone,
-                preferences=user_data.preferences or {},
+                name=user_data.name,  # User DB model uses 'name'
+                auth0_id=user_data.auth0_id,  # Both User DB model and UserCreate use 'auth0_id'
+                picture=None,  # Not provided in UserCreate
+                phone=user_data.phone,  # Both use 'phone'
+                preferences=str(user_data.preferences) if user_data.preferences else None,  # User DB model stores as string
                 is_active=True,
                 created_at=datetime.utcnow(),
                 updated_at=datetime.utcnow()
             )
             
             db.add(db_user)
-            db.commit()
-            db.refresh(db_user)
+            await db.commit()
+            await db.refresh(db_user)
             
             logger.info(f"Created user: {db_user.email}")
             return db_user
             
         except Exception as e:
-            db.rollback()
+            await db.rollback()
             logger.error(f"Error creating user: {e}")
             raise
     
-    def get_user_by_email(self, db: Session, email: str) -> Optional[User]:
+    async def get_user_by_email(self, db: AsyncSession, email: str) -> Optional[User]:
         """Get user by email."""
-        return db.query(User).filter(User.email == email).first()
+        result = await db.execute(select(User).filter(User.email == email))
+        return result.scalar_one_or_none()
     
-    def get_user_by_id(self, db: Session, user_id: str) -> Optional[User]:
+    async def get_user_by_id(self, db: AsyncSession, user_id: str) -> Optional[User]:
         """Get user by ID."""
-        return db.query(User).filter(User.id == user_id).first()
+        result = await db.execute(select(User).filter(User.id == user_id))
+        return result.scalar_one_or_none()
     
-    def get_user_by_auth0_id(self, db: Session, auth0_user_id: str) -> Optional[User]:
+    async def get_user_by_auth0_id(self, db: AsyncSession, auth0_user_id: str) -> Optional[User]:
         """Get user by Auth0 user ID."""
-        return db.query(User).filter(User.auth0_user_id == auth0_user_id).first()
+        result = await db.execute(select(User).filter(User.auth0_id == auth0_user_id))
+        return result.scalar_one_or_none()
     
-    def update_user(self, db: Session, user_id: str, user_update: UserUpdate) -> Optional[User]:
+    async def update_user(self, db: AsyncSession, user_id: str, user_update: UserUpdate) -> Optional[User]:
         """Update user information."""
         try:
-            db_user = self.get_user_by_id(db, user_id)
+            db_user = await self.get_user_by_id(db, user_id)
             if not db_user:
                 return None
             
@@ -159,20 +167,20 @@ class AuthService:
             
             db_user.updated_at = datetime.utcnow()
             
-            db.commit()
-            db.refresh(db_user)
+            await db.commit()
+            await db.refresh(db_user)
             
             logger.info(f"Updated user: {db_user.email}")
             return db_user
             
         except Exception as e:
-            db.rollback()
+            await db.rollback()
             logger.error(f"Error updating user: {e}")
             raise
     
-    def authenticate_user(self, db: Session, email: str, password: str) -> Optional[User]:
+    async def authenticate_user(self, db: AsyncSession, email: str, password: str) -> Optional[User]:
         """Authenticate user with email and password (for local development)."""
-        user = self.get_user_by_email(db, email)
+        user = await self.get_user_by_email(db, email)
         if not user:
             return None
         
@@ -189,6 +197,27 @@ class AuthService:
         return create_access_token(
             data={"sub": user.id, "email": user.email}
         )
+    
+    async def verify_token(self, token: str):
+        """Verify JWT token (wrapper around security module)."""
+        from app.core.security import verify_token
+        return await verify_token(token)
+    
+    async def get_current_user(self, db: AsyncSession, token: str) -> Optional[User]:
+        """Get current user from JWT token."""
+        try:
+            # Verify token
+            token_data = await self.verify_token(token)
+            if not token_data or not token_data.sub:
+                return None
+            
+            # Get user from database
+            user = await self.get_user_by_auth0_id(db, token_data.sub)
+            return user
+            
+        except Exception as e:
+            logger.error(f"Error getting current user: {e}")
+            return None
     
     async def process_auth0_login(
         self, 
@@ -245,27 +274,6 @@ class AuthService:
             
         except Exception as e:
             logger.error(f"Error processing Auth0 login: {e}")
-            return None
-    
-    def get_current_user(self, db: Session, token: str) -> Optional[User]:
-        """Get current user from token."""
-        try:
-            payload = self.decode_token(token)
-            if not payload:
-                return None
-            
-            user_id: str = payload.get("sub")
-            if not user_id:
-                return None
-            
-            user = self.get_user_by_id(db, user_id)
-            if not user or not user.is_active:
-                return None
-            
-            return user
-            
-        except Exception as e:
-            logger.error(f"Error getting current user: {e}")
             return None
     
     def delete_user(self, db: Session, user_id: str) -> bool:

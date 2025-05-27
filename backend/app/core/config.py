@@ -35,10 +35,13 @@ class Settings(BaseSettings):
     DATABASE_MAX_OVERFLOW: int = Field(default=20, env="DATABASE_MAX_OVERFLOW")
     
     # Cosmos DB settings
-    COSMOS_DB_URL: str = Field(..., env="COSMOS_DB_URL")
-    COSMOS_DB_KEY: str = Field(..., env="COSMOS_DB_KEY")
+    COSMOS_DB_ENABLED: bool = Field(default=False, env="COSMOS_DB_ENABLED")
+    COSMOS_DB_URL: str = Field(default="", env="COSMOS_DB_URL")
+    COSMOS_DB_KEY: str = Field(default="", env="COSMOS_DB_KEY")
     COSMOS_DB_DATABASE: str = Field(default="pathfinder", env="COSMOS_DB_DATABASE")
-    COSMOS_DB_CONTAINER: str = Field(default="trips", env="COSMOS_DB_CONTAINER")
+    COSMOS_DB_CONTAINER_ITINERARIES: str = Field(default="itineraries", env="COSMOS_DB_CONTAINER_ITINERARIES")
+    COSMOS_DB_CONTAINER_MESSAGES: str = Field(default="messages", env="COSMOS_DB_CONTAINER_MESSAGES")
+    COSMOS_DB_CONTAINER_PREFERENCES: str = Field(default="preferences", env="COSMOS_DB_CONTAINER_PREFERENCES")
     
     # Redis settings
     REDIS_URL: str = Field(default="redis://localhost:6379", env="REDIS_URL")
@@ -62,6 +65,18 @@ class Settings(BaseSettings):
     # Google Maps settings
     GOOGLE_MAPS_API_KEY: str = Field(..., env="GOOGLE_MAPS_API_KEY")
     
+    # Email settings (SendGrid)
+    SENDGRID_API_KEY: Optional[str] = Field(default=None, env="SENDGRID_API_KEY")
+    FROM_EMAIL: str = Field(default="noreply@pathfinder.com", env="FROM_EMAIL")
+    FROM_NAME: str = Field(default="Pathfinder", env="FROM_NAME")
+    
+    # Email settings (SMTP fallback)
+    SMTP_HOST: Optional[str] = Field(default=None, env="SMTP_HOST")
+    SMTP_PORT: Optional[int] = Field(default=587, env="SMTP_PORT")
+    SMTP_USERNAME: Optional[str] = Field(default=None, env="SMTP_USERNAME")
+    SMTP_PASSWORD: Optional[str] = Field(default=None, env="SMTP_PASSWORD")
+    SMTP_USE_TLS: bool = Field(default=True, env="SMTP_USE_TLS")
+    
     # Rate limiting
     RATE_LIMIT_REQUESTS: int = Field(default=100, env="RATE_LIMIT_REQUESTS")
     RATE_LIMIT_WINDOW: int = Field(default=3600, env="RATE_LIMIT_WINDOW")  # 1 hour
@@ -76,6 +91,7 @@ class Settings(BaseSettings):
     # Azure settings
     AZURE_STORAGE_ACCOUNT: Optional[str] = Field(default=None, env="AZURE_STORAGE_ACCOUNT")
     AZURE_STORAGE_KEY: Optional[str] = Field(default=None, env="AZURE_STORAGE_KEY")
+    AZURE_STORAGE_CONNECTION_STRING: Optional[str] = Field(default=None, env="AZURE_STORAGE_CONNECTION_STRING")
     AZURE_STORAGE_CONTAINER: str = Field(default="uploads", env="AZURE_STORAGE_CONTAINER")
     
     # Application Insights
@@ -90,6 +106,24 @@ class Settings(BaseSettings):
     # AI cost tracking
     AI_COST_TRACKING_ENABLED: bool = Field(default=True, env="AI_COST_TRACKING_ENABLED")
     AI_DAILY_BUDGET_LIMIT: float = Field(default=50.0, env="AI_DAILY_BUDGET_LIMIT")  # USD
+    
+    # Security context validation
+    ENABLE_CONTEXT_VALIDATION: bool = Field(default=False, env="ENABLE_CONTEXT_VALIDATION")
+    MAX_RISK_THRESHOLD: float = Field(default=0.7, env="MAX_RISK_THRESHOLD")
+    MFA_TRIGGER_THRESHOLD: float = Field(default=0.5, env="MFA_TRIGGER_THRESHOLD")
+    TRUSTED_LOCATIONS: List[str] = Field(default=[], env="TRUSTED_LOCATIONS")
+    TRUSTED_NETWORKS: List[str] = Field(default=["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"], env="TRUSTED_NETWORKS")
+    WORKING_HOURS_START: int = Field(default=8, env="WORKING_HOURS_START")
+    WORKING_HOURS_END: int = Field(default=18, env="WORKING_HOURS_END")
+    WORKING_HOURS_TIMEZONE: str = Field(default="UTC", env="WORKING_HOURS_TIMEZONE")
+    USER_PATTERNS_FILE: str = Field(default="user_access_patterns.json", env="USER_PATTERNS_FILE")
+    
+    # Performance monitoring
+    USE_REDIS_CACHE: bool = Field(default=False, env="USE_REDIS_CACHE")
+    SLOW_REQUEST_THRESHOLD: float = Field(default=1.0, env="SLOW_REQUEST_THRESHOLD")
+    SLOW_QUERY_THRESHOLD: float = Field(default=0.5, env="SLOW_QUERY_THRESHOLD") 
+    SLOW_FUNCTION_THRESHOLD: float = Field(default=0.5, env="SLOW_FUNCTION_THRESHOLD")
+    METRICS_ROLLUP_INTERVAL: int = Field(default=300, env="METRICS_ROLLUP_INTERVAL")
     
     @validator("AUTH0_ISSUER", pre=True, always=True)
     def set_auth0_issuer(cls, v, values):

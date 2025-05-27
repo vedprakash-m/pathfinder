@@ -3,7 +3,7 @@ Trip service for managing trips, participations, and related operations.
 """
 
 import json
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from typing import List, Optional, Dict, Any
 from uuid import UUID
 
@@ -20,6 +20,11 @@ from app.models.trip import (
 )
 from app.models.family import Family
 from app.models.user import User
+from app.services.cosmos.itinerary_service import ItineraryDocumentService
+from app.services.cosmos.message_service import MessageDocumentService
+from app.services.cosmos.preference_service import PreferenceDocumentService
+from app.models.cosmos.preference import PreferenceType
+from app.services.trip_cosmos import TripCosmosOperations
 
 logger = get_logger(__name__)
 
@@ -29,7 +34,12 @@ class TripService:
     
     def __init__(self, db: AsyncSession):
         self.db = db
-    
+        # Initialize Cosmos DB services directly or through TripCosmosOperations
+        self.cosmos_ops = TripCosmosOperations()
+        self.itinerary_service = self.cosmos_ops.itinerary_service
+        self.message_service = self.cosmos_ops.message_service
+        self.preference_service = self.cosmos_ops.preference_service
+        
     async def create_trip(self, trip_data: TripCreate, creator_id: str) -> TripResponse:
         """Create a new trip."""
         try:
@@ -44,28 +54,34 @@ class TripService:
             trip = Trip(
                 **trip_dict,
                 creator_id=UUID(creator_id),
-                status=TripStatus.PLANNING
+                status=TripStatus.PLANNING,
+                created_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(timezone.utc)
             )
             
             self.db.add(trip)
             await self.db.commit()
             await self.db.refresh(trip)
             
-            # Add family participations if provided
+            # Add family participations
             if trip_data.family_ids:
                 for family_id in trip_data.family_ids:
                     await self._add_family_participation(trip.id, family_id, creator_id)
             
-            # Get trip with participation count
-            trip_response = await self._build_trip_response(trip)
+            # Store rich preferences data in Cosmos DB if provided
+            if trip_data.preferences:
+                await self.cosmos_ops.save_trip_preferences_to_cosmos(
+                    str(trip.id),
+                    trip_data.preferences.dict()
+                )
             
             logger.info(f"Trip created: {trip.id} by user {creator_id}")
-            return trip_response
+            return await self._build_trip_response(trip)
             
         except Exception as e:
             await self.db.rollback()
-            logger.error(f"Error creating trip: {str(e)}")
-            raise ValueError(f"Failed to create trip: {str(e)}")
+            logger.error(f"Error creating trip: {e}")
+            raise
     
     async def get_user_trips(
         self, 
@@ -514,6 +530,120 @@ class TripService:
             logger.error(f"Error sending invitation: {str(e)}")
             raise ValueError(f"Failed to send invitation: {str(e)}")
     
+    async def save_itinerary(self, trip_id: UUID, itinerary_data: Dict[str, Any], user_id: str) -> bool:
+        """
+        Save an itinerary with Cosmos DB integration.
+        
+        This method stores the itinerary in both PostgreSQL and Cosmos DB.
+        PostgreSQL maintains a reference for relational integrity, 
+        while Cosmos DB stores the full itinerary document for rich querying and versioning.
+        
+        Args:
+            trip_id: ID of the trip
+            itinerary_data: Itinerary data
+            user_id: ID of the user making the request
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # Make sure user has access to this trip
+            trip = await self.get_trip_by_id(trip_id, user_id)
+            if not trip:
+                logger.warning(f"User {user_id} attempted to save itinerary for inaccessible trip {trip_id}")
+                return False
+            
+            # Update SQL model
+            trip.itinerary_data = json.dumps(itinerary_data)
+            trip.updated_at = datetime.now(timezone.utc)
+            await self.db.commit()
+            
+            # Save to Cosmos DB for versioning and richer querying
+            cosmos_result = await self.cosmos_ops.save_itinerary_to_cosmos(
+                str(trip_id),
+                {
+                    "itinerary_data": itinerary_data,
+                    "updated_at": datetime.now(timezone.utc).isoformat(),
+                    "updated_by": user_id
+                }
+            )
+            
+            return cosmos_result is not None
+            
+        except Exception as e:
+            await self.db.rollback()
+            logger.error(f"Error saving itinerary: {e}")
+            return False
+            
+    async def get_latest_itinerary(self, trip_id: UUID, user_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get the latest itinerary for a trip.
+        
+        This method retrieves the itinerary from Cosmos DB, 
+        which contains the full version history.
+        
+        Args:
+            trip_id: ID of the trip
+            user_id: ID of the user making the request
+            
+        Returns:
+            Itinerary data if found, None otherwise
+        """
+        try:
+            # Make sure user has access to this trip
+            trip = await self.get_trip_by_id(trip_id, user_id)
+            if not trip:
+                logger.warning(f"User {user_id} attempted to get itinerary for inaccessible trip {trip_id}")
+                return None
+                
+            # Get from Cosmos DB
+            itinerary_doc = await self.cosmos_ops.get_current_itinerary_from_cosmos(str(trip_id))
+            if itinerary_doc:
+                return itinerary_doc.dict(exclude={"_resource_id", "_etag", "_ts"})
+            
+            # Fall back to SQL if needed
+            if trip.itinerary_data:
+                return json.loads(trip.itinerary_data)
+                
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error getting itinerary: {e}")
+            return None
+            
+    async def get_trip_messages(self, trip_id: UUID, user_id: str, room_id: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
+        """
+        Get messages for a trip from Cosmos DB.
+        
+        Args:
+            trip_id: ID of the trip
+            user_id: ID of the user making the request
+            room_id: Optional room ID to filter by
+            limit: Maximum number of messages to return
+            
+        Returns:
+            List of message dictionaries
+        """
+        try:
+            # Make sure user has access to this trip
+            trip = await self.get_trip_by_id(trip_id, user_id)
+            if not trip:
+                logger.warning(f"User {user_id} attempted to get messages for inaccessible trip {trip_id}")
+                return []
+                
+            # Get messages from Cosmos DB
+            messages = await self.cosmos_ops.get_trip_messages(
+                trip_id=str(trip_id),
+                room_id=room_id,
+                limit=limit
+            )
+            
+            return [message.dict(exclude={"_resource_id", "_etag", "_ts"}) for message in messages]
+            
+        except Exception as e:
+            logger.error(f"Error getting trip messages: {e}")
+            return []
+    
     # Helper methods
     
     async def _get_trip_by_id(self, trip_id: UUID) -> Optional[Trip]:
@@ -577,6 +707,28 @@ class TripService:
     
     async def _build_trip_response(self, trip: Trip) -> TripResponse:
         """Build TripResponse from Trip model."""
+        # Initialize counters
+        participations_count = 0
+        confirmed_count = 0
+        
+        # Ensure the trip's participations are loaded (avoid lazy loading issues)
+        if 'participations' not in trip.__dict__ or trip.participations is None:
+            # Refresh the trip with participations explicitly loaded
+            stmt = select(Trip).options(
+                selectinload(Trip.participations)
+            ).where(Trip.id == trip.id)
+            result = await self.db.execute(stmt)
+            refreshed_trip = result.scalar_one_or_none()
+            if refreshed_trip:
+                trip = refreshed_trip
+                # Now count participations from the refreshed trip
+                if hasattr(trip, 'participations') and trip.participations is not None:
+                    participations_count = len(trip.participations)
+                    confirmed_count = len([p for p in trip.participations if p.status == ParticipationStatus.CONFIRMED])
+        elif trip.participations is not None:
+            participations_count = len(trip.participations)
+            confirmed_count = len([p for p in trip.participations if p.status == ParticipationStatus.CONFIRMED])
+            
         return TripResponse(
             id=str(trip.id),
             name=trip.name,
@@ -591,8 +743,8 @@ class TripService:
             creator_id=str(trip.creator_id),
             created_at=trip.created_at,
             updated_at=trip.updated_at,
-            family_count=len(trip.participations),
-            confirmed_families=len([p for p in trip.participations if p.status == ParticipationStatus.CONFIRMED])
+            family_count=participations_count,
+            confirmed_families=confirmed_count
         )
     
     def _calculate_completion_percentage(self, trip: Trip) -> float:
@@ -621,3 +773,89 @@ class TripService:
         completion_factors.append(25.0 if trip.itinerary_data else 0.0)
         
         return sum(completion_factors)
+    
+    async def add_family_to_trip(
+        self, 
+        trip_id: UUID, 
+        family_id: str, 
+        user_id: str,
+        budget_allocation: float = 0.0,
+        preferences: Optional[dict] = None
+    ) -> ParticipationResponse:
+        """Add a family to a trip."""
+        try:
+            # Check if user has permission (either trip creator or family admin)
+            trip = await self._get_trip_by_id(trip_id)
+            if not trip:
+                raise ValueError("Trip not found")
+                
+            family = await self._get_family_by_id(UUID(family_id))
+            if not family:
+                raise ValueError("Family not found")
+                
+            # Check if user is trip creator or family admin
+            is_trip_creator = str(trip.creator_id) == user_id
+            is_family_admin = str(family.admin_user_id) == user_id
+            
+            if not (is_trip_creator or is_family_admin):
+                raise PermissionError("You don't have permission to add this family to the trip")
+                
+            # Check if family is already in the trip
+            existing_participation = await self._get_participation(trip_id, UUID(family_id))
+            if existing_participation:
+                raise ValueError("Family is already part of this trip")
+                
+            # Create participation
+            participation = TripParticipation(
+                trip_id=trip_id,
+                family_id=UUID(family_id),
+                user_id=UUID(user_id),
+                status=ParticipationStatus.CONFIRMED,
+                budget_allocation=budget_allocation,
+                preferences=json.dumps(preferences) if preferences else None,
+                joined_at=datetime.now(timezone.utc)
+            )
+            
+            self.db.add(participation)
+            await self.db.commit()
+            await self.db.refresh(participation)
+            
+            logger.info(f"Family {family_id} added to trip {trip_id} by user {user_id}")
+            
+            return ParticipationResponse(
+                id=str(participation.id),
+                trip_id=str(participation.trip_id),
+                family_id=str(participation.family_id),
+                user_id=str(participation.user_id),
+                status=participation.status,
+                budget_allocation=float(participation.budget_allocation) if participation.budget_allocation else None,
+                preferences=json.loads(participation.preferences) if participation.preferences else None,
+                notes=participation.notes,
+                joined_at=participation.joined_at,
+                updated_at=participation.updated_at
+            )
+                
+        except (ValueError, PermissionError):
+            await self.db.rollback()
+            raise
+        except Exception as e:
+            await self.db.rollback()
+            logger.error(f"Error adding family {family_id} to trip {trip_id}: {str(e)}")
+            raise ValueError(f"Failed to add family to trip: {str(e)}")
+            
+    async def _get_family_by_id(self, family_id: UUID) -> Optional[Family]:
+        """Get a family by ID."""
+        query = select(Family).where(Family.id == family_id)
+        result = await self.db.execute(query)
+        return result.scalar_one_or_none()
+        
+    async def _get_participation(self, trip_id: UUID, family_id: UUID) -> Optional[TripParticipation]:
+        """Get trip participation by trip and family ID."""
+        query = select(TripParticipation).where(
+            and_(
+                TripParticipation.trip_id == trip_id,
+                TripParticipation.family_id == family_id
+            )
+        )
+        result = await self.db.execute(query)
+        return result.scalar_one_or_none()
