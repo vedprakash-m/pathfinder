@@ -29,6 +29,7 @@ class Family(Base):
     id = Column(GUID(), primary_key=True, default=uuid4)
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
+    admin_user_id = Column(GUID(), ForeignKey("users.id"), nullable=False)
     preferences = Column(Text, nullable=True)  # JSON string
     emergency_contact = Column(Text, nullable=True)  # JSON string
     is_active = Column(Boolean, default=True)
@@ -36,8 +37,11 @@ class Family(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
     # Relationships
+    admin = relationship("User", foreign_keys=[admin_user_id], back_populates="administered_families")
     members = relationship("FamilyMember", back_populates="family", cascade="all, delete-orphan")
     trip_participations = relationship("TripParticipation", back_populates="family")
+    reservations = relationship("Reservation", back_populates="family")
+    notifications = relationship("Notification", back_populates="family")
 
 
 class FamilyMember(Base):

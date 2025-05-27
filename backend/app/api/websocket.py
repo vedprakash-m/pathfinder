@@ -52,23 +52,21 @@ async def websocket_trip_endpoint(
             await websocket.close(code=4003, reason="Trip not found or access denied")
             return
         
-        # Accept the connection
+        # Accept connection
         await websocket.accept()
         
-        # Add connection to manager
-        await websocket_manager.connect(websocket, user.id, str(trip_id))
+        # Connect to WebSocket manager with trip context
+        user_name = user.name or user.email.split('@')[0]
+        await websocket_manager.connect(websocket, str(user.id), str(trip_id))
         
-        # Send welcome message
-        welcome_message = {
-            "type": "connection_established",
-            "message": f"Connected to trip: {trip.name}",
-            "trip_id": str(trip_id),
-            "user_id": str(user.id),
-            "timestamp": datetime.now(timezone.utc).isoformat()
-        }
-        await websocket.send_text(json.dumps(welcome_message))
+        # Set additional metadata
+        if websocket in websocket_manager.connection_metadata:
+            websocket_manager.connection_metadata[websocket]["user_name"] = user_name
+            
+        # Send recent messages from Cosmos DB
+        await websocket_manager.get_trip_recent_messages(websocket)
         
-        # Listen for messages
+        # WebSocket message loop
         try:
             while True:
                 data = await websocket.receive_text()

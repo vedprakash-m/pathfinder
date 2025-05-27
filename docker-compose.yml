@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  # Backend FastAPI Service
+  backend:
+    build: ./backend
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - SECRET_KEY=dev_secret_key_change_in_production
+      - DATABASE_URL=sqlite:///./pathfinder.db
+      - COSMOS_DB_ENABLED=true
+      - COSMOS_DB_URL=https://cosmosdb-emulator:8081
+      - COSMOS_DB_KEY=YOUR_COSMOS_DB_EMULATOR_KEY
+      - COSMOS_DB_DATABASE=pathfinder
+      - REDIS_URL=redis://redis:6379
+      - REDIS_TTL=3600
+      - AUTH0_DOMAIN=${AUTH0_DOMAIN:-localhost}
+      - AUTH0_AUDIENCE=${AUTH0_AUDIENCE:-api://pathfinder}
+      - AUTH0_CLIENT_ID=${AUTH0_CLIENT_ID:-client_id}
+      - AUTH0_CLIENT_SECRET=${AUTH0_CLIENT_SECRET:-client_secret}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-sk-mock}
+      - GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY:-mock_key}
+    depends_on:
+      - redis
+      - cosmosdb-emulator
+    command: uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+  # Frontend React Service
+  frontend:
+    build: ./frontend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+      - VITE_AUTH0_DOMAIN=${AUTH0_DOMAIN:-localhost}
+      - VITE_AUTH0_CLIENT_ID=${AUTH0_CLIENT_ID:-client_id}
+      - VITE_AUTH0_AUDIENCE=${AUTH0_AUDIENCE:-api://pathfinder}
+    command: npm run dev
+
+  # Redis for caching
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+
+  # Cosmos DB Emulator for local development
+  cosmosdb-emulator:
+    image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
+    environment:
+      - AZURE_COSMOS_EMULATOR_PARTITION_COUNT=10
+      - AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE=true
+    ports:
+      - "8081:8081"
+      - "10251:10251"
+      - "10252:10252"
+      - "10253:10253"
+      - "10254:10254"
+    volumes:
+      - cosmos-data:/data/db
+
+  # Adminer for database management
+  adminer:
+    image: adminer:latest
+    ports:
+      - "8080:8080"
+    depends_on:
+      - cosmosdb-emulator
+
+  # Mock Auth Service (for local development without Auth0)
+  mock-auth:
+    image: nginx:alpine
+    volumes:
+      - ./infrastructure/mock-auth:/usr/share/nginx/html
+    ports:
+      - "9000:80"
+
+volumes:
+  redis-data:
+  cosmos-data:

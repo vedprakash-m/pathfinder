@@ -5,11 +5,15 @@ python-multipart==0.0.6
 
 # Database dependencies
 sqlalchemy==2.0.23
+sqlalchemy[asyncio]==2.0.23
 alembic==1.12.1
 aiosqlite==0.21.0
 greenlet==3.2.2
 psycopg2-binary==2.9.9
+
+# Azure Cosmos DB
 azure-cosmos==4.5.1
+azure-identity==1.15.0
 
 # Authentication and security
 python-jose[cryptography]==3.3.0
@@ -51,6 +55,10 @@ weasyprint==60.2
 
 # Excel export
 openpyxl==3.1.2
+
+# Email services
+sendgrid==6.10.0
+jinja2==3.1.2
 
 # Development and testing
 pytest==7.4.3

@@ -18,6 +18,7 @@ import uuid
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 import jwt
+from jwt.exceptions import PyJWTError
 
 from app.core.config import get_settings
 from app.core.security import User, verify_token
@@ -374,7 +375,7 @@ def require_permissions(resource_type: str, action: str):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token has expired"
             )
-        except jwt.JWTError:
+        except PyJWTError:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid authentication credentials"
