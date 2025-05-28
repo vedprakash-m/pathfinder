@@ -24,12 +24,12 @@ export const lazyRoute = (importFunc: () => Promise<{ default: React.ComponentTy
 };
 
 // Pre-defined lazy route components
-export const LazyDashboard = lazyRoute(() => import('@/pages/DashboardPage'));
-export const LazyTrips = lazyRoute(() => import('@/pages/TripsPage'));
-export const LazyCreateTrip = lazyRoute(() => import('@/pages/CreateTripPage'));
-export const LazyTripDetail = lazyRoute(() => import('@/pages/TripDetailPage'));
-export const LazyFamilies = lazyRoute(() => import('@/pages/FamiliesPage'));
-export const LazyProfile = lazyRoute(() => import('@/pages/ProfilePage'));
+export const LazyDashboard = lazyRoute(() => import('@/pages/DashboardPage').then(module => ({ default: module.DashboardPage })));
+export const LazyTrips = lazyRoute(() => import('@/pages/TripsPage').then(module => ({ default: module.TripsPage })));
+export const LazyCreateTrip = lazyRoute(() => import('@/pages/CreateTripPage').then(module => ({ default: module.CreateTripPage })));
+export const LazyTripDetail = lazyRoute(() => import('@/pages/TripDetailPage').then(module => ({ default: module.TripDetailPage })));
+export const LazyFamilies = lazyRoute(() => import('@/pages/FamiliesPage').then(module => ({ default: module.FamiliesPage })));
+export const LazyProfile = lazyRoute(() => import('@/pages/ProfilePage').then(module => ({ default: module.ProfilePage })));
 export const LazySettings = lazyRoute(() => import('@/pages/SettingsPage'));
 export const LazyNotifications = lazyRoute(() => import('@/pages/NotificationsPage'));
 

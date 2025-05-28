@@ -1,6 +1,25 @@
 import { useState } from 'react';
 import { z } from 'zod';
-import { validateForm } from '@/utils/validation';
+
+/**
+ * Validate form data using Zod schema
+ */
+const validateForm = <T>(schema: z.ZodType<T>, data: Partial<T>) => {
+  try {
+    schema.parse(data);
+    return { isValid: true, errors: {} };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      const errors: Record<string, string> = {};
+      error.errors.forEach((err) => {
+        const field = err.path.join('.');
+        errors[field] = err.message;
+      });
+      return { isValid: false, errors };
+    }
+    return { isValid: false, errors: { general: 'Validation failed' } };
+  }
+};
 
 /**
  * Custom hook for form validation using Zod schemas
@@ -49,14 +68,8 @@ export function useFormValidation<T>(schema: z.ZodType<T>, initialData: Partial<
    */
   const validateField = (field: string) => {
     try {
-      // Create an object with just the field to validate
-      const fieldData = { [field]: formData[field as keyof T] };
-      
-      // Extract the sub-schema for just this field if possible
-      const fieldSchema = schema.shape?.[field as keyof z.ZodTypeAny] || schema;
-      
-      // Try to parse (validate) just this field
-      fieldSchema.parse(formData[field as keyof T]);
+      // Try to validate the entire form and extract field-specific errors
+      schema.parse(formData);
       
       // Clear error if validation passes
       setErrors((prev) => {
@@ -68,7 +81,7 @@ export function useFormValidation<T>(schema: z.ZodType<T>, initialData: Partial<
       return true;
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const fieldErrors = error.errors.filter((err) => 
+        const fieldErrors = error.errors.filter((err: any) => 
           err.path[0] === field || err.path.join('.') === field
         );
         

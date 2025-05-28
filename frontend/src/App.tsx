@@ -11,7 +11,6 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 // Lazy-loaded page components
 import {
-  lazyRoute,
   LazyDashboard,
   LazyTrips,
   LazyCreateTrip,

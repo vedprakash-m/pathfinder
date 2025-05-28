@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 import {
   Card,
   CardHeader,
-  CardContent,
   Button,
   Title1,
   Title2,
@@ -91,12 +90,12 @@ const ProfileSection: React.FC = () => {
           </Button>
         </div>
       </CardHeader>
-      <CardContent>
+      <div style={{ padding: '16px' }}>
         <div className="flex flex-col sm:flex-row gap-6">
           <div className="flex flex-col items-center">
             <Avatar
               name={auth0User?.name || 'User'}
-              image={auth0User?.picture}
+              image={auth0User?.picture ? { src: auth0User.picture } : undefined}
               size={96}
               className="mb-4"
             />
@@ -187,7 +186,7 @@ const ProfileSection: React.FC = () => {
             )}
           </div>
         </div>
-      </CardContent>
+      </div>
     </Card>
   );
 };
@@ -214,7 +213,7 @@ const NotificationSettings: React.FC = () => {
           <Title2>Notification Preferences</Title2>
         </div>
       </CardHeader>
-      <CardContent>
+      <div style={{ padding: '16px' }}>
         <div className="space-y-6">
           <div>
             <Title3 className="mb-4">Communication</Title3>
@@ -305,7 +304,7 @@ const NotificationSettings: React.FC = () => {
             Save Preferences
           </Button>
         </div>
-      </CardContent>
+      </div>
     </Card>
   );
 };
@@ -326,7 +325,7 @@ const PrivacySettings: React.FC = () => {
           <Title2>Privacy Settings</Title2>
         </div>
       </CardHeader>
-      <CardContent>
+      <div style={{ padding: '16px' }}>
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
@@ -365,7 +364,7 @@ const PrivacySettings: React.FC = () => {
             Save Settings
           </Button>
         </div>
-      </CardContent>
+      </div>
     </Card>
   );
 };
@@ -381,7 +380,7 @@ const AccountSettings: React.FC = () => {
           <Title2>Account Settings</Title2>
         </div>
       </CardHeader>
-      <CardContent>
+      <div style={{ padding: '16px' }}>
         <div className="space-y-6">
           <div>
             <Body1 className="font-medium text-neutral-900 mb-2">Account Status</Body1>
@@ -411,13 +410,13 @@ const AccountSettings: React.FC = () => {
             </div>
           </div>
         </div>
-      </CardContent>
+      </div>
     </Card>
   );
 };
 
 export const ProfilePage: React.FC = () => {
-  const { user, isLoading } = useAuthStore();
+  const { isLoading } = useAuthStore();
 
   if (isLoading) {
     return (

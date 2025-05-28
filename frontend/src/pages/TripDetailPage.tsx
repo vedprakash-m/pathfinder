@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 import {
   Card,
   CardHeader,
-  CardContent,
   Button,
   Title1,
   Title2,
@@ -166,7 +165,7 @@ const TripOverview: React.FC<{ trip: any }> = ({ trip }) => {
             <CardHeader>
               <Title2>Trip Details</Title2>
             </CardHeader>
-            <CardContent>
+            <div className="p-6">
               <div className="space-y-4">
                 <div>
                   <Body2 className="font-medium text-neutral-700">Description</Body2>
@@ -195,7 +194,7 @@ const TripOverview: React.FC<{ trip: any }> = ({ trip }) => {
                   </div>
                 )}
               </div>
-            </CardContent>
+            </div>
           </Card>
         </motion.div>
 
@@ -209,7 +208,7 @@ const TripOverview: React.FC<{ trip: any }> = ({ trip }) => {
             <CardHeader>
               <Title2>Itinerary</Title2>
             </CardHeader>
-            <CardContent>
+            <div className="p-6">
               <div className="text-center py-8">
                 <Body1 className="text-neutral-600 mb-4">
                   No itinerary created yet
@@ -218,7 +217,7 @@ const TripOverview: React.FC<{ trip: any }> = ({ trip }) => {
                   Create Itinerary
                 </Button>
               </div>
-            </CardContent>
+            </div>
           </Card>
         </motion.div>
       </div>
@@ -235,7 +234,7 @@ const TripOverview: React.FC<{ trip: any }> = ({ trip }) => {
             <CardHeader>
               <Title3>Participating Families</Title3>
             </CardHeader>
-            <CardContent>
+            <div className="p-6">
               <div className="space-y-3">
                 <div className="text-center py-4">
                   <Body1 className="text-neutral-600">
@@ -246,7 +245,7 @@ const TripOverview: React.FC<{ trip: any }> = ({ trip }) => {
                   Invite Family
                 </Button>
               </div>
-            </CardContent>
+            </div>
           </Card>
         </motion.div>
 
@@ -261,7 +260,7 @@ const TripOverview: React.FC<{ trip: any }> = ({ trip }) => {
               <CardHeader>
                 <Title3>Budget Summary</Title3>
               </CardHeader>
-              <CardContent>
+              <div className="p-6">
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <Body2 className="text-neutral-600">Total Budget</Body2>
@@ -277,7 +276,7 @@ const TripOverview: React.FC<{ trip: any }> = ({ trip }) => {
                     Manage Budget
                   </Button>
                 </div>
-              </CardContent>
+              </div>
             </Card>
           </motion.div>
         )}
@@ -335,7 +334,7 @@ export const TripDetailPage: React.FC = () => {
           <Body2>Trips</Body2>
         </Link>
         <Body2>/</Body2>
-        <Body2 className="text-neutral-900">{trip.name}</Body2>
+        <Body2 className="text-neutral-900">{trip.data?.name || 'Trip Details'}</Body2>
       </motion.div>
 
       {/* Trip Header */}

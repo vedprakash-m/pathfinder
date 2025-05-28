@@ -5,18 +5,16 @@ import { motion } from 'framer-motion';
 import {
   Card,
   CardHeader,
-  CardContent,
   Button,
   Title1,
   Title2,
   Body1,
-  Body2,
 } from '@fluentui/react-components';
 import {
   CalendarIcon,
   MapIcon,
   UsersIcon,
-  SparkleIcon,
+  SparklesIcon,
 } from '@heroicons/react/24/outline';
 
 const FeatureCard: React.FC<{
@@ -37,9 +35,9 @@ const FeatureCard: React.FC<{
           <Title2 className="text-neutral-900">{title}</Title2>
         </div>
       </CardHeader>
-      <CardContent>
+      <div className="p-4">
         <Body1 className="text-neutral-600">{description}</Body1>
-      </CardContent>
+      </div>
     </Card>
   </motion.div>
 );
@@ -49,7 +47,7 @@ export const HomePage: React.FC = () => {
 
   const features = [
     {
-      icon: <SparkleIcon className="w-6 h-6" />,
+      icon: <SparklesIcon className="w-6 h-6" />,
       title: "AI-Powered Planning",
       description: "Let our intelligent assistant help you create the perfect itinerary based on your preferences and budget."
     },
@@ -110,7 +108,7 @@ export const HomePage: React.FC = () => {
                     appearance="outline"
                     size="large"
                     className="px-8 py-3"
-                    onClick={() => loginWithRedirect({ screen_hint: 'signin' })}
+                    onClick={() => loginWithRedirect()}
                   >
                     Sign In
                   </Button>

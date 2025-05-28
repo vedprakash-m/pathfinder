@@ -1,3 +1,5 @@
+import React from 'react';
+
 /**
  * Performance utility functions for image loading and resource optimization
  */
@@ -88,7 +90,7 @@ export const withPerformanceTracking = (WrappedComponent: React.ComponentType<an
       console.log(`[Performance] ${componentName} rendered in ${endTime - startTime}ms`);
     }, []);
     
-    return <WrappedComponent {...props} />;
+    return React.createElement(WrappedComponent, props);
   };
 };
 
@@ -109,5 +111,4 @@ export function memoize<T, R>(fn: (arg: T) => R): (arg: T) => R {
   };
 }
 
-// Import for React.lazy
-import React from 'react';
+

@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 import {
   Card,
   CardHeader,
-  CardContent,
   Button,
   Title1,
   Title2,
@@ -87,7 +86,7 @@ const TripCard: React.FC<{ trip: Trip }> = ({ trip }) => {
               <StatusBadge status={trip.status} />
             </div>
           </CardHeader>
-          <CardContent>
+          <div className="p-4">
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-neutral-600">
                 <CalendarIcon className="w-4 h-4" />
@@ -120,7 +119,7 @@ const TripCard: React.FC<{ trip: Trip }> = ({ trip }) => {
                 </div>
               )}
             </div>
-          </CardContent>
+          </div>
         </Link>
       </Card>
     </motion.div>
@@ -133,7 +132,7 @@ const QuickActions: React.FC = () => {
       <CardHeader>
         <Title2>Quick Actions</Title2>
       </CardHeader>
-      <CardContent>
+      <div className="p-4">
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Link to="/trips/new">
             <Button
@@ -173,7 +172,7 @@ const QuickActions: React.FC = () => {
             </Button>
           </Link>
         </div>
-      </CardContent>
+      </div>
     </Card>
   );
 };
@@ -182,29 +181,31 @@ export const DashboardPage: React.FC = () => {
   const { user } = useAuthStore();
   const { setTrips } = useTripStore();
 
-  const { data: trips, isLoading, error } = useQuery({
+  const { data: tripsResponse, isLoading, error } = useQuery({
     queryKey: ['trips'],
-    queryFn: tripService.getUserTrips,
+    queryFn: () => tripService.getUserTrips(),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
+  const trips = tripsResponse?.data?.items || [];
+
   useEffect(() => {
-    if (trips) {
+    if (trips.length > 0) {
       setTrips(trips);
     }
   }, [trips, setTrips]);
 
-  const upcomingTrips = trips?.filter(trip => {
+  const upcomingTrips = trips.filter(trip => {
     const tripDate = new Date(trip.start_date);
     const today = new Date();
     return tripDate >= today && trip.status !== 'cancelled';
-  }) || [];
+  });
 
-  const recentTrips = trips?.filter(trip => {
+  const recentTrips = trips.filter(trip => {
     const tripDate = new Date(trip.start_date);
     const today = new Date();
     return tripDate < today || trip.status === 'completed';
-  }).slice(0, 4) || [];
+  }).slice(0, 4);
 
   if (isLoading) {
     return (
@@ -240,7 +241,7 @@ export const DashboardPage: React.FC = () => {
           Welcome back, {user?.name || 'Traveler'}!
         </Title1>
         <Body1 className="text-neutral-600">
-          {trips?.length === 0 
+          {trips.length === 0 
             ? "Ready to plan your first adventure?" 
             : `You have ${upcomingTrips.length} upcoming ${upcomingTrips.length === 1 ? 'trip' : 'trips'}`
           }
@@ -313,7 +314,7 @@ export const DashboardPage: React.FC = () => {
       )}
 
       {/* Empty State */}
-      {trips?.length === 0 && (
+      {trips.length === 0 && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

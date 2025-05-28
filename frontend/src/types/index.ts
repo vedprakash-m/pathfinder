@@ -18,10 +18,49 @@ export interface User {
   id: string;
   email: string;
   name: string;
+  full_name?: string;
   picture?: string;
+  phone_number?: string;
+  bio?: string;
+  location?: string;
   preferences?: UserPreferences;
   created_at: string;
   updated_at: string;
+}
+
+export interface UserProfile extends User {
+  families: {
+    id: string;
+    name: string;
+    role: 'admin' | 'member';
+    created_at: string;
+  }[];
+  trips_count: number;
+}
+
+export interface AuthCredentials {
+  email: string;
+  password: string;
+}
+
+export interface RegisterData {
+  email: string;
+  password: string;
+  full_name: string;
+  phone_number?: string;
+  date_of_birth?: string;
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
+  profile_picture_url?: string;
+  preferences?: Record<string, any>;
+}
+
+export interface LoginResponse {
+  access_token: string;
+  refresh_token?: string;
+  token_type: string;
+  expires_in: number;
+  user: User;
 }
 
 export interface UserPreferences {
@@ -66,13 +105,17 @@ export interface ExtendedFamily extends Family {
 export interface Trip {
   id: string;
   title: string;
+  name: string; // alias for title for component compatibility
   description?: string;
   destination: string;
   start_date: string;
   end_date: string;
   status: TripStatus;
   budget?: number;
+  budget_total?: number; // for component compatibility
   family_id: string;
+  family_count: number;
+  confirmed_families: number;
   created_by: string;
   itinerary?: Itinerary;
   participants: TripParticipant[];
@@ -187,11 +230,14 @@ export interface PlaceDetails {
 }
 
 // WebSocket message types
-export interface WebSocketMessage {
+export interface WebSocketMessage<T = any> {
   type: 'trip_update' | 'itinerary_update' | 'reservation_update' | 'family_update' | 'notification';
-  data: any;
+  message_type: string;
+  data: T;
+  payload: T;
   timestamp: string;
   user_id?: string;
+  room_id?: string;
 }
 
 // Form types for creating/updating

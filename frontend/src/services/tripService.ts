@@ -31,9 +31,19 @@ export const tripService = {
     return apiService.get(`/trips${queryString ? `?${queryString}` : ''}`);
   },
 
+  // Get user's trips (alias for getTrips for component compatibility)
+  getUserTrips: async (filters?: TripFilters): Promise<ApiResponse<PaginatedResponse<Trip>>> => {
+    return tripService.getTrips(filters);
+  },
+
   // Get single trip by ID
   getTrip: async (tripId: string): Promise<ApiResponse<Trip>> => {
     return apiService.get(`/trips/${tripId}`);
+  },
+
+  // Get trip by ID (alias for getTrip for component compatibility)
+  getTripById: async (tripId: string): Promise<ApiResponse<Trip>> => {
+    return tripService.getTrip(tripId);
   },
 
   // Create new trip

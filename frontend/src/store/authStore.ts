@@ -1,16 +1,17 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { User, ApiError } from '@/types';
+import { UserProfile, ApiError } from '@/types';
 
-interface AuthState {
-  user: User | null;
+export interface AuthState {
+  user: UserProfile | null;
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: ApiError | null;
   
   // Actions
-  setUser: (user: User) => void;
+  setUser: (user: UserProfile) => void;
+  updateProfile: (profile: Partial<UserProfile>) => void;
   setToken: (token: string) => void;
   logout: () => void;
   setLoading: (loading: boolean) => void;
@@ -20,19 +21,25 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       user: null,
       token: null,
       isAuthenticated: false,
       isLoading: false,
       error: null,
 
-      setUser: (user: User) => {
+      setUser: (user: UserProfile) => {
         set({ 
           user, 
           isAuthenticated: true,
           error: null 
         });
+      },
+
+      updateProfile: (profile: Partial<UserProfile>) => {
+        set((state) => ({
+          user: state.user ? { ...state.user, ...profile } : null
+        }));
       },
 
       setToken: (token: string) => {

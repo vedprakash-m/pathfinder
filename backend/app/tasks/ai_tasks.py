@@ -217,4 +217,7 @@ async def _generate_daily_cost_report():
             return report
         else:
             return {"date": today, "total_cost": 0, "total_requests": 0}
+    except Exception as exc:
+        logger.error(f"Error generating daily cost report: {exc}")
+        raise exc
    
