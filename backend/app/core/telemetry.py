@@ -4,19 +4,38 @@ OpenTelemetry instrumentation for monitoring and observability.
 import os
 from fastapi import FastAPI
 
-# Check if we're in test mode before importing OpenTelemetry dependencies
-if not os.getenv("TESTING"):
-    from opentelemetry import trace, metrics
-    from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-    from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
-    from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
-    from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-    from opentelemetry.sdk.resources import SERVICE_NAME, Resource
-    from opentelemetry.sdk.trace import TracerProvider
-    from opentelemetry.sdk.trace.export import BatchSpanProcessor
-    from azure.monitor.opentelemetry import configure_azure_monitor
+# Check if we're in test mode or if telemetry is disabled
+TELEMETRY_ENABLED = os.getenv("ENABLE_TELEMETRY", "false").lower() == "true"
+TESTING = os.getenv("TESTING", "false").lower() == "true"
+
+if TELEMETRY_ENABLED and not TESTING:
+    try:
+        from opentelemetry import trace, metrics
+        from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+        from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+        from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
+        from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+        from opentelemetry.sdk.resources import SERVICE_NAME, Resource
+        from opentelemetry.sdk.trace import TracerProvider
+        from opentelemetry.sdk.trace.export import BatchSpanProcessor
+        from azure.monitor.opentelemetry import configure_azure_monitor
+        TELEMETRY_AVAILABLE = True
+    except ImportError as e:
+        print(f"Warning: OpenTelemetry dependencies not available: {e}")
+        TELEMETRY_AVAILABLE = False
+        # Set up mock implementations
+        class MockTrace:
+            def get_tracer(self, name): return None
+        class MockMetrics:
+            def get_meter(self, name): return None
+        trace = MockTrace()
+        metrics = MockMetrics()
+        FastAPIInstrumentor = None
+        SQLAlchemyInstrumentor = None
+        HTTPXClientInstrumentor = None
 else:
-    # Mock implementations for testing
+    # Mock implementations for testing or when telemetry is disabled
+    TELEMETRY_AVAILABLE = False
     class MockTrace:
         def get_tracer(self, name): return None
     class MockMetrics:
@@ -53,9 +72,9 @@ def setup_opentelemetry(app: FastAPI, sqlalchemy_engine=None):
     """
     global tracer, meter, request_duration, ai_generation_duration, database_operation_duration, cost_tracking_counter
     
-    # Skip telemetry setup during testing
-    if os.getenv("TESTING"):
-        logger.info("Skipping OpenTelemetry setup in test mode")
+    # Skip telemetry setup during testing or if telemetry is not available
+    if TESTING or not TELEMETRY_AVAILABLE:
+        logger.info("Skipping OpenTelemetry setup (testing or telemetry not available)")
         return app
     
     try:

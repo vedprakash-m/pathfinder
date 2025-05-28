@@ -81,9 +81,9 @@ async def init_db():
     logger.info("Initializing database connections...")
     
     try:
-        # Only initialize Cosmos DB in production environment
-        if settings.is_production:
-            logger.info("Initializing Cosmos DB for production...")
+        # Only initialize Cosmos DB if explicitly enabled
+        if settings.COSMOS_DB_ENABLED:
+            logger.info("Initializing Cosmos DB...")
             # Initialize Cosmos DB client
             cosmos_client = cosmos.CosmosClient(
                 settings.COSMOS_DB_URL,
@@ -96,13 +96,13 @@ async def init_db():
             )
             
             await database.create_container_if_not_exists(
-                id=settings.COSMOS_DB_CONTAINER,
+                id=settings.COSMOS_DB_CONTAINER_ITINERARIES,
                 partition_key="/tripId",
                 offer_throughput=400  # Minimum throughput for development
             )
             logger.info("Cosmos DB initialization completed")
         else:
-            logger.info("Skipping Cosmos DB initialization in development/testing environment")
+            logger.info("Cosmos DB disabled - skipping initialization")
             cosmos_client = None
         
         logger.info("Database initialization completed successfully")

@@ -14,6 +14,7 @@ psycopg2-binary==2.9.9
 # Azure Cosmos DB
 azure-cosmos==4.5.1
 azure-identity==1.15.0
+azure-storage-blob==12.19.0
 
 # Authentication and security
 python-jose[cryptography]==3.3.0
@@ -41,6 +42,10 @@ tiktoken==0.5.1
 # Monitoring and logging
 azure-monitor-opentelemetry==1.6.9
 opencensus-ext-azure==1.1.13
+opentelemetry-instrumentation-sqlalchemy>=0.49b0,<0.53b0
+opentelemetry-instrumentation-fastapi>=0.49b0,<0.53b0
+opentelemetry-instrumentation-httpx>=0.49b0,<0.53b0
+opentelemetry-exporter-otlp-proto-grpc>=1.20.0
 
 # Background tasks
 celery==5.3.4
@@ -55,6 +60,7 @@ weasyprint==60.2
 
 # Excel export
 openpyxl==3.1.2
+pandas==2.1.4
 
 # Email services
 sendgrid==6.10.0
