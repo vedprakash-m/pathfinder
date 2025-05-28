@@ -7,7 +7,18 @@
 
 A production-ready web application for multi-family road trip coordination with AI-driven itinerary generation, real-time collaboration, and comprehensive trip management features.
 
-> **Project Status**: Phase 1 is ~80% complete with strong architectural foundation. Ready for production deployment with remaining service integrations.
+> **🎉 PHASE 1 DEPLOYMENT COMPLETE!** Both frontend and backend applications are now live and operational on Azure Container Apps.
+
+## 🚀 Live Application
+
+- **Frontend Application:** https://pathfinder-frontend.yellowdune-9b8d769a.eastus.azurecontainerapps.io/
+- **Backend API:** https://pathfinder-backend.yellowdune-9b8d769a.eastus.azurecontainerapps.io/
+- **API Documentation:** https://pathfinder-backend.yellowdune-9b8d769a.eastus.azurecontainerapps.io/docs
+
+**Status:** ✅ Frontend and backend deployed, CORS configured, security enabled, health checks passing.  
+**See [DEPLOYMENT_STATUS.md](./DEPLOYMENT_STATUS.md) for complete deployment details.**
+
+> **Project Status**: Phase 1 MVP deployment is COMPLETE with strong architectural foundation. Ready for user testing and Phase 2 production enhancements.
 
 ## 🎯 Phase 1 Completion Status
 
@@ -86,19 +97,19 @@ A production-ready web application for multi-family road trip coordination with 
 
 ### **Infrastructure Overview**
 ```
-┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
-│ React Frontend  │ │ Auth0           │ │ GitHub Actions  │
+┌─────────────────┐   ┌─────────────────┐ ┌─────────────────┐
+│ React Frontend  │   │ Auth0           │ │ GitHub Actions  │
 │ (Static Web App)│◄─►│ (Authentication)│ │ (CI/CD)         │
-└─────────┬───────┘ └─────────────────┘ └─────────────────┘
+└─────────┬───────┘   └─────────────────┘ └─────────────────┘
           │
           │ HTTPS/WebSocket
           ▼
-┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
-│ Azure CDN       │ │ Container Apps  │ │ Application     │
+┌─────────────────┐   ┌─────────────────┐   ┌─────────────────┐
+│ Azure CDN       │   │ Container Apps  │   │ Application     │
 │ + Load Balancer │◄─►│ (FastAPI)       │◄─►│ Insights        │
-└─────────┬───────┘ └─────────┬───────┘ └─────────────────┘
-          │                   │
-          │                   ▼
+└─────────┬───────┘   └─────────┬───────┘   └─────────────────┘
+          │                     │
+          │                     ▼
           │         ┌─────────────────┐ ┌─────────────────┐
           │         │ Redis Cache     │ │ Service Bus     │
           │         │ (Multi-layer)   │ │ (Background)    │
