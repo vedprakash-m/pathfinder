@@ -6,7 +6,7 @@ import json
 import logging
 import logging.config
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any
 
 from app.core.config import get_settings
@@ -19,8 +19,8 @@ class JSONFormatter(logging.Formatter):
     
     def format(self, record: logging.LogRecord) -> str:
         """Format log record as JSON."""
-        log_data = {
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+        log_data: Dict[str, Any] = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),
@@ -49,6 +49,7 @@ class JSONFormatter(logging.Formatter):
 
 def setup_logging():
     """Setup application logging configuration."""
+    import os
     
     # Determine log level
     log_level = "DEBUG" if settings.DEBUG else "INFO"
@@ -61,19 +62,33 @@ def setup_logging():
         "level": log_level,
     }
     
-    # File handler for production
+    # File handler for production (only if not in container)
     handlers = {"console": console_handler}
     
-    if settings.is_production:
-        file_handler = {
-            "class": "logging.handlers.RotatingFileHandler",
-            "filename": "/var/log/pathfinder/app.log",
-            "maxBytes": 50 * 1024 * 1024,  # 50MB
-            "backupCount": 5,
-            "formatter": "json",
-            "level": "INFO",
-        }
-        handlers["file"] = file_handler
+    # Only add file handler if we're in production AND not in a container
+    # Container environments should use console logging only
+    is_container = os.getenv("CONTAINER_MODE", "false").lower() == "true" or \
+                   os.path.exists("/.dockerenv") or \
+                   os.getenv("KUBERNETES_SERVICE_HOST") is not None
+    
+    if settings.is_production and not is_container:
+        try:
+            # Ensure log directory exists
+            log_dir = "/var/log/pathfinder"
+            os.makedirs(log_dir, exist_ok=True)
+            
+            file_handler = {
+                "class": "logging.handlers.RotatingFileHandler",
+                "filename": "/var/log/pathfinder/app.log",
+                "maxBytes": 50 * 1024 * 1024,  # 50MB
+                "backupCount": 5,
+                "formatter": "json",
+                "level": "INFO",
+            }
+            handlers["file"] = file_handler
+        except (OSError, PermissionError) as e:
+            # If we can't create the log file, fall back to console only
+            print(f"Warning: Could not set up file logging: {e}. Using console logging only.", file=sys.stderr)
     
     # Logging configuration
     logging_config = {
@@ -141,31 +156,31 @@ class StructuredLogger:
         """Set correlation ID for request tracking."""
         self.correlation_id = correlation_id
     
-    def _log(self, level: str, message: str, **kwargs):
+    def _log(self, level: str, message: str, **kwargs: Any):
         """Internal log method with correlation ID."""
-        extra = kwargs.copy()
+        extra: Dict[str, Any] = kwargs.copy()
         if self.correlation_id:
             extra["correlation_id"] = self.correlation_id
         
         getattr(self.logger, level.lower())(message, extra=extra)
     
-    def debug(self, message: str, **kwargs):
+    def debug(self, message: str, **kwargs: Any):
         """Log debug message."""
         self._log("DEBUG", message, **kwargs)
     
-    def info(self, message: str, **kwargs):
+    def info(self, message: str, **kwargs: Any):
         """Log info message."""
         self._log("INFO", message, **kwargs)
     
-    def warning(self, message: str, **kwargs):
+    def warning(self, message: str, **kwargs: Any):
         """Log warning message."""
         self._log("WARNING", message, **kwargs)
     
-    def error(self, message: str, **kwargs):
+    def error(self, message: str, **kwargs: Any):
         """Log error message."""
         self._log("ERROR", message, **kwargs)
     
-    def critical(self, message: str, **kwargs):
+    def critical(self, message: str, **kwargs: Any):
         """Log critical message."""
         self._log("CRITICAL", message, **kwargs)
 

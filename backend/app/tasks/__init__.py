@@ -5,8 +5,8 @@ Contains Celery tasks for AI processing, PDF generation, notifications, and expo
 
 from app.tasks.ai_tasks import (
     generate_itinerary_async,
-    generate_daily_cost_report,
-    optimize_ai_models
+    optimize_itinerary_async,
+    generate_daily_cost_report
 )
 
 from app.tasks.pdf_tasks import (
