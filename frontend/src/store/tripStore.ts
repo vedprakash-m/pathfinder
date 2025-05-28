@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { Trip, TripFilters, ApiError } from '@/types';
 
-interface TripState {
+export interface TripState {
   trips: Trip[];
   currentTrip: Trip | null;
   filters: TripFilters;
@@ -28,7 +28,7 @@ const initialFilters: TripFilters = {
   family_id: undefined,
 };
 
-export const useTripStore = create<TripState>()((set, get) => ({
+export const useTripStore = create<TripState>()((set) => ({
   trips: [],
   currentTrip: null,
   filters: initialFilters,

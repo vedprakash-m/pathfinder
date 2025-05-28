@@ -126,7 +126,9 @@ export class WebSocketService {
   // Send a message
   send<T = any>(type: string, payload: T, roomId?: string): void {
     const message: WebSocketMessage<T> = {
+      type: 'trip_update', // Default type, can be overridden
       message_type: type,
+      data: payload,
       payload,
       room_id: roomId,
       timestamp: new Date().toISOString()

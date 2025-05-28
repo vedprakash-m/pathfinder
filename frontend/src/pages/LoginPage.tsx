@@ -5,15 +5,12 @@ import { motion } from 'framer-motion';
 import {
   Card,
   CardHeader,
-  CardContent,
   Button,
   Title1,
-  Title2,
   Body1,
   Body2,
   Input,
   Field,
-  // Use regular Input for password as PasswordInput might not be available in this version
 } from '@fluentui/react-components';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useFormValidation } from '@/hooks/useFormValidation';
@@ -32,7 +29,6 @@ export const LoginPage: React.FC = () => {
   // Initialize form validation
   const {
     formData,
-    errors,
     updateFormData,
     validateAll,
     getFieldState,
@@ -120,7 +116,7 @@ export const LoginPage: React.FC = () => {
             </motion.div>
           </CardHeader>
 
-          <CardContent className="space-y-6">
+          <div className="p-6 space-y-6">
             {auth0Error && (
               <motion.div
                 initial={{ opacity: 0, x: -10 }}
@@ -225,7 +221,7 @@ export const LoginPage: React.FC = () => {
                 </a>
               </Body2>
             </div>
-          </CardContent>
+          </div>
         </Card>
 
         <motion.div

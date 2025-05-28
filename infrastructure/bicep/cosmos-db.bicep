@@ -165,7 +165,7 @@ resource aiCacheContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/co
             path: '/response/*'
           }
         ]
-      },
+      }
       defaultTtl: 86400  // 24 hours
     }
   }

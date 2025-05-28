@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 import {
   Card,
   CardHeader,
-  CardContent,
   Button,
   Title1,
   Title2,
@@ -80,7 +79,7 @@ const TripCard: React.FC<{ trip: Trip }> = ({ trip }) => {
               <StatusBadge status={trip.status} />
             </div>
           </CardHeader>
-          <CardContent>
+          <div className="p-6">
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-neutral-600">
                 <CalendarIcon className="w-4 h-4" />
@@ -112,7 +111,7 @@ const TripCard: React.FC<{ trip: Trip }> = ({ trip }) => {
                 </div>
               )}
             </div>
-          </CardContent>
+          </div>
         </Link>
       </Card>
     </motion.div>
@@ -125,24 +124,26 @@ export const TripsPage: React.FC = () => {
 
   const { data: trips, isLoading, error } = useQuery({
     queryKey: ['trips'],
-    queryFn: tripService.getUserTrips,
+    queryFn: () => tripService.getUserTrips(),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  const filteredTrips = trips?.filter(trip => {
+  const tripsData = trips?.data?.items || [];
+  
+  const filteredTrips = tripsData.filter((trip: any) => {
     const matchesSearch = trip.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          trip.destination.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || trip.status === statusFilter;
     return matchesSearch && matchesStatus;
-  }) || [];
-
-  const upcomingTrips = filteredTrips.filter(trip => {
-    const tripDate = new Date(trip.start_date);
-    const today = new Date();
-    return tripDate >= today && trip.status !== 'cancelled';
   });
 
-  const pastTrips = filteredTrips.filter(trip => {
+  const upcomingTrips = filteredTrips.filter((trip: any) => {
+    const tripDate = new Date(trip.start_date);
+    const today = new Date();
+    return tripDate >= today && trip.status !== 'completed' && trip.status !== 'cancelled';
+  });
+
+  const pastTrips = filteredTrips.filter((trip: any) => {
     const tripDate = new Date(trip.start_date);
     const today = new Date();
     return tripDate < today || trip.status === 'completed';
@@ -180,11 +181,10 @@ export const TripsPage: React.FC = () => {
         className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
       >
         <div>
-          <Title1 className="text-neutral-900 mb-2">Your Trips</Title1>
-          <Body1 className="text-neutral-600">
-            {trips?.length === 0 
-              ? "Start planning your first adventure" 
-              : `${trips?.length} ${trips?.length === 1 ? 'trip' : 'trips'} total`
+          <Title1 className="text-neutral-900 mb-2">Your Trips</Title1>          <Body1 className="text-neutral-600">
+            {tripsData?.length === 0
+              ? "Start planning your first adventure"
+              : `${tripsData?.length} ${tripsData?.length === 1 ? 'trip' : 'trips'} total`
             }
           </Body1>
         </div>
@@ -200,14 +200,14 @@ export const TripsPage: React.FC = () => {
       </motion.div>
 
       {/* Filters */}
-      {trips && trips.length > 0 && (
+      {tripsData && tripsData.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
         >
           <Card>
-            <CardContent>
+            <div className="p-6">
               <div className="flex flex-col sm:flex-row gap-4">
                 <div className="flex-1">
                   <Input
@@ -233,7 +233,7 @@ export const TripsPage: React.FC = () => {
                   </Dropdown>
                 </div>
               </div>
-            </CardContent>
+            </div>
           </Card>
         </motion.div>
       )}
@@ -285,7 +285,7 @@ export const TripsPage: React.FC = () => {
       )}
 
       {/* Empty State */}
-      {filteredTrips.length === 0 && trips && trips.length > 0 && (
+      {filteredTrips.length === 0 && tripsData && tripsData.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -309,7 +309,7 @@ export const TripsPage: React.FC = () => {
       )}
 
       {/* No Trips Empty State */}
-      {trips?.length === 0 && (
+      {tripsData?.length === 0 && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

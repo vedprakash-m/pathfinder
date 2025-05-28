@@ -87,10 +87,7 @@ const createApiClient = (baseURL: string = '/api'): AxiosInstance => {
       timings.set(requestId, performance.now());
       
       // Store the request ID on the config object
-      config.headers = {
-        ...config.headers,
-        'X-Request-Id': requestId,
-      };
+      config.headers.set('X-Request-Id', requestId);
       
       return config;
     },
