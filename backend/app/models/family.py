@@ -9,7 +9,7 @@ from uuid import uuid4
 
 from sqlalchemy import Boolean, Column, DateTime, Enum as SQLEnum, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import relationship
-from pydantic import BaseModel, validator
+from pydantic import BaseModel
 
 from app.core.database import Base, GUID
 
@@ -19,6 +19,14 @@ class FamilyRole(str, Enum):
     COORDINATOR = "coordinator"
     ADULT = "adult"
     CHILD = "child"
+
+
+class InvitationStatus(str, Enum):
+    """Family invitation status."""
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    DECLINED = "declined"
+    EXPIRED = "expired"
 
 
 class Family(Base):
@@ -37,8 +45,9 @@ class Family(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
     # Relationships
-    admin = relationship("User", foreign_keys=[admin_user_id], back_populates="administered_families")
+    admin = relationship("User", foreign_keys="Family.admin_user_id", back_populates="administered_families")
     members = relationship("FamilyMember", back_populates="family", cascade="all, delete-orphan")
+    invitations = relationship("FamilyInvitationModel", back_populates="family", cascade="all, delete-orphan")
     trip_participations = relationship("TripParticipation", back_populates="family")
     reservations = relationship("Reservation", back_populates="family")
     notifications = relationship("Notification", back_populates="family")
@@ -65,6 +74,29 @@ class FamilyMember(Base):
     # Relationships
     family = relationship("Family", back_populates="members")
     user = relationship("User", back_populates="family_memberships")
+
+
+class FamilyInvitationModel(Base):
+    """Family invitation model for SQLAlchemy."""
+    
+    __tablename__ = "family_invitations"
+    
+    id = Column(GUID(), primary_key=True, default=uuid4)
+    family_id = Column(GUID(), ForeignKey("families.id"), nullable=False)
+    invited_by = Column(GUID(), ForeignKey("users.id"), nullable=False)
+    email = Column(String(255), nullable=False)
+    role = Column(SQLEnum(FamilyRole), nullable=False, default=FamilyRole.ADULT)
+    status = Column(SQLEnum(InvitationStatus), nullable=False, default=InvitationStatus.PENDING)
+    invitation_token = Column(String(255), nullable=False, unique=True)
+    message = Column(Text, nullable=True)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    accepted_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # Relationships
+    family = relationship("Family", back_populates="invitations")
+    inviter = relationship("User")
 
 
 # Pydantic models for API
@@ -161,13 +193,10 @@ class FamilyResponse(FamilyBase):
 class FamilyDetail(FamilyResponse):
     """Detailed family model with members."""
     members: List[FamilyMemberResponse] = []
-    
-    class Config:
-        from_attributes = True
 
 
-class FamilyInvitation(BaseModel):
-    """Family invitation model."""
+class FamilyInvitationBase(BaseModel):
+    """Base family invitation model."""
     family_id: str
     email: str
     role: FamilyRole
@@ -175,7 +204,21 @@ class FamilyInvitation(BaseModel):
     expires_at: datetime
 
 
-class FamilyInvitationResponse(FamilyInvitation):
+class FamilyInvitationCreate(FamilyInvitationBase):
+    """Family invitation creation model."""
+    pass
+
+
+class FamilyInvitationUpdate(BaseModel):
+    """Family invitation update model."""
+    email: Optional[str] = None
+    role: Optional[FamilyRole] = None
+    message: Optional[str] = None
+    expires_at: Optional[datetime] = None
+    status: Optional[InvitationStatus] = None
+
+
+class FamilyInvitationResponse(FamilyInvitationBase):
     """Family invitation response model."""
     id: str
     invited_by: str

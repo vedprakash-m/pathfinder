@@ -54,12 +54,14 @@ Organizing trips with multiple families is a logistical nightmare:
 - **Transparent Costs**: See exactly what you're paying for and when
 - **Real-Time Updates**: Stay informed without drowning in notifications
 - **Emergency Ready**: Quick access to trip details and emergency contacts
+- **Easy Onboarding**: Join families through secure email invitations with one-click acceptance
 
 ### **🚀 For Everyone**
 - **Smart Recommendations**: AI learns from successful trips to improve suggestions
 - **Flexibility**: Easy to modify plans as circumstances change
 - **Accessibility**: Works seamlessly on phones, tablets, and computers
 - **Memory Preservation**: Beautiful trip summaries and photo collections
+- **Family Management**: Create and manage family groups with role-based permissions and invitation system
 
 ### **🔒 Enterprise-Grade Reliability**
 - **99.9% Uptime**: Hosted on Microsoft Azure with professional monitoring
