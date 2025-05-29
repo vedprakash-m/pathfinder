@@ -173,6 +173,41 @@ class EmailNotificationService:
                 <p>Pathfinder Monitoring System</p>
             </body>
             </html>
+            ''',
+            
+            'family_invitation': '''
+            <html>
+            <body>
+                <h2>You're Invited to Join a Family on Pathfinder!</h2>
+                <p>Hello!</p>
+                <p><strong>{{ inviter_name }}</strong> has invited you to join the "<strong>{{ family_name }}</strong>" family on Pathfinder.</p>
+                
+                {% if message %}
+                <div style="background: #e7f3ff; padding: 15px; margin: 20px 0; border-left: 4px solid #007bff;">
+                    <h4>Personal Message:</h4>
+                    <p style="font-style: italic;">"{{ message }}"</p>
+                </div>
+                {% endif %}
+                
+                <div style="background: #f5f5f5; padding: 20px; margin: 20px 0;">
+                    <h3>About Family Groups on Pathfinder:</h3>
+                    <ul>
+                        <li>Plan amazing trips together with your family</li>
+                        <li>Get AI-powered itinerary suggestions tailored to your family's preferences</li>
+                        <li>Collaborate on trip planning with real-time updates</li>
+                        <li>Keep track of everyone's dietary restrictions and accessibility needs</li>
+                        <li>Share memories and photos from your adventures</li>
+                    </ul>
+                </div>
+                
+                <p>Click the link below to accept the invitation and start planning your next family adventure:</p>
+                <p><a href="{{ invitation_link }}" style="background: #28a745; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Accept Family Invitation</a></p>
+                
+                <p style="color: #666; font-size: 14px;">This invitation will expire in 7 days. If you don't have a Pathfinder account yet, you'll be guided through creating one during the acceptance process.</p>
+                
+                <p>Best regards,<br>The Pathfinder Team</p>
+            </body>
+            </html>
             '''
         }
         
@@ -222,6 +257,51 @@ class EmailNotificationService:
             logger.error(f"Failed to send trip invitation: {e}")
             return False
     
+    async def send_family_invitation(
+        self,
+        recipient_email: str,
+        family_name: str,
+        inviter_name: str,
+        invitation_link: str,
+        message: Optional[str] = None
+    ) -> bool:
+        """Send family invitation email."""
+        
+        try:
+            # Track the operation (fixed to not use await)
+            monitoring.track_ai_operation("email_family_invitation", 0)
+            
+            if self.template_env:
+                template = self.template_env.get_template('family_invitation')
+                html_content = template.render(
+                    family_name=family_name,
+                    inviter_name=inviter_name,
+                    invitation_link=invitation_link,
+                    message=message
+                )
+                
+                subject = f"Family Invitation: Join {family_name} on Pathfinder"
+                
+                success = await self._send_email(
+                    to_email=recipient_email,
+                    to_name="",  # We may not have the recipient's name yet
+                    subject=subject,
+                    html_content=html_content,
+                    email_type="family_invitation"
+                )
+                
+                if success:
+                    logger.info(f"Family invitation sent to {recipient_email} for family {family_name}")
+                
+                return success
+            else:
+                logger.error("Email templates not initialized")
+                return False
+            
+        except Exception as e:
+            logger.error(f"Failed to send family invitation: {e}")
+            return False
+
     async def send_itinerary_ready_notification(
         self,
         recipient_email: str,
@@ -573,6 +653,47 @@ class EmailNotificationService:
             
         except Exception as e:
             logger.error(f"SMTP attachment send error: {e}")
+            return False
+    
+    async def send_family_invitation(
+        self,
+        recipient_email: str,
+        family_name: str,
+        inviter_name: str,
+        invitation_link: str,
+        message: Optional[str] = None
+    ) -> bool:
+        """Send family invitation email."""
+        
+        try:
+            # Track the operation
+            await monitoring.track_ai_operation("email_family_invitation", 0)
+            
+            template = self.template_env.get_template('family_invitation')
+            html_content = template.render(
+                family_name=family_name,
+                inviter_name=inviter_name,
+                invitation_link=invitation_link,
+                message=message
+            )
+            
+            subject = f"Family Invitation: Join {family_name} on Pathfinder"
+            
+            success = await self._send_email(
+                to_email=recipient_email,
+                to_name="",  # We may not have the recipient's name yet
+                subject=subject,
+                html_content=html_content,
+                email_type="family_invitation"
+            )
+            
+            if success:
+                logger.info(f"Family invitation sent to {recipient_email} for family {family_name}")
+            
+            return success
+            
+        except Exception as e:
+            logger.error(f"Failed to send family invitation: {e}")
             return False
 
 
