@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
@@ -26,6 +26,10 @@ import {
 } from '@heroicons/react/24/outline';
 import { tripService } from '@/services/tripService';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { TripChat } from '@/components/chat/TripChat';
+import { TripFamilies } from '@/components/trip/TripFamilies';
+import { TripBudget } from '@/components/trip/TripBudget';
+import { TripItinerary } from '@/components/trip/TripItinerary';
 import type { TripStatus } from '@/types';
 
 const StatusBadge: React.FC<{ status: TripStatus }> = ({ status }) => {
@@ -69,7 +73,8 @@ const TripHeader: React.FC<{ trip: any }> = ({ trip }) => {
     return diffDays;
   };
 
-  const daysUntil = getDaysUntilTrip(trip.start_date);
+  const tripData = trip.data || trip; // Handle both ApiResponse<Trip> and Trip
+  const daysUntil = getDaysUntilTrip(tripData.start_date);
 
   return (
     <motion.div
@@ -82,36 +87,36 @@ const TripHeader: React.FC<{ trip: any }> = ({ trip }) => {
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
-                <Title1 className="text-neutral-900">{trip.name}</Title1>
-                <StatusBadge status={trip.status} />
+                <Title1 className="text-neutral-900">{tripData.name}</Title1>
+                <StatusBadge status={tripData.status} />
               </div>
               
               <div className="flex flex-wrap items-center gap-4 text-neutral-600 mb-4">
                 <div className="flex items-center gap-2">
                   <MapPinIcon className="w-5 h-5" />
-                  <Body1>{trip.destination}</Body1>
+                  <Body1>{tripData.destination}</Body1>
                 </div>
                 <div className="flex items-center gap-2">
                   <CalendarIcon className="w-5 h-5" />
                   <Body1>
-                    {formatDate(trip.start_date)} - {formatDate(trip.end_date)}
+                    {formatDate(tripData.start_date)} - {formatDate(tripData.end_date)}
                   </Body1>
                 </div>
                 <div className="flex items-center gap-2">
                   <UsersIcon className="w-5 h-5" />
                   <Body1>
-                    {trip.confirmed_families} of {trip.family_count} families
+                    {tripData.confirmed_families} of {tripData.family_count} families
                   </Body1>
                 </div>
-                {trip.budget_total && (
+                {tripData.budget_total && (
                   <div className="flex items-center gap-2">
                     <CurrencyDollarIcon className="w-5 h-5" />
-                    <Body1>${trip.budget_total.toLocaleString()} budget</Body1>
+                    <Body1>${tripData.budget_total.toLocaleString()} budget</Body1>
                   </div>
                 )}
               </div>
 
-              {daysUntil > 0 && trip.status !== 'completed' && trip.status !== 'cancelled' && (
+              {daysUntil > 0 && tripData.status !== 'completed' && tripData.status !== 'cancelled' && (
                 <div className="flex items-center gap-2 text-primary-600 mb-4">
                   <Body1 className="font-medium">
                     {daysUntil === 1 ? 'Trip starts tomorrow!' : `Trip starts in ${daysUntil} days`}
@@ -119,8 +124,8 @@ const TripHeader: React.FC<{ trip: any }> = ({ trip }) => {
                 </div>
               )}
 
-              {trip.description && (
-                <Body1 className="text-neutral-600">{trip.description}</Body1>
+              {tripData.description && (
+                <Body1 className="text-neutral-600">{tripData.description}</Body1>
               )}
             </div>
 
@@ -152,6 +157,8 @@ const TripHeader: React.FC<{ trip: any }> = ({ trip }) => {
 };
 
 const TripOverview: React.FC<{ trip: any }> = ({ trip }) => {
+  const tripData = trip.data || trip; // Handle both ApiResponse<Trip> and Trip
+  
   return (
     <div className="grid lg:grid-cols-3 gap-6">
       {/* Trip Details */}
@@ -170,22 +177,22 @@ const TripOverview: React.FC<{ trip: any }> = ({ trip }) => {
                 <div>
                   <Body2 className="font-medium text-neutral-700">Description</Body2>
                   <Body1 className="text-neutral-600 mt-1">
-                    {trip.description || 'No description provided'}
+                    {tripData.description || 'No description provided'}
                   </Body1>
                 </div>
                 
                 <div>
                   <Body2 className="font-medium text-neutral-700">Duration</Body2>
                   <Body1 className="text-neutral-600 mt-1">
-                    {Math.ceil((new Date(trip.end_date).getTime() - new Date(trip.start_date).getTime()) / (1000 * 60 * 60 * 24))} days
+                    {Math.ceil((new Date(tripData.end_date).getTime() - new Date(tripData.start_date).getTime()) / (1000 * 60 * 60 * 24))} days
                   </Body1>
                 </div>
 
-                {trip.preferences && (
+                {tripData.preferences && (
                   <div>
                     <Body2 className="font-medium text-neutral-700">Preferences</Body2>
                     <div className="mt-2 flex flex-wrap gap-2">
-                      {Object.entries(trip.preferences).map(([key, value]) => (
+                      {Object.entries(tripData.preferences).map(([key, value]) => (
                         <Badge key={key} className="capitalize">
                           {key}: {String(value)}
                         </Badge>
@@ -238,7 +245,7 @@ const TripOverview: React.FC<{ trip: any }> = ({ trip }) => {
               <div className="space-y-3">
                 <div className="text-center py-4">
                   <Body1 className="text-neutral-600">
-                    {trip.confirmed_families} confirmed families
+                    {tripData.confirmed_families} confirmed families
                   </Body1>
                 </div>
                 <Button appearance="outline" className="w-full">
@@ -250,7 +257,7 @@ const TripOverview: React.FC<{ trip: any }> = ({ trip }) => {
         </motion.div>
 
         {/* Budget Summary */}
-        {trip.budget_total && (
+        {tripData.budget_total && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -264,12 +271,12 @@ const TripOverview: React.FC<{ trip: any }> = ({ trip }) => {
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <Body2 className="text-neutral-600">Total Budget</Body2>
-                    <Body2 className="font-medium">${trip.budget_total.toLocaleString()}</Body2>
+                    <Body2 className="font-medium">${tripData.budget_total.toLocaleString()}</Body2>
                   </div>
                   <div className="flex justify-between items-center">
                     <Body2 className="text-neutral-600">Per Family</Body2>
                     <Body2 className="font-medium">
-                      ${Math.round(trip.budget_total / Math.max(1, trip.family_count)).toLocaleString()}
+                      ${Math.round(tripData.budget_total / Math.max(1, tripData.family_count)).toLocaleString()}
                     </Body2>
                   </div>
                   <Button appearance="outline" className="w-full mt-4">
@@ -287,6 +294,7 @@ const TripOverview: React.FC<{ trip: any }> = ({ trip }) => {
 
 export const TripDetailPage: React.FC = () => {
   const { tripId } = useParams<{ tripId: string }>();
+  const [activeTab, setActiveTab] = useState('overview');
 
   const { data: trip, isLoading, error } = useQuery({
     queryKey: ['trip', tripId],
@@ -321,6 +329,135 @@ export const TripDetailPage: React.FC = () => {
     );
   }
 
+  // Mock data for demonstration - in real app this would come from API
+  const mockFamilies = [
+    {
+      id: '1',
+      name: 'The Smith Family',
+      status: 'confirmed' as const,
+      members: [
+        { id: '1', name: 'John Smith', email: 'john@smith.com', role: 'parent' as const },
+        { id: '2', name: 'Jane Smith', email: 'jane@smith.com', role: 'parent' as const },
+        { id: '3', name: 'Tommy Smith', email: '', role: 'child' as const },
+      ],
+      preferences: { 'dietary': 'vegetarian', 'activity_level': 'moderate' }
+    },
+    {
+      id: '2',
+      name: 'The Johnson Family',
+      status: 'pending' as const,
+      members: [
+        { id: '4', name: 'Mike Johnson', email: 'mike@johnson.com', role: 'parent' as const },
+        { id: '5', name: 'Sarah Johnson', email: 'sarah@johnson.com', role: 'parent' as const },
+      ],
+      preferences: { 'activity_level': 'high', 'accommodation': 'hotel' }
+    }
+  ];
+
+  const mockBudgetCategories = [
+    { id: '1', name: 'Transportation', allocated: 2000, spent: 1500, color: '#0088FE' },
+    { id: '2', name: 'Accommodation', allocated: 3000, spent: 2800, color: '#00C49F' },
+    { id: '3', name: 'Food & Dining', allocated: 1500, spent: 800, color: '#FFBB28' },
+    { id: '4', name: 'Activities', allocated: 1000, spent: 200, color: '#FF8042' },
+  ];
+
+  // Access trip data correctly
+  const tripData = trip.data || trip;
+
+  const mockItinerary = [
+    {
+      date: tripData.start_date,
+      activities: [
+        {
+          id: '1',
+          title: 'Airport Departure',
+          description: 'Flight from hometown to destination',
+          location: 'Local Airport',
+          start_time: `${tripData.start_date}T08:00:00`,
+          end_time: `${tripData.start_date}T10:00:00`,
+          category: 'transportation' as const,
+          estimated_cost: 500,
+          is_confirmed: true,
+        }
+      ]
+    }
+  ];
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'overview':
+        return <TripOverview trip={trip} />;
+      case 'itinerary':
+        return (
+          <TripItinerary
+            tripId={tripId}
+            startDate={tripData.start_date}
+            endDate={tripData.end_date}
+            itinerary={mockItinerary}
+            onAddActivity={(dayDate, activity) => {
+              console.log('Add activity:', dayDate, activity);
+            }}
+            onUpdateActivity={(activityId, updates) => {
+              console.log('Update activity:', activityId, updates);
+            }}
+            onDeleteActivity={(activityId) => {
+              console.log('Delete activity:', activityId);
+            }}
+            onGenerateItinerary={() => {
+              console.log('Generate AI itinerary');
+            }}
+          />
+        );
+      case 'families':
+        return (
+          <TripFamilies
+            families={mockFamilies}
+            tripId={tripId}
+            onInviteFamily={() => {
+              console.log('Invite family');
+            }}
+            onManageFamily={(familyId) => {
+              console.log('Manage family:', familyId);
+            }}
+          />
+        );
+      case 'budget':
+        return (
+          <TripBudget
+            tripId={tripId}
+            totalBudget={tripData.budget_total || 7500}
+            categories={mockBudgetCategories}
+            expenses={[]}
+            families={mockFamilies}
+            onUpdateBudget={(newBudget) => {
+              console.log('Update budget:', newBudget);
+            }}
+            onAddCategory={(category) => {
+              console.log('Add category:', category);
+            }}
+            onUpdateCategory={(categoryId, updates) => {
+              console.log('Update category:', categoryId, updates);
+            }}
+            onDeleteCategory={(categoryId) => {
+              console.log('Delete category:', categoryId);
+            }}
+            onAddExpense={(expense) => {
+              console.log('Add expense:', expense);
+            }}
+          />
+        );
+      case 'chat':
+        return (
+          <TripChat
+            tripId={tripId}
+            tripName={tripData.name}
+          />
+        );
+      default:
+        return <TripOverview trip={trip} />;
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Breadcrumb */}
@@ -334,7 +471,7 @@ export const TripDetailPage: React.FC = () => {
           <Body2>Trips</Body2>
         </Link>
         <Body2>/</Body2>
-        <Body2 className="text-neutral-900">{trip.data?.name || 'Trip Details'}</Body2>
+        <Body2 className="text-neutral-900">{tripData.name || 'Trip Details'}</Body2>
       </motion.div>
 
       {/* Trip Header */}
@@ -346,17 +483,28 @@ export const TripDetailPage: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.1 }}
       >
-        <TabList defaultSelectedValue="overview">
-          <Tab value="overview">Overview</Tab>
-          <Tab value="itinerary">Itinerary</Tab>
-          <Tab value="families">Families</Tab>
-          <Tab value="budget">Budget</Tab>
-          <Tab value="chat">Chat</Tab>
-        </TabList>
+        <Card>
+          <div className="p-4">
+            <TabList selectedValue={activeTab} onTabSelect={(_, data) => setActiveTab(data.value as string)}>
+              <Tab value="overview">Overview</Tab>
+              <Tab value="itinerary">Itinerary</Tab>
+              <Tab value="families">Families</Tab>
+              <Tab value="budget">Budget</Tab>
+              <Tab value="chat">Chat</Tab>
+            </TabList>
+          </div>
+        </Card>
       </motion.div>
 
-      {/* Trip Content */}
-      <TripOverview trip={trip} />
+      {/* Tab Content */}
+      <motion.div
+        key={activeTab}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+      >
+        {renderTabContent()}
+      </motion.div>
     </div>
   );
 };
