@@ -111,7 +111,7 @@ export class NotificationService {
       const subscription = await sw.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: this.urlBase64ToUint8Array(
-          import.meta.env.VITE_VAPID_PUBLIC_KEY as string
+          'your-vapid-public-key' // TODO: Replace with actual VAPID key
         ),
       });
       

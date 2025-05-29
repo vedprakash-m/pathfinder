@@ -1,11 +1,12 @@
+# filepath: /Users/vedprakashmishra/pathfinder/backend/app/services/ai_service.py
 """
-Enhanced AI service for itinerary generation using OpenAI models.
+AI service for itinerary generation using OpenAI models.
 Enhanced with advanced cost optimization and multi-family preference handling.
 """
 
 import json
 import hashlib
-from datetime import datetime
+from datetime import datetime, date
 from typing import Dict, List, Optional, Any, Union
 import asyncio
 from collections import Counter
@@ -13,10 +14,7 @@ from collections import Counter
 import openai
 from openai import OpenAI
 import tiktoken
-try:
-    import redis.asyncio as redis
-except ImportError:
-    redis = None
+import redis.asyncio as redis
 
 from app.core.config import get_settings
 from app.core.logging_config import create_logger
@@ -27,13 +25,17 @@ logger = create_logger(__name__)
 # Initialize OpenAI client
 client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
-
 # Enhanced cache service
 class AICache:
     """Redis-based caching for AI responses with intelligent cache key generation."""
     
     def __init__(self):
-        self.redis = redis.Redis.from_url(settings.REDIS_URL) if redis and hasattr(settings, 'REDIS_URL') else None
+        self.redis: Optional[redis.Redis] = None
+        if hasattr(settings, 'REDIS_URL'):
+            try:
+                self.redis = redis.Redis.from_url(settings.REDIS_URL)
+            except Exception:
+                self.redis = None
         self.local_cache: Dict[str, Any] = {}  # Fallback local cache
         
     def _generate_cache_key(self, prompt: str, model: str, preferences: Dict[str, Any]) -> str:
@@ -48,30 +50,28 @@ class AICache:
             if self.redis:
                 cached = await self.redis.get(cache_key)
                 if cached:
-                    cached_str = cached.decode('utf-8') if isinstance(cached, bytes) else str(cached)
-                    return json.loads(cached_str)
+                    return json.loads(cached.decode() if isinstance(cached, bytes) else cached)
             
             # Fallback to local cache
             return self.local_cache.get(cache_key)
         except Exception as e:
-            logger.warning(f"Cache get error: {e}")
+            logger.warning(f"Cache retrieval failed: {e}")
             return None
     
     async def set(self, cache_key: str, data: Dict[str, Any], ttl: int = 3600) -> None:
-        """Set cached response with TTL."""
+        """Cache response with TTL."""
         try:
             if self.redis:
                 await self.redis.setex(cache_key, ttl, json.dumps(data))
             
-            # Always cache locally as backup
+            # Also store in local cache
             self.local_cache[cache_key] = data
         except Exception as e:
-            logger.warning(f"Cache set error: {e}")
+            logger.warning(f"Cache storage failed: {e}")
 
 
-# Enhanced cost tracking with per-model analytics
 class CostTracker:
-    """Track API costs and usage patterns with model-specific analytics."""
+    """Enhanced cost tracker with budget enforcement and analytics."""
     
     # Updated pricing per 1K tokens (as of 2025)
     MODEL_COSTS = {
@@ -83,7 +83,7 @@ class CostTracker:
     def __init__(self):
         self.daily_usage: Dict[str, Dict[str, Any]] = {}
         self.usage_patterns: Dict[str, Dict[str, Any]] = {}
-        
+    
     def calculate_cost(self, model: str, input_tokens: int, output_tokens: int) -> float:
         """Calculate cost for token usage."""
         if model not in self.MODEL_COSTS:
@@ -95,47 +95,50 @@ class CostTracker:
         output_cost = (output_tokens / 1000) * costs["output"]
         
         return input_cost + output_cost
-        
-    def track_usage(self, model: str, input_tokens: int, output_tokens: int, request_type: str = "general") -> float:
-        """Track usage and return cost."""
-        cost = self.calculate_cost(model, input_tokens, output_tokens)
+    
+    def track_usage(self, model: str, input_tokens: int, output_tokens: int, 
+                   request_type: str = "general") -> float:
+        """Enhanced usage tracking with request type categorization."""
         today = datetime.now().date().isoformat()
+        cost = self.calculate_cost(model, input_tokens, output_tokens)
         
-        # Initialize daily tracking
         if today not in self.daily_usage:
             self.daily_usage[today] = {
-                "cost": 0.0,
-                "requests": 0,
+                "cost": 0.0, 
+                "requests": 0, 
                 "models": {},
                 "request_types": {}
             }
         
-        # Update daily totals
         self.daily_usage[today]["cost"] += cost
         self.daily_usage[today]["requests"] += 1
         
         # Track by model
         if model not in self.daily_usage[today]["models"]:
             self.daily_usage[today]["models"][model] = {"cost": 0.0, "requests": 0}
-            
         self.daily_usage[today]["models"][model]["cost"] += cost
         self.daily_usage[today]["models"][model]["requests"] += 1
         
         # Track by request type
         if request_type not in self.daily_usage[today]["request_types"]:
             self.daily_usage[today]["request_types"][request_type] = {"cost": 0.0, "requests": 0}
-            
         self.daily_usage[today]["request_types"][request_type]["cost"] += cost
         self.daily_usage[today]["request_types"][request_type]["requests"] += 1
         
-        # Log usage pattern
+        # Store usage patterns for optimization
         self.usage_patterns[datetime.now().isoformat()] = {
             "model": model,
-            "tokens": input_tokens + output_tokens,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
             "cost": cost,
-            "request_type": request_type,
-            "daily_total": self.daily_usage[today]["cost"]
+            "request_type": request_type
         }
+        
+        logger.info(
+            f"AI usage tracked: model={model}, input_tokens={input_tokens}, "
+            f"output_tokens={output_tokens}, cost={cost}, request_type={request_type}, "
+            f"daily_total={self.daily_usage[today]['cost']}"
+        )
         
         return cost
     
@@ -146,21 +149,22 @@ class CostTracker:
             return True
         
         daily_cost = self.daily_usage[today]["cost"]
-        daily_budget_limit = getattr(settings, 'AI_DAILY_BUDGET_LIMIT', 50.0)
         
         # Check overall daily limit
-        if daily_cost >= daily_budget_limit:
+        daily_limit = getattr(settings, 'AI_DAILY_BUDGET_LIMIT', 50.0)
+        if daily_cost >= daily_limit:
             return False
         
         # Check request-type specific limits
         request_type_limits = {
-            "itinerary_generation": daily_budget_limit * 0.6,  # 60% for itinerary generation
-            "optimization": daily_budget_limit * 0.2,  # 20% for optimization
-            "general": daily_budget_limit * 0.2  # 20% for other requests
+            "itinerary_generation": daily_limit * 0.6,  # 60% for itinerary generation
+            "optimization": daily_limit * 0.2,  # 20% for optimization
+            "general": daily_limit * 0.2  # 20% for other requests
         }
         
         if request_type in request_type_limits:
-            type_cost = self.daily_usage[today]["request_types"].get(request_type, {}).get("cost", 0)
+            type_usage = self.daily_usage[today]["request_types"].get(request_type, {"cost": 0.0})
+            type_cost = type_usage["cost"]
             if type_cost >= request_type_limits[request_type]:
                 return False
         
@@ -189,8 +193,8 @@ class CostTracker:
             suggestions.append("High request volume detected - ensure caching is enabled")
         
         # Budget warnings
-        daily_budget_limit = getattr(settings, 'AI_DAILY_BUDGET_LIMIT', 50.0)
-        if usage["cost"] > daily_budget_limit * 0.8:
+        daily_limit = getattr(settings, 'AI_DAILY_BUDGET_LIMIT', 50.0)
+        if usage["cost"] > daily_limit * 0.8:
             suggestions.append("Approaching daily budget limit - consider request optimization")
         
         return suggestions
@@ -214,14 +218,11 @@ class MultiFamilyPreferenceEngine:
         
         for family in families_data:
             family_prefs = family.get("preferences", {})
-            if isinstance(family_prefs.get("activities"), list):
-                all_activities.extend(family_prefs.get("activities", []))
+            all_activities.extend(family_prefs.get("activities", []))
             
             for member in family.get("members", []):
-                if isinstance(member.get("dietary_restrictions"), list):
-                    all_dietary.extend(member.get("dietary_restrictions", []))
-                if isinstance(member.get("accessibility_needs"), list):
-                    all_accessibility.extend(member.get("accessibility_needs", []))
+                all_dietary.extend(member.get("dietary_restrictions", []))
+                all_accessibility.extend(member.get("accessibility_needs", []))
             
             if "budget_level" in family_prefs:
                 budget_levels.append(family_prefs["budget_level"])
@@ -229,6 +230,7 @@ class MultiFamilyPreferenceEngine:
                 travel_styles.append(family_prefs["travel_style"])
         
         # Find common ground and create unified preferences
+        # Count frequency of each preference
         activity_counts = Counter(all_activities)
         
         # Select activities preferred by at least 30% of families
@@ -238,17 +240,15 @@ class MultiFamilyPreferenceEngine:
         
         # Handle budget level conflicts (take conservative approach)
         budget_priority = {"low": 1, "medium": 2, "high": 3}
+        unified_budget = "medium"
         if budget_levels:
             unified_budget = min(budget_levels, key=lambda x: budget_priority.get(x, 2))
-        else:
-            unified_budget = "medium"
         
         # Handle travel style (take most relaxed approach for families)
         style_priority = {"relaxed": 1, "moderate": 2, "active": 3}
+        unified_style = "moderate"
         if travel_styles:
             unified_style = min(travel_styles, key=lambda x: style_priority.get(x, 2))
-        else:
-            unified_style = "moderate"
         
         return {
             "unified_activities": popular_activities,
@@ -302,17 +302,18 @@ class ItineraryPrompts:
             family_size = len(family.get("members", []))
             
             ages = [str(member.get("age", "adult")) for member in family.get("members", [])]
-            dietary_lists = [member.get("dietary_restrictions", []) for member in family.get("members", [])]
-            dietary_flat = [item for sublist in dietary_lists for item in sublist if isinstance(sublist, list)]
+            dietary_items = []
+            accessibility_items = []
             
-            accessibility_lists = [member.get("accessibility_needs", []) for member in family.get("members", [])]
-            accessibility_flat = [item for sublist in accessibility_lists for item in sublist if isinstance(sublist, list)]
+            for member in family.get("members", []):
+                dietary_items.extend(member.get("dietary_restrictions", []))
+                accessibility_items.extend(member.get("accessibility_needs", []))
             
             family_info.append(f"""
             Family {i} ({family.get('name', 'Unknown')}): {family_size} members
             - Ages: {', '.join(ages)}
-            - Dietary restrictions: {', '.join(dietary_flat) if dietary_flat else 'None'}
-            - Accessibility needs: {', '.join(accessibility_flat) if accessibility_flat else 'None'}
+            - Dietary restrictions: {', '.join(dietary_items) or 'None'}
+            - Accessibility needs: {', '.join(accessibility_items) or 'None'}
             - Preferences: {family.get('preferences', {})}
             """)
         
@@ -354,39 +355,11 @@ class ItineraryPrompts:
         
         {conflict_notes}
         
-        SPECIAL INSTRUCTIONS FOR MULTI-FAMILY TRIPS:
-        1. Include both group activities and family-specific options
-        2. Provide logistics notes for coordinating multiple families
-        3. Suggest meeting points and communication strategies
-        4. Include backup indoor activities for weather issues
-        5. Consider different energy levels and interests within the group
-        6. Provide cost splitting suggestions where applicable
+        Please provide a comprehensive itinerary in JSON format with detailed structure including 
+        overview, daily_itinerary, budget_summary, logistics, and multi_family_considerations.
         
-        Please provide a comprehensive itinerary in JSON format with this enhanced structure:
-        {{
-            "overview": {{
-                "destination": "{destination}",
-                "duration": {duration_days},
-                "total_participants": {total_participants},
-                "family_count": {len(families_data)},
-                "estimated_cost_per_person": 0,
-                "estimated_cost_per_family": 0,
-                "best_time_to_visit": "",
-                "weather_info": "",
-                "group_coordination_tips": [],
-                "travel_tips": []
-            }},
-            "daily_itinerary": [],
-            "budget_summary": {{}},
-            "logistics": {{}},
-            "packing_suggestions": {{}},
-            "important_notes": [],
-            "emergency_contacts": [],
-            "alternative_plans": {{}},
-            "multi_family_considerations": {{}}
-        }}
-        
-        Ensure all costs are realistic and based on current market rates.
+        Ensure all costs are realistic and based on current market rates. Include specific venue names, 
+        addresses when possible, and practical coordination tips for managing multiple families.
         """
         
         return prompt
@@ -398,12 +371,20 @@ class AIService:
     def __init__(self):
         self.cost_tracker = CostTracker()
         self.cache = AICache()
-        self.encoding = tiktoken.get_encoding("cl100k_base")
+        try:
+            self.encoding = tiktoken.get_encoding("cl100k_base")
+        except Exception:
+            # Fallback if tiktoken is not available
+            self.encoding = None
         self.preference_engine = MultiFamilyPreferenceEngine()
     
     def count_tokens(self, text: str) -> int:
         """Count tokens in text."""
-        return len(self.encoding.encode(text))
+        if self.encoding:
+            return len(self.encoding.encode(text))
+        else:
+            # Rough estimation: ~4 characters per token
+            return len(text) // 4
     
     def _select_optimal_model(self, request_type: str, input_tokens: int) -> str:
         """Select optimal model based on request type and complexity."""
@@ -444,11 +425,8 @@ class AIService:
             input_tokens = self.count_tokens(prompt)
             
             logger.info(
-                f"Generating itinerary for {destination}",
-                duration_days=duration_days,
-                families_count=len(families_data),
-                input_tokens=input_tokens,
-                user_id=user_id
+                f"Generating itinerary for {destination}: duration_days={duration_days}, "
+                f"families_count={len(families_data)}, input_tokens={input_tokens}, user_id={user_id}"
             )
             
             # Try primary model first (cost-optimized)
@@ -484,16 +462,14 @@ class AIService:
             }
             
             logger.info(
-                "Itinerary generated successfully",
-                destination=destination,
-                cost=response.get("cost", 0),
-                user_id=user_id
+                f"Itinerary generated successfully: destination={destination}, "
+                f"cost={response.get('cost', 0)}, user_id={user_id}"
             )
             
             return itinerary
             
         except Exception as e:
-            logger.error(f"Failed to generate itinerary: {e}", user_id=user_id)
+            logger.error(f"Failed to generate itinerary: {e}, user_id={user_id}")
             raise
     
     async def _make_api_call(
@@ -507,7 +483,7 @@ class AIService:
         try:
             max_tokens = getattr(settings, 'OPENAI_MAX_TOKENS', 4000)
             temperature = getattr(settings, 'OPENAI_TEMPERATURE', 0.7)
-            timeout_val = getattr(settings, 'OPENAI_TIMEOUT', 60)
+            timeout = getattr(settings, 'OPENAI_TIMEOUT', 60)
             
             response = await asyncio.to_thread(
                 client.chat.completions.create,
@@ -518,7 +494,7 @@ class AIService:
                 ],
                 max_tokens=max_tokens,
                 temperature=temperature,
-                timeout=timeout_val,
+                timeout=timeout,
                 response_format={"type": "json_object"}
             )
             
@@ -552,7 +528,7 @@ class AIService:
         try:
             content = response["content"]
             if not content:
-                raise ValueError("Empty response content")
+                raise ValueError("Empty response from AI service")
                 
             itinerary = json.loads(content)
             
@@ -560,11 +536,18 @@ class AIService:
             required_fields = ["overview", "daily_itinerary", "budget_summary"]
             for field in required_fields:
                 if field not in itinerary:
-                    raise ValueError(f"Missing required field: {field}")
+                    logger.warning(f"Missing field {field}, adding default")
+                    if field == "overview":
+                        itinerary[field] = {"destination": "Unknown", "duration": 0}
+                    elif field == "daily_itinerary":
+                        itinerary[field] = []
+                    elif field == "budget_summary":
+                        itinerary[field] = {"total_estimated_cost": 0}
             
             # Validate daily itinerary structure
             if not isinstance(itinerary["daily_itinerary"], list):
-                raise ValueError("Daily itinerary must be a list")
+                logger.warning("Daily itinerary is not a list, converting")
+                itinerary["daily_itinerary"] = []
             
             return itinerary
             
@@ -626,411 +609,68 @@ class AIService:
     def get_usage_stats(self) -> Dict[str, Any]:
         """Get current usage statistics."""
         today = datetime.now().date().isoformat()
-        today_usage = self.cost_tracker.daily_usage.get(today, {"cost": 0, "requests": 0})
-        daily_budget_limit = getattr(settings, 'AI_DAILY_BUDGET_LIMIT', 50.0)
+        today_usage = self.cost_tracker.daily_usage.get(today, {"cost": 0.0, "requests": 0})
+        daily_limit = getattr(settings, 'AI_DAILY_BUDGET_LIMIT', 50.0)
         
         return {
             "today": today_usage,
-            "budget_limit": daily_budget_limit,
-            "budget_remaining": daily_budget_limit - today_usage["cost"],
+            "budget_limit": daily_limit,
+            "budget_remaining": daily_limit - today_usage["cost"],
             "models_available": list(self.cost_tracker.MODEL_COSTS.keys())
         }
 
-    async def optimize_route(
-        self,
-        destinations: List[str],
-        vehicle_constraints: Optional[Dict[str, Any]] = None,
-        preferences: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
-        """Optimize route between multiple destinations."""
-        
+    async def generate_with_cost_tracking(self, prompt: str, model: str = "gpt-4o-mini") -> Dict[str, Any]:
+        """Generate AI response with cost tracking."""
+        # Check budget limit
         if not self.cost_tracker.check_budget_limit():
             raise ValueError("Daily AI budget limit exceeded")
         
-        vehicle_info = vehicle_constraints or {}
-        prefs = preferences or {}
+        # Count input tokens
+        input_tokens = self.count_tokens(prompt)
         
-        prompt = f"""
-        Optimize the route between these destinations: {', '.join(destinations)}
+        logger.info(f"Generating AI response: model={model}, input_tokens={input_tokens}")
         
-        Vehicle constraints:
-        - EV vehicles: {vehicle_info.get('ev_vehicles', False)}
-        - Charging range: {vehicle_info.get('charging_range', 300)} miles
-        - Prefer scenic routes: {vehicle_info.get('prefer_scenic', False)}
-        
-        Preferences:
-        - Travel style: {prefs.get('travel_style', 'balanced')}
-        - Avoid highways: {prefs.get('avoid_highways', False)}
-        - Stop preferences: {prefs.get('stop_preferences', [])}
-        
-        Return JSON with:
-        {{
-            "optimized_route": {{
-                "total_distance": 0,
-                "total_drive_time": 0,
-                "route_segments": [
-                    {{
-                        "from": "",
-                        "to": "",
-                        "distance": 0,
-                        "drive_time": 0,
-                        "scenic_route": false,
-                        "ev_charging_stops": [],
-                        "recommended_stops": [],
-                        "traffic_considerations": ""
-                    }}
+        try:
+            max_tokens = getattr(settings, 'OPENAI_MAX_TOKENS', 4000)
+            temperature = getattr(settings, 'OPENAI_TEMPERATURE', 0.7)
+            timeout = getattr(settings, 'OPENAI_TIMEOUT', 60)
+            
+            response = await asyncio.to_thread(
+                client.chat.completions.create,
+                model=model,
+                messages=[
+                    {"role": "user", "content": prompt}
                 ],
-                "total_cost_estimate": 0,
-                "optimization_factors": {{
-                    "shortest_distance": false,
-                    "fastest_time": false,
-                    "most_scenic": false,
-                    "ev_optimized": false
-                }}
-            }}
-        }}
-        """
-        
-        try:
-            input_tokens = self.count_tokens(prompt)
-            primary_model = getattr(settings, 'OPENAI_MODEL_PRIMARY', 'gpt-4o-mini')
-            response = await self._make_api_call(
-                primary_model,
-                prompt,
-                input_tokens
+                max_tokens=max_tokens,
+                temperature=temperature,
+                timeout=timeout
             )
             
-            return json.loads(response["content"])
+            # Extract response data
+            content = response.choices[0].message.content
+            output_tokens = response.usage.completion_tokens if response.usage else 0
             
+            # Track costs
+            cost = self.cost_tracker.track_usage(model, input_tokens, output_tokens)
+            
+            return {
+                "content": content,
+                "model": model,
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
+                "cost": cost
+            }
+            
+        except openai.RateLimitError:
+            logger.error("OpenAI rate limit exceeded")
+            raise ValueError("AI service temporarily unavailable due to rate limits")
+        except openai.APITimeoutError:
+            logger.error("OpenAI API timeout")
+            raise ValueError("AI service timeout - please try again")
         except Exception as e:
-            logger.error(f"Failed to optimize route: {e}")
-            raise
-    
-    async def optimize_budget_allocation(
-        self,
-        total_budget: float,
-        trip_duration_days: int,
-        family_count: int,
-        preferences: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
-        """Optimize budget allocation across trip categories."""
-        
-        if not self.cost_tracker.check_budget_limit():
-            raise ValueError("Daily AI budget limit exceeded")
-        
-        prefs = preferences or {}
-        
-        prompt = f"""
-        Optimize budget allocation for a family trip:
-        
-        Total budget: ${total_budget}
-        Trip duration: {trip_duration_days} days
-        Number of families: {family_count}
-        
-        Preferences:
-        - Accommodation priority: {prefs.get('accommodation_priority', 'medium')}
-        - Activity priority: {prefs.get('activity_priority', 'high')}
-        - Dining preference: {prefs.get('dining_preference', 'mix')}
-        - Transportation mode: {prefs.get('transportation', 'rental_car')}
-        
-        Return JSON with:
-        {{
-            "budget_allocation": {{
-                "total_budget": {total_budget},
-                "categories": {{
-                    "accommodation": {{
-                        "amount": 0,
-                        "percentage": 0,
-                        "recommendations": ""
-                    }},
-                    "food": {{
-                        "amount": 0,
-                        "percentage": 0,
-                        "recommendations": ""
-                    }},
-                    "activities": {{
-                        "amount": 0,
-                        "percentage": 0,
-                        "recommendations": ""
-                    }},
-                    "transportation": {{
-                        "amount": 0,
-                        "percentage": 0,
-                        "recommendations": ""
-                    }},
-                    "emergency": {{
-                        "amount": 0,
-                        "percentage": 0,
-                        "recommendations": ""
-                    }}
-                }},
-                "daily_budget": 0,
-                "savings_opportunities": [],
-                "cost_saving_tips": []
-            }}
-        }}
-        """
-        
-        try:
-            input_tokens = self.count_tokens(prompt)
-            primary_model = getattr(settings, 'OPENAI_MODEL_PRIMARY', 'gpt-4o-mini')
-            response = await self._make_api_call(
-                primary_model,
-                prompt,
-                input_tokens
-            )
-            
-            return json.loads(response["content"])
-            
-        except Exception as e:
-            logger.error(f"Failed to optimize budget: {e}")
-            raise
-    
-    async def get_activity_recommendations(
-        self,
-        location: str,
-        preferences: List[str],
-        family_info: Optional[Dict[str, Any]] = None,
-        budget_range: Optional[str] = None
-    ) -> Dict[str, Any]:
-        """Get AI-powered activity recommendations for a location."""
-        
-        if not self.cost_tracker.check_budget_limit():
-            raise ValueError("Daily AI budget limit exceeded")
-        
-        family_data = family_info or {}
-        budget = budget_range or "medium"
-        
-        prompt = f"""
-        Recommend family-friendly activities in {location}.
-        
-        Preferences: {', '.join(preferences)}
-        Budget range: {budget}
-        Family info:
-        - Number of families: {family_data.get('family_count', 1)}
-        - Age groups: {family_data.get('age_groups', ['mixed ages'])}
-        - Special needs: {family_data.get('accessibility_needs', [])}
-        
-        Return JSON with:
-        {{
-            "recommendations": [
-                {{
-                    "title": "",
-                    "description": "",
-                    "category": "",
-                    "duration": 0,
-                    "cost_estimate": 0,
-                    "rating": 0,
-                    "family_friendly": true,
-                    "accessibility": "",
-                    "best_time_to_visit": "",
-                    "booking_required": false,
-                    "indoor_outdoor": "",
-                    "age_recommendations": "",
-                    "group_size_limit": 0,
-                    "alternatives": []
-                }}
-            ]
-        }}
-        """
-        
-        try:
-            input_tokens = self.count_tokens(prompt)
-            primary_model = getattr(settings, 'OPENAI_MODEL_PRIMARY', 'gpt-4o-mini')
-            response = await self._make_api_call(
-                primary_model,
-                prompt,
-                input_tokens
-            )
-            
-            return json.loads(response["content"])
-            
-        except Exception as e:
-            logger.error(f"Failed to get activity recommendations: {e}")
-            raise
-    
-    async def get_restaurant_recommendations(
-        self,
-        location: str,
-        cuisine_preferences: List[str],
-        dietary_restrictions: List[str],
-        budget_range: Optional[str] = None,
-        family_info: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
-        """Get AI-powered restaurant recommendations."""
-        
-        if not self.cost_tracker.check_budget_limit():
-            raise ValueError("Daily AI budget limit exceeded")
-        
-        family_data = family_info or {}
-        budget = budget_range or "medium"
-        
-        prompt = f"""
-        Recommend family-friendly restaurants in {location}.
-        
-        Cuisine preferences: {', '.join(cuisine_preferences) if cuisine_preferences else 'any'}
-        Dietary restrictions: {', '.join(dietary_restrictions) if dietary_restrictions else 'none'}
-        Budget range: {budget}
-        Family info:
-        - Number of families: {family_data.get('family_count', 1)}
-        - Kids friendly needed: {family_data.get('kids_friendly', True)}
-        - Group size: {family_data.get('group_size', 4)}
-        
-        Return JSON with:
-        {{
-            "restaurants": [
-                {{
-                    "name": "",
-                    "cuisine": "",
-                    "price_range": "",
-                    "rating": 0,
-                    "address": "",
-                    "dietary_accommodations": [],
-                    "accessibility": "",
-                    "family_features": [],
-                    "recommended_dishes": [],
-                    "reservation_required": false,
-                    "average_wait_time": "",
-                    "best_times": [],
-                    "parking_info": ""
-                }}
-            ]
-        }}
-        """
-        
-        try:
-            input_tokens = self.count_tokens(prompt)
-            primary_model = getattr(settings, 'OPENAI_MODEL_PRIMARY', 'gpt-4o-mini')
-            response = await self._make_api_call(
-                primary_model,
-                prompt,
-                input_tokens
-            )
-            
-            return json.loads(response["content"])
-            
-        except Exception as e:
-            logger.error(f"Failed to get restaurant recommendations: {e}")
-            raise
-    
-    async def optimize_itinerary(
-        self,
-        current_itinerary: Dict[str, Any],
-        optimization_type: str,
-        constraints: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
-        """Optimize an existing itinerary based on specified criteria."""
-        
-        if not self.cost_tracker.check_budget_limit():
-            raise ValueError("Daily AI budget limit exceeded")
-        
-        constraints_info = constraints or {}
-        
-        # Convert itinerary to string for prompt, handling datetime serialization
-        def json_serializer(obj):
-            if isinstance(obj, datetime):
-                return obj.isoformat()
-            raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
-        
-        prompt = f"""
-        Optimize this existing itinerary for {optimization_type}:
-        
-        Current itinerary: {json.dumps(current_itinerary, default=json_serializer)}
-        
-        Optimization type: {optimization_type}
-        Constraints:
-        - Budget limit: {constraints_info.get('budget_limit')}
-        - Time constraints: {constraints_info.get('time_constraints')}
-        - Must-keep activities: {constraints_info.get('must_keep', [])}
-        - Accessibility requirements: {constraints_info.get('accessibility_needs', [])}
-        
-        Return JSON with:
-        {{
-            "optimized_itinerary": {{
-                "overview": {{}},
-                "daily_itinerary": [],
-                "optimization_changes": [
-                    {{
-                        "day": 0,
-                        "change_type": "",
-                        "old_activity": "",
-                        "new_activity": "",
-                        "reason": ""
-                    }}
-                ],
-                "cost_savings": 0,
-                "time_savings": 0,
-                "improvement_score": 0
-            }}
-        }}
-        """
-        
-        try:
-            input_tokens = self.count_tokens(prompt)
-            primary_model = getattr(settings, 'OPENAI_MODEL_PRIMARY', 'gpt-4o-mini')
-            response = await self._make_api_call(
-                primary_model,
-                prompt,
-                input_tokens
-            )
-            
-            return json.loads(response["content"])
-            
-        except Exception as e:
-            logger.error(f"Failed to optimize itinerary: {e}")
-            raise
-    
-    async def get_activity_suggestions(
-        self,
-        context: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Get contextual activity suggestions during trip planning."""
-        
-        if not self.cost_tracker.check_budget_limit():
-            raise ValueError("Daily AI budget limit exceeded")
-        
-        prompt = f"""
-        Suggest activities based on this context:
-        
-        Location: {context.get('location')}
-        Current activities: {context.get('current_activities', [])}
-        Time of day: {context.get('time_of_day')}
-        Weather: {context.get('weather')}
-        Group preferences: {context.get('preferences', {})}
-        Budget remaining: {context.get('budget_remaining')}
-        Duration available: {context.get('duration_available')}
-        
-        Return JSON with:
-        {{
-            "suggestions": [
-                {{
-                    "activity": "",
-                    "description": "",
-                    "duration": 0,
-                    "cost": 0,
-                    "why_suggested": "",
-                    "alternatives": [],
-                    "logistics": ""
-                }}
-            ]
-        }}
-        """
-        
-        try:
-            input_tokens = self.count_tokens(prompt)
-            primary_model = getattr(settings, 'OPENAI_MODEL_PRIMARY', 'gpt-4o-mini')
-            response = await self._make_api_call(
-                primary_model,
-                prompt,
-                input_tokens
-            )
-            
-            return json.loads(response["content"])
-            
-        except Exception as e:
-            logger.error(f"Failed to get activity suggestions: {e}")
-            raise
+            logger.error(f"OpenAI API error: {e}")
+            raise ValueError(f"AI service error: {str(e)}")
 
 
-# Create global AI service instance
+# Create service instance
 ai_service = AIService()

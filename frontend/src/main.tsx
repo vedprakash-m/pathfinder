@@ -22,11 +22,11 @@ const queryClient = new QueryClient({
 
 // Auth0 configuration
 const auth0Config = {
-  domain: import.meta.env.VITE_AUTH0_DOMAIN || 'dev-pathfinder.us.auth0.com',
-  clientId: import.meta.env.VITE_AUTH0_CLIENT_ID || 'pathfinder-client-id',
+  domain: 'dev-pathfinder.us.auth0.com',
+  clientId: 'pathfinder-client-id',
   authorizationParams: {
     redirect_uri: window.location.origin,
-    audience: import.meta.env.VITE_AUTH0_AUDIENCE || 'https://api.pathfinder.com',
+    audience: 'https://api.pathfinder.com',
   },
 }
 

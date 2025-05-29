@@ -3,9 +3,9 @@ import { User, AuthCredentials, RegisterData, ApiResponse, UserProfile, LoginRes
 
 // Auth0 configuration 
 const auth0Config = {
-  domain: import.meta.env.VITE_AUTH0_DOMAIN || '',
-  clientId: import.meta.env.VITE_AUTH0_CLIENT_ID || '',
-  audience: import.meta.env.VITE_AUTH0_AUDIENCE || '',
+  domain: 'dev-pathfinder.us.auth0.com',
+  clientId: 'pathfinder-client-id',
+  audience: 'https://api.pathfinder.com',
   redirectUri: `${window.location.origin}/callback`,
 };
 

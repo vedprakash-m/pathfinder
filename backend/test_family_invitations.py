@@ -9,8 +9,8 @@ import os
 # Add the app directory to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'app'))
 
-from app.database import SessionLocal
-from app.models.family import FamilyModel, FamilyInvitationModel, InvitationStatus
+from app.core.database import SessionLocal
+from app.models.family import Family, FamilyInvitationModel, InvitationStatus
 from app.models.user import UserModel
 from sqlalchemy import create_engine, text
 
