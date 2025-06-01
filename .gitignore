@@ -140,3 +140,11 @@ azure-credentials.json
 secrets/
 vault/
 private/
+
+# Security - Additional patterns for comprehensive coverage
+**/config/production.json
+**/config/secrets.json
+**/.auth/
+**/credentials/
+*.backup
+*.bak.original

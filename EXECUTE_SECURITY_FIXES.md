@@ -13,7 +13,7 @@
 2. **Generate New Credentials:**
    - Click "Settings" tab
    - Scroll to "Basic Information"
-   - Note the current Client ID: `YOUR_AUTH0_CLIENT_ID`
+   - Note the current Client ID: `[REDACTED-AUTH0-CLIENT-ID]`
    - Click "Regenerate" for Client Secret
    - **SAVE THE NEW SECRET IMMEDIATELY**
 

@@ -1,7 +1,7 @@
 # 🚨 EMERGENCY SECURITY REMEDIATION PLAN
 
 **CRITICAL SECURITY BREACH DETECTED**  
-**Auth0 Client ID Exposed in Git History: `YOUR_AUTH0_CLIENT_ID`**
+**Auth0 Client ID Exposed in Git History: `[REDACTED-AUTH0-CLIENT-ID]`**
 
 ## 📊 SCAN RESULTS
 - **Total Secrets Found**: 30

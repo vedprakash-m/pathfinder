@@ -12,7 +12,7 @@
 - Template files contain only example values
 
 ### ❌ GIT HISTORY STATUS (Critical Issue)
-- **Auth0 Client ID** `YOUR_AUTH0_CLIENT_ID` still in git history
+- **Auth0 Client ID** `[REDACTED-AUTH0-CLIENT-ID]` still in git history
 - **Original commit:** `6467ea5c46acf870477eddce9f5313e0d7f3fef5`
 - **File:** `frontend/.env.production`
 - **Impact:** Production credentials publicly accessible via git history

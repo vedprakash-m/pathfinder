@@ -1,0 +1,10 @@
+c60c673 fix: force backend deployment with route conflict resolution
+c40c7ab fix: restore and deploy complete backend route fix for dashboard loading
+1b2df8d fix: complete CI/CD pipeline YAML structure and trigger backend deployment
+0ac84d0 fix: resolve CI/CD pipeline YAML syntax errors
+2a472b2 trigger: force frontend deployment with dashboard fixes
+0bb677d Fix dashboard loading: trailing slash URLs and CSRF handling
+6467ea5 fix: resolve Auth0 domain configuration issue and complete Phase 1 MVP
+e46b55d feat: Complete trip management dashboard with real-time features
+eecbc23 feat: Implement comprehensive family invitation system
+ee7795f docs: Update README with professional business case and accurate Phase 1 completion status
