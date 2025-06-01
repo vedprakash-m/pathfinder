@@ -28,7 +28,7 @@ export const tripService = {
     }
 
     const queryString = params.toString();
-    return apiService.get(`/trips${queryString ? `?${queryString}` : ''}`);
+    return apiService.get(`/trips/${queryString ? `?${queryString}` : ''}`);
   },
 
   // Get user's trips (alias for getTrips for component compatibility)
@@ -48,7 +48,7 @@ export const tripService = {
 
   // Create new trip
   createTrip: async (tripData: CreateTripRequest): Promise<ApiResponse<Trip>> => {
-    return apiService.post('/trips', tripData);
+    return apiService.post('/trips/', tripData);
   },
 
   // Update existing trip

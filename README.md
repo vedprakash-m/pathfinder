@@ -69,7 +69,7 @@ Organizing trips with multiple families is a logistical nightmare:
 - **GDPR Compliant**: Full control over your data with easy export and deletion
 - **24/7 Monitoring**: Proactive issue detection and resolution
 
-## 🎉 Latest Features (December 2024)
+## 🎉 Latest Features (May 2025)
 
 ### **🎯 Complete Trip Management Dashboard**
 Experience comprehensive trip management with our newly integrated tabbed interface:

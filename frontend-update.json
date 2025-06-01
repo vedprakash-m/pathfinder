@@ -1,0 +1,44 @@
+{
+  "properties": {
+    "template": {
+      "containers": [
+        {
+          "name": "pathfinder-frontend",
+          "image": "pathfinderdevregistry.azurecr.io/pathfinder-frontend@sha256:68d189add606164867388ba499d562850457ebf0490e5ccfa2c7fa292aeb2862",
+          "command": ["/bin/sh"],
+          "args": [
+            "-c",
+            "find /usr/share/nginx/html -name '*.js' -type f -exec sed -i 's/dev-pathfinder\\.us\\.auth0\\.com/dev-jwnud3v8ghqnyygr.us.auth0.com/g' {} \\; && exec nginx -g 'daemon off;'"
+          ],
+          "resources": {
+            "cpu": 0.25,
+            "memory": "0.5Gi"
+          },
+          "env": [
+            {
+              "name": "ENVIRONMENT"
+            },
+            {
+              "name": "VITE_API_URL"
+            },
+            {
+              "name": "VITE_AUTH0_DOMAIN",
+              "secretRef": "auth0-domain"
+            },
+            {
+              "name": "VITE_AUTH0_CLIENT_ID",
+              "secretRef": "auth0-client-id"
+            },
+            {
+              "name": "VITE_AUTH0_AUDIENCE",
+              "secretRef": "auth0-audience"
+            },
+            {
+              "name": "REACT_APP_API_BASE_URL"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

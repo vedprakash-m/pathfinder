@@ -20,8 +20,20 @@ COPY . .
 # Build stage
 FROM base AS build
 
-# Set environment to production
+# Accept build arguments
+ARG VITE_AUTH0_DOMAIN
+ARG VITE_AUTH0_CLIENT_ID
+ARG VITE_AUTH0_AUDIENCE
+ARG VITE_API_URL
+ARG ENVIRONMENT
+
+# Set environment variables from build args
 ENV NODE_ENV=production
+ENV VITE_AUTH0_DOMAIN=${VITE_AUTH0_DOMAIN}
+ENV VITE_AUTH0_CLIENT_ID=${VITE_AUTH0_CLIENT_ID}
+ENV VITE_AUTH0_AUDIENCE=${VITE_AUTH0_AUDIENCE}
+ENV VITE_API_URL=${VITE_API_URL}
+ENV ENVIRONMENT=${ENVIRONMENT}
 
 # Build the application
 RUN pnpm run build

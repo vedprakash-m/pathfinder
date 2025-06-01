@@ -3,10 +3,11 @@ Itinerary management API endpoints.
 Handles AI-generated itinerary creation, customization, and management.
 """
 
+import json
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_
+from sqlalchemy import and_
 
 from ..core.database import get_db
 from ..core.zero_trust import require_permissions
@@ -105,34 +106,53 @@ async def generate_itinerary(
                 detail="Not authorized to access this trip"
             )
         
-        # Prepare trip context for AI
-        trip_context = {
-            "destination": trip.destination,
-            "start_date": trip.start_date.isoformat() if trip.start_date else None,
-            "end_date": trip.end_date.isoformat() if trip.end_date else None,
-            "budget": trip.budget,
-            "participant_count": len(trip.participations),
-            "trip_type": "family road trip",
-            "preferences": request.preferences or {}
-        }
+        # Calculate trip duration
+        if trip.start_date and trip.end_date:
+            duration_days = (trip.end_date - trip.start_date).days + 1
+        else:
+            duration_days = 3
         
-        # Get participant preferences if available
-        participant_preferences = []
+        # Prepare families data for AI service
+        families_data = []
         for p in trip.participations:
-            if p.user and p.user.preferences:
-                participant_preferences.append({
-                    "user_id": p.user_id,
-                    "preferences": p.user.preferences
-                })
+            if p.user:
+                family_data = {
+                    "user_id": str(p.user.id),
+                    "family_size": 1,  # Could be enhanced to include actual family size
+                    "preferences": p.user.preferences if hasattr(p.user, 'preferences') and p.user.preferences else {},
+                    "budget_share": float(trip.budget_total or 0) / len(trip.participations) if trip.budget_total else None
+                }
+                families_data.append(family_data)
         
-        trip_context["participant_preferences"] = participant_preferences
+        # Merge request preferences with trip preferences
+        preferences = {}
+        if hasattr(trip, 'preferences') and trip.preferences:
+            try:
+                import json
+                preferences.update(json.loads(trip.preferences) if isinstance(trip.preferences, str) else trip.preferences)
+            except (json.JSONDecodeError, TypeError):
+                pass
         
-        # Generate itinerary using AI service
+        if request_data.preferences:
+            preferences.update(request_data.preferences)
+        
+        # Add default preferences if none exist
+        if not preferences:
+            preferences = {
+                "trip_type": "family road trip",
+                "activity_level": "moderate",
+                "accommodation_type": "hotel"
+            }
+        
+        # Generate itinerary using AI service with correct parameters
         logger.info(f"Generating itinerary for trip {trip_id} by user {current_user.id}")
         itinerary_data = await ai_service.generate_itinerary(
-            trip_context=trip_context,
-            itinerary_type=request.itinerary_type.value,
-            regenerate=request.regenerate
+            destination=str(trip.destination),
+            duration_days=duration_days,
+            families_data=families_data,
+            preferences=preferences,
+            budget_total=float(trip.budget_total) if trip.budget_total else None,
+            user_id=str(current_user.id)
         )
         
         # Create itinerary response

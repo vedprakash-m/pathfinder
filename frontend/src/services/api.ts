@@ -62,13 +62,24 @@ const createApiClient = (baseURL: string = '/api'): AxiosInstance => {
     },
   });
 
-  // Request interceptor to add auth token
+  // Request interceptor to add auth token and CSRF token
   client.interceptors.request.use(
     (config) => {
       const token = localStorage.getItem('auth_token');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
+      
+      // Add CSRF token from cookie if available
+      const csrfToken = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrf='))
+        ?.split('=')[1];
+      
+      if (csrfToken) {
+        config.headers['X-CSRF-Token'] = csrfToken;
+      }
+      
       return config;
     },
     (error) => {

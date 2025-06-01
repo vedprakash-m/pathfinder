@@ -152,7 +152,7 @@ const FamilyCard: React.FC<{ family: Family; onManage: () => void }> = ({ family
 
 export const TripFamilies: React.FC<TripFamiliesProps> = ({
   families,
-  tripId,
+  tripId: _tripId,
   onInviteFamily,
   onManageFamily,
 }) => {

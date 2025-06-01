@@ -20,13 +20,13 @@ const queryClient = new QueryClient({
   },
 })
 
-// Auth0 configuration
+// Auth0 configuration - now sourced from Azure Key Vault via environment variables
 const auth0Config = {
-  domain: 'dev-pathfinder.us.auth0.com',
-  clientId: 'pathfinder-client-id',
+  domain: import.meta.env.VITE_AUTH0_DOMAIN!,
+  clientId: import.meta.env.VITE_AUTH0_CLIENT_ID!,
   authorizationParams: {
     redirect_uri: window.location.origin,
-    audience: 'https://api.pathfinder.com',
+    audience: import.meta.env.VITE_AUTH0_AUDIENCE!,
   },
 }
 
