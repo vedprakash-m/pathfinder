@@ -183,8 +183,26 @@ jobs:
           resourceGroup: ${{ secrets.AZURE_RG }}
           imageToDeploy: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:latest
 
-  performance-test:
+  deploy-frontend:
     needs: [deploy-application]
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Deploy Frontend
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          appSourcePath: ${{ github.workspace }}
+          containerAppName: pathfinder-frontend-prod
+          resourceGroup: ${{ secrets.AZURE_RG }}
+          imageToDeploy: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:latest
+
+  performance-test:
+    needs: [deploy-frontend]
     if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     steps:
@@ -206,82 +224,18 @@ jobs:
               
               @task(3)
               def view_trips(self):
-                  self.client.get("/api/trips")
+                  self.client.get("/api/v1/trips")
               
               @task(2)
               def view_families(self):
-                  self.client.get("/api/families")
+                  self.client.get("/api/v1/families")
               
               @task(1)
               def health_check(self):
-                  self.client.get("/api/health")
+                  self.client.get("/health")
           EOF
           
-          locust -f tests/load/locustfile.py --headless -u 50 -r 10 -t 3m --host https://pathfinder-backend-prod.azurecontainerapps.io
-
-  notify-completion:
-    needs: [performance-test]
-    if: always()
-    runs-on: ubuntu-latest
-    steps:
-      - name: Notify deployment status
-        run: |
-          if [[ "${{ needs.performance-test.result }}" == "success" ]]; then
-            echo "✅ Phase 1 deployment completed successfully!"
-          else
-            echo "❌ Phase 1 deployment failed. Check logs for details."
-          fi
-      - name: Deploy Frontend
-        uses: azure/container-apps-deploy-action@v1
-        with:
-          appSourcePath: ${{ github.workspace }}
-          containerAppName: pathfinder-frontend-prod
-          resourceGroup: ${{ secrets.AZURE_RG }}
-          imageToDeploy: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:latest
-
-  performance-test:
-    needs: [deploy-application]
-    if: ${{ github.ref == 'refs/heads/main' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.12'
-      - name: Install Locust
-        run: pip install locust
-      - name: Run performance tests
-        run: |
-          # Create basic load test if it doesn't exist
-          if [ ! -f tests/load/locustfile.py ]; then
-            mkdir -p tests/load
-            cat > tests/load/locustfile.py << 'EOF'
-          from locust import HttpUser, task, between
-          
-          class PathfinderUser(HttpUser):
-              wait_time = between(1, 5)
-              
-              def on_start(self):
-                  # Login and get token if needed
-                  pass
-              
-              @task(3)
-              def view_trips(self):
-                  self.client.get("/api/trips")
-              
-              @task(2)
-              def view_families(self):
-                  self.client.get("/api/families")
-              
-              @task(1)
-              def health_check(self):
-                  self.client.get("/api/health")
-          EOF
-          fi
-          
-          # Run load test
-          locust -f tests/load/locustfile.py --headless -u 50 -r 10 -t 3m --host https://pathfinder-backend-prod.azurecontainerapps.io
+          locust -f tests/load/locustfile.py --headless -u 50 -r 10 -t 3m --host https://pathfinder-backend.yellowdune-9b8d769a.eastus.azurecontainerapps.io
 
   notify-completion:
     needs: [performance-test]
