@@ -1,5 +1,6 @@
 """
 FastAPI application entry point for Pathfinder AI-Powered Trip Planner.
+Updated to fix dashboard loading route conflicts.
 """
 
 from contextlib import asynccontextmanager
