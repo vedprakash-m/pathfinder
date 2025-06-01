@@ -265,19 +265,19 @@ For full functionality, update these environment variables:
 ```env
 # Backend (.env)
 OPENAI_API_KEY=sk-your-key-here           # For AI itinerary generation
-AUTH0_DOMAIN=your-domain.auth0.com        # For user authentication
+AUTH0_DOMAIN=YOUR_DOMAIN.auth0.com        # For user authentication
 DATABASE_URL=sqlite:///./app.db           # Local database (default)
 
 # Frontend (.env.local)
 VITE_API_BASE_URL=http://localhost:8000   # Backend connection
-VITE_AUTH0_DOMAIN=your-domain.auth0.com   # Authentication
+VITE_AUTH0_DOMAIN=YOUR_DOMAIN.auth0.com   # Authentication
 VITE_AUTH0_CLIENT_ID=your-client-id       # Auth0 client
 ```
 
 💡 **Pro Tip**: Start with the Docker setup for instant gratification, then switch to development mode for customization.
 
 # Auth0 Configuration
-AUTH0_DOMAIN=your-domain.auth0.com
+AUTH0_DOMAIN=YOUR_DOMAIN.auth0.com
 AUTH0_AUDIENCE=your-api-identifier
 AUTH0_CLIENT_SECRET=your-auth0-client-secret
 
@@ -293,7 +293,7 @@ AI_DAILY_BUDGET_LIMIT=10.00
 #### **Frontend (.env.local)**
 ```env
 VITE_API_BASE_URL=http://localhost:8000
-VITE_AUTH0_DOMAIN=your-domain.auth0.com
+VITE_AUTH0_DOMAIN=YOUR_DOMAIN.auth0.com
 VITE_AUTH0_CLIENT_ID=your-frontend-client-id
 VITE_AUTH0_AUDIENCE=your-api-identifier
 VITE_WEBSOCKET_URL=ws://localhost:8000/ws

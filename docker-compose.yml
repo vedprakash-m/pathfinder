@@ -15,7 +15,7 @@ services:
       - DATABASE_URL=sqlite:///./pathfinder.db
       - COSMOS_DB_ENABLED=true
       - COSMOS_DB_URL=https://cosmosdb-emulator:8081
-      - COSMOS_DB_KEY=YOUR_COSMOS_DB_EMULATOR_KEY
+      - COSMOS_DB_KEY=${COSMOS_DB_KEY:-YOUR_COSMOS_DB_EMULATOR_KEY}
       - COSMOS_DB_DATABASE=pathfinder
       - REDIS_URL=redis://redis:6379
       - REDIS_TTL=3600

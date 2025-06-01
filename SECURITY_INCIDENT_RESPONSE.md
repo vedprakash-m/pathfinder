@@ -1,95 +1,60 @@
-# Security Incident Response - API Key Exposure
+# 🚨 SECURITY INCIDENT RESPONSE - AUTH0 CLIENT ID EXPOSURE
 
-**Date:** May 31, 2025  
-**Incident:** API keys exposed in chat conversation  
-**Severity:** Medium (keys were used for development/testing)  
-**Status:** Response in progress
+## Incident Summary
+- **Date Discovered:** $(date)
+- **Severity:** HIGH
+- **Type:** Credential Exposure
+- **Affected Service:** Auth0 Authentication
 
-## 🚨 Immediate Actions Required
+## Immediate Actions Taken
+1. ✅ Identified exposed Auth0 Client ID in git history
+2. ✅ Removed sensitive files from git tracking
+3. ✅ Updated .gitignore to prevent future exposures
+4. ✅ Set up pre-commit hooks for secret scanning
 
-### 1. **Rotate All Exposed Keys** (URGENT)
+## Required Actions (URGENT)
 
-**Auth0 Credentials:**
-- [ ] Go to Auth0 Dashboard → Applications → Pathfinder Frontend
-- [ ] Click "Rotate Secret" to generate new Client Secret
-- [ ] Copy new Client Secret for Key Vault update
-
-**Google Maps API:**
-- [ ] Go to Google Cloud Console → APIs & Services → Credentials  
-- [ ] Find the exposed API key → Click "Regenerate Key"
-- [ ] Copy new API key for Key Vault update
-
-### 2. **Update Key Vault** (After rotation)
-
+### 1. Rotate Auth0 Credentials
 ```bash
-# Update Auth0 Client Secret
-az keyvault secret set \
-  --vault-name pathfinder-kv-dev \
-  --name auth0-client-secret \
-  --value "NEW_ROTATED_SECRET"
-
-# Update Google Maps API Key  
-az keyvault secret set \
-  --vault-name pathfinder-kv-dev \
-  --name google-maps-api-key \
-  --value "NEW_REGENERATED_KEY"
-
-# Restart containers to pick up new keys
-az containerapp revision restart \
-  --name pathfinder-backend \
-  --resource-group pathfinder-rg-dev \
-  --revision $(az containerapp revision list --name pathfinder-backend --resource-group pathfinder-rg-dev --query "[0].name" --output tsv)
-
-az containerapp revision restart \
-  --name pathfinder-frontend \
-  --resource-group pathfinder-rg-dev \
-  --revision $(az containerapp revision list --name pathfinder-frontend --resource-group pathfinder-rg-dev --query "[0].name" --output tsv)
+# 1. Go to Auth0 Dashboard
+# 2. Navigate to Applications → Pathfinder App → Settings
+# 3. Rotate Client Secret (generate new one)
+# 4. Update Azure Key Vault with new secret
+az keyvault secret set --vault-name pathfinder-kv-dev --name auth0-client-secret --value "NEW_SECRET_HERE"
 ```
 
-### 3. **Security Monitoring**
+### 2. Update Production Environment
+```bash
+# Update container apps with new credentials
+az containerapp update --name pathfinder-frontend --resource-group pathfinder-rg-dev --set-env-vars VITE_AUTH0_CLIENT_ID="NEW_CLIENT_ID"
+az containerapp update --name pathfinder-backend --resource-group pathfinder-rg-dev --set-env-vars AUTH0_CLIENT_ID="NEW_CLIENT_ID"
+```
 
-**Auth0 Monitoring:**
-- [ ] Check Auth0 logs for any unauthorized access attempts
-- [ ] Review recent login attempts and API calls
-- [ ] Monitor for unusual authentication patterns
+### 3. Verify No Unauthorized Access
+- Check Auth0 logs for unusual activity
+- Review Azure Activity Logs
+- Monitor application metrics for anomalies
 
-**Google Maps Monitoring:**  
-- [ ] Check Google Cloud Console → APIs & Services → Quotas
-- [ ] Review recent API usage for anomalies
-- [ ] Set up billing alerts if not already configured
+## Prevention Measures
+1. ✅ Pre-commit hooks with gitleaks
+2. ✅ Updated .gitignore with security patterns
+3. 🔄 TODO: Set up GitHub Advanced Security
+4. 🔄 TODO: Implement CI/CD secret scanning
+5. 🔄 TODO: Regular security audits
 
-### 4. **Preventive Measures**
+## Timeline
+- **Detection:** $(date)
+- **Initial Response:** $(date)
+- **Credential Rotation:** PENDING
+- **Verification:** PENDING
+- **Post-Incident Review:** PENDING
 
-**For Future Development:**
-- ✅ Use placeholder values in documentation
-- ✅ Never share actual API keys in chat/email
-- ✅ Use environment variables and Key Vault references
-- ✅ Implement API key rotation schedules
-- ✅ Set up monitoring and alerting for API usage
-
-**Key Vault Security:**
-- ✅ RBAC permissions properly configured
-- ✅ Access logging enabled
-- ✅ Regular access reviews scheduled
-
-## 📋 Post-Incident Checklist
-
-After rotating keys:
-- [ ] Verify application functionality with new keys
-- [ ] Test Auth0 login flow
-- [ ] Test Google Maps integration
-- [ ] Update any documentation with placeholder values
-- [ ] Schedule regular key rotation (quarterly)
-
-## 🎯 Lessons Learned
-
-1. **Never share production API keys in any medium**
-2. **Use placeholder/dummy values in examples** 
-3. **Implement automated key rotation where possible**
-4. **Regular security reviews of exposed credentials**
+## Lessons Learned
+1. Never commit production .env files
+2. Use environment variables and secret management
+3. Implement automated secret scanning
+4. Regular security audits are essential
 
 ---
-
-**Next Review Date:** August 31, 2025  
-**Responsible:** Development Team  
-**Status:** In Progress → Complete after key rotation
+**Status:** IN PROGRESS
+**Next Review:** 24 hours

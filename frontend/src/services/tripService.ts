@@ -28,7 +28,8 @@ export const tripService = {
     }
 
     const queryString = params.toString();
-    return apiService.get(`/trips/${queryString ? `?${queryString}` : ''}`);
+    const url = queryString ? `/trips/?${queryString}` : '/trips/';
+    return apiService.get(url);
   },
 
   // Get user's trips (alias for getTrips for component compatibility)
