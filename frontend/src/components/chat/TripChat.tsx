@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
 import { Card, CardHeader, Title3, Body1, Body2 } from '@fluentui/react-components';
 import { motion } from 'framer-motion';
 import { ChatMessage, ChatMessageProps } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 import { useAuthStore } from '@/store';
-import { webSocketService } from '@/services/websocket';
+import webSocketService from '@/services/websocket';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { UsersIcon, WifiIcon } from '@heroicons/react/24/outline';
 
@@ -124,7 +123,7 @@ export const TripChat: React.FC<TripChatProps> = ({ tripId, tripName }) => {
 
     // Cleanup on unmount
     return () => {
-      if (webSocketService.isConnected()) {
+      if (webSocketService.isConnectedStatus()) {
         webSocketService.leaveRoom(tripId);
         webSocketService.disconnect();
       }
@@ -142,15 +141,6 @@ export const TripChat: React.FC<TripChatProps> = ({ tripId, tripName }) => {
     };
 
     webSocketService.send('send_message', messageData, tripId);
-  };
-
-  const handleSendTypingIndicator = (isTyping: boolean) => {
-    if (!isConnected) return;
-    
-    webSocketService.send('typing_indicator', {
-      is_typing: isTyping,
-      trip_id: tripId,
-    }, tripId);
   };
 
   if (isConnecting) {
@@ -178,7 +168,7 @@ export const TripChat: React.FC<TripChatProps> = ({ tripId, tripName }) => {
                 <Title3>Trip Chat</Title3>
                 <div className="flex items-center gap-2">
                   <WifiIcon className={`w-4 h-4 ${isConnected ? 'text-green-600' : 'text-red-600'}`} />
-                  <Badge variant={isConnected ? 'success' : 'danger'}>
+                  <Badge variant={isConnected ? 'default' : 'destructive'}>
                     {isConnected ? 'Connected' : 'Disconnected'}
                   </Badge>
                 </div>

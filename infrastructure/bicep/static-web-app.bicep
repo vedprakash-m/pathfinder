@@ -37,7 +37,7 @@ resource staticWebAppSettings 'Microsoft.Web/staticSites/config@2022-09-01' = {
     REACT_APP_API_BASE_URL: apiBackendUrl
     VITE_API_URL: apiBackendUrl
     AUTH0_AUDIENCE: 'https://api.pathfinder.com'
-    AUTH0_DOMAIN: 'dev-pathfinder.us.auth0.com'
+    AUTH0_DOMAIN: 'dev-jwnud3v8ghqnyygr.us.auth0.com'
     APPLICATION_INSIGHTS_CONNECTION_STRING: ''
     ENVIRONMENT: 'production'
   }

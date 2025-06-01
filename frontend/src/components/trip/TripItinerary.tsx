@@ -176,7 +176,7 @@ const DayCard: React.FC<{
   onAddActivity: (activity: Omit<ItineraryActivity, 'id'>) => void;
   onUpdateActivity: (activityId: string, updates: Partial<ItineraryActivity>) => void;
   onDeleteActivity: (activityId: string) => void;
-}> = ({ day, onAddActivity, onUpdateActivity, onDeleteActivity }) => {
+}> = ({ day, onAddActivity, onUpdateActivity: _onUpdateActivity, onDeleteActivity }) => {
   const [isAddingActivity, setIsAddingActivity] = useState(false);
   const [newActivity, setNewActivity] = useState({
     title: '',
@@ -349,7 +349,7 @@ const DayCard: React.FC<{
 };
 
 export const TripItinerary: React.FC<TripItineraryProps> = ({
-  tripId,
+  tripId: _tripId,
   startDate,
   endDate,
   itinerary,

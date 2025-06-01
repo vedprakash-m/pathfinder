@@ -6,11 +6,10 @@ import {
   PlusIcon,
   PencilIcon,
   TrashIcon,
-  TrendingUpIcon,
-  TrendingDownIcon,
+  ArrowTrendingUpIcon,
   ChartBarIcon,
 } from '@heroicons/react/24/outline';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface BudgetCategory {
   id: string;
@@ -183,7 +182,7 @@ const BudgetOverview: React.FC<{
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                  <Tooltip formatter={(value: any) => formatCurrency(value as number)} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
@@ -203,7 +202,7 @@ const BudgetCategories: React.FC<{
   onAddCategory: (category: Omit<BudgetCategory, 'id'>) => void;
   onUpdateCategory: (categoryId: string, updates: Partial<BudgetCategory>) => void;
   onDeleteCategory: (categoryId: string) => void;
-}> = ({ categories, onAddCategory, onUpdateCategory, onDeleteCategory }) => {
+}> = ({ categories, onAddCategory, onUpdateCategory: _onUpdateCategory, onDeleteCategory }) => {
   const [isAdding, setIsAdding] = useState(false);
   const [newCategory, setNewCategory] = useState({ name: '', allocated: 0 });
 
@@ -284,7 +283,7 @@ const BudgetCategories: React.FC<{
                       />
                       <Title3>{category.name}</Title3>
                       {isOverBudget && (
-                        <Badge color="danger" icon={<TrendingUpIcon className="w-3 h-3" />}>
+                        <Badge color="danger" icon={<ArrowTrendingUpIcon className="w-3 h-3" />}>
                           Over Budget
                         </Badge>
                       )}
@@ -370,16 +369,16 @@ const BudgetCategories: React.FC<{
 };
 
 export const TripBudget: React.FC<TripBudgetProps> = ({
-  tripId,
+  tripId: _tripId,
   totalBudget,
   categories,
-  expenses,
-  families,
+  expenses: _expenses,
+  families: _families,
   onUpdateBudget,
   onAddCategory,
-  onUpdateCategory,
+  onUpdateCategory: _onUpdateCategory,
   onDeleteCategory,
-  onAddExpense,
+  onAddExpense: _onAddExpense,
 }) => {
   return (
     <motion.div
@@ -397,7 +396,7 @@ export const TripBudget: React.FC<TripBudgetProps> = ({
       <BudgetCategories
         categories={categories}
         onAddCategory={onAddCategory}
-        onUpdateCategory={onUpdateCategory}
+        onUpdateCategory={_onUpdateCategory}
         onDeleteCategory={onDeleteCategory}
       />
 
