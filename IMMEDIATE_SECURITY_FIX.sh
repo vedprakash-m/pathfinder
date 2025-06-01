@@ -19,13 +19,13 @@ echo "🔧 Sanitizing current files with hardcoded secrets..."
 # Fix FINAL_DEPLOYMENT_GUIDE.md
 if [ -f "FINAL_DEPLOYMENT_GUIDE.md" ]; then
     echo "  Fixing FINAL_DEPLOYMENT_GUIDE.md..."
-    sed -i '' 's/YOUR_AUTH0_CLIENT_ID/YOUR_AUTH0_CLIENT_ID/g' FINAL_DEPLOYMENT_GUIDE.md
+    sed -i '' 's/KXu3KpGiyRHHHgiXX90sHuNC4rfYRcNn/YOUR_AUTH0_CLIENT_ID/g' FINAL_DEPLOYMENT_GUIDE.md
 fi
 
 # Fix deploy-frontend-fixes.sh
 if [ -f "deploy-frontend-fixes.sh" ]; then
     echo "  Fixing deploy-frontend-fixes.sh..."
-    sed -i '' 's/YOUR_AUTH0_CLIENT_ID/YOUR_AUTH0_CLIENT_ID/g' deploy-frontend-fixes.sh
+    sed -i '' 's/KXu3KpGiyRHHHgiXX90sHuNC4rfYRcNn/YOUR_AUTH0_CLIENT_ID/g' deploy-frontend-fixes.sh
     sed -i '' 's/YOUR_TOKEN/\${GITHUB_TOKEN}/g' deploy-frontend-fixes.sh
 fi
 
