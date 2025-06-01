@@ -101,6 +101,34 @@ Our AI engine now includes advanced capabilities:
 - **📊 Rich Visualizations**: Recharts integration for budget and analytics displays
 - **🎯 Intuitive Navigation**: Tab-based organization keeps complex features accessible
 
+## 🔧 Recent Updates & Bug Fixes (May 2025)
+
+### **🔐 Auth0 Domain Configuration Fix**
+**Issue Resolved**: Fixed authentication errors where users encountered "Unknown host" errors during signup/login.
+
+**Root Cause**: The frontend container image was built with an incorrect Auth0 domain (`dev-pathfinder.us.auth0.com`) hardcoded into the static JavaScript bundle due to Vite's build-time environment variable processing.
+
+**Resolution**: 
+- ✅ Updated production environment configuration with correct Auth0 domain (`dev-jwnud3v8ghqnyygr.us.auth0.com`)
+- ✅ Fixed TypeScript compilation errors in chat, budget, and itinerary components
+- ✅ Rebuilt frontend with proper Auth0 configuration embedded in the bundle
+- ✅ Updated Azure Container Apps to use Key Vault references instead of hardcoded values
+- ✅ Created comprehensive deployment and verification documentation
+
+**Impact**: Users can now successfully sign up and log in without authentication errors, completing the Phase 1 MVP functionality.
+
+### **🛠️ Code Quality Improvements**
+- **TypeScript Fixes**: Resolved compilation errors in UI components (Textarea, Popover, Badge)
+- **Component Updates**: Enhanced component typing and forward ref support
+- **Build Process**: Improved frontend build process with proper environment variable handling
+- **Documentation**: Added comprehensive deployment guides and verification procedures
+
+### **📋 Deployment Documentation**
+- **Setup Guides**: Created detailed production deployment instructions
+- **Verification Plans**: Comprehensive testing procedures for Auth0 integration
+- **Troubleshooting**: Step-by-step resolution guides for common issues
+- **Security**: Updated key rotation and security incident response procedures
+
 ## 💼 Real-World Impact
 
 ### **Success Stories & Use Cases**
