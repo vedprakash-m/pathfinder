@@ -1,0 +1,22 @@
+# Production requirements - minimal dependencies for Azure deployment
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+python-multipart==0.0.6
+aiofiles==23.2.1
+
+# Azure integration
+azure-keyvault-secrets==4.7.0
+azure-identity==1.15.0
+
+# Redis for caching
+redis==5.0.1
+aioredis==2.0.1
+
+# Monitoring and logging
+structlog==23.2.0
+prometheus-client==0.19.0
+
+# HTTP client
+httpx==0.25.2
+aiohttp==3.9.1

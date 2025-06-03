@@ -1,11 +1,13 @@
 import { apiService } from './api';
 import { User, AuthCredentials, RegisterData, ApiResponse, UserProfile, LoginResponse } from '@/types';
+import auth0Config from '../auth0-config';
 
-// Auth0 configuration - now sourced from Azure Key Vault via environment variables
-const auth0Config = {
-  domain: import.meta.env.VITE_AUTH0_DOMAIN!,
-  clientId: import.meta.env.VITE_AUTH0_CLIENT_ID!,
-  audience: import.meta.env.VITE_AUTH0_AUDIENCE!,
+// Auth0 configuration is now imported from hardcoded config to ensure consistency
+const authConfig = {
+  ...auth0Config.authorizationParams,
+  domain: auth0Config.domain,
+  clientId: auth0Config.clientId,
+  audience: auth0Config.authorizationParams.audience,
   redirectUri: `${window.location.origin}/callback`,
 };
 
@@ -64,14 +66,14 @@ export const authService = {
   // Auth0 integration
   getAuth0LoginUrl: (): string => {
     const params = {
-      client_id: auth0Config.clientId,
+      client_id: authConfig.clientId,
       response_type: 'code',
-      redirect_uri: auth0Config.redirectUri,
-      audience: auth0Config.audience,
+      redirect_uri: authConfig.redirectUri,
+      audience: authConfig.audience,
       scope: 'openid profile email',
     };
     
-    return `https://${auth0Config.domain}/authorize?${new URLSearchParams(params).toString()}`;
+    return `https://${authConfig.domain}/authorize?${new URLSearchParams(params).toString()}`;
   },
   
   // Handle Auth0 callback

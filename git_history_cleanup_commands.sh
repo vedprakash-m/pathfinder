@@ -51,8 +51,8 @@ echo ""
 echo "🔧 STEP 3: Running BFG Repo Cleaner..."
 
 # Delete the problematic file from history
-echo "  Removing frontend/.env.production from all commits..."
-java -jar bfg.jar --delete-files frontend/.env.production
+echo "  Removing .env.production from all commits..."
+java -jar bfg.jar --delete-files .env.production
 
 # Replace secrets in all text content
 echo "  Replacing secrets in all commits..."

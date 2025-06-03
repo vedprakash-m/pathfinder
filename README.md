@@ -69,7 +69,18 @@ Organizing trips with multiple families is a logistical nightmare:
 - **GDPR Compliant**: Full control over your data with easy export and deletion
 - **24/7 Monitoring**: Proactive issue detection and resolution
 
-## 🎉 Latest Features (May 2025)
+## 🎉 Latest Features (June 2025)
+
+### **🚀 LLM Orchestration Service** - *NEW*
+Production-ready AI service layer with enterprise-grade capabilities:
+
+- **🤖 Multi-Provider Intelligence**: Seamless integration with OpenAI GPT, Google Gemini, and Anthropic Claude
+- **💰 Cost Optimization**: Intelligent routing engine automatically selects the most cost-effective model for each request
+- **⚡ Circuit Breaker Pattern**: Fault-tolerant architecture with automatic failover and recovery
+- **📊 Budget Management**: Real-time cost tracking with configurable spending limits and alerts
+- **🚄 Performance Caching**: Redis-based response caching for improved speed and reduced costs
+- **📈 Analytics Dashboard**: Comprehensive usage metrics, performance monitoring, and cost analysis
+- **🔒 Secure Integration**: Full Auth0 authentication compatibility with existing security model
 
 ### **🎯 Complete Trip Management Dashboard**
 Experience comprehensive trip management with our newly integrated tabbed interface:
@@ -81,13 +92,14 @@ Experience comprehensive trip management with our newly integrated tabbed interf
 - **💬 Chat Tab**: Real-time collaboration with WebSocket-powered messaging and live presence indicators
 
 ### **🤖 Enhanced AI Service**
-Our AI engine now includes advanced capabilities:
+Our AI engine now includes advanced capabilities powered by the new LLM Orchestration Service:
 
 - **🚗 Route Optimization**: EV charging station integration for electric vehicle trips
 - **💡 Smart Budget Allocation**: AI analyzes spending patterns to optimize budget distribution
 - **🎨 Activity Recommendations**: Context-aware suggestions based on location, weather, and family preferences  
 - **🍽️ Restaurant Matching**: Dietary restriction support with cuisine preference learning
 - **⚖️ Multi-Family Preference Engine**: Intelligent conflict resolution for group decision making
+- **🔄 Multi-Model Fallback**: Automatic model switching ensures high availability and optimal performance
 
 ### **⚡ Real-Time Features**
 - **👥 Live Presence**: See who's online and actively planning
@@ -168,11 +180,12 @@ Our AI engine now includes advanced capabilities:
 
 ### **Technology Stack**
 - **Backend**: FastAPI (Python 3.12+), SQLAlchemy, Alembic, Celery
+- **LLM Orchestration**: Custom FastAPI service with multi-provider support (OpenAI, Gemini, Anthropic)
 - **Frontend**: React 18, TypeScript, Vite, Zustand, Tailwind CSS, Fluent UI
 - **UI Components**: Microsoft Fluent UI, Heroicons, Framer Motion, Recharts
 - **Database**: Hybrid strategy - Azure SQL Database + Cosmos DB
 - **Cache**: Redis with multi-layer caching strategy
-- **AI**: OpenAI GPT-4o with cost optimization and fallback to GPT-4o-mini
+- **AI**: Multi-provider LLM orchestration with cost optimization and intelligent routing
 - **Real-time**: WebSocket-based live updates, SignalR integration
 - **Infrastructure**: Azure Container Apps, Application Insights, Key Vault
 - **Authentication**: Auth0 with zero-trust security model
@@ -189,26 +202,32 @@ Our AI engine now includes advanced capabilities:
 ```
 ┌─────────────────┐   ┌─────────────────┐ ┌─────────────────┐
 │ React Frontend  │   │ Auth0           │ │ GitHub Actions  │
-│ (Static Web App)│◄─►│ (Authentication)│ │ (CI/CD)         │
+│ (Container Apps)│◄─►│ (Authentication)│ │ (CI/CD)         │
 └─────────┬───────┘   └─────────────────┘ └─────────────────┘
           │
           │ HTTPS/WebSocket
           ▼
 ┌─────────────────┐   ┌─────────────────┐   ┌─────────────────┐
 │ Azure CDN       │   │ Container Apps  │   │ Application     │
-│ + Load Balancer │◄─►│ (FastAPI)       │◄─►│ Insights        │
+│ + Load Balancer │◄─►│ (Backend API)   │◄─►│ Insights        │
 └─────────┬───────┘   └─────────┬───────┘   └─────────────────┘
           │                     │
           │                     ▼
           │         ┌─────────────────┐ ┌─────────────────┐
-          │         │ Redis Cache     │ │ Service Bus     │
-          │         │ (Multi-layer)   │ │ (Background)    │
+          │         │ LLM Orchestration│ │ Service Bus     │
+          │         │ Service (ACI)   │ │ (Background)    │
+          │         └─────────┬───────┘ └─────────────────┘
+          │                   │
+          │                   ▼
+          │         ┌─────────────────┐ ┌─────────────────┐
+          │         │ Redis Cache     │ │ Multi-Provider  │
+          │         │ (Multi-layer)   │ │ LLM APIs        │
           │         └─────────────────┘ └─────────────────┘
           │
           ▼
 ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
 │ Azure SQL DB    │ │ Cosmos DB       │ │ External APIs   │
-│ (Relational)    │ │ (Documents)     │ │ (OpenAI, Maps)  │
+│ (Relational)    │ │ (Documents)     │ │ (OpenAI, Gemini)│
 └─────────────────┘ └─────────────────┘ └─────────────────┘
 ```
 
@@ -326,6 +345,15 @@ pathfinder/
 │   │   ├── 📁 hooks/          # Custom React hooks
 │   │   └── 📁 types/          # TypeScript type definitions
 │   └── 📄 package.json       # Node.js dependencies
+├── 📁 llm_orchestration/      # LLM Orchestration Service
+│   ├── 📁 core/              # Core LLM gateway and types
+│   ├── 📁 services/          # Analytics, budget, caching services
+│   ├── 📁 config/            # Configuration management
+│   ├── 📁 tests/             # Service-specific tests
+│   ├── 📄 app_production.py  # Production FastAPI application
+│   ├── 📄 Dockerfile.production # Production container config
+│   ├── 📄 deploy-ultra-simple.sh # Azure deployment script
+│   └── 📄 requirements-production.txt # Production dependencies
 ├── 📁 infrastructure/         # Infrastructure as Code
 │   ├── 📁 bicep/             # Azure Bicep templates
 │   └── 📁 scripts/           # Deployment scripts
@@ -421,6 +449,13 @@ npm run format                # Prettier formatting
 
 ## 🚀 Deployment
 
+### **Complete System Deployment**
+
+The Pathfinder platform consists of three main components:
+1. **Frontend Application** - React TypeScript UI
+2. **Backend API** - FastAPI service with database
+3. **LLM Orchestration Service** - AI service layer with multi-provider support
+
 ### **Azure Production Deployment**
 
 #### **Prerequisites**
@@ -446,6 +481,25 @@ az deployment group create \
                sqlAdminPassword=your_secure_password \
                openAIApiKey=your_openai_key
 ```
+
+#### **2. Deploy LLM Orchestration Service**
+```bash
+# Navigate to LLM orchestration directory
+cd llm_orchestration
+
+# Quick deployment to Azure Container Instances
+chmod +x deploy-ultra-simple.sh
+./deploy-ultra-simple.sh
+
+# Verify deployment
+cd .. && ./verify-llm-deployment.sh
+```
+
+**Expected LLM Service Endpoints:**
+- Service URL: `http://[CONTAINER_IP]:8000`
+- Health Check: `http://[CONTAINER_IP]:8000/health`
+- API Documentation: `http://[CONTAINER_IP]:8000/docs`
+- Metrics: `http://[CONTAINER_IP]:8000/metrics`
 
 #### **2. Configure GitHub Secrets**
 Set up the following secrets in your GitHub repository:

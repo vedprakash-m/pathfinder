@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Auth0Provider } from '@auth0/auth0-react'
 import { Toaster } from 'react-hot-toast'
 import App from './App.tsx'
+import auth0Config from './auth0-config.ts'
 import './styles/index.css'
 
 // Create a client with optimized caching configuration
@@ -20,14 +21,15 @@ const queryClient = new QueryClient({
   },
 })
 
-// Auth0 configuration - now sourced from Azure Key Vault via environment variables
-const auth0Config = {
-  domain: import.meta.env.VITE_AUTH0_DOMAIN!,
-  clientId: import.meta.env.VITE_AUTH0_CLIENT_ID!,
-  authorizationParams: {
-    redirect_uri: window.location.origin,
-    audience: import.meta.env.VITE_AUTH0_AUDIENCE!,
-  },
+// Auth0 configuration is now imported from auth0-config.ts with hardcoded values
+
+// Debug logging for development
+if (import.meta.env.DEV) {
+  console.log('Auth0 Config:', {
+    domain: auth0Config.domain,
+    clientId: auth0Config.clientId ? `${auth0Config.clientId.substring(0, 8)}...` : 'MISSING',
+    audience: auth0Config.authorizationParams.audience,
+  });
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

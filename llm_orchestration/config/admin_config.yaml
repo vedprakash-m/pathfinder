@@ -1,0 +1,229 @@
+# Admin Configuration for LLM Orchestration Layer
+# This file defines the complete system configuration
+# API keys are referenced by Key Vault identifiers, never stored directly
+
+version: "1.0"
+last_updated: "2025-06-01T14:00:00Z"
+admin_contact: "admin@pathfinder.com"
+
+# =============================================================================
+# Key Vault Configuration (Security Foundation)
+# =============================================================================
+key_vault:
+  provider: "azure"  # azure | aws | hashicorp
+  vault_name: "pathfinder-llm-vault"
+  client_id: "${AZURE_CLIENT_ID}"  # From environment
+  tenant_id: "${AZURE_TENANT_ID}"
+  auth_method: "managed_identity"  # managed_identity | service_principal
+  
+  # Secret references (NOT the actual secrets)
+  secrets:
+    openai_api_key: "secret-openai-api-key"
+    gemini_api_key: "secret-gemini-api-key"
+    perplexity_api_key: "secret-perplexity-api-key"
+    anthropic_api_key: "secret-anthropic-api-key"
+
+# =============================================================================
+# Model Configuration & Strategy
+# =============================================================================
+models:
+  # Model definitions with cost and capability metadata
+  definitions:
+    - id: "gpt-4o"
+      provider: "openai"
+      name: "GPT-4o"
+      cost_per_1k_tokens:
+        input: 0.005
+        output: 0.015
+      max_tokens: 128000
+      capabilities: ["text", "reasoning", "code"]
+      active: true
+      
+    - id: "gpt-4o-mini"
+      provider: "openai"
+      name: "GPT-4o Mini"
+      cost_per_1k_tokens:
+        input: 0.00015
+        output: 0.0006
+      max_tokens: 128000
+      capabilities: ["text", "reasoning", "code"]
+      active: true
+      
+    - id: "gemini-1.5-pro"
+      provider: "gemini"
+      name: "Gemini 1.5 Pro"
+      cost_per_1k_tokens:
+        input: 0.00125
+        output: 0.005
+      max_tokens: 2000000
+      capabilities: ["text", "reasoning", "code", "multimodal"]
+      active: true
+      
+    - id: "gemini-1.5-flash"
+      provider: "gemini"
+      name: "Gemini 1.5 Flash"
+      cost_per_1k_tokens:
+        input: 0.000075
+        output: 0.0003
+      max_tokens: 1000000
+      capabilities: ["text", "reasoning", "code", "multimodal"]
+      active: true
+
+  # Routing strategy for model selection
+  routing_strategy:
+    default_strategy: "cost_optimized"
+    
+    strategies:
+      cost_optimized:
+        description: "Prioritize lowest cost models that meet requirements"
+        rules:
+          - condition: "task_type == 'simple_qa'"
+            models: ["gpt-4o-mini", "gemini-1.5-flash"]
+          - condition: "task_type == 'complex_reasoning'"
+            models: ["gpt-4o", "gemini-1.5-pro"]
+          - condition: "task_type == 'code_generation'"
+            models: ["gpt-4o", "gpt-4o-mini"]
+          - condition: "default"
+            models: ["gpt-4o-mini", "gemini-1.5-flash", "gpt-4o"]
+            
+      performance_optimized:
+        description: "Prioritize best performance regardless of cost"
+        rules:
+          - condition: "default"
+            models: ["gpt-4o", "gemini-1.5-pro"]
+            
+      # A/B Testing configuration
+      ab_test:
+        description: "Split traffic for model comparison"
+        enabled: true
+        test_name: "gpt4o_vs_gemini_pro"
+        traffic_split:
+          - model: "gpt-4o"
+            percentage: 50
+          - model: "gemini-1.5-pro"
+            percentage: 50
+
+# =============================================================================
+# Budget Management
+# =============================================================================
+budget:
+  global:
+    daily_limit: 1000.0  # USD
+    monthly_limit: 25000.0
+    alert_thresholds: [50, 75, 90]  # Percentage
+    auto_disable_at: 95  # Percentage
+    
+  tenant_defaults:
+    daily_limit: 50.0
+    monthly_limit: 1000.0
+    alert_thresholds: [80, 95]
+    
+  user_defaults:
+    daily_limit: 10.0
+    monthly_limit: 200.0
+    request_limit_per_hour: 100
+
+# =============================================================================
+# Performance & Reliability Configuration
+# =============================================================================
+performance:
+  caching:
+    enabled: true
+    provider: "redis"
+    connection_string: "${REDIS_CONNECTION_STRING}"
+    ttl_seconds: 3600
+    max_cache_size_mb: 1000
+    cache_key_strategy: "prompt_hash_model"
+    
+  rate_limiting:
+    enabled: true
+    global_rps: 1000  # Requests per second
+    per_user_rps: 10
+    per_tenant_rps: 100
+    
+  circuit_breaker:
+    failure_threshold: 5
+    recovery_timeout_seconds: 60
+    half_open_max_calls: 3
+    
+  retry_policy:
+    max_attempts: 3
+    backoff_strategy: "exponential"
+    base_delay_ms: 1000
+    max_delay_ms: 10000
+
+# =============================================================================
+# Provider-Specific Configuration
+# =============================================================================
+providers:
+  openai:
+    base_url: "https://api.openai.com/v1"
+    timeout_seconds: 30
+    max_concurrent_requests: 50
+    rate_limit_rpm: 3000
+    
+  gemini:
+    base_url: "https://generativelanguage.googleapis.com/v1beta"
+    timeout_seconds: 30
+    max_concurrent_requests: 50
+    rate_limit_rpm: 300
+    
+  perplexity:
+    base_url: "https://api.perplexity.ai"
+    timeout_seconds: 30
+    max_concurrent_requests: 25
+    rate_limit_rpm: 1000
+
+# =============================================================================
+# Logging & Analytics
+# =============================================================================
+logging:
+  level: "INFO"
+  structured: true
+  include_request_body: false  # For privacy
+  include_response_body: false
+  
+  destinations:
+    - type: "file"
+      path: "/var/log/llm-orchestration/app.log"
+      rotation: "daily"
+      retention_days: 30
+      
+    - type: "azure_insights"
+      connection_string: "${AZURE_INSIGHTS_CONNECTION_STRING}"
+      
+analytics:
+  enabled: true
+  database_url: "${ANALYTICS_DATABASE_URL}"
+  batch_size: 100
+  flush_interval_seconds: 60
+  
+  metrics:
+    - "request_count"
+    - "response_time"
+    - "token_usage"
+    - "cost_tracking"
+    - "error_rates"
+    - "cache_hit_rate"
+    - "model_performance"
+
+# =============================================================================
+# Tenant-Specific Overrides (Example)
+# =============================================================================
+tenant_overrides:
+  enterprise_tenant_1:
+    budget:
+      daily_limit: 500.0
+      monthly_limit: 10000.0
+    routing_strategy: "performance_optimized"
+    models:
+      additional_models:
+        - id: "gpt-4-turbo"
+          provider: "openai"
+          active: true
+          
+  startup_tenant_1:
+    budget:
+      daily_limit: 25.0
+      monthly_limit: 500.0
+    routing_strategy: "cost_optimized"

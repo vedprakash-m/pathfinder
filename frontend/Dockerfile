@@ -50,6 +50,9 @@ COPY nginx.conf /etc/nginx/nginx.conf
 # Copy built application from build stage
 COPY --from=build /app/dist /usr/share/nginx/html
 
+# Copy custom entrypoint script for runtime environment variable replacement
+COPY entrypoint.sh /entrypoint.sh
+
 # Create non-root user and set up directories
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nextjs -u 1001 && \
@@ -57,7 +60,8 @@ RUN addgroup -g 1001 -S nodejs && \
     chown -R nextjs:nodejs /usr/share/nginx/html && \
     chown -R nextjs:nodejs /tmp/nginx && \
     touch /tmp/nginx/nginx.pid && \
-    chown nextjs:nodejs /tmp/nginx/nginx.pid
+    chown nextjs:nodejs /tmp/nginx/nginx.pid && \
+    chmod +x /entrypoint.sh
 
 # Switch to non-root user
 USER nextjs
@@ -69,5 +73,5 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:8080/ || exit 1
 
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Use custom entrypoint that handles runtime environment variable replacement
+ENTRYPOINT ["/entrypoint.sh"]
