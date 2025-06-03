@@ -1,7 +1,7 @@
 # Pathfinder - AI-Powered Group Trip Planner
 
 [![Build Status](https://github.com/vedprakash-m/pathfinder/workflows/Enhanced%20Production%20Pipeline/badge.svg)](https://github.com/vedprakash-m/pathfinder/actions)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Coverage](https://img.shields.io/badge/coverage-80%25-green.svg)](https://codecov.io/gh/vedprakash-m/pathfinder)
 [![Deployment](https://img.shields.io/badge/Deployment-Live-green.svg)](#live-application)
 
@@ -556,102 +556,110 @@ curl https://localhost:8000/health
 - Application Insights monitoring
 - Azure Key Vault for secrets
 
-## Contributing
+## 📄 License & Legal
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+### **Open Source License**
 
-### Code Standards
-- **Backend**: Follow PEP 8, use type hints, maintain 90%+ test coverage
-- **Frontend**: Use TypeScript strict mode, follow React best practices
-- **Commits**: Use conventional commit messages
-- **Documentation**: Update docs for any API or feature changes
+Pathfinder is licensed under the **GNU Affero General Public License v3.0 (AGPLv3)**.
 
-## 📊 Monitoring & Performance
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 
-### **Application Insights Dashboard**
-- **Performance Metrics**: Response times, throughput, error rates
-- **Cost Tracking**: AI token usage, database operations, infrastructure costs
-- **User Analytics**: Feature adoption, user journeys, conversion rates
-- **Custom Metrics**: Trip completion rates, AI generation success rates
+### **What This Means For You**
 
-### **Key Performance Indicators (KPIs)**
-- **Response Time**: P95 < 2 seconds for API endpoints
-- **System Uptime**: > 99.9% availability target
-- **Error Rate**: < 1% error rate for critical paths
-- **AI Generation**: < 30 seconds for itinerary generation
-- **Cost Efficiency**: < $5/month per active user
+#### **✅ You Can:**
+- **Use** the software for any purpose, including commercial use
+- **Study** how the program works and modify it to suit your needs
+- **Distribute** copies of the original or modified software
+- **Improve** the software and share your improvements with the community
 
-### **Logging & Observability**
-```python
-# Structured logging with correlation IDs
-logger.info(
-    "Trip created successfully",
-    trip_id=trip.id,
-    user_id=current_user.id,
-    family_count=len(families),
-    cost_estimate=ai_cost
-)
+#### **📋 Your Responsibilities:**
+- **Share Source Code**: If you run this software as a service accessible to others over a network, you must provide access to the source code (including any modifications)
+- **Keep License Notices**: All copyright and license notices must be preserved
+- **Use Same License**: Any derivatives must also be licensed under AGPLv3
+- **Mark Changes**: Clearly indicate any modifications you make
+
+#### **🌐 Network Service Requirements**
+The AGPL's key requirement: **If you offer this software as a service to others over a network, you must provide the source code to your users.** This ensures that improvements to networked software benefit the entire community.
+
+### **Why AGPLv3?**
+
+We chose AGPLv3 to ensure that:
+- **Community Benefits**: All improvements to Pathfinder benefit everyone
+- **Innovation Protection**: Prevents proprietary versions that don't share improvements
+- **Open Ecosystem**: Encourages collaborative development in the travel tech space
+- **User Rights**: Ensures users always have access to the software they depend on
+
+### **Commercial Use & Dual Licensing**
+
+#### **Open Source Commercial Use**
+You can use Pathfinder commercially under AGPLv3 terms. Many successful businesses operate this way while contributing back to the community.
+
+#### **Commercial Licensing Available**
+If you need to use Pathfinder without AGPLv3 obligations (e.g., proprietary modifications), commercial licensing options are available.
+
+**Contact for Commercial Licensing:**
+- **Email**: [Contact via GitHub Issues](https://github.com/vedprakashmishra/pathfinder/issues)
+- **Subject**: "Commercial License Inquiry"
+- **Include**: Your use case and requirements
+
+### **Third-Party Components**
+
+This software includes open-source components with compatible licenses:
+
+- **Frontend Dependencies**: See [`frontend/package.json`](frontend/package.json) for complete list
+- **Backend Dependencies**: See [`backend/requirements.txt`](backend/requirements.txt) for complete list
+- **LLM Orchestration**: See [`llm_orchestration/requirements-production.txt`](llm_orchestration/requirements-production.txt)
+
+All third-party components are used in compliance with their respective licenses.
+
+### **Contributing & License Agreement**
+
+By contributing to Pathfinder, you agree that your contributions will be licensed under the same AGPLv3 license. See our [Contributing Guidelines](CONTRIBUTING.md) for details.
+
+### **Source Code Access**
+
+As required by AGPLv3, the complete source code is available at:
+- **Repository**: https://github.com/vedprakashmishra/pathfinder
+- **License Text**: [LICENSE](LICENSE)
+- **License Notice**: [NOTICE](NOTICE)
+
+For users of our hosted service, source code download links are available in the application footer.
+
+### **Copyright & Attribution**
+
+```
+Pathfinder - AI-Powered Group Trip Planner
+Copyright (C) 2025 Vedprakash Mishra
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published
+by the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
 ```
 
-### **Cost Monitoring**
-- **Real-time Tracking**: Azure costs and OpenAI token usage
-- **Budget Alerts**: Automated notifications when approaching limits
-- **Optimization Reports**: Weekly usage analysis and recommendations
-- **Smart Model Selection**: Automatic fallback to cost-effective AI models
+### **Questions About Licensing?**
 
-## 🔒 Security & Compliance
+- **Read the Full License**: [LICENSE](LICENSE) file
+- **Review the Notice**: [NOTICE](NOTICE) file for practical guidance
+- **Check the FAQ**: [GNU AGPL FAQ](https://www.gnu.org/licenses/gpl-faq.html#AGPLv3)
+- **Contact Us**: Open an issue for license-related questions
 
-### **Zero-Trust Security Architecture**
-- **Authentication**: Auth0 with MFA and social login support
-- **Authorization**: Role-based access control (RBAC) with granular permissions
-- **API Security**: JWT tokens, rate limiting, input validation, CORS
-- **Infrastructure**: Azure Key Vault, managed identities, network security groups
-
-### **Data Protection**
-- **Encryption**: AES-256 at rest, TLS 1.3 in transit
-- **GDPR Compliance**: Data anonymization, deletion, and export capabilities
-- **Audit Logging**: All data access and modifications tracked with correlation IDs
-- **Privacy**: PII encryption, secure file handling, minimal data collection
-
-### **Security Monitoring**
-- **Threat Detection**: Automated security scanning in CI/CD pipeline
-- **Vulnerability Management**: Trivy security scanning, dependency updates
-- **Access Monitoring**: Failed login attempts, permission escalation alerts
-- **Incident Response**: Automated security incident workflows
-
-## ⚡ Performance Optimization
-
-### **Backend Optimizations**
-- **Database**: Query optimization, connection pooling, read replicas
-- **Caching**: Multi-layer caching (Redis, application-level, CDN)
-- **AI Models**: Cost-optimized selection with quality fallbacks
-- **Background Jobs**: Async processing with Celery for heavy operations
-
-### **Frontend Optimizations**
-- **Code Splitting**: Route-based lazy loading reduces initial bundle size
-- **Caching**: API response caching with invalidation strategies
-- **Performance Monitoring**: Core Web Vitals tracking and optimization
-- **Progressive Loading**: Skeleton screens and progressive enhancement
-
-### **Infrastructure Scaling**
-- **Auto-scaling**: Container Apps with HTTP-based scaling rules
-- **Load Balancing**: Azure Application Gateway with health checks
-- **Geographic Distribution**: CDN for global content delivery
-- **Database Scaling**: Horizontal scaling strategies for high load
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+---
 
 ## Support
 
 - **Documentation**: [docs/](docs/)
 - **Issues**: [GitHub Issues](https://github.com/vedprakash-m/pathfinder/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/vedprakash-m/pathfinder/discussions)
+- **Contributing**: [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## Roadmap
 
