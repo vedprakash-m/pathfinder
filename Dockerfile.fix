@@ -1,9 +1,0 @@
-# Use the existing frontend image as base
-FROM pathfinderdevregistry.azurecr.io/pathfinder-frontend@sha256:68d189add606164867388ba499d562850457ebf0490e5ccfa2c7fa292aeb2862
-
-# Copy the fix script
-COPY fix-auth0-domain.sh /fix-auth0-domain.sh
-RUN chmod +x /fix-auth0-domain.sh
-
-# Use the fix script as the new entrypoint
-ENTRYPOINT ["/fix-auth0-domain.sh"]

@@ -148,3 +148,27 @@ private/
 **/credentials/
 *.backup
 *.bak.original
+
+# Prevent root directory clutter
+*.backup
+*.bak
+*.tmp
+*.log
+.DS_Store
+secrets-to-replace.txt
+*-auth0-*.sh
+*-emergency-*.sh
+*-nuclear-*.sh
+*-ultimate-*.sh
+*-critical-*.sh
+*-immediate-*.sh
+*-debug-*.sh
+*-fix-*.sh
+git_*.txt
+bfg.jar
+
+# Temporary development files
+test-*.js
+debug-*
+temp-*
+*.temp

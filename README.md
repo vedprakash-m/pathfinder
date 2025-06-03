@@ -614,14 +614,14 @@ All third-party components are used in compliance with their respective licenses
 
 ### **Contributing & License Agreement**
 
-By contributing to Pathfinder, you agree that your contributions will be licensed under the same AGPLv3 license. See our [Contributing Guidelines](CONTRIBUTING.md) for details.
+By contributing to Pathfinder, you agree that your contributions will be licensed under the same AGPLv3 license. See our [Contributing Guidelines](docs/CONTRIBUTING.md) for details.
 
 ### **Source Code Access**
 
 As required by AGPLv3, the complete source code is available at:
 - **Repository**: https://github.com/vedprakashmishra/pathfinder
 - **License Text**: [LICENSE](LICENSE)
-- **License Notice**: [NOTICE](NOTICE)
+- **License Notice**: [docs/NOTICE](docs/NOTICE)
 
 For users of our hosted service, source code download links are available in the application footer.
 
@@ -648,7 +648,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 ### **Questions About Licensing?**
 
 - **Read the Full License**: [LICENSE](LICENSE) file
-- **Review the Notice**: [NOTICE](NOTICE) file for practical guidance
+- **Review the Notice**: [docs/NOTICE](docs/NOTICE) file for practical guidance
 - **Check the FAQ**: [GNU AGPL FAQ](https://www.gnu.org/licenses/gpl-faq.html#AGPLv3)
 - **Contact Us**: Open an issue for license-related questions
 
@@ -659,7 +659,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 - **Documentation**: [docs/](docs/)
 - **Issues**: [GitHub Issues](https://github.com/vedprakash-m/pathfinder/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/vedprakash-m/pathfinder/discussions)
-- **Contributing**: [CONTRIBUTING.md](CONTRIBUTING.md)
+- **Contributing**: [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)
 
 ## Roadmap
 
