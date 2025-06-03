@@ -127,7 +127,6 @@ jobs:
     needs: [security-scan]
     if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
-    environment: production
     steps:
       - uses: actions/checkout@v4
       - name: Azure Login
@@ -140,6 +139,7 @@ jobs:
           subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           resourceGroupName: ${{ secrets.AZURE_RG }}
           template: ./infrastructure/bicep/main.bicep
+          scope: resourcegroup
           parameters: |
             appName=pathfinder
             environment=prod
@@ -151,7 +151,6 @@ jobs:
     needs: [deploy-infrastructure]
     if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
-    environment: production
     steps:
       - name: Azure Login
         uses: azure/login@v1
@@ -161,7 +160,7 @@ jobs:
         uses: azure/container-apps-deploy-action@v1
         with:
           appSourcePath: ${{ github.workspace }}
-          containerAppName: pathfinder-backend-prod
+          containerAppName: pathfinder-backend
           resourceGroup: ${{ secrets.AZURE_RG }}
           imageToDeploy: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:latest
 
@@ -169,7 +168,6 @@ jobs:
     needs: [deploy-backend]
     if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
-    environment: production
     steps:
       - name: Azure Login
         uses: azure/login@v1
@@ -179,7 +177,7 @@ jobs:
         uses: azure/container-apps-deploy-action@v1
         with:
           appSourcePath: ${{ github.workspace }}
-          containerAppName: pathfinder-frontend-prod
+          containerAppName: pathfinder-frontend
           resourceGroup: ${{ secrets.AZURE_RG }}
           imageToDeploy: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:latest
 
