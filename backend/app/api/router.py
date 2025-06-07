@@ -17,6 +17,7 @@ from app.api.health import router as health_router
 from app.api.admin import router as admin_router
 from app.api.exports import router as exports_router
 from app.api.test import router as test_router
+from app.api.consensus import router as consensus_router
 
 api_router = APIRouter()
 
@@ -34,6 +35,7 @@ api_router.include_router(health_router, prefix="/health", tags=["Health"])
 api_router.include_router(admin_router, prefix="/admin", tags=["Administration"])
 api_router.include_router(exports_router, prefix="/exports", tags=["Data Export"])
 api_router.include_router(test_router, prefix="/test", tags=["Testing"])
+api_router.include_router(consensus_router, tags=["Family Consensus"])
 
 # Simple root endpoint
 @api_router.get("/")
