@@ -7,6 +7,7 @@ import { Auth0Provider } from '@auth0/auth0-react'
 import { Toaster } from 'react-hot-toast'
 import App from './App.tsx'
 import auth0Config from './auth0-config.ts'
+import { Auth0ApiProvider } from './components/providers/Auth0ApiProvider'
 import './styles/index.css'
 
 // Create a client with optimized caching configuration
@@ -35,33 +36,35 @@ if (import.meta.env.DEV) {
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <Auth0Provider {...auth0Config}>
-      <QueryClientProvider client={queryClient}>
-        <FluentProvider theme={webLightTheme}>
-          <BrowserRouter>
-            <App />
-            <Toaster
-              position="top-right"
-              toastOptions={{
-                duration: 4000,
-                style: {
-                  background: '#363636',
-                  color: '#fff',
-                },
-                success: {
+      <Auth0ApiProvider>
+        <QueryClientProvider client={queryClient}>
+          <FluentProvider theme={webLightTheme}>
+            <BrowserRouter>
+              <App />
+              <Toaster
+                position="top-right"
+                toastOptions={{
+                  duration: 4000,
                   style: {
-                    background: '#10b981',
+                    background: '#363636',
+                    color: '#fff',
                   },
-                },
-                error: {
-                  style: {
-                    background: '#ef4444',
+                  success: {
+                    style: {
+                      background: '#10b981',
+                    },
                   },
-                },
-              }}
-            />
-          </BrowserRouter>
-        </FluentProvider>
-      </QueryClientProvider>
+                  error: {
+                    style: {
+                      background: '#ef4444',
+                    },
+                  },
+                }}
+              />
+            </BrowserRouter>
+          </FluentProvider>
+        </QueryClientProvider>
+      </Auth0ApiProvider>
     </Auth0Provider>
   </React.StrictMode>,
 )

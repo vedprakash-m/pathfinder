@@ -52,8 +52,16 @@ class ApiCache {
 
 const apiCache = new ApiCache();
 
+// Global token getter function - will be set by the Auth0 provider
+let getAccessToken: (() => Promise<string>) | null = null;
+
+// Function to set the token getter (called from Auth0 provider)
+export const setTokenGetter = (tokenGetter: () => Promise<string>) => {
+  getAccessToken = tokenGetter;
+};
+
 // Create axios instance with default config
-const createApiClient = (baseURL: string = '/api'): AxiosInstance => {
+const createApiClient = (baseURL: string = (import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api/v1` : '/api/v1')): AxiosInstance => {
   const client = axios.create({
     baseURL,
     timeout: 30000,
@@ -64,10 +72,24 @@ const createApiClient = (baseURL: string = '/api'): AxiosInstance => {
 
   // Request interceptor to add auth token and CSRF token
   client.interceptors.request.use(
-    (config) => {
-      const token = localStorage.getItem('auth_token');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+    async (config) => {
+      // Try to get token from Auth0 first, then fallback to localStorage
+      try {
+        if (getAccessToken) {
+          const token = await getAccessToken();
+          if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+          }
+        } else {
+          // Fallback to localStorage for development
+          const token = localStorage.getItem('auth_token');
+          if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to get access token:', error);
+        // Continue without token - let the backend handle the 401
       }
       
       // Add CSRF token from cookie if available
