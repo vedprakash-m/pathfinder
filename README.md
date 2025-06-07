@@ -218,3 +218,4 @@ Advanced AI, enterprise features, third-party integrations, API platform
 ---
 
 **Built for families who love to travel together** ❤️🚀 Production deployment ready - OpenAI key to be configured post-deployment
+# CORS fix deployment trigger
