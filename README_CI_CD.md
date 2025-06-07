@@ -22,8 +22,10 @@ Push to Main → Quality Checks → Deploy to Production → Health Check
 
 - **Single Environment**: Uses your existing `pathfinder-rg-dev` resources
 - **No Staging**: Saves ~70% on infrastructure costs
+- **Redis-Free Architecture**: SQLite + in-memory cache saves $40/month vs Redis
 - **Smart Caching**: Reduces build times and GitHub Actions minutes
 - **Direct Updates**: Fast deployments without rebuilding containers
+- **Total Savings**: ~$70-90/month vs enterprise multi-environment setup
 
 ## 📋 Simplified Workflow
 

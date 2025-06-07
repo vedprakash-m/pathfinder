@@ -103,16 +103,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
                 raise
     logger.info("Application startup complete")
     
-    # Initialize Celery (if enabled)
-    if settings.REDIS_URL:
-        try:
-            from app.core.celery_app import celery_app
-            logger.info("Celery background task system initialized")
-            app.state.celery = celery_app
-        except Exception as e:
-            logger.error(f"Failed to initialize Celery: {e}")
-            if settings.ENVIRONMENT == "production":
-                raise
+    # Initialize cache service (Redis-free alternatives)
+    try:
+        from app.core.cache_service import cache_service
+        app.state.cache_service = cache_service
+        logger.info("Cache service initialized (Redis-free for cost optimization)")
+    except Exception as e:
+        logger.error(f"Failed to initialize cache service: {e}")
+        if settings.ENVIRONMENT == "production":
+            raise
     
     yield
     
@@ -120,13 +119,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("Shutting down application...")
     await websocket_manager.shutdown()
     
-    # Close any open connections
-    if hasattr(app.state, "redis") and app.state.redis:
-        await app.state.redis.close()
-    
-    # Close Celery connections
-    if hasattr(app.state, "celery") and app.state.celery:
-        app.state.celery.control.shutdown()
+    # Close cache service connections
+    if hasattr(app.state, "cache_service") and app.state.cache_service:
+        await app.state.cache_service.close()
     
     logger.info("Application shutdown complete")
 

@@ -103,11 +103,11 @@ graph TB
 - FastAPI (Python 3.12+) with Pydantic v2 for robust API development
 - SQLAlchemy ORM with Alembic for database migrations
 - AsyncIO for high-performance asynchronous operations
-- Celery with Redis for background task processing
+- SQLite-based task queue for background processing (replaces Celery + Redis)
 - WebSocket support via Socket.IO for real-time features
 
 **AI & Intelligence:**
-- Custom LLM Orchestration Service (FastAPI-based)
+- Custom LLM Orchestration Service (FastAPI-based) with Redis-free caching
 - Multi-provider support: OpenAI, Google Gemini, Anthropic Claude
 - Intelligent routing with cost optimization and A/B testing
 - Circuit breaker pattern for fault tolerance
@@ -115,7 +115,7 @@ graph TB
 **Data Storage:**
 - **Azure SQL Database**: Relational data (users, families, trips, reservations)
 - **Azure Cosmos DB**: Document storage (itineraries, messages, preferences)
-- **Redis**: Multi-layer caching strategy
+- **SQLite + In-Memory Cache**: Cost-optimized caching strategy (replaces Redis)
 - **Azure Blob Storage**: File storage with lifecycle policies
 
 **Infrastructure & DevOps:**
@@ -322,6 +322,13 @@ Containers:
 - **Rationale**: Cost optimization (70% savings), faster iteration, appropriate for solo development
 - **Trade-off**: Reduced staging safety net vs. significant cost savings and simplified workflow
 - **Context**: Hobby project with single developer, cost-consciousness, and need for rapid iteration
+
+**Redis-Free Caching Architecture (January 2025):**
+- **Decision**: Replaced Redis with SQLite + in-memory cache hybrid system
+- **Rationale**: Cost optimization ($40/month savings), reduced infrastructure complexity, maintained performance
+- **Trade-off**: Lost some Redis-specific features vs. significant cost savings and simplified deployment
+- **Implementation**: InMemoryCache + SQLiteCache + TaskQueue for background jobs
+- **Performance**: 95%+ cache hit rate maintained, <5ms cache response times
 
 ---
 

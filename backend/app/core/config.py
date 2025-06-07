@@ -43,9 +43,13 @@ class Settings(BaseSettings):
     COSMOS_DB_CONTAINER_MESSAGES: str = Field(default="messages", env="COSMOS_DB_CONTAINER_MESSAGES")
     COSMOS_DB_CONTAINER_PREFERENCES: str = Field(default="preferences", env="COSMOS_DB_CONTAINER_PREFERENCES")
     
-    # Redis settings
-    REDIS_URL: str = Field(default="redis://localhost:6379", env="REDIS_URL")
-    REDIS_TTL: int = Field(default=3600, env="REDIS_TTL")  # 1 hour
+    # Cache settings (Redis-free alternatives for cost optimization)
+    USE_REDIS_CACHE: bool = Field(default=False, env="USE_REDIS_CACHE")  # Disabled by default
+    REDIS_URL: str = Field(default="", env="REDIS_URL")  # Optional Redis URL
+    CACHE_TTL: int = Field(default=3600, env="CACHE_TTL")  # 1 hour default TTL
+    CACHE_MAX_SIZE: int = Field(default=2000, env="CACHE_MAX_SIZE")  # Memory cache size
+    CACHE_TYPE: str = Field(default="memory", env="CACHE_TYPE")  # "memory" or "sqlite"
+    CACHE_DB_PATH: str = Field(default="data/cache.db", env="CACHE_DB_PATH")
     
     # Auth0 settings
     AUTH0_DOMAIN: str = Field(..., env="AUTH0_DOMAIN")
@@ -119,7 +123,6 @@ class Settings(BaseSettings):
     USER_PATTERNS_FILE: str = Field(default="user_access_patterns.json", env="USER_PATTERNS_FILE")
     
     # Performance monitoring
-    USE_REDIS_CACHE: bool = Field(default=False, env="USE_REDIS_CACHE")
     SLOW_REQUEST_THRESHOLD: float = Field(default=1.0, env="SLOW_REQUEST_THRESHOLD")
     SLOW_QUERY_THRESHOLD: float = Field(default=0.5, env="SLOW_QUERY_THRESHOLD") 
     SLOW_FUNCTION_THRESHOLD: float = Field(default=0.5, env="SLOW_FUNCTION_THRESHOLD")

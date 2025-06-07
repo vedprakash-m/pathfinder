@@ -13,13 +13,9 @@ from collections import Counter
 import openai
 from openai import OpenAI
 import tiktoken
-try:
-    import redis.asyncio as redis
-except ImportError:
-    redis = None
-
 from app.core.config import get_settings
 from app.core.logging_config import create_logger
+from app.core.cache_service import ai_cache_service
 
 settings = get_settings()
 logger = create_logger(__name__)
@@ -28,45 +24,8 @@ logger = create_logger(__name__)
 client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
 
-# Enhanced cache service
-class AICache:
-    """Redis-based caching for AI responses with intelligent cache key generation."""
-    
-    def __init__(self):
-        self.redis = redis.Redis.from_url(settings.REDIS_URL) if redis and hasattr(settings, 'REDIS_URL') else None
-        self.local_cache: Dict[str, Any] = {}  # Fallback local cache
-        
-    def _generate_cache_key(self, prompt: str, model: str, preferences: Dict[str, Any]) -> str:
-        """Generate deterministic cache key for similar requests."""
-        # Create hash from prompt content and key preferences
-        key_content = f"{prompt}:{model}:{json.dumps(preferences, sort_keys=True)}"
-        return f"ai_cache:{hashlib.md5(key_content.encode()).hexdigest()}"
-    
-    async def get(self, cache_key: str) -> Optional[Dict[str, Any]]:
-        """Get cached response."""
-        try:
-            if self.redis:
-                cached = await self.redis.get(cache_key)
-                if cached:
-                    cached_str = cached.decode('utf-8') if isinstance(cached, bytes) else str(cached)
-                    return json.loads(cached_str)
-            
-            # Fallback to local cache
-            return self.local_cache.get(cache_key)
-        except Exception as e:
-            logger.warning(f"Cache get error: {e}")
-            return None
-    
-    async def set(self, cache_key: str, data: Dict[str, Any], ttl: int = 3600) -> None:
-        """Set cached response with TTL."""
-        try:
-            if self.redis:
-                await self.redis.setex(cache_key, ttl, json.dumps(data))
-            
-            # Always cache locally as backup
-            self.local_cache[cache_key] = data
-        except Exception as e:
-            logger.warning(f"Cache set error: {e}")
+# Note: AICache functionality moved to core.cache_service.AICacheService
+# for Redis-free cost optimization
 
 
 # Enhanced cost tracking with per-model analytics
@@ -397,7 +356,7 @@ class AIService:
     
     def __init__(self):
         self.cost_tracker = CostTracker()
-        self.cache = AICache()
+        self.cache = ai_cache_service  # Use Redis-free cache service
         self.encoding = tiktoken.get_encoding("cl100k_base")
         self.preference_engine = MultiFamilyPreferenceEngine()
     
