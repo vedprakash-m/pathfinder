@@ -296,6 +296,20 @@ resource frontendApp 'Microsoft.App/containerApps@2023-05-01' = {
         targetPort: 3000
         transport: 'http'
       }
+      secrets: [
+        {
+          name: 'auth0-domain'
+          value: 'dev-jwnud3v8ghqnyygr.us.auth0.com'
+        }
+        {
+          name: 'auth0-client-id'
+          value: 'KXu3KpGiyRHHHgiXX90sHuNC4rfYRcNn'
+        }
+        {
+          name: 'auth0-audience'
+          value: 'https://pathfinder-api.com'
+        }
+      ]
     }
     template: {
       containers: [
@@ -310,6 +324,22 @@ resource frontendApp 'Microsoft.App/containerApps@2023-05-01' = {
             {
               name: 'REACT_APP_API_URL'
               value: 'https://${backendApp.properties.configuration.ingress.fqdn}'
+            }
+            {
+              name: 'VITE_API_URL'
+              value: 'https://${backendApp.properties.configuration.ingress.fqdn}'
+            }
+            {
+              name: 'VITE_AUTH0_DOMAIN'
+              secretRef: 'auth0-domain'
+            }
+            {
+              name: 'VITE_AUTH0_CLIENT_ID'
+              secretRef: 'auth0-client-id'
+            }
+            {
+              name: 'VITE_AUTH0_AUDIENCE'
+              secretRef: 'auth0-audience'
             }
             {
               name: 'ENVIRONMENT'
