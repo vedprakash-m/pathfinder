@@ -15,6 +15,7 @@ import {
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useFormValidation } from '@/hooks/useFormValidation';
 import { loginSchema } from '@/utils/validation';
+import { Auth0Debug } from '@/components/debug/Auth0Debug';
 
 export const LoginPage: React.FC = () => {
   const { 
@@ -48,14 +49,17 @@ export const LoginPage: React.FC = () => {
     }
     
     try {
+      console.log('🔄 Attempting login with redirect...');
       // Use Auth0 redirect with email hint
-      loginWithRedirect({
+      await loginWithRedirect({
         authorizationParams: {
           login_hint: formData.email as string,
         },
       });
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('❌ Login error:', error);
+      // Show user-friendly error message
+      alert(`Login failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -87,6 +91,9 @@ export const LoginPage: React.FC = () => {
         transition={{ duration: 0.4 }}
         className="w-full max-w-md"
       >
+        {/* Debug info - remove in production */}
+        <Auth0Debug />
+        
         <Card className="shadow-2xl border-0">
           <CardHeader className="text-center pb-4">
             <motion.div
@@ -193,7 +200,15 @@ export const LoginPage: React.FC = () => {
                   appearance="primary"
                   size="large"
                   className="w-full py-3"
-                  onClick={() => loginWithRedirect()}
+                  onClick={async () => {
+                    try {
+                      console.log('🔄 Attempting social login...');
+                      await loginWithRedirect();
+                    } catch (error) {
+                      console.error('❌ Social login error:', error);
+                      alert(`Login failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                    }
+                  }}
                 >
                   Sign In / Sign Up
                 </Button>
