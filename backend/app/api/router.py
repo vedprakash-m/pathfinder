@@ -18,6 +18,7 @@ from app.api.admin import router as admin_router
 from app.api.exports import router as exports_router
 from app.api.test import router as test_router
 from app.api.consensus import router as consensus_router
+from app.api.coordination import router as coordination_router
 
 api_router = APIRouter()
 
@@ -36,6 +37,7 @@ api_router.include_router(admin_router, prefix="/admin", tags=["Administration"]
 api_router.include_router(exports_router, prefix="/exports", tags=["Data Export"])
 api_router.include_router(test_router, prefix="/test", tags=["Testing"])
 api_router.include_router(consensus_router, tags=["Family Consensus"])
+api_router.include_router(coordination_router, tags=["Smart Coordination"])
 
 # Simple root endpoint
 @api_router.get("/")
