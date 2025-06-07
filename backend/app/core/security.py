@@ -100,8 +100,21 @@ async def verify_token(token: str) -> TokenData:
             )
         
         # Extract roles and permissions from token
+        # Auth0 tokens might have different claim structures
         roles = payload.get("https://pathfinder.app/roles", [])
         permissions = payload.get("https://pathfinder.app/permissions", [])
+        
+        # If no custom roles/permissions, assign default ones for authenticated users
+        if not roles:
+            roles = ["user"]  # Default role for authenticated users
+        
+        if not permissions:
+            # Default permissions for authenticated users
+            permissions = [
+                "read:trips", "create:trips", "update:trips", "delete:trips",
+                "read:families", "create:families", "update:families", "delete:families",
+                "read:itineraries", "create:itineraries", "update:itineraries", "delete:itineraries"
+            ]
         
         return TokenData(
             sub=user_id,
