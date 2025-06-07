@@ -116,25 +116,41 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
+      
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+      
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+      
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
       
       - name: Install Node dependencies
         run: |
           cd frontend
-          npm ci
+          pnpm install --frozen-lockfile
       
       - name: Frontend code quality
         run: |
           cd frontend
           echo "🔍 TypeScript checking..."
-          npm run type-check || echo "⚠️ TypeScript errors found"
+          pnpm run type-check || echo "⚠️ TypeScript errors found"
           
           echo "🎨 Linting..."
-          npm run lint || echo "⚠️ ESLint issues found"
+          pnpm run lint || echo "⚠️ ESLint issues found"
           
           echo "🧪 Running tests..."
-          npm run test -- --run || echo "⚠️ Some tests failed"
+          pnpm run test -- --run || echo "⚠️ Some tests failed"
 
   # Job 2: Build and deploy (only on main branch push)
   deploy:
