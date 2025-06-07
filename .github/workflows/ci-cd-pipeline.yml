@@ -1,232 +1,290 @@
-name: Enhanced Production Pipeline
+# Pathfinder CI/CD Pipeline - Simple Version
+# Phase 1: Basic lint, test, build, deploy workflow
+name: Pathfinder CI/CD - Simple
 
 on:
   push:
-    branches: [main, develop, 'feature/*']
+    branches: [ main, develop ]
   pull_request:
-    branches: [main, develop]
+    branches: [ main, develop ]
 
 env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  AZURE_RESOURCE_GROUP: rg-pathfinder-prod
+  AZURE_LOCATION: eastus
+  APP_NAME: pathfinder
+  ENVIRONMENT: prod
 
 jobs:
-  detect-changes:
+  # Job 1: Lint and Test Backend
+  backend-quality:
+    name: Backend Quality Checks
     runs-on: ubuntu-latest
-    outputs:
-      backend: ${{ steps.changes.outputs.backend }}
-      frontend: ${{ steps.changes.outputs.frontend }}
-      infrastructure: ${{ steps.changes.outputs.infrastructure }}
+    defaults:
+      run:
+        working-directory: ./backend
+    
     steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v2
-        id: changes
-        with:
-          filters: |
-            backend:
-              - 'backend/**'
-            frontend:
-              - 'frontend/**'
-            infrastructure:
-              - 'infrastructure/**'
-
-  security-scan:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: 'fs'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-      - name: Upload Trivy scan results
-        uses: github/codeql-action/upload-sarif@v2
-        with:
-          sarif_file: 'trivy-results.sarif'
-
-  test-backend:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.backend == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python 3.12
         uses: actions/setup-python@v4
         with:
           python-version: '3.12'
+          
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      
       - name: Install dependencies
         run: |
-          cd backend
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install flake8 black mypy isort
+      
+      - name: Lint with flake8
+        run: |
+          flake8 . --max-line-length=88 --extend-ignore=E203,W503 --exclude=venv,migrations
+      
+      - name: Format check with black
+        run: |
+          black --check --diff .
+      
+      - name: Import sorting check with isort
+        run: |
+          isort --check-only --diff .
+      
+      - name: Type checking with mypy
+        run: |
+          mypy app/ --ignore-missing-imports
+      
       - name: Run backend tests
         run: |
-          cd backend
-          python -m pytest tests/ -v
+          python -m pytest tests/ -v --cov=app --cov-report=xml
+      
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./backend/coverage.xml
+          flags: backend
 
-  test-frontend:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.frontend == 'true'
+  # Job 2: Lint and Test Frontend  
+  frontend-quality:
+    name: Frontend Quality Checks
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+    
     steps:
-      - uses: actions/checkout@v4
-      - name: Setup Node.js
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: frontend/package.json
+          cache-dependency-path: frontend/package-lock.json
+      
       - name: Install dependencies
-        run: |
-          cd frontend
-          npm ci
+        run: npm ci
+      
+      - name: Type checking
+        run: npm run type-check
+      
+      - name: Lint with ESLint
+        run: npm run lint
+      
       - name: Run frontend tests
-        run: |
-          cd frontend
-          npm run test
-
-  build-backend:
-    needs: [test-backend, security-scan]
-    if: needs.detect-changes.outputs.backend == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Log in to Container Registry
-        uses: docker/login-action@v2
+        run: npm run test -- --run --coverage
+      
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
+          directory: ./frontend/coverage
+          flags: frontend
+
+  # Job 3: Build Backend Docker Image
+  build-backend:
+    name: Build Backend Image
+    runs-on: ubuntu-latest
+    needs: backend-quality
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      
       - name: Build and push backend image
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           context: ./backend
+          file: ./backend/Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:latest
+          tags: |
+            ghcr.io/${{ github.repository }}/backend:latest
+            ghcr.io/${{ github.repository }}/backend:${{ github.sha }}
 
+  # Job 4: Build Frontend Docker Image
   build-frontend:
-    needs: [test-frontend, security-scan]
-    if: needs.detect-changes.outputs.frontend == 'true'
+    name: Build Frontend Image
     runs-on: ubuntu-latest
+    needs: frontend-quality
+    if: github.ref == 'refs/heads/main'
+    
     steps:
-      - uses: actions/checkout@v4
-      - name: Log in to Container Registry
-        uses: docker/login-action@v2
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      
       - name: Build and push frontend image
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           context: ./frontend
+          file: ./frontend/Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:latest
+          tags: |
+            ghcr.io/${{ github.repository }}/frontend:latest
+            ghcr.io/${{ github.repository }}/frontend:${{ github.sha }}
 
+  # Job 5: Deploy Infrastructure
   deploy-infrastructure:
-    needs: [build-backend, build-frontend]
-    if: ${{ github.ref == 'refs/heads/main' }}
+    name: Deploy Infrastructure
     runs-on: ubuntu-latest
-    environment: production
+    needs: [build-backend, build-frontend]
+    if: github.ref == 'refs/heads/main'
+    
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
       - name: Azure Login
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-      - name: Deploy Infrastructure
+      
+      - name: Create Resource Group
+        run: |
+          az group create \
+            --name ${{ env.AZURE_RESOURCE_GROUP }} \
+            --location ${{ env.AZURE_LOCATION }} \
+            --tags app=${{ env.APP_NAME }} environment=${{ env.ENVIRONMENT }}
+      
+      - name: Deploy Bicep template
         uses: azure/arm-deploy@v1
         with:
+          scope: resourcegroup
           subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          resourceGroupName: ${{ secrets.AZURE_RG }}
+          resourceGroupName: ${{ env.AZURE_RESOURCE_GROUP }}
           template: ./infrastructure/bicep/main.bicep
           parameters: |
-            appName=pathfinder
-            environment=prod
+            appName=${{ env.APP_NAME }}
+            environment=${{ env.ENVIRONMENT }}
             sqlAdminLogin=${{ secrets.SQL_ADMIN_LOGIN }}
             sqlAdminPassword=${{ secrets.SQL_ADMIN_PASSWORD }}
+            openAIApiKey=${{ secrets.OPENAI_API_KEY }}
 
-  deploy-backend:
-    needs: [deploy-infrastructure]
-    if: ${{ github.ref == 'refs/heads/main' }}
+  # Job 6: Deploy Applications
+  deploy-applications:
+    name: Deploy Applications
     runs-on: ubuntu-latest
-    environment: production
+    needs: deploy-infrastructure
+    if: github.ref == 'refs/heads/main'
+    
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
       - name: Azure Login
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-      - name: Deploy Backend
-        uses: azure/container-apps-deploy-action@v1
-        with:
-          appSourcePath: ${{ github.workspace }}
-          containerAppName: pathfinder-backend-prod
-          resourceGroup: ${{ secrets.AZURE_RG }}
-          imageToDeploy: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:latest
-
-  deploy-frontend:
-    needs: [deploy-backend]
-    if: ${{ github.ref == 'refs/heads/main' }}
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - name: Azure Login
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-      - name: Deploy Frontend
-        uses: azure/container-apps-deploy-action@v1
-        with:
-          appSourcePath: ${{ github.workspace }}
-          containerAppName: pathfinder-frontend-prod
-          resourceGroup: ${{ secrets.AZURE_RG }}
-          imageToDeploy: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:latest
-
-  performance-test:
-    needs: [deploy-frontend]
-    if: ${{ github.ref == 'refs/heads/main' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.12'
-      - name: Install Locust
-        run: pip install locust
-      - name: Run performance tests
+      
+      - name: Deploy Backend Container App
         run: |
-          mkdir -p tests/load
-          cat > tests/load/locustfile.py << 'EOF'
-          from locust import HttpUser, task, between
-          
-          class PathfinderUser(HttpUser):
-              wait_time = between(1, 5)
-              
-              @task(3)
-              def view_trips(self):
-                  self.client.get("/api/v1/trips")
-              
-              @task(2)
-              def view_families(self):
-                  self.client.get("/api/v1/families")
-              
-              @task(1)
-              def health_check(self):
-                  self.client.get("/health")
-          EOF
-          
-          locust -f tests/load/locustfile.py --headless -u 50 -r 10 -t 3m --host https://pathfinder-backend.yellowdune-9b8d769a.eastus.azurecontainerapps.io
-
-  notify-completion:
-    needs: [performance-test]
-    if: always()
-    runs-on: ubuntu-latest
-    steps:
-      - name: Notify deployment status
+          az containerapp update \
+            --name ${{ env.APP_NAME }}-backend-${{ env.ENVIRONMENT }} \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --image ghcr.io/${{ github.repository }}/backend:${{ github.sha }} \
+            --set-env-vars \
+              AZURE_COSMOS_ENDPOINT="${{ secrets.AZURE_COSMOS_ENDPOINT }}" \
+              AZURE_COSMOS_KEY="${{ secrets.AZURE_COSMOS_KEY }}" \
+              SQL_CONNECTION_STRING="${{ secrets.SQL_CONNECTION_STRING }}" \
+              OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
+              AUTH0_DOMAIN="${{ secrets.AUTH0_DOMAIN }}" \
+              AUTH0_AUDIENCE="${{ secrets.AUTH0_AUDIENCE }}"
+      
+      - name: Deploy Frontend Container App  
         run: |
-          if [[ "${{ needs.performance-test.result }}" == "success" ]]; then
-            echo "✅ Phase 1 deployment completed successfully!"
+          az containerapp update \
+            --name ${{ env.APP_NAME }}-frontend-${{ env.ENVIRONMENT }} \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --image ghcr.io/${{ github.repository }}/frontend:${{ github.sha }} \
+            --set-env-vars \
+              VITE_API_BASE_URL="https://${{ env.APP_NAME }}-backend-${{ env.ENVIRONMENT }}.yellowdune-9b8d769a.eastus.azurecontainerapps.io" \
+              VITE_AUTH0_DOMAIN="${{ secrets.AUTH0_DOMAIN }}" \
+              VITE_AUTH0_CLIENT_ID="${{ secrets.AUTH0_CLIENT_ID }}" \
+              VITE_AUTH0_AUDIENCE="${{ secrets.AUTH0_AUDIENCE }}"
+
+  # Job 7: Health Check & Notification
+  post-deployment:
+    name: Post-Deployment Checks
+    runs-on: ubuntu-latest
+    needs: deploy-applications
+    if: always() && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Health Check Backend
+        run: |
+          echo "🔍 Checking backend health..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" \
+            https://${{ env.APP_NAME }}-backend-${{ env.ENVIRONMENT }}.yellowdune-9b8d769a.eastus.azurecontainerapps.io/health || echo "000")
+          
+          if [[ "$response" == "200" ]]; then
+            echo "✅ Backend is healthy (HTTP $response)"
           else
-            echo "❌ Phase 1 deployment failed. Check logs for details."
+            echo "❌ Backend health check failed (HTTP $response)"
+            exit 1
           fi
+      
+      - name: Health Check Frontend
+        run: |
+          echo "🔍 Checking frontend health..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" \
+            https://${{ env.APP_NAME }}-frontend-${{ env.ENVIRONMENT }}.yellowdune-9b8d769a.eastus.azurecontainerapps.io || echo "000")
+          
+          if [[ "$response" == "200" ]]; then
+            echo "✅ Frontend is healthy (HTTP $response)"
+          else
+            echo "❌ Frontend health check failed (HTTP $response)"
+            exit 1
+          fi
+      
+      - name: Deployment Summary
+        if: always()
+        run: |
+          echo "## 🚀 Pathfinder Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: ${{ env.ENVIRONMENT }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Backend**: https://${{ env.APP_NAME }}-backend-${{ env.ENVIRONMENT }}.yellowdune-9b8d769a.eastus.azurecontainerapps.io" >> $GITHUB_STEP_SUMMARY
+          echo "- **Frontend**: https://${{ env.APP_NAME }}-frontend-${{ env.ENVIRONMENT }}.yellowdune-9b8d769a.eastus.azurecontainerapps.io" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY 
