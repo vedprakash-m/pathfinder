@@ -248,7 +248,7 @@ jobs:
       
       - name: Update Frontend Container App
         run: |
-          echo "🚀 Updating frontend container app..."
+          echo "🚀 Updating frontend container app with Auth0 configuration..."
           
           az containerapp update \
             --name pathfinder-frontend \
@@ -257,6 +257,10 @@ jobs:
               ENVIRONMENT=production \
               COMMIT_SHA="${{ github.sha }}" \
               DEPLOYMENT_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+              VITE_AUTH0_DOMAIN=dev-jwnud3v8ghqnyygr.us.auth0.com \
+              VITE_AUTH0_CLIENT_ID=KXu3KpGiyRHHHgiXX90sHuNC4rfYRcNn \
+              VITE_AUTH0_AUDIENCE=https://pathfinder-api.com \
+              VITE_API_URL=https://pathfinder-backend.yellowdune-9b8d769a.eastus.azurecontainerapps.io \
             || {
               echo "⚠️ Frontend update failed, trying basic restart..."
               az containerapp restart --name pathfinder-frontend --resource-group ${{ env.AZURE_RESOURCE_GROUP }}
