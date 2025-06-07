@@ -1,10 +1,72 @@
-# Python
+# Pathfinder - AI-Powered Multi-Family Trip Planner
+# Solo Developer Optimized - Single environment deployment
+
+# Dependencies
+node_modules/
+venv/
 __pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Build outputs
+dist/
+build/
+*.egg-info/
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+
+# Logs
+*.log
+logs/
+
+# Azure
+azure-creds.json
+.azure/
+
+# Backup files from pipeline setup
+*-backup.yml
+ci-cd-multi-env-backup.yml
+
+# Local development
+.env.local
+temp/
+tmp/
+
+# Python
 *.py[cod]
 *$py.class
 *.so
-.Python
 backend/venv/
+env/
 env/
 build/
 develop-eggs/
@@ -23,7 +85,6 @@ var/
 .env
 
 # Node/React
-node_modules/
 /frontend/node_modules
 /frontend/.pnp
 /frontend/.pnp.js
@@ -58,38 +119,6 @@ infrastructure/terraform/.terraform/
 infrastructure/terraform/*.tfstate
 infrastructure/terraform/*.tfstate.*
 infrastructure/terraform/.terraform.lock.hcl
-
-# Azure
-.azure/
-
-# Security - Environment files with secrets
-*.env.production
-*.env.local
-*.env.staging
-.env.secret
-.env.private
-
-# Security - Secret files
-**/secrets/**
-*.key
-*.pem
-*.p12
-*.pfx
-*.crt
-*.csr
-**/private/**
-auth-secrets.json
-service-account.json
-
-# Security - Logs that might contain secrets
-*.log
-logs/
-temp/
-.tmp/
-
-# Security - IDE files that might store credentials
-.vscode/settings.json
-.idea/workspace.xml
 
 # Security - Environment files with secrets
 *.env.production

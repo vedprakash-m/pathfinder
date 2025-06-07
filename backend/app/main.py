@@ -253,6 +253,10 @@ async def health_check():
 # Include API routes
 app.include_router(api_router, prefix="/api/v1")
 
+# Include health routes (in addition to the basic /health endpoint above)
+from app.api.health import router as health_router
+app.include_router(health_router)
+
 
 if __name__ == "__main__":
     uvicorn.run(
