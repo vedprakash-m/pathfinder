@@ -21,11 +21,11 @@ COPY . .
 FROM base AS build
 
 # Accept build arguments
-ARG VITE_AUTH0_DOMAIN
-ARG VITE_AUTH0_CLIENT_ID
-ARG VITE_AUTH0_AUDIENCE
-ARG VITE_API_URL
-ARG ENVIRONMENT
+ARG VITE_AUTH0_DOMAIN=dev-jwnud3v8ghqnyygr.us.auth0.com
+ARG VITE_AUTH0_CLIENT_ID=KXu3KpGiyRHHHgiXX90sHuNC4rfYRcNn
+ARG VITE_AUTH0_AUDIENCE=https://pathfinder-api.com
+ARG VITE_API_URL=https://pathfinder-backend.yellowdune-9b8d769a.eastus.azurecontainerapps.io
+ARG ENVIRONMENT=production
 
 # Set environment variables from build args
 ENV NODE_ENV=production
