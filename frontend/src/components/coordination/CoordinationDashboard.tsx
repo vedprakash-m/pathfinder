@@ -18,11 +18,6 @@ import {
   Button,
   Spinner,
   MessageBar,
-  MessageBarType,
-  ProgressIndicator,
-  Stack,
-  Separator,
-  Icon,
   Title3,
   Title2,
   Body1,
@@ -255,24 +250,19 @@ export const CoordinationDashboard: React.FC<CoordinationDashboardProps> = ({
       <Card>
         <div style={{ padding: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-            <Icon>
+            <div>
               {automationHealthScore >= 80 ? 
                 <CheckmarkCircle24Regular /> : 
                 <Warning24Regular />
               }
-            </Icon>
+            </div>
             <Title3>Automation Health</Title3>
             <Badge color={automationHealthScore >= 80 ? "success" : automationHealthScore >= 60 ? "warning" : "danger"}>
               {automationHealthScore}%
             </Badge>
           </div>
           
-          <ProgressIndicator 
-            value={automationHealthScore / 100}
-            shape="square"
-            thickness="large"
             color={automationHealthScore >= 80 ? "success" : automationHealthScore >= 60 ? "warning" : "danger"}
-          />
           
           <Caption1 style={{ marginTop: '8px' }}>
             {automationHealthScore >= 80 && "Coordination running smoothly"}
@@ -317,7 +307,7 @@ export const CoordinationDashboard: React.FC<CoordinationDashboardProps> = ({
         <div style={{ padding: '16px' }}>
           <Title3 style={{ marginBottom: '12px' }}>Recent Automation Events</Title3>
           
-          <Stack tokens={{ childrenGap: 12 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {coordinationStatus.recent_events.map((event, index) => (
               <div key={index} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
                 <div style={{ color: '#0078D4', marginTop: '2px' }}>
@@ -326,7 +316,7 @@ export const CoordinationDashboard: React.FC<CoordinationDashboardProps> = ({
                 
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Body1 weight="semibold">{getEventTitle(event.event_type)}</Body1>
+                    <Body1 style={{ fontWeight: "600" }}>{getEventTitle(event.event_type)}</Body1>
                     <Caption1>{formatTimeAgo(event.timestamp)}</Caption1>
                   </div>
                   
@@ -336,7 +326,7 @@ export const CoordinationDashboard: React.FC<CoordinationDashboardProps> = ({
                 </div>
               </div>
             ))}
-          </Stack>
+          </div>
         </div>
       </Card>
 
@@ -346,14 +336,14 @@ export const CoordinationDashboard: React.FC<CoordinationDashboardProps> = ({
           <div style={{ padding: '16px' }}>
             <Title3 style={{ marginBottom: '12px' }}>Pending Actions</Title3>
             
-            <Stack tokens={{ childrenGap: 8 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               {coordinationStatus.pending_actions.map((action, index) => (
                 <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Clock24Regular style={{ color: '#FF8C00', fontSize: '16px' }} />
                   <Body1>{action}</Body1>
                 </div>
               ))}
-            </Stack>
+            </div>
           </div>
         </Card>
       )}

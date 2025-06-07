@@ -9,9 +9,17 @@ const auth0Config = {
       ? window.location.origin 
       : 'https://pathfinder-frontend.yellowdune-9b8d769a.eastus.azurecontainerapps.io',
     audience: import.meta.env.VITE_AUTH0_AUDIENCE || 'https://pathfinder-api.com',
+    scope: 'openid profile email offline_access',
   },
   useRefreshTokens: true,
   cacheLocation: 'localstorage' as const,
+  
+  // Enhanced error handling and retry configuration
+  httpTimeoutInSeconds: 30,
+  
+  // Advanced Auth0 options for better reliability
+  legacySameSiteCookie: false,
+  cookieDomain: typeof window !== 'undefined' ? window.location.hostname : undefined,
 }
 
 // Debug logging to verify configuration is loaded correctly

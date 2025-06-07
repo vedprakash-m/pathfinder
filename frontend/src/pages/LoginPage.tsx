@@ -15,7 +15,7 @@ import {
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useFormValidation } from '@/hooks/useFormValidation';
 import { loginSchema } from '@/utils/validation';
-import { Auth0Debug } from '@/components/debug/Auth0Debug';
+
 
 export const LoginPage: React.FC = () => {
   const { 
@@ -91,8 +91,8 @@ export const LoginPage: React.FC = () => {
         transition={{ duration: 0.4 }}
         className="w-full max-w-md"
       >
-        {/* Debug info - remove in production */}
-        <Auth0Debug />
+        {/* Debug info - temporarily disabled for TypeScript fix */}
+        {/* <Auth0Debug /> */}
         
         <Card className="shadow-2xl border-0">
           <CardHeader className="text-center pb-4">

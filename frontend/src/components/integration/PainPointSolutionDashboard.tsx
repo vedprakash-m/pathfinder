@@ -12,13 +12,11 @@ import {
   Card,
   Text,
   Badge,
-  Button,
   Title1,
   Title2,
   Title3,
   Body1,
   Caption1,
-  ProgressIndicator,
   MessageBar,
   Divider,
   Tab,
@@ -33,7 +31,7 @@ import {
   Trophy24Regular,
   Rocket24Regular
 } from '@fluentui/react-icons';
-import ConsensusDashboard from '../consensus/ConsensusDashboard';
+import { ConsensusDashboard } from '../consensus/ConsensusDashboard';
 import CoordinationDashboard from '../coordination/CoordinationDashboard';
 import FeedbackDashboard from '../feedback/FeedbackDashboard';
 
@@ -169,11 +167,20 @@ export const PainPointSolutionDashboard: React.FC<PainPointSolutionDashboardProp
             <Title2>Mission Accomplished! 🎉</Title2>
           </div>
           
-          <ProgressIndicator 
-            value={overallProgress / 100}
-            shape="square"
-            thickness="large"
-          />
+          <div style={{ 
+            width: '100%', 
+            height: '8px', 
+            backgroundColor: '#F3F2F1', 
+            borderRadius: '4px',
+            overflow: 'hidden'
+          }}>
+            <div style={{ 
+              width: `${overallProgress}%`, 
+              height: '100%', 
+              backgroundColor: '#107C10',
+              transition: 'width 0.3s ease'
+            }} />
+          </div>
           
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', marginTop: '24px' }}>
             <div style={{ textAlign: 'center' }}>

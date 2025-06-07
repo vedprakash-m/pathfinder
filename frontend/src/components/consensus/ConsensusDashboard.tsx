@@ -7,7 +7,7 @@ import {
   Title3,
   Body1,
   Body2,
-  Badge,
+  // Badge,
   Button,
   Spinner,
 } from '@fluentui/react-components';

@@ -293,7 +293,7 @@ resource frontendApp 'Microsoft.App/containerApps@2023-05-01' = {
     configuration: {
       ingress: {
         external: true
-        targetPort: 3000
+        targetPort: 8080
         transport: 'http'
       }
       secrets: [

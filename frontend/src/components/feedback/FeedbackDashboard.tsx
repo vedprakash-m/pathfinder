@@ -19,9 +19,6 @@ import {
   Button,
   Spinner,
   MessageBar,
-  MessageBarType,
-  ProgressIndicator,
-  Stack,
   Textarea,
   Dropdown,
   Option,
@@ -48,7 +45,6 @@ import {
   Lightbulb24Regular,
   Eye24Regular,
   CheckmarkCircle24Regular,
-  Clock24Regular,
   People24Regular
 } from '@fluentui/react-icons';
 
@@ -412,24 +408,19 @@ export const FeedbackDashboard: React.FC<FeedbackDashboardProps> = ({ tripId }) 
             </Badge>
           </div>
           
-          <ProgressIndicator 
-            value={collaborationScore / 100}
-            shape="square"
-            thickness="large"
-          />
           
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginTop: '16px' }}>
             <div>
               <Caption1>Feedback Velocity</Caption1>
-              <Body1 weight="semibold">{dashboardData.collaboration_health.feedback_velocity}</Body1>
+              <Body1 style={{ fontWeight: "600" }}>{dashboardData.collaboration_health.feedback_velocity}</Body1>
             </div>
             <div>
               <Caption1>Response Rate</Caption1>
-              <Body1 weight="semibold">{dashboardData.collaboration_health.response_rate}</Body1>
+              <Body1 style={{ fontWeight: '600' }}>{dashboardData.collaboration_health.response_rate}</Body1>
             </div>
             <div>
               <Caption1>Avg Resolution Time</Caption1>
-              <Body1 weight="semibold">{dashboardData.collaboration_health.average_resolution_time}</Body1>
+              <Body1 style={{ fontWeight: '600' }}>{dashboardData.collaboration_health.average_resolution_time}</Body1>
             </div>
           </div>
         </div>
@@ -477,15 +468,15 @@ export const FeedbackDashboard: React.FC<FeedbackDashboardProps> = ({ tripId }) 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
                 <Caption1>Most Common Type</Caption1>
-                <Body1 weight="semibold">{dashboardData.feedback_trends.most_common_type}</Body1>
+                <Body1 style={{ fontWeight: "600" }}>{dashboardData.feedback_trends.most_common_type}</Body1>
               </div>
               <div>
                 <Caption1>Peak Activity Time</Caption1>
-                <Body1 weight="semibold">{dashboardData.feedback_trends.peak_feedback_time}</Body1>
+                <Body1 style={{ fontWeight: "600" }}>{dashboardData.feedback_trends.peak_feedback_time}</Body1>
               </div>
               <div>
                 <Caption1>Family Participation</Caption1>
-                <Body1 weight="semibold">{dashboardData.feedback_trends.family_participation}</Body1>
+                <Body1 style={{ fontWeight: "600" }}>{dashboardData.feedback_trends.family_participation}</Body1>
               </div>
             </div>
           </div>
@@ -498,7 +489,7 @@ export const FeedbackDashboard: React.FC<FeedbackDashboardProps> = ({ tripId }) 
           <Title3 style={{ marginBottom: '16px' }}>💭 Recent Feedback</Title3>
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {dashboardData.recent_feedback.map((feedback, index) => (
+            {dashboardData.recent_feedback.map((feedback) => (
               <div key={feedback.id} style={{ 
                 border: '1px solid #E5E5E5', 
                 borderRadius: '8px', 
@@ -508,7 +499,7 @@ export const FeedbackDashboard: React.FC<FeedbackDashboardProps> = ({ tripId }) 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     {getFeedbackIcon(feedback.feedback_type)}
-                    <Body1 weight="semibold">{feedback.target_element}</Body1>
+                    <Body1 style={{ fontWeight: "600" }}>{feedback.target_element}</Body1>
                     <div style={{ 
                       width: '8px', 
                       height: '8px', 
