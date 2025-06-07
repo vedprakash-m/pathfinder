@@ -6,7 +6,8 @@ from celery import current_task
 from datetime import datetime, timezone
 from typing import Dict, Any, List
 
-from app.core.celery_app import celery_app, run_async
+from app.core.celery_app import celery_app
+from app.tasks.task_compat import conditional_task, run_async_task
 from app.core.logging_config import get_logger
 from app.core.database import get_db
 from app.services.export_service import DataExportService
@@ -16,7 +17,7 @@ from app.services.notification_service import NotificationService
 logger = get_logger(__name__)
 
 
-@celery_app.task(bind=True, name="app.tasks.export_tasks.export_trip_data")
+@conditional_task(bind=True, name="app.tasks.export_tasks.export_trip_data")
 def export_trip_data(self, trip_id: str, user_id: str, export_format: str = "excel", 
                      export_type: str = "complete"):
     """Export trip data in various formats."""
@@ -145,7 +146,7 @@ def export_trip_data(self, trip_id: str, user_id: str, export_format: str = "exc
     return run_async(_export())
 
 
-@celery_app.task(bind=True, name="app.tasks.export_tasks.bulk_export_trips")
+@conditional_task(bind=True, name="app.tasks.export_tasks.bulk_export_trips")
 def bulk_export_trips(self, trip_ids: List[str], user_id: str, export_format: str = "excel"):
     """Export multiple trips in a single archive."""
     
@@ -219,7 +220,7 @@ def bulk_export_trips(self, trip_ids: List[str], user_id: str, export_format: st
     return run_async(_bulk_export())
 
 
-@celery_app.task(name="app.tasks.export_tasks.cleanup_old_exports")
+@conditional_task(name="app.tasks.export_tasks.cleanup_old_exports")
 def cleanup_old_exports():
     """Clean up old export files from storage."""
     

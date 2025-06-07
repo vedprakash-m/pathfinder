@@ -6,7 +6,8 @@ from celery import current_task
 from datetime import datetime, timezone
 from typing import List, Dict, Any
 
-from app.core.celery_app import celery_app, run_async
+from app.core.celery_app import celery_app
+from app.tasks.task_compat import conditional_task, run_async_task
 from app.core.logging_config import get_logger
 from app.core.database import get_db
 from app.services.notification_service import NotificationService
@@ -15,7 +16,7 @@ from app.services.email_service import EmailNotificationService
 logger = get_logger(__name__)
 
 
-@celery_app.task(bind=True, name="app.tasks.notification_tasks.send_bulk_notifications")
+@conditional_task(bind=True, name="app.tasks.notification_tasks.send_bulk_notifications")
 def send_bulk_notifications(self, notification_data: Dict[str, Any], user_ids: List[str]):
     """Send notifications to multiple users efficiently."""
     
@@ -68,7 +69,7 @@ def send_bulk_notifications(self, notification_data: Dict[str, Any], user_ids: L
     return run_async(_send_bulk())
 
 
-@celery_app.task(name="app.tasks.notification_tasks.cleanup_expired_notifications")
+@conditional_task(name="app.tasks.notification_tasks.cleanup_expired_notifications")
 def cleanup_expired_notifications():
     """Clean up expired notifications from the database."""
     
@@ -98,7 +99,7 @@ def cleanup_expired_notifications():
     return run_async(_cleanup())
 
 
-@celery_app.task(bind=True, name="app.tasks.notification_tasks.send_email_notifications")
+@conditional_task(bind=True, name="app.tasks.notification_tasks.send_email_notifications")
 def send_email_notifications(self, email_data: Dict[str, Any], recipient_emails: List[str]):
     """Send email notifications to multiple recipients."""
     
@@ -181,7 +182,7 @@ def send_email_notifications(self, email_data: Dict[str, Any], recipient_emails:
     return run_async(_send_emails())
 
 
-@celery_app.task(name="app.tasks.notification_tasks.process_system_alerts")
+@conditional_task(name="app.tasks.notification_tasks.process_system_alerts")
 def process_system_alerts(alert_type: str, alert_data: Dict[str, Any]):
     """Process system-wide alerts and notifications."""
     

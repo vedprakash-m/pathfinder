@@ -6,7 +6,8 @@ from celery import current_task
 from datetime import datetime, timezone
 from typing import Dict, Any, Optional
 
-from app.core.celery_app import celery_app, run_async
+from app.core.celery_app import celery_app
+from app.tasks.task_compat import conditional_task, run_async_task
 from app.core.logging_config import get_logger
 from app.core.database import get_db
 from app.services.pdf_service import PDFService
@@ -16,7 +17,7 @@ from app.services.notification_service import NotificationService
 logger = get_logger(__name__)
 
 
-@celery_app.task(bind=True, name="app.tasks.pdf_tasks.generate_trip_pdf")
+@conditional_task(bind=True, name="app.tasks.pdf_tasks.generate_trip_pdf")
 def generate_trip_pdf(self, trip_id: str, user_id: str, pdf_type: str = "itinerary"):
     """Generate PDF documents for trips."""
     
@@ -120,7 +121,7 @@ def generate_trip_pdf(self, trip_id: str, user_id: str, pdf_type: str = "itinera
     return run_async(_generate())
 
 
-@celery_app.task(bind=True, name="app.tasks.pdf_tasks.generate_bulk_pdfs")
+@conditional_task(bind=True, name="app.tasks.pdf_tasks.generate_bulk_pdfs")
 def generate_bulk_pdfs(self, trip_id: str, participant_user_ids: list, pdf_type: str = "itinerary"):
     """Generate PDFs for multiple trip participants."""
     
@@ -174,7 +175,7 @@ def generate_bulk_pdfs(self, trip_id: str, participant_user_ids: list, pdf_type:
     return run_async(_generate_bulk())
 
 
-@celery_app.task(name="app.tasks.pdf_tasks.cleanup_old_pdfs")
+@conditional_task(name="app.tasks.pdf_tasks.cleanup_old_pdfs")
 def cleanup_old_pdfs():
     """Clean up old PDF files from storage."""
     
