@@ -19,6 +19,34 @@ param sqlAdminPassword string
 @secure()
 param openAIApiKey string = ''
 
+@description('LLM Orchestration Service URL')
+param llmOrchestrationUrl string = ''
+
+@description('LLM Orchestration API Key')
+@secure()
+param llmOrchestrationApiKey string = ''
+
+@description('Auth0 Domain')
+param auth0Domain string = 'dev-jwnud3v8ghqnyygr.us.auth0.com'
+
+@description('Auth0 Audience')
+param auth0Audience string = 'https://pathfinder-api.com'
+
+@description('Auth0 Client ID')
+param auth0ClientId string = 'KXu3KpGiyRHHHgiXX90sHuNC4rfYRcNn'
+
+@description('Auth0 Client Secret')
+@secure()
+param auth0ClientSecret string = ''
+
+@description('Google Maps API Key')
+@secure()
+param googleMapsApiKey string = ''
+
+@description('Secret Key for application')
+@secure()
+param secretKey string = ''
+
 // Tags for all resources
 var tags = {
   app: appName
@@ -156,6 +184,14 @@ module backendApp './container-apps.bicep' = {
     openAIApiKey: openAIApiKey
     appInsightsConnectionString: appInsights.properties.ConnectionString
     storageAccountConnectionString: storage.outputs.connectionString
+    llmOrchestrationUrl: llmOrchestrationUrl
+    llmOrchestrationApiKey: llmOrchestrationApiKey
+    auth0Domain: auth0Domain
+    auth0Audience: auth0Audience
+    auth0ClientId: auth0ClientId
+    auth0ClientSecret: auth0ClientSecret
+    googleMapsApiKey: googleMapsApiKey
+    secretKey: secretKey
   }
 }
 

@@ -16,6 +16,7 @@ import tiktoken
 from app.core.config import get_settings
 from app.core.logging_config import create_logger
 from app.core.cache_service import ai_cache_service
+from app.services.llm_orchestration_client import llm_orchestration_client
 
 settings = get_settings()
 logger = create_logger(__name__)
@@ -418,7 +419,9 @@ class AIService:
                 response = await self._make_api_call(
                     primary_model,
                     prompt,
-                    input_tokens
+                    input_tokens,
+                    task_type="itinerary_generation",
+                    user_id=user_id
                 )
             except Exception as e:
                 logger.warning(f"Primary model failed, falling back: {e}")
@@ -426,7 +429,9 @@ class AIService:
                 response = await self._make_api_call(
                     fallback_model,
                     prompt,
-                    input_tokens
+                    input_tokens,
+                    task_type="itinerary_generation",
+                    user_id=user_id
                 )
             
             # Parse and validate the response
@@ -459,11 +464,59 @@ class AIService:
         self,
         model: str,
         prompt: str,
-        input_tokens: int
+        input_tokens: int,
+        task_type: str = "general",
+        user_id: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Make API call to OpenAI."""
+        """Make API call using LLM orchestration service if available, fallback to OpenAI."""
         
+        # Try LLM orchestration service first if enabled
+        if llm_orchestration_client.enabled:
+            try:
+                logger.info("Using LLM Orchestration Service for API call")
+                
+                max_tokens = getattr(settings, 'OPENAI_MAX_TOKENS', 4000)
+                temperature = getattr(settings, 'OPENAI_TEMPERATURE', 0.7)
+                
+                # Enhanced prompt for LLM orchestration with system context
+                enhanced_prompt = f"{ItineraryPrompts.SYSTEM_PROMPT}\n\nUser Request:\n{prompt}"
+                
+                orchestration_response = await llm_orchestration_client.generate_text(
+                    prompt=enhanced_prompt,
+                    task_type=task_type,
+                    user_id=user_id,
+                    max_tokens=max_tokens,
+                    temperature=temperature,
+                    model_preference=model
+                )
+                
+                # Extract tokens for cost tracking (orchestration service handles its own costs)
+                output_tokens = orchestration_response.get("tokens_used", 0)
+                orchestration_cost = orchestration_response.get("cost", 0.0)
+                
+                logger.info(f"LLM Orchestration response: model={orchestration_response.get('model_used')}, "
+                           f"provider={orchestration_response.get('provider')}, cost=${orchestration_cost:.4f}")
+                
+                return {
+                    "content": orchestration_response.get("text", ""),
+                    "model": orchestration_response.get("model_used", model),
+                    "provider": orchestration_response.get("provider", "unknown"),
+                    "input_tokens": input_tokens,
+                    "output_tokens": output_tokens,
+                    "cost": orchestration_cost,
+                    "processing_time": orchestration_response.get("processing_time", 0.0),
+                    "orchestration_metadata": orchestration_response.get("metadata", {}),
+                    "source": "llm_orchestration"
+                }
+                
+            except Exception as e:
+                logger.warning(f"LLM Orchestration failed, falling back to OpenAI: {e}")
+                # Fall through to OpenAI fallback
+        
+        # Fallback to direct OpenAI API
         try:
+            logger.info("Using direct OpenAI API call")
+            
             max_tokens = getattr(settings, 'OPENAI_MAX_TOKENS', 4000)
             temperature = getattr(settings, 'OPENAI_TEMPERATURE', 0.7)
             timeout_val = getattr(settings, 'OPENAI_TIMEOUT', 60)
@@ -491,9 +544,11 @@ class AIService:
             return {
                 "content": content,
                 "model": model,
+                "provider": "openai",
                 "input_tokens": input_tokens,
                 "output_tokens": output_tokens,
-                "cost": cost
+                "cost": cost,
+                "source": "direct_openai"
             }
             
         except openai.RateLimitError:
@@ -573,7 +628,8 @@ class AIService:
             response = await self._make_api_call(
                 primary_model,
                 prompt,
-                input_tokens
+                input_tokens,
+                task_type="activity_enhancement"
             )
             
             return json.loads(response["content"])
@@ -656,7 +712,8 @@ class AIService:
             response = await self._make_api_call(
                 primary_model,
                 prompt,
-                input_tokens
+                input_tokens,
+                task_type="route_optimization"
             )
             
             return json.loads(response["content"])
@@ -736,7 +793,8 @@ class AIService:
             response = await self._make_api_call(
                 primary_model,
                 prompt,
-                input_tokens
+                input_tokens,
+                task_type="budget_optimization"
             )
             
             return json.loads(response["content"])
@@ -799,7 +857,8 @@ class AIService:
             response = await self._make_api_call(
                 primary_model,
                 prompt,
-                input_tokens
+                input_tokens,
+                task_type="activity_recommendations"
             )
             
             return json.loads(response["content"])
@@ -863,7 +922,8 @@ class AIService:
             response = await self._make_api_call(
                 primary_model,
                 prompt,
-                input_tokens
+                input_tokens,
+                task_type="restaurant_recommendations"
             )
             
             return json.loads(response["content"])
@@ -930,7 +990,8 @@ class AIService:
             response = await self._make_api_call(
                 primary_model,
                 prompt,
-                input_tokens
+                input_tokens,
+                task_type="itinerary_optimization"
             )
             
             return json.loads(response["content"])
@@ -981,7 +1042,8 @@ class AIService:
             response = await self._make_api_call(
                 primary_model,
                 prompt,
-                input_tokens
+                input_tokens,
+                task_type="activity_suggestions"
             )
             
             return json.loads(response["content"])

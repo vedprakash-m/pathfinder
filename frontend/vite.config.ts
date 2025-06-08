@@ -6,7 +6,7 @@ import path from 'path'
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   
-  return {
+  const config = {
     plugins: [react()],
     resolve: {
       alias: {
@@ -15,13 +15,7 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       port: 3000,
-      proxy: {
-        '/api': {
-          target: 'http://localhost:8000',
-          changeOrigin: true,
-        },
-      },
-    },
+    } as any,
     build: {
       outDir: 'dist',
       sourcemap: true,
@@ -36,4 +30,16 @@ export default defineConfig(({ mode }) => {
       },
     },
   }
+
+  // Only add proxy if we don't have VITE_API_URL set
+  if (!env.VITE_API_URL) {
+    config.server.proxy = {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+    }
+  }
+
+  return config
 })

@@ -30,6 +30,34 @@ param appInsightsConnectionString string
 @secure()
 param storageAccountConnectionString string
 
+@description('LLM Orchestration Service URL')
+param llmOrchestrationUrl string = ''
+
+@description('LLM Orchestration API Key')
+@secure()
+param llmOrchestrationApiKey string = ''
+
+@description('Auth0 Domain')
+param auth0Domain string = ''
+
+@description('Auth0 Audience')
+param auth0Audience string = ''
+
+@description('Auth0 Client ID')
+param auth0ClientId string = ''
+
+@description('Auth0 Client Secret')
+@secure()
+param auth0ClientSecret string = ''
+
+@description('Google Maps API Key')
+@secure()
+param googleMapsApiKey string = ''
+
+@description('Secret Key for application')
+@secure()
+param secretKey string = ''
+
 @description('Image to deploy')
 param image string = 'ghcr.io/vedprakashmishra/pathfinder-backend:latest'
 
@@ -64,6 +92,22 @@ resource backendApp 'Microsoft.App/containerApps@2023-05-01' = {
         {
           name: 'storage-connection-string'
           value: storageAccountConnectionString
+        }
+        {
+          name: 'llm-orchestration-api-key'
+          value: llmOrchestrationApiKey
+        }
+        {
+          name: 'auth0-client-secret'
+          value: auth0ClientSecret
+        }
+        {
+          name: 'google-maps-api-key'
+          value: googleMapsApiKey
+        }
+        {
+          name: 'secret-key'
+          value: secretKey
         }
       ]
       ingress: {
@@ -112,12 +156,52 @@ resource backendApp 'Microsoft.App/containerApps@2023-05-01' = {
               secretRef: 'storage-connection-string'
             }
             {
+              name: 'LLM_ORCHESTRATION_URL'
+              value: llmOrchestrationUrl
+            }
+            {
+              name: 'LLM_ORCHESTRATION_ENABLED'
+              value: empty(llmOrchestrationUrl) ? 'false' : 'true'
+            }
+            {
+              name: 'LLM_ORCHESTRATION_API_KEY'
+              secretRef: 'llm-orchestration-api-key'
+            }
+            {
+              name: 'LLM_ORCHESTRATION_TIMEOUT'
+              value: '60'
+            }
+            {
               name: 'ENVIRONMENT'
               value: 'production'
             }
             {
               name: 'LOG_LEVEL'
               value: 'info'
+            }
+            {
+              name: 'AUTH0_DOMAIN'
+              value: auth0Domain
+            }
+            {
+              name: 'AUTH0_AUDIENCE'
+              value: auth0Audience
+            }
+            {
+              name: 'AUTH0_CLIENT_ID'
+              value: auth0ClientId
+            }
+            {
+              name: 'AUTH0_CLIENT_SECRET'
+              secretRef: 'auth0-client-secret'
+            }
+            {
+              name: 'GOOGLE_MAPS_API_KEY'
+              secretRef: 'google-maps-api-key'
+            }
+            {
+              name: 'SECRET_KEY'
+              secretRef: 'secret-key'
             }
           ]
           probes: [

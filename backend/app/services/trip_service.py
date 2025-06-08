@@ -18,7 +18,7 @@ from app.models.trip import (
     ParticipationCreate, ParticipationUpdate, ParticipationResponse,
     TripInvitation
 )
-from app.models.family import Family
+from app.models.family import Family, FamilyMember
 from app.models.user import User
 from app.services.cosmos.itinerary_service import ItineraryDocumentService
 from app.services.cosmos.message_service import MessageDocumentService
@@ -702,7 +702,6 @@ class TripService:
             user_id=UUID(user_id),
             status=ParticipationStatus.CONFIRMED
         )
-        
         self.db.add(participation)
     
     async def _build_trip_response(self, trip: Trip) -> TripResponse:
@@ -714,21 +713,14 @@ class TripService:
         # Ensure the trip's participations are loaded (avoid lazy loading issues)
         if 'participations' not in trip.__dict__ or trip.participations is None:
             # Refresh the trip with participations explicitly loaded
-            stmt = select(Trip).options(
-                selectinload(Trip.participations)
-            ).where(Trip.id == trip.id)
-            result = await self.db.execute(stmt)
-            refreshed_trip = result.scalar_one_or_none()
-            if refreshed_trip:
-                trip = refreshed_trip
-                # Now count participations from the refreshed trip
-                if hasattr(trip, 'participations') and trip.participations is not None:
-                    participations_count = len(trip.participations)
-                    confirmed_count = len([p for p in trip.participations if p.status == ParticipationStatus.CONFIRMED])
-        elif trip.participations is not None:
+            await self.db.refresh(trip, attribute_names=['participations'])
+        
+        if trip.participations:
             participations_count = len(trip.participations)
             confirmed_count = len([p for p in trip.participations if p.status == ParticipationStatus.CONFIRMED])
             
+        completion_percentage = self._calculate_completion_percentage(trip)
+
         return TripResponse(
             id=str(trip.id),
             name=trip.name,
@@ -737,14 +729,12 @@ class TripService:
             start_date=trip.start_date,
             end_date=trip.end_date,
             status=trip.status,
-            budget_total=float(trip.budget_total) if trip.budget_total else None,
-            preferences=json.loads(trip.preferences) if trip.preferences else None,
-            is_public=trip.is_public,
             creator_id=str(trip.creator_id),
             created_at=trip.created_at,
             updated_at=trip.updated_at,
             family_count=participations_count,
-            confirmed_families=confirmed_count
+            confirmed_families=confirmed_count,
+            completion_percentage=completion_percentage
         )
     
     def _calculate_completion_percentage(self, trip: Trip) -> float:

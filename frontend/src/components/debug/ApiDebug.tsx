@@ -1,0 +1,93 @@
+import React, { useState } from 'react';
+import { useAuth0 } from '@auth0/auth0-react';
+import { Card, Title3, Body2, Button } from '@fluentui/react-components';
+
+export const ApiDebug: React.FC = () => {
+  const { getAccessTokenSilently, isAuthenticated, user } = useAuth0();
+  const [debugInfo, setDebugInfo] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  const testApiCall = async () => {
+    setLoading(true);
+    try {
+      // Get the Auth0 token
+      const token = await getAccessTokenSilently({
+        authorizationParams: {
+          audience: import.meta.env.VITE_AUTH0_AUDIENCE || 'https://pathfinder-api.com',
+          scope: 'openid profile email'
+        }
+      });
+
+      console.log('🔐 Auth0 Token:', token);
+
+      // Test the API call
+      const apiUrl = import.meta.env.VITE_API_URL 
+        ? `${import.meta.env.VITE_API_URL}/api/v1` 
+        : '/api/v1';
+      
+      const response = await fetch(`${apiUrl}/trips/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await response.text();
+      
+      setDebugInfo({
+        token: token.substring(0, 50) + '...',
+        apiUrl,
+        status: response.status,
+        statusText: response.statusText,
+        response: data,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+
+    } catch (error: any) {
+      console.error('❌ API Test Error:', error);
+      setDebugInfo({
+        error: error.message,
+        stack: error.stack
+      });
+    }
+    setLoading(false);
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <Card className="p-4 mb-4 bg-yellow-50 border border-yellow-200">
+        <Title3 className="mb-2">🔧 API Debug</Title3>
+        <Body2>Please login first to test API calls.</Body2>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="p-4 mb-4 bg-blue-50 border border-blue-200">
+      <Title3 className="mb-2">🔧 API Debug Info</Title3>
+      
+      <div className="space-y-2 mb-4">
+        <Body2><strong>User:</strong> {user?.email}</Body2>
+        <Body2><strong>Auth Status:</strong> {isAuthenticated ? 'Authenticated' : 'Not Authenticated'}</Body2>
+        <Body2><strong>API URL:</strong> {import.meta.env.VITE_API_URL || 'Local (/api/v1)'}</Body2>
+      </div>
+
+      <Button 
+        onClick={testApiCall} 
+        disabled={loading}
+        appearance="primary"
+        className="mb-4"
+      >
+        {loading ? 'Testing...' : 'Test API Call'}
+      </Button>
+
+      {debugInfo && (
+        <div className="mt-4 p-3 bg-white border rounded text-sm">
+          <pre className="whitespace-pre-wrap overflow-auto max-h-96">
+            {JSON.stringify(debugInfo, null, 2)}
+          </pre>
+        </div>
+      )}
+    </Card>
+  );
+}; 

@@ -111,6 +111,12 @@ class Settings(BaseSettings):
     AI_COST_TRACKING_ENABLED: bool = Field(default=True, env="AI_COST_TRACKING_ENABLED")
     AI_DAILY_BUDGET_LIMIT: float = Field(default=50.0, env="AI_DAILY_BUDGET_LIMIT")  # USD
     
+    # LLM Orchestration Service settings
+    LLM_ORCHESTRATION_URL: Optional[str] = Field(default=None, env="LLM_ORCHESTRATION_URL")
+    LLM_ORCHESTRATION_ENABLED: bool = Field(default=False, env="LLM_ORCHESTRATION_ENABLED")
+    LLM_ORCHESTRATION_TIMEOUT: int = Field(default=60, env="LLM_ORCHESTRATION_TIMEOUT")
+    LLM_ORCHESTRATION_API_KEY: Optional[str] = Field(default=None, env="LLM_ORCHESTRATION_API_KEY")
+    
     # Security context validation
     ENABLE_CONTEXT_VALIDATION: bool = Field(default=False, env="ENABLE_CONTEXT_VALIDATION")
     MAX_RISK_THRESHOLD: float = Field(default=0.7, env="MAX_RISK_THRESHOLD")

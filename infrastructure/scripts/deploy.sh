@@ -17,6 +17,11 @@ RG_NAME="pathfinder-rg"
 SQL_ADMIN_USERNAME="pathfinderadmin"
 SQL_ADMIN_PASSWORD=""
 OPENAI_API_KEY=""
+LLM_ORCHESTRATION_URL=""
+LLM_ORCHESTRATION_API_KEY=""
+AUTH0_CLIENT_SECRET=""
+GOOGLE_MAPS_API_KEY=""
+SECRET_KEY=""
 SKIP_CONFIRM=0
 
 # Print usage
@@ -31,6 +36,11 @@ function print_usage() {
   echo "  -u, --sql-admin USERNAME    SQL Server admin username"
   echo "  -p, --sql-password PASSWORD SQL Server admin password"
   echo "  -o, --openai-key KEY        OpenAI API key"
+  echo "  --llm-url URL               LLM Orchestration Service URL"
+  echo "  --llm-key KEY               LLM Orchestration API Key"
+  echo "  --auth0-secret SECRET       Auth0 Client Secret"
+  echo "  --google-maps-key KEY       Google Maps API Key"
+  echo "  --secret-key KEY            Application Secret Key"
   echo "  -y, --yes                   Skip confirmation prompt"
   echo "  -h, --help                  Show this help message"
 }
@@ -74,6 +84,31 @@ while [[ $# -gt 0 ]]; do
       shift
       shift
       ;;
+    --llm-url)
+      LLM_ORCHESTRATION_URL="$2"
+      shift
+      shift
+      ;;
+    --llm-key)
+      LLM_ORCHESTRATION_API_KEY="$2"
+      shift
+      shift
+      ;;
+    --auth0-secret)
+      AUTH0_CLIENT_SECRET="$2"
+      shift
+      shift
+      ;;
+    --google-maps-key)
+      GOOGLE_MAPS_API_KEY="$2"
+      shift
+      shift
+      ;;
+    --secret-key)
+      SECRET_KEY="$2"
+      shift
+      shift
+      ;;
     -y|--yes)
       SKIP_CONFIRM=1
       shift
@@ -109,6 +144,24 @@ if [ -z "$OPENAI_API_KEY" ]; then
   OPENAI_API_KEY="sk-dummy-key-for-testing-purposes-only"
 fi
 
+# Generate secret key if not provided
+if [ -z "$SECRET_KEY" ]; then
+  echo -e "${COLOR_YELLOW}Generating random secret key...${COLOR_RESET}"
+  SECRET_KEY=$(openssl rand -base64 32)
+fi
+
+# Generate Auth0 client secret if not provided (for testing only)
+if [ -z "$AUTH0_CLIENT_SECRET" ]; then
+  echo -e "${COLOR_YELLOW}Auth0 client secret not provided. Using dummy secret for deployment.${COLOR_RESET}"
+  AUTH0_CLIENT_SECRET="dummy-auth0-client-secret-for-testing"
+fi
+
+# Generate Google Maps API key if not provided (for testing only)
+if [ -z "$GOOGLE_MAPS_API_KEY" ]; then
+  echo -e "${COLOR_YELLOW}Google Maps API key not provided. Using dummy key for deployment.${COLOR_RESET}"
+  GOOGLE_MAPS_API_KEY="dummy-google-maps-api-key-for-testing"
+fi
+
 # Print deployment information
 echo -e "${COLOR_GREEN}Pathfinder Deployment${COLOR_RESET}"
 echo "===================="
@@ -118,6 +171,8 @@ echo "Application Name: $APP_NAME"
 echo "Resource Group: $RG_NAME"
 echo "SQL Admin Username: $SQL_ADMIN_USERNAME"
 echo "OpenAI API Key: [HIDDEN]"
+echo "LLM Orchestration URL: ${LLM_ORCHESTRATION_URL:-'Not configured (will use direct OpenAI)'}"
+echo "LLM Orchestration API Key: ${LLM_ORCHESTRATION_API_KEY:+'[HIDDEN]'}"
 echo ""
 
 # Confirm deployment
@@ -151,7 +206,12 @@ az deployment group create \
     location=$LOCATION \
     sqlAdminLogin=$SQL_ADMIN_USERNAME \
     sqlAdminPassword=$SQL_ADMIN_PASSWORD \
-    openAIApiKey=$OPENAI_API_KEY
+    openAIApiKey=$OPENAI_API_KEY \
+    llmOrchestrationUrl=$LLM_ORCHESTRATION_URL \
+    llmOrchestrationApiKey=$LLM_ORCHESTRATION_API_KEY \
+    auth0ClientSecret=$AUTH0_CLIENT_SECRET \
+    googleMapsApiKey=$GOOGLE_MAPS_API_KEY \
+    secretKey=$SECRET_KEY
 
 # Get deployment outputs
 echo -e "${COLOR_GREEN}Getting deployment outputs...${COLOR_RESET}"

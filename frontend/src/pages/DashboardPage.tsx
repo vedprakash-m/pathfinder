@@ -23,6 +23,7 @@ import {
 import { tripService } from '@/services/tripService';
 import { useTripStore, useAuthStore } from '@/store';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { ApiDebug } from '@/components/debug/ApiDebug';
 import type { Trip, TripStatus } from '@/types';
 
 const StatusBadge: React.FC<{ status: TripStatus }> = ({ status }) => {
@@ -231,6 +232,9 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div className="space-y-8">
+      {/* Debug Component - TEMPORARY */}
+      <ApiDebug />
+
       {/* Welcome Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}

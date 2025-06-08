@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auth0 API Test</title>
+    <script src="https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js"></script>
+</head>
+<body>
+    <div id="app">
+        <h1>Auth0 API Test</h1>
+        <div id="status">Loading...</div>
+        <button id="login" style="display:none;">Login</button>
+        <button id="logout" style="display:none;">Logout</button>
+        <button id="test-api" style="display:none;">Test API</button>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        let auth0Client;
+        let isAuthenticated = false;
+
+        const initAuth0 = async () => {
+            auth0Client = await auth0.createAuth0Client({
+                domain: 'dev-jwnud3v8ghqnyygr.us.auth0.com',
+                clientId: 'KXu3KpGiyRHHHgiXX90sHuNC4rfYRcNn',
+                authorizationParams: {
+                    redirect_uri: window.location.origin + '/test-auth.html',
+                    audience: 'https://pathfinder-api.com'
+                }
+            });
+
+            // Check if user is already authenticated
+            isAuthenticated = await auth0Client.isAuthenticated();
+            
+            if (isAuthenticated) {
+                const user = await auth0Client.getUser();
+                document.getElementById('status').innerHTML = `Logged in as: ${user.email}`;
+                document.getElementById('logout').style.display = 'inline';
+                document.getElementById('test-api').style.display = 'inline';
+            } else {
+                document.getElementById('status').innerHTML = 'Not logged in';
+                document.getElementById('login').style.display = 'inline';
+            }
+
+            // Handle redirect callback
+            const query = window.location.search;
+            if (query.includes('code=')) {
+                await auth0Client.handleRedirectCallback();
+                window.location.href = window.location.origin + '/test-auth.html';
+            }
+        };
+
+        const login = () => {
+            auth0Client.loginWithRedirect();
+        };
+
+        const logout = () => {
+            auth0Client.logout({
+                logoutParams: {
+                    returnTo: window.location.origin + '/test-auth.html'
+                }
+            });
+        };
+
+        const testApi = async () => {
+            try {
+                const token = await auth0Client.getAccessTokenSilently();
+                console.log('Token:', token);
+
+                const response = await fetch('https://pathfinder-backend.yellowdune-9b8d769a.eastus.azurecontainerapps.io/api/v1/trips/', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.text();
+                
+                document.getElementById('result').innerHTML = `
+                    <h3>API Test Result:</h3>
+                    <p><strong>Status:</strong> ${response.status} ${response.statusText}</p>
+                    <p><strong>Response:</strong></p>
+                    <pre>${data}</pre>
+                `;
+
+            } catch (error) {
+                document.getElementById('result').innerHTML = `
+                    <h3>API Test Error:</h3>
+                    <pre>${error.message}</pre>
+                `;
+            }
+        };
+
+        // Event listeners
+        document.getElementById('login').addEventListener('click', login);
+        document.getElementById('logout').addEventListener('click', logout);
+        document.getElementById('test-api').addEventListener('click', testApi);
+
+        // Initialize
+        initAuth0();
+    </script>
+</body>
+</html> 
