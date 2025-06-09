@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, MapPin, Users, Compass } from 'lucide-react';
 import TripTypeSelection from './TripTypeSelection';
@@ -8,6 +7,7 @@ import InteractiveConsensusDemo from './InteractiveConsensusDemo';
 import OnboardingComplete from './OnboardingComplete';
 import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../lib/api';
+import { useOnboardingAnalytics } from '../../services/onboardingAnalytics';
 
 export type TripType = 'weekend-getaway' | 'family-vacation' | 'adventure-trip';
 export type OnboardingStep = 'welcome' | 'trip-type' | 'sample-trip' | 'consensus-demo' | 'complete';
@@ -22,6 +22,22 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
   const [sampleTripId, setSampleTripId] = useState<string | null>(null);
   const [startTime] = useState(Date.now());
   const { user } = useAuth();
+  const analytics = useOnboardingAnalytics();
+
+  // Initialize analytics tracking
+  useEffect(() => {
+    analytics.startSession(user?.id);
+    
+    // Track drop-off when user leaves page
+    const handleBeforeUnload = () => {
+      if (currentStep !== 'complete') {
+        analytics.trackDropOff('page_leave');
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [user, analytics]);
 
   // Track onboarding analytics
   useEffect(() => {
@@ -41,10 +57,12 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
         break;
       case 'trip-type':
         setSelectedTripType(data.tripType);
+        analytics.trackTripTypeSelection(data.tripType);
         setCurrentStep('sample-trip');
         break;
       case 'sample-trip':
         setSampleTripId(data.tripId);
+        analytics.trackSampleTripGeneration(data.tripId);
         setCurrentStep('consensus-demo');
         break;
       case 'consensus-demo':
@@ -52,6 +70,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
         break;
       case 'complete':
         // Track completion analytics
+        analytics.trackCompletion();
         if (user) {
           api.post('/api/analytics/onboarding-complete', {
             userId: user.id,
@@ -90,13 +109,13 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         {/* Progress Bar */}
-        <div className="mb-8">
+        <div className="mb-6 sm:mb-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-2">
-              <Sparkles className="h-6 w-6 text-blue-600" />
-              <span className="text-lg font-semibold text-gray-800">Welcome to Pathfinder</span>
+              <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+              <span className="text-base sm:text-lg font-semibold text-gray-800">Welcome to Pathfinder</span>
             </div>
             <button
               onClick={handleSkip}
@@ -129,26 +148,26 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
               initial="initial"
               animate="animate"
               exit="exit"
-              className="text-center max-w-2xl mx-auto"
+              className="text-center max-w-2xl mx-auto px-4 sm:px-0"
             >
-              <div className="mb-8">
-                <div className="flex justify-center mb-6">
-                  <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-6 rounded-full">
-                    <Compass className="h-12 w-12 text-white" />
+              <div className="mb-6 sm:mb-8">
+                <div className="flex justify-center mb-4 sm:mb-6">
+                  <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-4 sm:p-6 rounded-full">
+                    <Compass className="h-8 w-8 sm:h-12 sm:w-12 text-white" />
                   </div>
                 </div>
-                <h1 className="text-4xl font-bold text-gray-800 mb-4">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-800 mb-3 sm:mb-4">
                   Welcome to Pathfinder
                 </h1>
-                <p className="text-xl text-gray-600 mb-8">
+                <p className="text-base sm:text-lg lg:text-xl text-gray-600 mb-6 sm:mb-8">
                   The AI-powered trip planner that brings families together through collaborative decision-making.
                   Let's show you how it works!
                 </p>
-                <div className="grid md:grid-cols-3 gap-6 mb-8">
-                  <div className="bg-white p-6 rounded-lg shadow-sm border">
-                    <MapPin className="h-8 w-8 text-blue-500 mb-3 mx-auto" />
-                    <h3 className="font-semibold text-gray-800 mb-2">Smart Planning</h3>
-                    <p className="text-sm text-gray-600">AI creates personalized itineraries based on your family's preferences</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+                  <div className="bg-white p-4 sm:p-6 rounded-lg shadow-sm border">
+                    <MapPin className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500 mb-2 sm:mb-3 mx-auto" />
+                    <h3 className="font-semibold text-gray-800 mb-1 sm:mb-2 text-sm sm:text-base">Smart Planning</h3>
+                    <p className="text-xs sm:text-sm text-gray-600">AI creates personalized itineraries based on your family's preferences</p>
                   </div>
                   <div className="bg-white p-6 rounded-lg shadow-sm border">
                     <Users className="h-8 w-8 text-purple-500 mb-3 mx-auto" />
@@ -179,7 +198,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
               animate="animate"
               exit="exit"
             >
-              <TripTypeSelection onSelect={(tripType) => handleStepComplete('trip-type', { tripType })} />
+              <TripTypeSelection onSelect={(tripType: TripType) => handleStepComplete('trip-type', { tripType })} />
             </motion.div>
           )}
 
@@ -193,7 +212,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
             >
               <SampleTripDemo
                 tripType={selectedTripType}
-                onComplete={(tripId) => handleStepComplete('sample-trip', { tripId })}
+                onComplete={(tripId: string) => handleStepComplete('sample-trip', { tripId })}
               />
             </motion.div>
           )}
@@ -207,7 +226,6 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
               exit="exit"
             >
               <InteractiveConsensusDemo
-                tripId={sampleTripId}
                 onComplete={() => handleStepComplete('consensus-demo')}
               />
             </motion.div>

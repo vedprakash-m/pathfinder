@@ -11,6 +11,8 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { TripType } from './OnboardingFlow';
+import { TripTemplateService, TripTemplate } from '../../services/tripTemplateService';
+import { useOnboardingAnalytics } from '../../services/onboardingAnalytics';
 
 interface SampleFamily {
   id: string;
@@ -20,291 +22,6 @@ interface SampleFamily {
   preferences: string[];
 }
 
-interface Activity {
-  id: string;
-  name: string;
-  description: string;
-  duration: string;
-  difficulty: 'Easy' | 'Moderate' | 'Challenging';
-  category: string;
-  rating: number;
-  image: string;
-  cost: string;
-}
-
-interface SampleTrip {
-  id: string;
-  title: string;
-  destination: string;
-  duration: string;
-  description: string;
-  family: SampleFamily[];
-  itinerary: {
-    day: number;
-    title: string;
-    activities: Activity[];
-  }[];
-  highlights: string[];
-}
-
-// Sample trip templates based on trip type
-const sampleTrips: Record<TripType, SampleTrip> = {
-  'weekend-getaway': {
-    id: 'sample-weekend-1',
-    title: 'Cozy Mountain Retreat',
-    destination: 'Blue Ridge Mountains, VA',
-    duration: '2 days, 1 night',
-    description: 'A peaceful weekend escape with scenic views, local cuisine, and relaxing activities for the whole family.',
-    family: [
-      {
-        id: 'dad',
-        name: 'David',
-        role: 'Dad',
-        avatar: '👨‍💼',
-        preferences: ['Photography', 'Hiking', 'Local cuisine']
-      },
-      {
-        id: 'mom',
-        name: 'Sarah',
-        role: 'Mom',
-        avatar: '👩‍💻',
-        preferences: ['Spa activities', 'Shopping', 'Wine tasting']
-      },
-      {
-        id: 'teen',
-        name: 'Alex',
-        role: 'Teen (16)',
-        avatar: '🧑‍🎓',
-        preferences: ['Adventure sports', 'Social media spots', 'Gaming']
-      }
-    ],
-    itinerary: [
-      {
-        day: 1,
-        title: 'Arrival & Exploration',
-        activities: [
-          {
-            id: 'activity-1',
-            name: 'Scenic Drive to Lodge',
-            description: 'Beautiful mountain views with photo stops along the way',
-            duration: '2 hours',
-            difficulty: 'Easy',
-            category: 'Transportation',
-            rating: 4.5,
-            image: '🚗',
-            cost: '$50'
-          },
-          {
-            id: 'activity-2',
-            name: 'Local Farmers Market',
-            description: 'Sample local produce and artisan goods',
-            duration: '1 hour',
-            difficulty: 'Easy',
-            category: 'Cultural',
-            rating: 4.3,
-            image: '🥕',
-            cost: '$30'
-          },
-          {
-            id: 'activity-3',
-            name: 'Evening Bonfire',
-            description: 'Cozy evening with s\'mores and stargazing',
-            duration: '2 hours',
-            difficulty: 'Easy',
-            category: 'Relaxation',
-            rating: 4.8,
-            image: '🔥',
-            cost: '$20'
-          }
-        ]
-      },
-      {
-        day: 2,
-        title: 'Adventure & Departure',
-        activities: [
-          {
-            id: 'activity-4',
-            name: 'Morning Hike',
-            description: 'Easy trail with waterfall views perfect for photos',
-            duration: '2 hours',
-            difficulty: 'Moderate',
-            category: 'Outdoor',
-            rating: 4.6,
-            image: '🥾',
-            cost: 'Free'
-          },
-          {
-            id: 'activity-5',
-            name: 'Spa Time',
-            description: 'Relaxing massage and wellness treatments',
-            duration: '1.5 hours',
-            difficulty: 'Easy',
-            category: 'Wellness',
-            rating: 4.7,
-            image: '💆‍♀️',
-            cost: '$120'
-          }
-        ]
-      }
-    ],
-    highlights: ['Mountain views', 'Family bonding', 'Local experiences', 'Photo opportunities']
-  },
-  'family-vacation': {
-    id: 'sample-family-1',
-    title: 'Orlando Family Adventure',
-    destination: 'Orlando, Florida',
-    duration: '7 days, 6 nights',
-    description: 'The ultimate family vacation with theme parks, attractions, and activities for all ages from toddlers to grandparents.',
-    family: [
-      {
-        id: 'grandpa',
-        name: 'Robert',
-        role: 'Grandpa',
-        avatar: '👴',
-        preferences: ['Museums', 'Shows', 'Comfortable seating']
-      },
-      {
-        id: 'dad',
-        name: 'Mike',
-        role: 'Dad',
-        avatar: '👨‍👩‍👧‍👦',
-        preferences: ['Thrill rides', 'Sports', 'Photography']
-      },
-      {
-        id: 'mom',
-        name: 'Lisa',
-        role: 'Mom',
-        avatar: '👩‍👩‍👧‍👦',
-        preferences: ['Character meet & greets', 'Shows', 'Planning']
-      },
-      {
-        id: 'teen',
-        name: 'Emma',
-        role: 'Teen (14)',
-        avatar: '👧',
-        preferences: ['Roller coasters', 'Shopping', 'Social media']
-      },
-      {
-        id: 'kid',
-        name: 'Jake',
-        role: 'Kid (8)',
-        avatar: '👦',
-        preferences: ['Characters', 'Water rides', 'Arcade games']
-      }
-    ],
-    itinerary: [
-      {
-        day: 1,
-        title: 'Magic Kingdom Day',
-        activities: [
-          {
-            id: 'activity-6',
-            name: 'Character Breakfast',
-            description: 'Meet Disney characters while enjoying breakfast',
-            duration: '1.5 hours',
-            difficulty: 'Easy',
-            category: 'Dining',
-            rating: 4.8,
-            image: '🏰',
-            cost: '$45/person'
-          },
-          {
-            id: 'activity-7',
-            name: 'Classic Attractions',
-            description: 'Pirates, Haunted Mansion, and It\'s a Small World',
-            duration: '4 hours',
-            difficulty: 'Easy',
-            category: 'Entertainment',
-            rating: 4.7,
-            image: '🎢',
-            cost: 'Included'
-          },
-          {
-            id: 'activity-8',
-            name: 'Fireworks Show',
-            description: 'Spectacular nighttime fireworks over the castle',
-            duration: '30 minutes',
-            difficulty: 'Easy',
-            category: 'Entertainment',
-            rating: 4.9,
-            image: '🎆',
-            cost: 'Included'
-          }
-        ]
-      }
-    ],
-    highlights: ['Multi-generational fun', 'Character experiences', 'Thrill rides', 'Memory making']
-  },
-  'adventure-trip': {
-    id: 'sample-adventure-1',
-    title: 'Colorado Rockies Adventure',
-    destination: 'Rocky Mountain National Park, CO',
-    duration: '5 days, 4 nights',
-    description: 'An action-packed adventure featuring hiking, wildlife viewing, and outdoor challenges in one of America\'s most beautiful national parks.',
-    family: [
-      {
-        id: 'dad',
-        name: 'Chris',
-        role: 'Dad',
-        avatar: '🧗‍♂️',
-        preferences: ['Rock climbing', 'Photography', 'Camping']
-      },
-      {
-        id: 'mom',
-        name: 'Amy',
-        role: 'Mom',
-        avatar: '🚴‍♀️',
-        preferences: ['Mountain biking', 'Wildlife viewing', 'Yoga']
-      },
-      {
-        id: 'teen1',
-        name: 'Jordan',
-        role: 'Teen (17)',
-        avatar: '🏔️',
-        preferences: ['Extreme sports', 'Adventure challenges', 'Nature']
-      },
-      {
-        id: 'teen2',
-        name: 'Casey',
-        role: 'Teen (15)',
-        avatar: '🎒',
-        preferences: ['Hiking', 'Photography', 'Outdoor cooking']
-      }
-    ],
-    itinerary: [
-      {
-        day: 1,
-        title: 'Alpine Adventure',
-        activities: [
-          {
-            id: 'activity-9',
-            name: 'Summit Hike',
-            description: 'Challenging hike to mountain peak with panoramic views',
-            duration: '6 hours',
-            difficulty: 'Challenging',
-            category: 'Hiking',
-            rating: 4.9,
-            image: '⛰️',
-            cost: 'Free'
-          },
-          {
-            id: 'activity-10',
-            name: 'Wildlife Photography',
-            description: 'Guided tour to spot elk, bighorn sheep, and mountain goats',
-            duration: '3 hours',
-            difficulty: 'Moderate',
-            category: 'Wildlife',
-            rating: 4.6,
-            image: '📸',
-            cost: '$75/person'
-          }
-        ]
-      }
-    ],
-    highlights: ['Mountain summits', 'Wildlife encounters', 'Physical challenges', 'Natural beauty']
-  }
-};
-
 interface SampleTripDemoProps {
   tripType: TripType;
   onComplete: (tripId: string) => void;
@@ -312,233 +29,270 @@ interface SampleTripDemoProps {
 
 const SampleTripDemo: React.FC<SampleTripDemoProps> = ({ tripType, onComplete }) => {
   const [isGenerating, setIsGenerating] = useState(true);
-  const [currentStep, setCurrentStep] = useState(0);
-  const [trip, setTrip] = useState<SampleTrip | null>(null);
+  const [currentTemplate, setCurrentTemplate] = useState<TripTemplate | null>(null);
+  const [animationStep, setAnimationStep] = useState(0);
+  const analytics = useOnboardingAnalytics();
+
+  // Sample family data for demonstration
+  const sampleFamily: SampleFamily[] = [
+    {
+      id: 'dad',
+      name: 'David',
+      role: 'Dad',
+      avatar: '👨‍💼',
+      preferences: ['Photography', 'Hiking', 'Local cuisine']
+    },
+    {
+      id: 'mom',
+      name: 'Sarah',
+      role: 'Mom',
+      avatar: '👩‍💻',
+      preferences: ['Spa activities', 'Shopping', 'Wine tasting']
+    },
+    {
+      id: 'teen',
+      name: 'Alex',
+      role: 'Teen (16)',
+      avatar: '🧑‍🎓',
+      preferences: ['Adventure sports', 'Social media spots', 'Gaming']
+    }
+  ];
 
   const generationSteps = [
-    'Analyzing your preferences...',
-    'Finding the perfect destination...',
-    'Creating sample family profiles...',
-    'Generating personalized itinerary...',
-    'Adding interactive elements...'
+    'Analyzing family preferences...',
+    'Finding best destinations...',
+    'Creating personalized itinerary...',
+    'Optimizing for group consensus...'
   ];
 
   useEffect(() => {
-    // Simulate trip generation process
+    // Simulate AI trip generation with real template data
     const generateTrip = async () => {
+      setIsGenerating(true);
+      setAnimationStep(0);
+      
+      // Show generation steps
       for (let i = 0; i < generationSteps.length; i++) {
-        setCurrentStep(i);
+        setAnimationStep(i);
         await new Promise(resolve => setTimeout(resolve, 800));
       }
       
-      setTrip(sampleTrips[tripType]);
-      setIsGenerating(false);
+      // Get a random template for the selected trip type
+      const template = TripTemplateService.getRandomTemplate(tripType);
+      
+      if (template) {
+        setCurrentTemplate(template);
+        setIsGenerating(false);
+      }
     };
 
     generateTrip();
   }, [tripType]);
 
   const handleContinue = () => {
-    if (trip) {
-      onComplete(trip.id);
+    if (currentTemplate) {
+      onComplete(currentTemplate.id);
+    }
+  };
+
+  const handleRegenerate = () => {
+    const newTemplate = TripTemplateService.getRandomTemplate(tripType);
+    if (newTemplate && newTemplate.id !== currentTemplate?.id) {
+      setCurrentTemplate(newTemplate);
+      analytics.trackTripRegeneration(newTemplate.id);
     }
   };
 
   if (isGenerating) {
     return (
-      <div className="max-w-4xl mx-auto text-center">
-        <div className="bg-white rounded-xl shadow-lg p-12">
-          <div className="mb-8">
-            <Loader2 className="h-12 w-12 animate-spin text-blue-500 mx-auto mb-6" />
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">
-              Creating your sample trip...
-            </h2>
-            <p className="text-gray-600 mb-8">
-              Watch as Pathfinder's AI builds a personalized itinerary just for you
-            </p>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6">
+        <div className="text-center mb-8 sm:mb-12">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-3 sm:mb-4">
+            Creating Your Sample Trip
+          </h2>
+          <p className="text-base sm:text-lg text-gray-600">
+            Watch Pathfinder's AI analyze preferences and generate a personalized itinerary
+          </p>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8 mb-8">
+          <div className="flex items-center justify-center mb-6">
+            <div className="relative">
+              <Loader2 className="h-8 w-8 sm:h-12 sm:w-12 text-blue-500 animate-spin" />
+              <Sparkles className="h-4 w-4 sm:h-6 sm:w-6 text-purple-500 absolute -top-1 -right-1" />
+            </div>
           </div>
 
           <div className="space-y-4">
             {generationSteps.map((step, index) => (
               <motion.div
                 key={index}
-                className={`flex items-center space-x-3 p-3 rounded-lg transition-all ${
-                  index <= currentStep 
-                    ? 'bg-blue-50 text-blue-700' 
-                    : 'text-gray-400'
+                className={`flex items-center space-x-3 p-3 rounded-lg transition-all duration-500 ${
+                  index <= animationStep 
+                    ? 'bg-blue-50 text-blue-800' 
+                    : 'bg-gray-50 text-gray-500'
                 }`}
-                animate={{
-                  opacity: index <= currentStep ? 1 : 0.5,
-                  scale: index === currentStep ? 1.02 : 1
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ 
+                  opacity: index <= animationStep ? 1 : 0.5,
+                  x: 0
                 }}
               >
-                <div className={`w-3 h-3 rounded-full ${
-                  index < currentStep 
-                    ? 'bg-green-500' 
-                    : index === currentStep 
-                      ? 'bg-blue-500 animate-pulse' 
-                      : 'bg-gray-300'
+                <div className={`w-2 h-2 rounded-full ${
+                  index <= animationStep ? 'bg-blue-500' : 'bg-gray-300'
                 }`} />
-                <span className="font-medium">{step}</span>
-                {index < currentStep && (
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="text-green-500"
-                  >
-                    ✓
-                  </motion.div>
+                <span className="text-sm sm:text-base">{step}</span>
+                {index === animationStep && (
+                  <Loader2 className="h-4 w-4 animate-spin ml-auto" />
                 )}
               </motion.div>
             ))}
+          </div>
+
+          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+            <h3 className="font-semibold text-gray-800 mb-2">Sample Family Preferences:</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {sampleFamily.map((member) => (
+                <div key={member.id} className="flex items-center space-x-2">
+                  <span className="text-lg">{member.avatar}</span>
+                  <div>
+                    <div className="font-medium text-sm">{member.name}</div>
+                    <div className="text-xs text-gray-600">
+                      {member.preferences.slice(0, 2).join(', ')}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
     );
   }
 
-  if (!trip) return null;
+  if (!currentTemplate) {
+    return (
+      <div className="text-center">
+        <p className="text-gray-600">No template available for this trip type.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-gray-800 mb-4">
-          Your Sample Trip is Ready!
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="max-w-4xl mx-auto px-4 sm:px-6"
+    >
+      <div className="text-center mb-6 sm:mb-8">
+        <div className="flex items-center justify-center mb-3 sm:mb-4">
+          <Sparkles className="h-5 w-5 text-green-500 mr-2" />
+          <span className="text-green-600 font-semibold text-sm sm:text-base">Trip Generated!</span>
+        </div>
+        <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2 sm:mb-3">
+          {currentTemplate.title}
         </h2>
-        <p className="text-lg text-gray-600">
-          Here's how Pathfinder creates personalized experiences for your family
+        <p className="text-base sm:text-lg text-gray-600">
+          {currentTemplate.description}
         </p>
       </div>
 
-      {/* Trip Overview */}
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
-        <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-6 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-2xl font-bold mb-2">{trip.title}</h3>
-              <div className="flex items-center space-x-4 text-sm opacity-90">
-                <div className="flex items-center space-x-1">
-                  <MapPin className="h-4 w-4" />
-                  <span>{trip.destination}</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <Clock className="h-4 w-4" />
-                  <span>{trip.duration}</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <Users className="h-4 w-4" />
-                  <span>{trip.family.length} travelers</span>
-                </div>
+      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        {/* Trip Header */}
+        <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white p-4 sm:p-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+            <div className="flex items-center space-x-2">
+              <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
+              <div>
+                <div className="text-xs opacity-80">Destination</div>
+                <div className="font-semibold text-sm sm:text-base">{currentTemplate.location}</div>
               </div>
             </div>
-            <Sparkles className="h-8 w-8 opacity-70" />
-          </div>
-        </div>
-        
-        <div className="p-6">
-          <p className="text-gray-600 mb-6">{trip.description}</p>
-          
-          {/* Trip Highlights */}
-          <div className="mb-6">
-            <h4 className="font-semibold text-gray-800 mb-3">Trip Highlights:</h4>
-            <div className="flex flex-wrap gap-2">
-              {trip.highlights.map((highlight, index) => (
-                <span
-                  key={index}
-                  className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm"
-                >
-                  {highlight}
-                </span>
-              ))}
+            <div className="flex items-center space-x-2">
+              <Clock className="h-4 w-4 sm:h-5 sm:w-5" />
+              <div>
+                <div className="text-xs opacity-80">Duration</div>
+                <div className="font-semibold text-sm sm:text-base">{currentTemplate.duration}</div>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Users className="h-4 w-4 sm:h-5 sm:w-5" />
+              <div>
+                <div className="text-xs opacity-80">Group Size</div>
+                <div className="font-semibold text-sm sm:text-base">{currentTemplate.groupSize}</div>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Star className="h-4 w-4 sm:h-5 sm:w-5" />
+              <div>
+                <div className="text-xs opacity-80">Difficulty</div>
+                <div className="font-semibold text-sm sm:text-base">{currentTemplate.difficulty}</div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Sample Family */}
-      <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-        <h4 className="text-xl font-semibold text-gray-800 mb-4">Meet Your Sample Family</h4>
-        <div className="grid md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {trip.family.map((member) => (
-            <div key={member.id} className="text-center">
-              <div className="text-4xl mb-2">{member.avatar}</div>
-              <h5 className="font-semibold text-gray-800">{member.name}</h5>
-              <p className="text-sm text-gray-500 mb-2">{member.role}</p>
-              <div className="text-xs text-gray-400">
-                {member.preferences.slice(0, 2).join(', ')}
+        {/* Trip Highlights */}
+        <div className="p-4 sm:p-6 border-b">
+          <h3 className="font-semibold text-gray-800 mb-3 text-base sm:text-lg">Trip Highlights</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+            {currentTemplate.highlights.map((highlight, index) => (
+              <div key={index} className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                <span className="text-sm sm:text-base text-gray-700">{highlight}</span>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Sample Itinerary */}
-      <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-        <h4 className="text-xl font-semibold text-gray-800 mb-6">Sample Itinerary</h4>
-        <div className="space-y-6">
-          {trip.itinerary.map((day) => (
-            <div key={day.day} className="border-l-4 border-blue-500 pl-6">
-              <div className="flex items-center space-x-2 mb-3">
-                <Calendar className="h-5 w-5 text-blue-500" />
-                <h5 className="font-semibold text-gray-800">Day {day.day}: {day.title}</h5>
-              </div>
-              <div className="space-y-3">
-                {day.activities.map((activity) => (
-                  <div key={activity.id} className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center space-x-3">
-                        <span className="text-2xl">{activity.image}</span>
-                        <div>
-                          <h6 className="font-semibold text-gray-800">{activity.name}</h6>
-                          <p className="text-sm text-gray-600">{activity.description}</p>
-                        </div>
+        {/* Sample Itinerary */}
+        <div className="p-4 sm:p-6">
+          <h3 className="font-semibold text-gray-800 mb-4 text-base sm:text-lg">Sample Itinerary</h3>
+          <div className="space-y-4">
+            {currentTemplate.itinerary.slice(0, 2).map((day, index) => (
+              <div key={index} className="border rounded-lg p-3 sm:p-4">
+                <div className="flex items-center space-x-2 mb-3">
+                  <Calendar className="h-4 w-4 text-blue-500" />
+                  <span className="font-semibold text-sm sm:text-base">Day {day.day}: {day.title}</span>
+                </div>
+                <div className="space-y-2">
+                  {day.activities.slice(0, 2).map((activity, actIndex) => (
+                    <div key={actIndex} className="bg-gray-50 rounded-lg p-2 sm:p-3">
+                      <div className="flex justify-between items-start mb-1">
+                        <h4 className="font-medium text-sm sm:text-base">{activity.name}</h4>
+                        <span className="text-xs text-gray-500">{activity.duration}</span>
                       </div>
-                      <div className="text-right text-sm text-gray-500">
-                        <div>{activity.duration}</div>
-                        <div>{activity.cost}</div>
+                      <p className="text-xs sm:text-sm text-gray-600">{activity.description}</p>
+                      <div className="flex items-center space-x-4 mt-2">
+                        <span className="text-xs text-gray-500">Cost: {activity.cost}</span>
+                        <span className="text-xs text-gray-500">Ages: {activity.ageRecommendation}</span>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-4 text-xs text-gray-500">
-                      <span className={`px-2 py-1 rounded ${
-                        activity.difficulty === 'Easy' ? 'bg-green-100 text-green-700' :
-                        activity.difficulty === 'Moderate' ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-red-100 text-red-700'
-                      }`}>
-                        {activity.difficulty}
-                      </span>
-                      <div className="flex items-center space-x-1">
-                        <Star className="h-3 w-3 fill-current text-yellow-500" />
-                        <span>{activity.rating}</span>
-                      </div>
-                      <span>{activity.category}</span>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Call to Action */}
-      <div className="text-center">
-        <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-8 mb-6">
-          <h4 className="text-xl font-semibold text-gray-800 mb-4">
-            This is just the beginning!
-          </h4>
-          <p className="text-gray-600 mb-6">
-            Now let's see how your family would make decisions together using Pathfinder's consensus engine.
-          </p>
+        {/* Action Buttons */}
+        <div className="bg-gray-50 p-4 sm:p-6 flex flex-col sm:flex-row justify-between items-center space-y-3 sm:space-y-0">
+          <button
+            onClick={handleRegenerate}
+            className="w-full sm:w-auto px-4 py-2 text-blue-600 hover:text-blue-800 transition-colors text-sm sm:text-base"
+          >
+            Generate Different Trip
+          </button>
           <button
             onClick={handleContinue}
-            className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-8 py-3 rounded-lg font-semibold hover:from-blue-600 hover:to-purple-600 transition-all transform hover:scale-105 flex items-center space-x-2 mx-auto"
+            className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-2 rounded-lg hover:shadow-lg transition-all flex items-center justify-center space-x-2 text-sm sm:text-base"
           >
-            <span>Try Interactive Voting</span>
-            <ChevronRight className="h-5 w-5" />
+            <span>See How Families Decide</span>
+            <ChevronRight className="h-4 w-4" />
           </button>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

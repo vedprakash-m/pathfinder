@@ -13,7 +13,7 @@ export const useOnboarding = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
-  const { isAuthenticated, getAccessTokenSilently } = useAuth0();
+  const { isAuthenticated } = useAuth0();
 
   const checkOnboardingStatus = async (retry: boolean = false) => {
     if (!isAuthenticated) {
@@ -25,14 +25,9 @@ export const useOnboarding = () => {
       setIsLoading(true);
       if (!retry) setError(null);
       
-      const token = await getAccessTokenSilently();
-      const response = await api.get('/auth/user/onboarding-status', {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+      const response = await api.get('/auth/user/onboarding-status');
       
-      setOnboardingStatus(response.data);
+      setOnboardingStatus(response.data as OnboardingStatus);
       setRetryCount(0); // Reset retry count on success
     } catch (err: any) {
       console.error('Failed to check onboarding status:', err);
@@ -67,12 +62,7 @@ export const useOnboarding = () => {
   }) => {
     try {
       setError(null);
-      const token = await getAccessTokenSilently();
-      await api.post('/auth/user/complete-onboarding', data, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+      await api.post('/auth/user/complete-onboarding', data);
       
       // Update local state
       setOnboardingStatus({
