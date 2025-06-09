@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Card,
-  CardBody,
   CardHeader,
   Text,
   Button,
@@ -9,17 +8,13 @@ import {
   Badge,
   ProgressBar,
   MessageBar,
-  MessageBarType,
   makeStyles,
-  tokens,
-  FluentProvider,
-  webLightTheme
+  tokens
 } from '@fluentui/react-components';
 import { 
   CheckmarkCircle20Regular,
   ErrorCircle20Regular,
   Warning20Regular,
-  ChartLine20Regular,
   Money20Regular,
   Cloud20Regular
 } from '@fluentui/react-icons';
@@ -255,7 +250,7 @@ const LLMAnalyticsDashboard: React.FC = () => {
             </div>
           }
         />
-        <CardBody>
+        <div style={{ padding: tokens.spacingVerticalM }}>
           {health && (
             <>
               <div className={styles.metric}>
@@ -326,7 +321,7 @@ const LLMAnalyticsDashboard: React.FC = () => {
               )}
             </>
           )}
-        </CardBody>
+        </div>
       </Card>
 
       {/* Usage Statistics Card */}
@@ -334,12 +329,12 @@ const LLMAnalyticsDashboard: React.FC = () => {
         <CardHeader
           header={
             <div style={{ display: 'flex', alignItems: 'center' }}>
-              <ChartLine20Regular style={{ marginRight: tokens.spacingHorizontalS }} />
+              <Money20Regular style={{ marginRight: tokens.spacingHorizontalS }} />
               <Text weight="semibold">Usage Statistics</Text>
             </div>
           }
         />
-        <CardBody>
+        <div style={{ padding: tokens.spacingVerticalM }}>
           {health && (
             <>
               <div className={styles.metric}>
@@ -378,7 +373,7 @@ const LLMAnalyticsDashboard: React.FC = () => {
               </div>
             </>
           )}
-        </CardBody>
+        </div>
       </Card>
 
       {/* Budget Status Card */}
@@ -391,7 +386,7 @@ const LLMAnalyticsDashboard: React.FC = () => {
             </div>
           }
         />
-        <CardBody>
+        <div style={{ padding: tokens.spacingVerticalM }}>
           {budget && (
             <>
               <div className={styles.budgetProgress}>
@@ -420,7 +415,7 @@ const LLMAnalyticsDashboard: React.FC = () => {
               )}
             </>
           )}
-        </CardBody>
+        </div>
       </Card>
 
       {/* Analytics Summary Card */}
@@ -429,12 +424,12 @@ const LLMAnalyticsDashboard: React.FC = () => {
           <CardHeader
             header={
               <div style={{ display: 'flex', alignItems: 'center' }}>
-                <ChartLine20Regular style={{ marginRight: tokens.spacingHorizontalS }} />
+                <Money20Regular style={{ marginRight: tokens.spacingHorizontalS }} />
                 <Text weight="semibold">Analytics Summary</Text>
               </div>
             }
           />
-          <CardBody>
+          <div style={{ padding: tokens.spacingVerticalM }}>
             <div className={styles.metric}>
               <Text>Total Requests:</Text>
               <Text className={styles.metricValue}>
@@ -471,7 +466,7 @@ const LLMAnalyticsDashboard: React.FC = () => {
                 </div>
               </div>
             )}
-          </CardBody>
+          </div>
         </Card>
       )}
     </div>

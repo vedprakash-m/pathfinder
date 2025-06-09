@@ -11,7 +11,7 @@ from pydantic import BaseModel
 import logging
 
 from ..core.database import get_db
-from ..auth.dependencies import require_permissions
+from ..core.zero_trust import require_permissions
 from ..models.user import User
 from ..services.real_time_feedback import (
     submit_trip_feedback,

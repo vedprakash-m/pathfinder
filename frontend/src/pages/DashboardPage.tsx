@@ -24,6 +24,7 @@ import { tripService } from '@/services/tripService';
 import { useTripStore, useAuthStore } from '@/store';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ApiDebug } from '@/components/debug/ApiDebug';
+import { RoleGuard, useRolePermissions, UserRole } from '@/components/auth/RoleBasedRoute';
 import type { Trip, TripStatus } from '@/types';
 
 const StatusBadge: React.FC<{ status: TripStatus }> = ({ status }) => {
@@ -128,23 +129,42 @@ const TripCard: React.FC<{ trip: Trip }> = ({ trip }) => {
 };
 
 const QuickActions: React.FC = () => {
+  const { 
+    canManageTrips, 
+    canManageFamilies, 
+    isSuperAdmin,
+    isFamilyAdmin,
+    isTripOrganizer 
+  } = useRolePermissions();
+
   return (
     <Card className="mb-8">
       <CardHeader>
         <Title2>Quick Actions</Title2>
+        <Body2 className="text-neutral-600">
+          {isSuperAdmin() && "Super Admin Dashboard"}
+          {isFamilyAdmin() && isTripOrganizer() && !isSuperAdmin() && "Family Admin & Trip Organizer"}
+          {isFamilyAdmin() && !isTripOrganizer() && !isSuperAdmin() && "Family Admin"}
+          {isTripOrganizer() && !isFamilyAdmin() && !isSuperAdmin() && "Trip Organizer"}
+        </Body2>
       </CardHeader>
       <div className="p-4">
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Link to="/trips/new">
-            <Button
-              appearance="primary"
-              size="large"
-              className="w-full"
-              icon={<PlusIcon className="w-5 h-5" />}
-            >
-              Create Trip
-            </Button>
-          </Link>
+          {/* Create Trip - Available to Family Admins and Trip Organizers */}
+          {canManageTrips() && (
+            <Link to="/trips/new">
+              <Button
+                appearance="primary"
+                size="large"
+                className="w-full"
+                icon={<PlusIcon className="w-5 h-5" />}
+              >
+                Create Trip
+              </Button>
+            </Link>
+          )}
+
+          {/* View All Trips - Available to all roles */}
           <Link to="/trips">
             <Button
               appearance="outline"
@@ -154,15 +174,34 @@ const QuickActions: React.FC = () => {
               View All Trips
             </Button>
           </Link>
-          <Link to="/families">
-            <Button
-              appearance="outline"
-              size="large"
-              className="w-full"
-            >
-              Manage Families
-            </Button>
-          </Link>
+
+          {/* Manage Families - Available to Family Admins and Super Admins */}
+          {canManageFamilies() && (
+            <Link to="/families">
+              <Button
+                appearance="outline"
+                size="large"
+                className="w-full"
+              >
+                Manage Families
+              </Button>
+            </Link>
+          )}
+
+          {/* Super Admin Features */}
+          <RoleGuard allowedRoles={[UserRole.SUPER_ADMIN]}>
+            <Link to="/admin/dashboard">
+              <Button
+                appearance="outline"
+                size="large"
+                className="w-full"
+              >
+                Admin Dashboard
+              </Button>
+            </Link>
+          </RoleGuard>
+
+          {/* Profile Settings - Available to all roles */}
           <Link to="/profile">
             <Button
               appearance="outline"
@@ -181,6 +220,12 @@ const QuickActions: React.FC = () => {
 export const DashboardPage: React.FC = () => {
   const { user } = useAuthStore();
   const { setTrips } = useTripStore();
+  const { 
+    isSuperAdmin,
+    isFamilyAdmin,
+    isTripOrganizer,
+    canManageTrips
+  } = useRolePermissions();
 
   const { data: tripsResponse, isLoading, error } = useQuery({
     queryKey: ['trips'],
@@ -196,17 +241,47 @@ export const DashboardPage: React.FC = () => {
     }
   }, [trips, setTrips]);
 
-  const upcomingTrips = trips.filter(trip => {
+  const upcomingTrips = trips.filter((trip: any) => {
     const tripDate = new Date(trip.start_date);
     const today = new Date();
     return tripDate >= today && trip.status !== 'cancelled';
   });
 
-  const recentTrips = trips.filter(trip => {
+  const recentTrips = trips.filter((trip: any) => {
     const tripDate = new Date(trip.start_date);
     const today = new Date();
     return tripDate < today || trip.status === 'completed';
   }).slice(0, 4);
+
+  // Role-specific welcome messages
+  const getWelcomeMessage = () => {
+    if (isSuperAdmin()) {
+      return "System Administrator Dashboard";
+    }
+    if (isFamilyAdmin() && isTripOrganizer()) {
+      return "Family Admin & Trip Organizer";
+    }
+    if (isTripOrganizer()) {
+      return "Trip Organizer";
+    }
+    if (isFamilyAdmin()) {
+      return "Family Admin";
+    }
+    return "Family Member";
+  };
+
+  const getSubMessage = () => {
+    if (isSuperAdmin()) {
+      return "Monitor system health and manage platform users";
+    }
+    if (trips.length === 0) {
+      if (canManageTrips()) {
+        return "Ready to plan your first adventure?";
+      }
+      return "Your family hasn't joined any trips yet";
+    }
+    return `You have ${upcomingTrips.length} upcoming ${upcomingTrips.length === 1 ? 'trip' : 'trips'}`;
+  };
 
   if (isLoading) {
     return (
@@ -235,7 +310,7 @@ export const DashboardPage: React.FC = () => {
       {/* Debug Component - TEMPORARY */}
       <ApiDebug />
 
-      {/* Welcome Header */}
+      {/* Welcome Header with Role-Specific Information */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -244,12 +319,12 @@ export const DashboardPage: React.FC = () => {
         <Title1 className="text-neutral-900 mb-2">
           Welcome back, {user?.name || 'Traveler'}!
         </Title1>
-        <Body1 className="text-neutral-600">
-          {trips.length === 0 
-            ? "Ready to plan your first adventure?" 
-            : `You have ${upcomingTrips.length} upcoming ${upcomingTrips.length === 1 ? 'trip' : 'trips'}`
-          }
+        <Body1 className="text-neutral-600 mb-1">
+          {getSubMessage()}
         </Body1>
+        <Body2 className="text-neutral-500">
+          {getWelcomeMessage()}
+        </Body2>
       </motion.div>
 
       {/* Quick Actions */}
@@ -260,6 +335,37 @@ export const DashboardPage: React.FC = () => {
       >
         <QuickActions />
       </motion.div>
+
+      {/* Super Admin System Overview */}
+      <RoleGuard allowedRoles={[UserRole.SUPER_ADMIN]}>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.15 }}
+        >
+          <Card className="mb-6 border-l-4 border-l-primary-600">
+            <CardHeader>
+              <Title2 className="text-primary-700">System Overview</Title2>
+            </CardHeader>
+            <div className="p-4">
+              <div className="grid md:grid-cols-3 gap-4">
+                <div className="text-center p-4 bg-neutral-50 rounded-lg">
+                  <Title3 className="text-neutral-900">Platform Stats</Title3>
+                  <Body2 className="text-neutral-600">Total Users, Families, Trips</Body2>
+                </div>
+                <div className="text-center p-4 bg-neutral-50 rounded-lg">
+                  <Title3 className="text-neutral-900">System Health</Title3>
+                  <Body2 className="text-neutral-600">Performance Metrics</Body2>
+                </div>
+                <div className="text-center p-4 bg-neutral-50 rounded-lg">
+                  <Title3 className="text-neutral-900">User Activity</Title3>
+                  <Body2 className="text-neutral-600">Recent Activity Logs</Body2>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </motion.div>
+      </RoleGuard>
 
       {/* Upcoming Trips */}
       {upcomingTrips.length > 0 && (
@@ -275,7 +381,7 @@ export const DashboardPage: React.FC = () => {
             </Link>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {upcomingTrips.slice(0, 6).map((trip, index) => (
+            {upcomingTrips.slice(0, 6).map((trip: any, index: number) => (
               <motion.div
                 key={trip.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -303,7 +409,7 @@ export const DashboardPage: React.FC = () => {
             </Link>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {recentTrips.map((trip, index) => (
+            {recentTrips.map((trip: any, index: number) => (
               <motion.div
                 key={trip.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -317,7 +423,7 @@ export const DashboardPage: React.FC = () => {
         </motion.div>
       )}
 
-      {/* Empty State */}
+      {/* Empty State with Role-Specific Messaging */}
       {trips.length === 0 && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -328,19 +434,26 @@ export const DashboardPage: React.FC = () => {
           <div className="w-24 h-24 bg-primary-50 rounded-full mx-auto mb-6 flex items-center justify-center">
             <MapPinIcon className="w-12 h-12 text-primary-600" />
           </div>
-          <Title2 className="text-neutral-900 mb-4">No trips yet</Title2>
+          <Title2 className="text-neutral-900 mb-4">
+            {canManageTrips() ? "No trips yet" : "No family trips yet"}
+          </Title2>
           <Body1 className="text-neutral-600 mb-8 max-w-md mx-auto">
-            Start planning your first family adventure with our AI-powered trip planner.
+            {canManageTrips() 
+              ? "Start planning your first family adventure with our AI-powered trip planner."
+              : "Your family admin will invite you to trips, or you can ask them to create one."
+            }
           </Body1>
-          <Link to="/trips/new">
-            <Button
-              appearance="primary"
-              size="large"
-              icon={<PlusIcon className="w-5 h-5" />}
-            >
-              Plan Your First Trip
-            </Button>
-          </Link>
+          {canManageTrips() && (
+            <Link to="/trips/new">
+              <Button
+                appearance="primary"
+                size="large"
+                icon={<PlusIcon className="w-5 h-5" />}
+              >
+                Plan Your First Trip
+              </Button>
+            </Link>
+          )}
         </motion.div>
       )}
     </div>

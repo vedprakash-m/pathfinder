@@ -13,11 +13,20 @@ export interface PaginatedResponse<T> {
   pages: number;
 }
 
+// User roles aligned with UX specification
+export enum UserRole {
+  SUPER_ADMIN = "super_admin",
+  FAMILY_ADMIN = "family_admin",
+  TRIP_ORGANIZER = "trip_organizer",
+  FAMILY_MEMBER = "family_member"
+}
+
 // User and Authentication types
 export interface User {
   id: string;
   email: string;
   name: string;
+  role: UserRole; // 🔑 ADD ROLE FIELD
   full_name?: string;
   picture?: string;
   phone_number?: string;
@@ -52,6 +61,16 @@ export interface RegisterData {
   emergency_contact_name?: string;
   emergency_contact_phone?: string;
   profile_picture_url?: string;
+  preferences?: Record<string, any>;
+}
+
+// User creation interface for backend integration (without password for Auth0 users)
+export interface UserCreate {
+  email: string;
+  name: string;
+  auth0_id: string;
+  picture?: string;
+  phone?: string;
   preferences?: Record<string, any>;
 }
 

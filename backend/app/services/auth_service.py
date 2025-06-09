@@ -103,9 +103,10 @@ class AuthService:
             return None
     
     async def create_user(self, db: AsyncSession, user_data: UserCreate) -> User:
-        """Create a new user."""
+        """Create a new user with automatic Family Admin role and family setup."""
         try:
             # OAuth users via Auth0 - no password needed
+            # Note: role field is already set to FAMILY_ADMIN by default in User model
             
             db_user = User(
                 email=user_data.email,
@@ -120,16 +121,47 @@ class AuthService:
             )
             
             db.add(db_user)
+            await db.flush()  # Get user ID without committing
+            
+            # 🔑 AUTO-CREATE FAMILY for new Family Admin users
+            from app.models.family import Family, FamilyMember, FamilyRole
+            from uuid import uuid4
+            
+            family = Family(
+                id=uuid4(),
+                name=f"{db_user.name}'s Family" if db_user.name else f"{db_user.email}'s Family",
+                description="Auto-created family",
+                admin_user_id=db_user.id,
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow()
+            )
+            
+            db.add(family)
+            await db.flush()  # Get family ID
+            
+            # 🔑 AUTO-CREATE FAMILY MEMBER RECORD
+            family_member = FamilyMember(
+                id=uuid4(),
+                family_id=family.id,
+                user_id=db_user.id,
+                name=db_user.name if db_user.name else db_user.email.split('@')[0],
+                role=FamilyRole.COORDINATOR,  # Map to existing family role system
+                is_active=True,
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow()
+            )
+            
+            db.add(family_member)
             await db.commit()
             await db.refresh(db_user)
             
-            logger.info(f"Created user: {db_user.email}")
+            logger.info(f"Created user with auto-family: {db_user.email} (Family: {family.name})")
             return db_user
             
         except Exception as e:
             await db.rollback()
-            logger.error(f"Error creating user: {e}")
-            raise
+            logger.error(f"Error creating user with family: {e}")
+            raise ValueError(f"User creation failed: {str(e)}")
     
     async def get_user_by_email(self, db: AsyncSession, email: str) -> Optional[User]:
         """Get user by email."""

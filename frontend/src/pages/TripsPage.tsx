@@ -26,6 +26,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { tripService } from '@/services/tripService';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { RoleGuard, useRolePermissions, UserRole } from '@/components/auth/RoleBasedRoute';
 import type { Trip, TripStatus } from '@/types';
 
 const StatusBadge: React.FC<{ status: TripStatus }> = ({ status }) => {
@@ -121,6 +122,7 @@ const TripCard: React.FC<{ trip: Trip }> = ({ trip }) => {
 export const TripsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const { hasAnyRole } = useRolePermissions();
 
   const { data: trips, isLoading, error } = useQuery({
     queryKey: ['trips'],
@@ -181,22 +183,27 @@ export const TripsPage: React.FC = () => {
         className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
       >
         <div>
-          <Title1 className="text-neutral-900 mb-2">Your Trips</Title1>          <Body1 className="text-neutral-600">
+          <Title1 className="text-neutral-900 mb-2">Your Trips</Title1>
+          <Body1 className="text-neutral-600">
             {tripsData?.length === 0
-              ? "Start planning your first adventure"
+              ? hasAnyRole([UserRole.FAMILY_ADMIN, UserRole.TRIP_ORGANIZER]) 
+                ? "Start planning your first adventure"
+                : "View trips shared with you"
               : `${tripsData?.length} ${tripsData?.length === 1 ? 'trip' : 'trips'} total`
             }
           </Body1>
         </div>
-        <Link to="/trips/new">
-          <Button
-            appearance="primary"
-            size="large"
-            icon={<PlusIcon className="w-5 h-5" />}
-          >
-            Create Trip
-          </Button>
-        </Link>
+        <RoleGuard allowedRoles={[UserRole.FAMILY_ADMIN, UserRole.TRIP_ORGANIZER, UserRole.SUPER_ADMIN]}>
+          <Link to="/trips/new">
+            <Button
+              appearance="primary"
+              size="large"
+              icon={<PlusIcon className="w-5 h-5" />}
+            >
+              Create Trip
+            </Button>
+          </Link>
+        </RoleGuard>
       </motion.div>
 
       {/* Filters */}
@@ -321,17 +328,22 @@ export const TripsPage: React.FC = () => {
           </div>
           <Title2 className="text-neutral-900 mb-4">No trips yet</Title2>
           <Body1 className="text-neutral-600 mb-8 max-w-md mx-auto">
-            Start planning your first family adventure with our AI-powered trip planner.
+            {hasAnyRole([UserRole.FAMILY_ADMIN, UserRole.TRIP_ORGANIZER]) 
+              ? "Start planning your first family adventure with our AI-powered trip planner."
+              : "Your family admins and trip organizers will create trips that you can join and enjoy."
+            }
           </Body1>
-          <Link to="/trips/new">
-            <Button
-              appearance="primary"
-              size="large"
-              icon={<PlusIcon className="w-5 h-5" />}
-            >
-              Plan Your First Trip
-            </Button>
-          </Link>
+          <RoleGuard allowedRoles={[UserRole.FAMILY_ADMIN, UserRole.TRIP_ORGANIZER, UserRole.SUPER_ADMIN]}>
+            <Link to="/trips/new">
+              <Button
+                appearance="primary"
+                size="large"
+                icon={<PlusIcon className="w-5 h-5" />}
+              >
+                Plan Your First Trip
+              </Button>
+            </Link>
+          </RoleGuard>
         </motion.div>
       )}
     </div>

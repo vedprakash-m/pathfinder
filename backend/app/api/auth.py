@@ -2,8 +2,10 @@
 Authentication API endpoints.
 """
 
+import logging
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from datetime import datetime
 
 from app.core.database import get_db
 from app.core.security import get_current_user, get_current_active_user
@@ -11,6 +13,7 @@ from app.core.zero_trust import require_permissions
 from app.models.user import User, UserCreate, UserUpdate, UserResponse, UserProfile
 from app.services.auth_service import AuthService
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -19,11 +22,16 @@ async def register_user(
     user_data: UserCreate,
     db: AsyncSession = Depends(get_db)
 ):
-    """Register a new user."""
+    """Register a new user with automatic Family Admin role assignment."""
     auth_service = AuthService()
     
     try:
+        # This now includes automatic family creation for Family Admin users
         user = await auth_service.create_user(db, user_data)
+        
+        # Log successful registration with role assignment
+        logger.info(f"User registered as Family Admin with auto-family: {user.email}")
+        
         return user
     except ValueError as e:
         raise HTTPException(
@@ -108,3 +116,55 @@ async def validate_token(
         "user_id": current_user.id,
         "email": current_user.email
     }
+
+
+# Onboarding endpoints
+@router.get("/user/onboarding-status")
+async def get_onboarding_status(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get the current user's onboarding status."""
+    return {
+        "completed": current_user.onboarding_completed or False,
+        "completed_at": current_user.onboarding_completed_at,
+        "trip_type": current_user.onboarding_trip_type
+    }
+
+
+@router.post("/user/complete-onboarding")
+async def complete_onboarding(
+    request: dict,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Mark onboarding as completed for the current user."""
+    try:
+        # Update user's onboarding status
+        current_user.onboarding_completed = True
+        current_user.onboarding_completed_at = datetime.utcnow()
+        
+        # Save trip type if provided
+        if request.get('trip_type'):
+            current_user.onboarding_trip_type = request['trip_type']
+            
+        # Save any completion time analytics
+        if request.get('completion_time'):
+            logger.info(f"User {current_user.email} completed onboarding in {request['completion_time']}ms")
+        
+        await db.commit()
+        await db.refresh(current_user)
+        
+        return {
+            "success": True,
+            "completed": True,
+            "completed_at": current_user.onboarding_completed_at
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to complete onboarding for user {current_user.email}: {str(e)}")
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to complete onboarding"
+        )

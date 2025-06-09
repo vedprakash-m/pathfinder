@@ -4,7 +4,7 @@ Analytics API endpoints for monitoring user behavior and feature adoption
 
 from typing import Dict, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Request
-from app.core.auth import get_current_user
+from app.core.security import get_current_user
 from app.core.logging_config import create_logger
 from app.services.analytics_service import analytics_service, EventType
 
@@ -141,4 +141,90 @@ async def get_analytics_dashboard_summary(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get analytics dashboard: {str(e)}"
-        ) 
+        )
+
+
+# Onboarding analytics endpoints
+@router.post("/onboarding-start")
+async def track_onboarding_start(
+    data: dict,
+    current_user: dict = Depends(get_current_user)
+) -> Dict[str, Any]:
+    """Track when a user starts the onboarding process."""
+    try:
+        await analytics_service.track_event(
+            event_type=EventType.ONBOARDING_START,
+            user_id=data.get('userId'),
+            properties={
+                'timestamp': data.get('timestamp'),
+                'step': data.get('step'),
+                'session_id': data.get('sessionId')
+            }
+        )
+        
+        logger.info(f"Tracked onboarding start for user {data.get('userId')}")
+        return {"success": True, "event": "onboarding_start"}
+        
+    except Exception as e:
+        logger.error(f"Failed to track onboarding start: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to track onboarding start"
+        )
+
+
+@router.post("/onboarding-complete")
+async def track_onboarding_complete(
+    data: dict,
+    current_user: dict = Depends(get_current_user)
+) -> Dict[str, Any]:
+    """Track when a user completes the onboarding process."""
+    try:
+        await analytics_service.track_event(
+            event_type=EventType.ONBOARDING_COMPLETE,
+            user_id=data.get('userId'),
+            properties={
+                'completion_time': data.get('completionTime'),
+                'trip_type': data.get('tripType'),
+                'sample_trip_id': data.get('sampleTripId'),
+                'timestamp': data.get('timestamp')
+            }
+        )
+        
+        logger.info(f"Tracked onboarding completion for user {data.get('userId')} in {data.get('completionTime')}ms")
+        return {"success": True, "event": "onboarding_complete"}
+        
+    except Exception as e:
+        logger.error(f"Failed to track onboarding completion: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to track onboarding completion"
+        )
+
+
+@router.post("/onboarding-skip")
+async def track_onboarding_skip(
+    data: dict,
+    current_user: dict = Depends(get_current_user)
+) -> Dict[str, Any]:
+    """Track when a user skips the onboarding process."""
+    try:
+        await analytics_service.track_event(
+            event_type=EventType.ONBOARDING_SKIP,
+            user_id=data.get('userId'),
+            properties={
+                'skip_step': data.get('skipStep'),
+                'time_spent': data.get('timeSpent'),
+                'timestamp': data.get('timestamp')
+            }
+        )
+        
+        logger.info(f"Tracked onboarding skip for user {data.get('userId')} at step {data.get('skipStep')}")
+        return {"success": True, "event": "onboarding_skip"}
+        
+    except Exception as e:
+        logger.error(f"Failed to track onboarding skip: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to track onboarding skip"
+        )

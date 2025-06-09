@@ -27,6 +27,7 @@ import { familyService } from '@/services/familyService';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useFormValidation } from '@/hooks/useFormValidation';
 import { createFamilySchema, inviteFamilyMemberSchema } from '@/utils/validation';
+import { RoleGuard, useRolePermissions, UserRole } from '@/components/auth/RoleBasedRoute';
 import type { Family, FamilyMembershipStatus, CreateFamilyRequest, InviteFamilyMemberRequest } from '@/types';
 
 const StatusBadge: React.FC<{ status: FamilyMembershipStatus }> = ({ status }) => {
@@ -365,6 +366,7 @@ export const FamiliesPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showInviteForm, setShowInviteForm] = useState(false);
+  const { hasAnyRole } = useRolePermissions();
 
   const { data: familiesResponse, isLoading, error } = useQuery({
     queryKey: ['families'],
@@ -427,27 +429,31 @@ export const FamiliesPage: React.FC = () => {
           <Title1 className="text-neutral-900 mb-2">Family Groups</Title1>
           <Body1 className="text-neutral-600">
             {families.length === 0 
-              ? "Create or join family groups to plan trips together" 
+              ? hasAnyRole([UserRole.FAMILY_ADMIN, UserRole.SUPER_ADMIN])
+                ? "Create or join family groups to plan trips together" 
+                : "Join family groups created by family admins to participate in trip planning"
               : `${activeFamilies.length} active ${activeFamilies.length === 1 ? 'family' : 'families'}`
             }
           </Body1>
         </div>
         <div className="flex gap-3">
-          <Button
-            appearance="outline"
-            icon={<EnvelopeIcon className="w-5 h-5" />}
-            onClick={() => setShowInviteForm(true)}
-            disabled={activeFamilies.length === 0}
-          >
-            Invite Member
-          </Button>
-          <Button
-            appearance="primary"
-            icon={<PlusIcon className="w-5 h-5" />}
-            onClick={() => setShowCreateForm(true)}
-          >
-            Create Family
-          </Button>
+          <RoleGuard allowedRoles={[UserRole.FAMILY_ADMIN, UserRole.SUPER_ADMIN]}>
+            <Button
+              appearance="outline"
+              icon={<EnvelopeIcon className="w-5 h-5" />}
+              onClick={() => setShowInviteForm(true)}
+              disabled={activeFamilies.length === 0}
+            >
+              Invite Member
+            </Button>
+            <Button
+              appearance="primary"
+              icon={<PlusIcon className="w-5 h-5" />}
+              onClick={() => setShowCreateForm(true)}
+            >
+              Create Family
+            </Button>
+          </RoleGuard>
         </div>
       </motion.div>
 
@@ -568,16 +574,21 @@ export const FamiliesPage: React.FC = () => {
           </div>
           <Title2 className="text-neutral-900 mb-4">No families yet</Title2>
           <Body1 className="text-neutral-600 mb-8 max-w-md mx-auto">
-            Create your first family group to start planning trips together with your loved ones.
+            {hasAnyRole([UserRole.FAMILY_ADMIN, UserRole.SUPER_ADMIN])
+              ? "Create your first family group to start planning trips together with your loved ones."
+              : "Ask a family admin to create a family group and invite you to start planning trips together."
+            }
           </Body1>
-          <Button
-            appearance="primary"
-            size="large"
-            icon={<PlusIcon className="w-5 h-5" />}
-            onClick={() => setShowCreateForm(true)}
-          >
-            Create Your First Family
-          </Button>
+          <RoleGuard allowedRoles={[UserRole.FAMILY_ADMIN, UserRole.SUPER_ADMIN]}>
+            <Button
+              appearance="primary"
+              size="large"
+              icon={<PlusIcon className="w-5 h-5" />}
+              onClick={() => setShowCreateForm(true)}
+            >
+              Create Your First Family
+            </Button>
+          </RoleGuard>
         </motion.div>
       )}
     </div>

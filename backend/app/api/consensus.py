@@ -10,12 +10,14 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy import select
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
+from dataclasses import asdict
 import logging
+import json
 
 from ..core.database import get_db
 from ..models.trip import Trip, TripParticipation
 from ..models.family import Family
-from ..auth.dependencies import require_permissions
+from ..core.zero_trust import require_permissions
 from ..models.user import User
 from ..services.consensus_engine import analyze_trip_consensus, FamilyConsensusEngine
 
@@ -100,7 +102,6 @@ async def analyze_consensus(
             # Parse preferences from participation
             if participation.preferences:
                 try:
-                    import json
                     family_data["preferences"] = json.loads(participation.preferences)
                 except (json.JSONDecodeError, TypeError):
                     family_data["preferences"] = {}
@@ -173,7 +174,6 @@ async def get_consensus_dashboard(
             
             if participation.preferences:
                 try:
-                    import json
                     family_data["preferences"] = json.loads(participation.preferences)
                 except (json.JSONDecodeError, TypeError):
                     family_data["preferences"] = {}
@@ -301,10 +301,9 @@ async def get_consensus_recommendations(
             
             if participation.preferences:
                 try:
-                    import json
                     family_data["preferences"] = json.loads(participation.preferences)
                 except (json.JSONDecodeError, TypeError):
-                    pass
+                    family_data["preferences"] = {}
             
             families_data.append(family_data)
         

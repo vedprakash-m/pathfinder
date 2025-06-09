@@ -8,6 +8,10 @@ import { useAuthStore } from '@/store';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { AuthLayout } from '@/components/layout/AuthLayout';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import OnboardingGate from '@/components/auth/OnboardingGate';
+
+// Role-based routing components (UX Implementation Plan Phase 1)
+import { RoleBasedRoute, UserRole } from '@/components/auth/RoleBasedRoute';
 
 // Lazy-loaded page components
 import {
@@ -22,7 +26,9 @@ import {
 // Only eagerly load critical pages
 import { HomePage } from '@/pages/HomePage';
 import { LoginPage } from '@/pages/LoginPage';
+import OnboardingPage from '@/pages/OnboardingPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
+import { UnauthorizedPage } from '@/pages/auth/UnauthorizedPage';
 
 // Performance monitoring
 import {
@@ -48,7 +54,11 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
     return <Navigate to="/login" replace />;
   }
 
-  return <>{children}</>;
+  return (
+    <OnboardingGate>
+      {children}
+    </OnboardingGate>
+  );
 };
 
 // Public Route Component (redirect if authenticated)
@@ -154,6 +164,24 @@ function App() {
             }
           />
 
+          {/* Onboarding Route */}
+          <Route
+            path="/onboarding"
+            element={
+              <ProtectedRoute>
+                <motion.div
+                  initial="initial"
+                  animate="in"
+                  exit="out"
+                  variants={pageVariants}
+                  transition={pageTransition}
+                >
+                  <OnboardingPage />
+                </motion.div>
+              </ProtectedRoute>
+            }
+          />
+
           {/* Protected Routes - Using lazy-loaded components */}
           <Route
             path="/dashboard"
@@ -194,7 +222,7 @@ function App() {
           <Route
             path="/trips/new"
             element={
-              <ProtectedRoute>
+              <RoleBasedRoute allowedRoles={[UserRole.FAMILY_ADMIN, UserRole.TRIP_ORGANIZER, UserRole.SUPER_ADMIN]}>
                 <MainLayout>
                   <motion.div
                     initial="initial"
@@ -206,7 +234,7 @@ function App() {
                     <LazyCreateTrip />
                   </motion.div>
                 </MainLayout>
-              </ProtectedRoute>
+              </RoleBasedRoute>
             }
           />
           <Route
@@ -230,7 +258,7 @@ function App() {
           <Route
             path="/families"
             element={
-              <ProtectedRoute>
+              <RoleBasedRoute allowedRoles={[UserRole.FAMILY_ADMIN, UserRole.SUPER_ADMIN]}>
                 <MainLayout>
                   <motion.div
                     initial="initial"
@@ -242,7 +270,7 @@ function App() {
                     <LazyFamilies />
                   </motion.div>
                 </MainLayout>
-              </ProtectedRoute>
+              </RoleBasedRoute>
             }
           />
           <Route
@@ -261,6 +289,22 @@ function App() {
                   </motion.div>
                 </MainLayout>
               </ProtectedRoute>
+            }
+          />
+
+          {/* Unauthorized Route */}
+          <Route
+            path="/unauthorized"
+            element={
+              <motion.div
+                initial="initial"
+                animate="in"
+                exit="out"
+                variants={pageVariants}
+                transition={pageTransition}
+              >
+                <UnauthorizedPage />
+              </motion.div>
             }
           />
 

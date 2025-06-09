@@ -26,6 +26,9 @@ class EventType(Enum):
     PERFORMANCE = "performance"
     ERROR = "error"
     BUSINESS_METRIC = "business_metric"
+    ONBOARDING_START = "onboarding_start"
+    ONBOARDING_COMPLETE = "onboarding_complete"
+    ONBOARDING_SKIP = "onboarding_skip"
 
 
 @dataclass

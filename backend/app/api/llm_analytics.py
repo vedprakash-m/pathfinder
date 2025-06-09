@@ -5,7 +5,7 @@ Provides monitoring and analytics for LLM usage and orchestration service
 
 from typing import Dict, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
-from app.core.auth import get_current_user
+from app.core.security import get_current_user
 from app.core.logging_config import create_logger
 from app.services.llm_orchestration_client import get_llm_orchestration_client, LLMOrchestrationClient
 from app.services.ai_service import ai_service
