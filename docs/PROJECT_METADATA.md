@@ -243,7 +243,7 @@ Containers:
 - **Horizontal Scalability**: Stateless services with load balancing
 - **Caching Strategy**: Multi-layer caching for optimal performance
 - **Asynchronous Processing**: Non-blocking operations where possible
-- **Resource Optimization**: Efficient use of compute and storage resources
+- **Resource Optimization**: Aggressive container resource constraints (0.25 CPU / 0.5Gi memory) with horizontal scaling for demand spikes
 
 ### 4.4 User Experience Principles
 - **Progressive Web App**: App-like experience across devices
@@ -335,6 +335,14 @@ Containers:
 - **Decision**: Azure Container Apps for hosting
 - **Rationale**: Serverless scaling, reduced infrastructure management, cost efficiency
 - **Trade-off**: Platform lock-in vs. operational simplicity
+
+**Aggressive Container Resource Optimization (January 2025):**
+- **Decision**: Ultra-low container resource allocation (0.25 CPU / 0.5Gi memory for backend and frontend)
+- **Rationale**: 75% reduction from current 1.0 CPU / 2Gi memory achieves significant cost savings since backend containers represent the vast majority of infrastructure costs
+- **Trade-off**: Aggressive but viable resource constraints vs. substantial cost optimization for hobby project
+- **Implementation**: Applied consistently across all infrastructure templates (ultra-cost-optimized.bicep, redis-free.bicep, container-apps.bicep)
+- **Performance Impact**: Acceptable for current user load with horizontal scaling available for growth
+- **Cost Savings**: Primary driver for overall infrastructure cost reduction strategy
 
 **Single Environment vs. Multi-Environment CI/CD (January 2025):**
 - **Decision**: Solo developer optimized pipeline with single production environment

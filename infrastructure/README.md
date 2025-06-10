@@ -108,10 +108,11 @@ Example:
 | Feature | redis-free.bicep | main.bicep |
 |---------|------------------|------------|
 | Redis Cache | ❌ | ✅ |
-| Cost/Month | ~$50 | ~$160 |
+| Cost/Month | ~$35 | ~$160 |
 | Complexity | Low | High |
 | Environments | Single | Multi |
 | Best For | Solo Developer | Enterprise |
+| Container Resources | 0.25 CPU / 0.5Gi | Standard allocation |
 
 ## 🛠️ Customization
 
@@ -148,10 +149,11 @@ If migrating from the enterprise `main.bicep` template:
 
 ## 📈 Performance Considerations
 
-- **Container Apps**: Auto-scaling based on HTTP requests
+- **Container Apps**: Auto-scaling based on HTTP requests with aggressive resource constraints (0.25 CPU / 0.5Gi memory per container)
 - **Cosmos DB**: Serverless mode scales automatically
 - **SQL Database**: Basic tier suitable for moderate workloads
 - **Storage**: Standard LRS for cost-effective file storage
+- **Resource Optimization**: 75% reduction from standard allocations for maximum cost efficiency
 
 ## 🆘 Troubleshooting
 

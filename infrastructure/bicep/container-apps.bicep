@@ -131,8 +131,8 @@ resource backendApp 'Microsoft.App/containerApps@2023-05-01' = {
           name: 'backend'
           image: image
           resources: {
-            cpu: json('0.5')
-            memory: '1Gi'
+            cpu: json('0.25')    // Aggressive optimization (75% reduction from current 1.0)
+            memory: '0.5Gi'      // Aggressive optimization (75% reduction from current 2Gi)
           }
           env: [
             {
