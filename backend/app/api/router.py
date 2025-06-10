@@ -22,6 +22,8 @@ from app.api.coordination import router as coordination_router
 from app.api.feedback import router as feedback_router
 from app.api.llm_analytics import router as llm_analytics_router
 from app.api.analytics import router as analytics_router
+from app.api.assistant import router as assistant_router
+from app.api.polls import router as polls_router
 
 api_router = APIRouter()
 
@@ -44,6 +46,8 @@ api_router.include_router(coordination_router, tags=["Smart Coordination"])
 api_router.include_router(feedback_router, tags=["Real-Time Feedback"])
 api_router.include_router(llm_analytics_router, tags=["LLM Analytics"])
 api_router.include_router(analytics_router, tags=["Analytics"])
+api_router.include_router(assistant_router, tags=["AI Assistant"])
+api_router.include_router(polls_router, tags=["Magic Polls"])
 
 # Simple root endpoint
 @api_router.get("/")

@@ -247,6 +247,11 @@ class OnboardingAnalyticsService {
       console.error('Failed to send analytics event:', error);
     }
   }
+
+  // Public method for tracking custom events (used by A/B testing)
+  public trackCustomEvent(eventName: string, properties?: Record<string, any>): void {
+    this.trackEvent(eventName, properties);
+  }
 }
 
 // Utility functions for A/B testing
@@ -254,9 +259,9 @@ export class OnboardingABTesting {
   private static readonly AB_TEST_KEY = 'pathfinder_onboarding_variant';
   private static readonly VARIANTS = ['control', 'variant_a', 'variant_b'] as const;
   
-  type Variant = typeof OnboardingABTesting.VARIANTS[number];
-
-  static getVariant(): Variant {
+  static getVariant(): string {
+    type Variant = typeof OnboardingABTesting.VARIANTS[number];
+    
     // Check if user already has a variant assigned
     const stored = localStorage.getItem(this.AB_TEST_KEY);
     if (stored && this.VARIANTS.includes(stored as Variant)) {
@@ -271,8 +276,8 @@ export class OnboardingABTesting {
     return variant;
   }
 
-  static trackVariant(variant: Variant): void {
-    OnboardingAnalyticsService.getInstance().trackEvent('ab_test_variant_assigned', { variant });
+  static trackVariant(variant: string): void {
+    OnboardingAnalyticsService.getInstance().trackCustomEvent('ab_test_variant_assigned', { variant });
   }
 }
 

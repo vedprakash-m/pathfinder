@@ -1,5 +1,5 @@
 import React from 'react';
-import { OnboardingFlow } from '../components/onboarding/OnboardingFlow';
+import OnboardingFlow from '../components/onboarding/OnboardingFlow';
 
 // Simple test component to verify onboarding flow works
 const OnboardingFlowTest: React.FC = () => {

@@ -29,6 +29,8 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { TripChat } from '@/components/chat/TripChat';
 import { TripFamilies } from '@/components/trip/TripFamilies';
 import { TripBudget } from '@/components/trip/TripBudget';
+import { PathfinderAssistant } from '@/components/ai/PathfinderAssistant';
+import { MagicPolls } from '@/components/ai/MagicPolls';
 // import TripItinerary from '@/components/trip/TripItinerary';
 
 // Temporary placeholder component for TripItinerary
@@ -42,6 +44,7 @@ const TripItinerary: React.FC<any> = ({ startDate, endDate, itinerary, onAddActi
   </div>
 );
 import { RoleGuard, useRolePermissions, UserRole } from '@/components/auth/RoleBasedRoute';
+import { useAuth } from '@/contexts/AuthContext';
 import type { TripStatus } from '@/types';
 
 const StatusBadge: React.FC<{ status: TripStatus }> = ({ status }) => {
@@ -342,6 +345,7 @@ const TripOverview: React.FC<{ trip: any }> = ({ trip }) => {
 export const TripDetailPage: React.FC = () => {
   const { tripId } = useParams<{ tripId: string }>();
   const [activeTab, setActiveTab] = useState('overview');
+  const { user } = useAuth();
 
   const { data: trip, isLoading, error } = useQuery({
     queryKey: ['trip', tripId],
@@ -500,6 +504,18 @@ export const TripDetailPage: React.FC = () => {
             tripName={tripData.name}
           />
         );
+      case 'polls':
+        return (
+          <MagicPolls
+            tripId={tripId}
+            onPollCreate={(poll) => {
+              console.log('Poll created:', poll);
+            }}
+            onPollResponse={(pollId, response) => {
+              console.log('Poll response:', pollId, response);
+            }}
+          />
+        );
       default:
         return <TripOverview trip={trip} />;
     }
@@ -538,6 +554,7 @@ export const TripDetailPage: React.FC = () => {
               <Tab value="families">Families</Tab>
               <Tab value="budget">Budget</Tab>
               <Tab value="chat">Chat</Tab>
+              <Tab value="polls">Magic Polls</Tab>
             </TabList>
           </div>
         </Card>
@@ -552,6 +569,28 @@ export const TripDetailPage: React.FC = () => {
       >
         {renderTabContent()}
       </motion.div>
+
+      {/* Pathfinder Assistant - Floating Widget */}
+      <PathfinderAssistant
+        context={{
+          trip_id: tripId,
+          family_id: user?.id, // User ID as family identifier
+          current_page: 'trip-detail',
+          trip_data: {
+            name: tripData.name,
+            destination: tripData.destination,
+            start_date: tripData.start_date,
+            end_date: tripData.end_date
+          }
+        }}
+        onAssistantAction={(action, data) => {
+          console.log('Assistant action:', action, data);
+          // Handle assistant actions like creating polls, adding activities, etc.
+          if (action === 'create_poll') {
+            setActiveTab('polls');
+          }
+        }}
+      />
     </div>
   );
 };

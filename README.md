@@ -26,7 +26,7 @@ AI-powered platform for coordinating multi-family group trips with intelligent i
 - **LLM Orchestration Service**: Production-ready AI service with circuit breaker pattern and automatic failover
 - **Hybrid Database**: Azure SQL Database for relational data, Cosmos DB for flexible document storage
 - **Enterprise Security**: Auth0 integration with zero-trust architecture and GDPR compliance
-- **Performance Optimization**: Multi-layer Redis caching, code splitting, and lazy loading
+- **Performance Optimization**: Ultra-cost-optimized containers (0.25 CPU / 0.5Gi), code splitting, and lazy loading
 - **Monitoring**: Application Insights with custom metrics and automated alerting
 
 ## 🏗️ Architecture
@@ -35,10 +35,10 @@ AI-powered platform for coordinating multi-family group trips with intelligent i
 - **Backend**: FastAPI (Python 3.12+), SQLAlchemy, Alembic, Celery
 - **Frontend**: React 18, TypeScript, Vite, Zustand, Tailwind CSS, Fluent UI
 - **Database**: Azure SQL Database + Cosmos DB
-- **Cache**: Redis with multi-layer strategy
 - **AI**: Custom FastAPI orchestration service with multi-provider support
 - **Infrastructure**: Azure Container Apps, Application Insights, Key Vault
 - **Authentication**: Auth0 with role-based access control
+- **Resource Optimization**: Ultra-low resource containers for maximum cost efficiency
 
 ### System Design
 ```
@@ -56,8 +56,8 @@ AI-powered platform for coordinating multi-family group trips with intelligent i
           │                     │
           │                     ▼
           │         ┌─────────────────┐ ┌─────────────────┐
-          │         │ LLM Orchestration│ │ Redis Cache     │
-          │         │ Service         │ │ (Multi-layer)   │
+          │         │ LLM Orchestration│ │ In-Memory Cache │
+          │         │ Service         │ │ (Application)   │
           │         └─────────┬───────┘ └─────────────────┘
           │                   │
           │                   ▼
@@ -167,6 +167,27 @@ black . && flake8 . && mypy .
 npm run lint && npm run type-check
 ```
 
+## 💰 Cost Optimization
+
+This deployment implements **aggressive container resource optimization** for maximum cost efficiency:
+
+### Resource Configuration
+- **CPU**: 0.25 cores per container (75% reduction from default)
+- **Memory**: 0.5 GiB per container (75% reduction from default)
+- **Estimated Monthly Cost**: ~$35 (down from ~$140)
+
+### Performance Considerations
+- **Trade-off**: Reduced resource allocation for ultra-low cost
+- **Suitable for**: Demo, development, and low-moderate traffic production use
+- **Scaling**: Horizontal scaling compensates for individual container limits
+- **Monitoring**: Application Insights tracks performance metrics
+
+### Architecture Benefits
+- **Redis-free**: Eliminates external cache dependency and costs
+- **In-memory caching**: Application-level caching for essential operations
+- **Lightweight containers**: Optimized for minimal resource consumption
+- **Auto-scaling**: Container Apps can scale based on demand
+
 ## 🚀 Deployment
 
 ### Azure Production
@@ -177,8 +198,8 @@ Complete deployment guide available in [docs/](docs/). Key steps:
 3. **Deploy via GitHub Actions**: Push to main branch triggers deployment
 
 ### Environment Configuration
-- **Development**: Local SQLite, basic Auth0, local Redis
-- **Production**: Azure SQL Database, full Auth0, Azure Redis Cache, Application Insights
+- **Development**: Local SQLite, basic Auth0, in-memory caching
+- **Production**: Azure SQL Database, full Auth0 setup, Application Insights
 
 ## 📄 License
 
