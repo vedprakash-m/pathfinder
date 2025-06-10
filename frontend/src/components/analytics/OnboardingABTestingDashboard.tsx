@@ -3,9 +3,7 @@ import { motion } from 'framer-motion';
 import { 
   FlaskConical, 
   TrendingUp, 
-  Users, 
   Target, 
-  BarChart3,
   Plus,
   Play,
   Pause,
@@ -49,7 +47,6 @@ interface ABTestMetrics {
 const OnboardingABTestingDashboard: React.FC = () => {
   const [tests, setTests] = useState<ABTest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [showCreateModal, setShowCreateModal] = useState(false);
 
   useEffect(() => {
     fetchABTests();
@@ -237,7 +234,7 @@ const OnboardingABTestingDashboard: React.FC = () => {
         </div>
         
         <button 
-          onClick={() => setShowCreateModal(true)}
+          onClick={() => console.log('Create test modal - to be implemented')}
           className="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 flex items-center space-x-2"
         >
           <Plus className="h-5 w-5" />
