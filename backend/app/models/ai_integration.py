@@ -6,7 +6,7 @@ from typing import Dict, List, Optional, Any
 from enum import Enum
 from sqlalchemy import Column, String, Text, DateTime, Integer, Boolean, JSON, ForeignKey
 from sqlalchemy.orm import relationship
-from app.models.base import Base
+from app.core.database import Base
 import uuid
 
 
@@ -159,7 +159,7 @@ class AIResponseCard(Base):
     title = Column(String(255), nullable=False)
     content = Column(JSON, nullable=False)  # Rich content with images, text, etc.
     actions = Column(JSON, nullable=True)  # Available actions for the card
-    metadata = Column(JSON, nullable=True)  # Additional metadata
+    card_metadata = Column(JSON, nullable=True)  # Additional metadata
     display_order = Column(Integer, nullable=False, default=0)
     is_dismissed = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
