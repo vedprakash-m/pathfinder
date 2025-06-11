@@ -155,12 +155,14 @@ app.add_middleware(PerformanceMonitoringMiddleware)
 app.add_middleware(
     RateLimiter,
     window_size=60,  # 1 minute window
-    default_limit=100,  # Default 100 requests per minute
+    default_limit=200,  # Default 200 requests per minute
     api_limit=1000,  # API endpoints 1000 requests per minute
-    public_limit=30,  # Public endpoints 30 requests per minute
+    public_limit=150,  # Public endpoints 150 requests per minute (increased for login flow)
     endpoint_limits={
         "POST:/api/v1/auth/login": 10,  # Limit login attempts
         "POST:/api/v1/auth/register": 5,  # Limit registration
+        "GET:/api/v1/auth/me": 300,  # Allow frequent auth checks
+        "GET:/api/v1/auth/user/onboarding-status": 100,  # Allow onboarding status checks
     }
 )
 
