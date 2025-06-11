@@ -191,12 +191,13 @@ class Settings(BaseSettings):
     def database_config(self) -> dict:
         """Database configuration for SQLAlchemy."""
         # SQLite doesn't support connection pooling parameters
-        if "sqlite" in self.DATABASE_URL.lower():
+        db_url = self.database_url_sqlalchemy
+        if "sqlite" in db_url.lower():
             return {
                 "pool_pre_ping": True,
             }
         
-        # For PostgreSQL, MySQL, and other databases that support pooling
+        # For PostgreSQL, MySQL, SQL Server and other databases that support pooling
         return {
             "pool_size": self.DATABASE_POOL_SIZE,
             "max_overflow": self.DATABASE_MAX_OVERFLOW,
