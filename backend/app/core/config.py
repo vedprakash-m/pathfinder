@@ -25,8 +25,9 @@ class Settings(BaseSettings):
     
     # CORS settings
     CORS_ORIGINS: List[str] = Field(
-        default=["http://localhost:3000", "http://localhost:5173"],
-        env="CORS_ORIGINS"
+        default=["http://localhost:3000", "http://localhost:5173", "*"],
+        env="CORS_ORIGINS",
+        description="Comma-separated list of CORS origins"
     )
     
     # Database settings
@@ -144,8 +145,14 @@ class Settings(BaseSettings):
     @validator("CORS_ORIGINS", pre=True)
     def parse_cors_origins(cls, v):
         """Parse CORS origins from string or list."""
+        if v is None:
+            return ["http://localhost:3000", "http://localhost:5173"]
         if isinstance(v, str):
-            return [origin.strip() for origin in v.split(",")]
+            if not v.strip():
+                return ["http://localhost:3000", "http://localhost:5173"]
+            return [origin.strip() for origin in v.split(",") if origin.strip()]
+        if isinstance(v, list):
+            return [str(origin).strip() for origin in v if str(origin).strip()]
         return v
     
     @validator("ALLOWED_HOSTS", pre=True)
