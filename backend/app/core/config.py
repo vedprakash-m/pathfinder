@@ -157,6 +157,28 @@ class Settings(BaseSettings):
         return v
     
     @property
+    def database_url_sqlalchemy(self) -> str:
+        """Convert SQL Server connection string to SQLAlchemy format if needed."""
+        if self.DATABASE_URL.startswith("Server="):
+            # Parse SQL Server connection string
+            parts = {}
+            for part in self.DATABASE_URL.split(";"):
+                if "=" in part:
+                    key, value = part.split("=", 1)
+                    parts[key.strip()] = value.strip()
+            
+            # Extract components
+            server_port = parts.get("Server", "").replace("tcp:", "")
+            database = parts.get("Initial Catalog", "")
+            username = parts.get("User ID", "")
+            password = parts.get("Password", "")
+            
+            # Build SQLAlchemy URL for SQL Server
+            return f"mssql+pyodbc://{username}:{password}@{server_port}/{database}?driver=ODBC+Driver+17+for+SQL+Server&encrypt=yes&trustServerCertificate=no"
+        
+        return self.DATABASE_URL
+
+    @property
     def database_config(self) -> dict:
         """Database configuration for SQLAlchemy."""
         # SQLite doesn't support connection pooling parameters

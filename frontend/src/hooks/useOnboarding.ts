@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import apiService from '../services/api';
 
@@ -14,9 +14,17 @@ export const useOnboarding = () => {
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const { isAuthenticated } = useAuth0();
+  const isMountedRef = useRef(true);
+  const retryTimeoutRef = useRef<NodeJS.Timeout>();
 
-  const checkOnboardingStatus = async (retry: boolean = false) => {
-    if (!isAuthenticated) {
+  const checkOnboardingStatus = useCallback(async (retry: boolean = false) => {
+    if (!isAuthenticated || !isMountedRef.current) {
+      setIsLoading(false);
+      return;
+    }
+
+    // Prevent infinite loops - don't retry if we've already failed 3 times
+    if (retry && retryCount >= 3) {
       setIsLoading(false);
       return;
     }
@@ -27,33 +35,53 @@ export const useOnboarding = () => {
       
       const response = await apiService.get('/auth/user/onboarding-status');
       
-      setOnboardingStatus(response.data as OnboardingStatus);
-      setRetryCount(0); // Reset retry count on success
+      if (isMountedRef.current) {
+        setOnboardingStatus(response.data as OnboardingStatus);
+        setRetryCount(0); // Reset retry count on success
+      }
     } catch (err: any) {
       console.error('Failed to check onboarding status:', err);
+      
+      if (!isMountedRef.current) return;
+      
       const errorMessage = err.response?.data?.detail || err.message || 'Failed to check onboarding status';
       setError(errorMessage);
       
-      // Set default values if API fails
-      setOnboardingStatus({ completed: false });
+      // Set default values if API fails after all retries
+      if (retryCount >= 3) {
+        setOnboardingStatus({ completed: false });
+        setIsLoading(false);
+        return;
+      }
       
       // Auto-retry up to 3 times with exponential backoff
-      if (retryCount < 3) {
-        const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
-        setTimeout(() => {
-          setRetryCount(prev => prev + 1);
-          checkOnboardingStatus(true);
+      if (retryCount < 3 && isMountedRef.current) {
+        const delay = Math.pow(2, retryCount) * 2000; // 2s, 4s, 8s
+        retryTimeoutRef.current = setTimeout(() => {
+          if (isMountedRef.current) {
+            setRetryCount(prev => prev + 1);
+            checkOnboardingStatus(true);
+          }
         }, delay);
+      } else {
+        // Final fallback - assume onboarding not completed
+        setOnboardingStatus({ completed: false });
       }
     } finally {
-      setIsLoading(false);
+      if (isMountedRef.current) {
+        setIsLoading(false);
+      }
     }
-  };
+  }, [isAuthenticated, retryCount]);
 
-  const retryCheckStatus = () => {
+  const retryCheckStatus = useCallback(() => {
     setRetryCount(0);
+    setError(null);
+    if (retryTimeoutRef.current) {
+      clearTimeout(retryTimeoutRef.current);
+    }
     checkOnboardingStatus();
-  };
+  }, [checkOnboardingStatus]);
 
   const completeOnboarding = async (data: {
     trip_type?: string;
@@ -65,26 +93,42 @@ export const useOnboarding = () => {
       await apiService.post('/auth/user/complete-onboarding', data);
       
       // Update local state
-      setOnboardingStatus({
-        completed: true,
-        completed_at: new Date().toISOString(),
-        trip_type: data.trip_type
-      });
+      if (isMountedRef.current) {
+        setOnboardingStatus({
+          completed: true,
+          completed_at: new Date().toISOString(),
+          trip_type: data.trip_type
+        });
+      }
       
       return true;
     } catch (err: any) {
       console.error('Failed to complete onboarding:', err);
       const errorMessage = err.response?.data?.detail || err.message || 'Failed to complete onboarding';
-      setError(errorMessage);
+      if (isMountedRef.current) {
+        setError(errorMessage);
+      }
       throw new Error(errorMessage);
     }
   };
 
   useEffect(() => {
+    isMountedRef.current = true;
+    
     if (isAuthenticated) {
       checkOnboardingStatus();
+    } else {
+      setIsLoading(false);
+      setOnboardingStatus(null);
     }
-  }, [isAuthenticated]);
+
+    return () => {
+      isMountedRef.current = false;
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+      }
+    };
+  }, [isAuthenticated, checkOnboardingStatus]);
 
   return {
     onboardingStatus,

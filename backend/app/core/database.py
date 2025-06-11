@@ -55,7 +55,7 @@ settings = get_settings()
 
 # SQLAlchemy database setup
 engine = create_async_engine(
-    settings.DATABASE_URL,
+    settings.database_url_sqlalchemy,
     **settings.database_config,
     echo=settings.DEBUG,
 )
