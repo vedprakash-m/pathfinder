@@ -173,8 +173,8 @@ class Settings(BaseSettings):
             username = parts.get("User ID", "")
             password = parts.get("Password", "")
             
-            # Build SQLAlchemy URL for SQL Server
-            return f"mssql+pyodbc://{username}:{password}@{server_port}/{database}?driver=ODBC+Driver+17+for+SQL+Server&encrypt=yes&trustServerCertificate=no"
+            # Build SQLAlchemy URL for SQL Server with aioodbc (async)
+            return f"mssql+aioodbc://{username}:{password}@{server_port}/{database}?driver=ODBC+Driver+17+for+SQL+Server&encrypt=yes&trustServerCertificate=no"
         
         return self.DATABASE_URL
 
