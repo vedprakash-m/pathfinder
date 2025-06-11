@@ -160,7 +160,16 @@ class Settings(BaseSettings):
     def database_url_sqlalchemy(self) -> str:
         """Convert SQL Server connection string to SQLAlchemy format if needed."""
         if self.DATABASE_URL.startswith("Server="):
-            # Parse SQL Server connection string
+            # For production, fall back to SQLite if SQL Server drivers aren't available
+            # This is a temporary measure for ultra-cost-optimized deployment
+            if self.ENVIRONMENT == "production":
+                # Use SQLite as fallback for cost optimization
+                import os
+                db_path = "/app/data/pathfinder.db"
+                os.makedirs(os.path.dirname(db_path), exist_ok=True)
+                return f"sqlite+aiosqlite:///{db_path}"
+            
+            # Parse SQL Server connection string for development/full environments
             parts = {}
             for part in self.DATABASE_URL.split(";"):
                 if "=" in part:
