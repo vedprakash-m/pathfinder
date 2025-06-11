@@ -188,12 +188,15 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://pathfinder-frontend.yellowdune-9b8d769a.eastus.azurecontainerapps.io",
+        "https://pathfinder-backend.yellowdune-9b8d769a.eastus.azurecontainerapps.io",
         "http://localhost:3000",
-        "http://localhost:5173"
+        "http://localhost:5173",
+        "*"  # Temporarily allow all origins for debugging
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allow_headers=["*", "X-CSRF-Token"],  # Add CSRF token header
+    allow_headers=["*", "Authorization", "Content-Type", "X-CSRF-Token"],
+    expose_headers=["*"]
 )
 
 
