@@ -140,7 +140,7 @@ app = FastAPI(
 if settings.ENVIRONMENT == "production":
     app.add_middleware(
         TrustedHostMiddleware,
-        allowed_hosts=settings.ALLOWED_HOSTS,
+        allowed_hosts=settings.allowed_hosts_list,
     )
 
 # Import security middleware

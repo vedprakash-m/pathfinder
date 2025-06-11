@@ -3,8 +3,8 @@ Application configuration settings.
 """
 
 from functools import lru_cache
-from typing import List, Optional
-from pydantic import Field, validator
+from typing import List, Optional, Union
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     # Server settings
     HOST: str = Field(default="0.0.0.0", env="HOST")
     PORT: int = Field(default=8000, env="PORT")
-    ALLOWED_HOSTS: List[str] = Field(default=["*"], env="ALLOWED_HOSTS")
+    ALLOWED_HOSTS: Union[List[str], str] = Field(default=["*"], env="ALLOWED_HOSTS")
     
     # CORS settings
     CORS_ORIGINS: Optional[str] = Field(
@@ -135,25 +135,12 @@ class Settings(BaseSettings):
     SLOW_FUNCTION_THRESHOLD: float = Field(default=0.5, env="SLOW_FUNCTION_THRESHOLD")
     METRICS_ROLLUP_INTERVAL: int = Field(default=300, env="METRICS_ROLLUP_INTERVAL")
     
-    @validator("AUTH0_ISSUER", pre=True, always=True)
-    def set_auth0_issuer(cls, v, values):
+    @field_validator("AUTH0_ISSUER", mode="before")
+    @classmethod
+    def set_auth0_issuer(cls, v, info):
         """Set Auth0 issuer from domain if not provided."""
-        if v is None and "AUTH0_DOMAIN" in values:
-            return f"https://{values['AUTH0_DOMAIN']}/"
-        return v
-    
-    @validator("ALLOWED_HOSTS", pre=True)
-    def parse_allowed_hosts(cls, v):
-        """Parse allowed hosts from string or list."""
-        if isinstance(v, str):
-            return [host.strip() for host in v.split(",")]
-        return v
-    
-    @validator("ALLOWED_FILE_TYPES", pre=True)
-    def parse_file_types(cls, v):
-        """Parse allowed file types from string or list."""
-        if isinstance(v, str):
-            return [file_type.strip() for file_type in v.split(",")]
+        if v is None and hasattr(info, 'data') and "AUTH0_DOMAIN" in info.data:
+            return f"https://{info.data['AUTH0_DOMAIN']}/"
         return v
     
     @property
@@ -217,6 +204,13 @@ class Settings(BaseSettings):
         if not self.CORS_ORIGINS:
             return ["http://localhost:3000", "http://localhost:5173", "*"]
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
+    
+    @property
+    def allowed_hosts_list(self) -> List[str]:
+        """Get allowed hosts as a list."""
+        if isinstance(self.ALLOWED_HOSTS, str):
+            return [host.strip() for host in self.ALLOWED_HOSTS.split(",") if host.strip()]
+        return self.ALLOWED_HOSTS
     
     @property
     def is_production(self) -> bool:
