@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
-import { api } from '../lib/api';
+import apiService from '../services/api';
 
 interface OnboardingStatus {
   completed: boolean;
@@ -25,7 +25,7 @@ export const useOnboarding = () => {
       setIsLoading(true);
       if (!retry) setError(null);
       
-      const response = await api.get('/auth/user/onboarding-status');
+      const response = await apiService.get('/auth/user/onboarding-status');
       
       setOnboardingStatus(response.data as OnboardingStatus);
       setRetryCount(0); // Reset retry count on success
@@ -62,7 +62,7 @@ export const useOnboarding = () => {
   }) => {
     try {
       setError(null);
-      await api.post('/auth/user/complete-onboarding', data);
+      await apiService.post('/auth/user/complete-onboarding', data);
       
       // Update local state
       setOnboardingStatus({

@@ -6,7 +6,7 @@ import SampleTripDemo from './SampleTripDemo';
 import InteractiveConsensusDemo from './InteractiveConsensusDemo';
 import OnboardingComplete from './OnboardingComplete';
 import { useAuth } from '../../contexts/AuthContext';
-import { api } from '../../lib/api';
+import apiService from '../../services/api';
 import { useOnboardingAnalytics } from '../../services/onboardingAnalytics';
 
 export type TripType = 'weekend-getaway' | 'family-vacation' | 'adventure-trip';
@@ -42,7 +42,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
   // Track onboarding analytics
   useEffect(() => {
     if (user) {
-      api.post('/api/analytics/onboarding-start', {
+      apiService.post('/api/analytics/onboarding-start', {
         userId: user.id,
         timestamp: startTime,
         step: currentStep
@@ -72,7 +72,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
         // Track completion analytics
         analytics.trackCompletion();
         if (user) {
-          api.post('/api/analytics/onboarding-complete', {
+          apiService.post('/api/analytics/onboarding-complete', {
             userId: user.id,
             completionTime: Date.now() - startTime,
             tripType: selectedTripType,
@@ -89,7 +89,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
 
   const handleSkip = () => {
     if (user) {
-      api.post('/api/analytics/onboarding-skip', {
+      apiService.post('/api/analytics/onboarding-skip', {
         userId: user.id,
         skipStep: currentStep,
         timeSpent: Date.now() - startTime
