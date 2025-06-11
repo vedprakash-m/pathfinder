@@ -24,8 +24,8 @@ class Settings(BaseSettings):
     ALLOWED_HOSTS: List[str] = Field(default=["*"], env="ALLOWED_HOSTS")
     
     # CORS settings
-    CORS_ORIGINS: List[str] = Field(
-        default=["http://localhost:3000", "http://localhost:5173", "*"],
+    CORS_ORIGINS: Optional[str] = Field(
+        default="http://localhost:3000,http://localhost:5173,*",
         env="CORS_ORIGINS",
         description="Comma-separated list of CORS origins"
     )
@@ -142,19 +142,6 @@ class Settings(BaseSettings):
             return f"https://{values['AUTH0_DOMAIN']}/"
         return v
     
-    @validator("CORS_ORIGINS", pre=True)
-    def parse_cors_origins(cls, v):
-        """Parse CORS origins from string or list."""
-        if v is None:
-            return ["http://localhost:3000", "http://localhost:5173"]
-        if isinstance(v, str):
-            if not v.strip():
-                return ["http://localhost:3000", "http://localhost:5173"]
-            return [origin.strip() for origin in v.split(",") if origin.strip()]
-        if isinstance(v, list):
-            return [str(origin).strip() for origin in v if str(origin).strip()]
-        return v
-    
     @validator("ALLOWED_HOSTS", pre=True)
     def parse_allowed_hosts(cls, v):
         """Parse allowed hosts from string or list."""
@@ -191,6 +178,13 @@ class Settings(BaseSettings):
     def is_development(self) -> bool:
         """Check if running in development environment."""
         return self.ENVIRONMENT.lower() == "development"
+    
+    @property
+    def cors_origins_list(self) -> List[str]:
+        """Get CORS origins as a list."""
+        if not self.CORS_ORIGINS:
+            return ["http://localhost:3000", "http://localhost:5173", "*"]
+        return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
     
     @property
     def is_production(self) -> bool:
