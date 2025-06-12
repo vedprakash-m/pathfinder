@@ -61,7 +61,7 @@ export const setTokenGetter = (tokenGetter: () => Promise<string>) => {
 };
 
 // Create axios instance with default config
-const createApiClient = (baseURL: string = (import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api/v1` : '/api/v1')): AxiosInstance => {
+const createApiClient = (baseURL: string = (import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api/v1` : 'http://localhost:8000/api/v1')): AxiosInstance => {
   const client = axios.create({
     baseURL,
     timeout: 30000,

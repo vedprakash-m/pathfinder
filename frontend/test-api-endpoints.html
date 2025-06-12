@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Endpoints Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .warning { background-color: #fff3cd; color: #856404; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1>API Endpoints Test</h1>
+    <p>Testing the fixed API configuration</p>
+
+    <div class="test-section">
+        <h2>Backend Health Check</h2>
+        <button onclick="testHealthEndpoint()">Test Health Endpoint</button>
+        <div id="health-result" class="test-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Onboarding Status Endpoint (Unauthenticated)</h2>
+        <button onclick="testOnboardingEndpoint()">Test Onboarding Status</button>
+        <div id="onboarding-result" class="test-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>API V1 Base Endpoint</h2>
+        <button onclick="testApiV1Endpoint()">Test API V1 Root</button>
+        <div id="apiv1-result" class="test-result"></div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+
+        async function testHealthEndpoint() {
+            const resultDiv = document.getElementById('health-result');
+            try {
+                log('Testing health endpoint...');
+                const response = await fetch('http://localhost:8000/health', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.className = 'test-result success';
+                    resultDiv.textContent = `✅ Health Check PASSED (${response.status})\n${JSON.stringify(data, null, 2)}`;
+                    log('Health endpoint test: PASSED', 'success');
+                } else {
+                    resultDiv.className = 'test-result error';
+                    resultDiv.textContent = `❌ Health Check FAILED (${response.status})\n${JSON.stringify(data, null, 2)}`;
+                    log('Health endpoint test: FAILED', 'error');
+                }
+            } catch (error) {
+                resultDiv.className = 'test-result error';
+                resultDiv.textContent = `❌ Health Check ERROR: ${error.message}`;
+                log(`Health endpoint test error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testOnboardingEndpoint() {
+            const resultDiv = document.getElementById('onboarding-result');
+            try {
+                log('Testing onboarding status endpoint...');
+                const response = await fetch('http://localhost:8000/api/v1/auth/user/onboarding-status', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.text();
+                
+                if (response.status === 403) {
+                    resultDiv.className = 'test-result success';
+                    resultDiv.textContent = `✅ Onboarding Endpoint ACCESSIBLE (${response.status} - Expected authentication error)\nResponse: ${data}`;
+                    log('Onboarding endpoint test: PASSED - Endpoint accessible, auth required as expected', 'success');
+                } else {
+                    resultDiv.className = 'test-result warning';
+                    resultDiv.textContent = `⚠️ Onboarding Endpoint Response (${response.status})\nResponse: ${data}`;
+                    log(`Onboarding endpoint test: Unexpected status ${response.status}`, 'warning');
+                }
+            } catch (error) {
+                resultDiv.className = 'test-result error';
+                resultDiv.textContent = `❌ Onboarding Endpoint ERROR: ${error.message}`;
+                log(`Onboarding endpoint test error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testApiV1Endpoint() {
+            const resultDiv = document.getElementById('apiv1-result');
+            try {
+                log('Testing API v1 root endpoint...');
+                const response = await fetch('http://localhost:8000/api/v1/', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.className = 'test-result success';
+                    resultDiv.textContent = `✅ API V1 Root PASSED (${response.status})\n${JSON.stringify(data, null, 2)}`;
+                    log('API V1 root test: PASSED', 'success');
+                } else {
+                    resultDiv.className = 'test-result error';
+                    resultDiv.textContent = `❌ API V1 Root FAILED (${response.status})\n${JSON.stringify(data, null, 2)}`;
+                    log('API V1 root test: FAILED', 'error');
+                }
+            } catch (error) {
+                resultDiv.className = 'test-result error';
+                resultDiv.textContent = `❌ API V1 Root ERROR: ${error.message}`;
+                log(`API V1 root test error: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-run tests on page load
+        window.addEventListener('load', function() {
+            setTimeout(() => {
+                testHealthEndpoint();
+                setTimeout(() => testOnboardingEndpoint(), 1000);
+                setTimeout(() => testApiV1Endpoint(), 2000);
+            }, 500);
+        });
+    </script>
+</body>
+</html>
