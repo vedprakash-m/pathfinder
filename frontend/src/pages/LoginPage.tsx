@@ -71,6 +71,7 @@ export const LoginPage: React.FC = () => {
 
   // Redirect if already authenticated
   if (isAuthenticated) {
+    console.log('🔄 LoginPage: User is authenticated, redirecting to dashboard');
     return <Navigate to="/dashboard" replace />;
   }
 

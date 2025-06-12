@@ -29,6 +29,7 @@ import { LoginPage } from '@/pages/LoginPage';
 import OnboardingPage from '@/pages/OnboardingPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { UnauthorizedPage } from '@/pages/auth/UnauthorizedPage';
+import DebugPage from '@/pages/DebugPage';
 
 // Performance monitoring
 import {
@@ -161,6 +162,22 @@ function App() {
                   </motion.div>
                 </AuthLayout>
               </PublicRoute>
+            }
+          />
+
+          {/* Debug Route - for troubleshooting authentication issues */}
+          <Route
+            path="/debug"
+            element={
+              <motion.div
+                initial="initial"
+                animate="in"
+                exit="out"
+                variants={pageVariants}
+                transition={pageTransition}
+              >
+                <DebugPage />
+              </motion.div>
             }
           />
 

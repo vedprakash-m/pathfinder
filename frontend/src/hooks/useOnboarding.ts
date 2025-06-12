@@ -20,12 +20,15 @@ export const useOnboarding = () => {
   const checkOnboardingStatus = useCallback(async (retry: boolean = false) => {
     if (!isAuthenticated || !isMountedRef.current) {
       setIsLoading(false);
+      setOnboardingStatus({ completed: true }); // Default to completed if not authenticated
       return;
     }
 
     // Prevent infinite loops - don't retry if we've already failed 3 times
     if (retry && retryCount >= 3) {
       setIsLoading(false);
+      // For authentication failures after retries, assume onboarding is completed to prevent redirect loops
+      setOnboardingStatus({ completed: true });
       return;
     }
 
@@ -47,9 +50,23 @@ export const useOnboarding = () => {
       const errorMessage = err.response?.data?.detail || err.message || 'Failed to check onboarding status';
       setError(errorMessage);
       
+      // Check for authentication failures (401, 403) or credential validation errors
+      const isAuthError = err.response?.status === 401 || 
+                         err.response?.status === 403 || 
+                         errorMessage.includes('Could not validate credentials') ||
+                         errorMessage.includes('Not authenticated');
+      
+      // For auth errors, assume onboarding is completed to prevent redirect loops
+      if (isAuthError) {
+        console.warn('Authentication error detected, assuming onboarding completed to prevent redirect loop');
+        setOnboardingStatus({ completed: true });
+        setIsLoading(false);
+        return;
+      }
+      
       // Set default values if API fails after all retries
       if (retryCount >= 3) {
-        setOnboardingStatus({ completed: false });
+        setOnboardingStatus({ completed: true }); // Changed to true to prevent redirect loops
         setIsLoading(false);
         return;
       }
@@ -67,9 +84,8 @@ export const useOnboarding = () => {
           }
         }, delay);
       } else {
-        // Final fallback - assume onboarding not completed for unknown errors
-        // Don't retry for 4xx client errors or authentication issues
-        setOnboardingStatus({ completed: false });
+        // Final fallback - assume onboarding completed for client errors to prevent redirect loops
+        setOnboardingStatus({ completed: true });
       }
     } finally {
       if (isMountedRef.current) {
