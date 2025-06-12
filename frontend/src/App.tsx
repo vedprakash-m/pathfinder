@@ -199,6 +199,22 @@ function App() {
             }
           />
 
+          {/* Debug Route - Development only */}
+          <Route
+            path="/debug"
+            element={
+              <motion.div
+                initial="initial"
+                animate="in"
+                exit="out"
+                variants={pageVariants}
+                transition={pageTransition}
+              >
+                <DebugPage />
+              </motion.div>
+            }
+          />
+
           {/* Protected Routes - Using lazy-loaded components */}
           <Route
             path="/dashboard"

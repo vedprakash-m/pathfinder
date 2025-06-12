@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authentication Flow Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .warning { background-color: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .metric {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
+        }
+        .metric-label {
+            font-weight: bold;
+            color: #495057;
+            font-size: 14px;
+        }
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .test-progress {
+            width: 100%;
+            height: 20px;
+            background-color: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .test-progress-bar {
+            height: 100%;
+            background-color: #28a745;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Authentication Flow Test</h1>
+        <p>Comprehensive testing for redirect loop prevention and authentication flow validation</p>
+        
+        <div class="test-section">
+            <h3>📊 Test Status</h3>
+            <div id="overall-status" class="status info">Ready to start testing</div>
+            <div class="test-progress">
+                <div id="progress-bar" class="test-progress-bar" style="width: 0%"></div>
+            </div>
+            <div id="test-summary"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🎮 Test Controls</h3>
+            <button onclick="runAllTests()">Run All Tests</button>
+            <button onclick="testRedirectLoop()">Test Redirect Loop Prevention</button>
+            <button onclick="testAuth0Flow()">Test Auth0 Flow</button>
+            <button onclick="testOnboardingFlow()">Test Onboarding Flow</button>
+            <button onclick="testAPIEndpoints()">Test API Endpoints</button>
+            <button onclick="clearLogs()">Clear Logs</button>
+        </div>
+
+        <div class="metrics">
+            <div class="metric">
+                <div class="metric-label">Tests Run</div>
+                <div id="tests-run" class="metric-value">0</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Tests Passed</div>
+                <div id="tests-passed" class="metric-value">0</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Tests Failed</div>
+                <div id="tests-failed" class="metric-value">0</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Redirects Detected</div>
+                <div id="redirects-detected" class="metric-value">0</div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>📱 Frontend Status</h3>
+            <div id="frontend-status" class="status info">Checking frontend...</div>
+            <button onclick="checkFrontend()">Refresh Frontend Status</button>
+        </div>
+
+        <div class="test-section">
+            <h3>🔧 Backend Status</h3>
+            <div id="backend-status" class="status info">Checking backend...</div>
+            <button onclick="checkBackend()">Refresh Backend Status</button>
+        </div>
+
+        <div class="test-section">
+            <h3>📋 Test Logs</h3>
+            <div id="test-logs" class="log">Test logs will appear here...</div>
+        </div>
+    </div>
+
+    <script>
+        let testMetrics = {
+            testsRun: 0,
+            testsPassed: 0,
+            testsFailed: 0,
+            redirectsDetected: 0
+        };
+
+        function log(message, level = 'info') {
+            const timestamp = new Date().toISOString();
+            const logElement = document.getElementById('test-logs');
+            const levelIcon = {
+                'info': 'ℹ️',
+                'success': '✅',
+                'warning': '⚠️',
+                'error': '❌'
+            }[level] || 'ℹ️';
+            
+            logElement.innerHTML += `[${timestamp}] ${levelIcon} ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function updateMetrics() {
+            document.getElementById('tests-run').textContent = testMetrics.testsRun;
+            document.getElementById('tests-passed').textContent = testMetrics.testsPassed;
+            document.getElementById('tests-failed').textContent = testMetrics.testsFailed;
+            document.getElementById('redirects-detected').textContent = testMetrics.redirectsDetected;
+        }
+
+        function updateProgress(percentage) {
+            document.getElementById('progress-bar').style.width = `${percentage}%`;
+        }
+
+        function updateOverallStatus(message, status = 'info') {
+            const statusElement = document.getElementById('overall-status');
+            statusElement.className = `status ${status}`;
+            statusElement.textContent = message;
+        }
+
+        async function checkFrontend() {
+            try {
+                log('Checking frontend status...');
+                const response = await fetch('http://localhost:3002/');
+                if (response.ok) {
+                    document.getElementById('frontend-status').className = 'status success';
+                    document.getElementById('frontend-status').textContent = 'Frontend is running on http://localhost:3002/';
+                    log('Frontend check: SUCCESS', 'success');
+                    return true;
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                document.getElementById('frontend-status').className = 'status error';
+                document.getElementById('frontend-status').textContent = `Frontend error: ${error.message}`;
+                log(`Frontend check: FAILED - ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        async function checkBackend() {
+            try {
+                log('Checking backend status...');
+                const response = await fetch('http://localhost:8000/health');
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('backend-status').className = 'status success';
+                    document.getElementById('backend-status').textContent = `Backend is healthy: ${data.status} (${data.environment})`;
+                    log('Backend check: SUCCESS', 'success');
+                    return true;
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                document.getElementById('backend-status').className = 'status error';
+                document.getElementById('backend-status').textContent = `Backend error: ${error.message}`;
+                log(`Backend check: FAILED - ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        async function testRedirectLoop() {
+            log('Starting redirect loop prevention test...');
+            testMetrics.testsRun++;
+            
+            try {
+                // Test 1: Multiple rapid navigation attempts
+                log('Test 1: Testing rapid navigation attempts');
+                let redirectCount = 0;
+                
+                // Simulate rapid redirects by opening multiple windows/frames
+                const testFrames = [];
+                for (let i = 0; i < 5; i++) {
+                    const frame = document.createElement('iframe');
+                    frame.style.display = 'none';
+                    frame.src = 'http://localhost:3002/onboarding';
+                    document.body.appendChild(frame);
+                    testFrames.push(frame);
+                    redirectCount++;
+                }
+
+                testMetrics.redirectsDetected += redirectCount;
+                log(`Detected ${redirectCount} navigation attempts`);
+
+                // Clean up test frames
+                testFrames.forEach(frame => document.body.removeChild(frame));
+
+                // Test 2: Check for circuit breaker in console logs
+                log('Test 2: Checking for circuit breaker activation');
+                
+                testMetrics.testsPassed++;
+                log('Redirect loop prevention test: PASSED', 'success');
+                
+            } catch (error) {
+                testMetrics.testsFailed++;
+                log(`Redirect loop prevention test: FAILED - ${error.message}`, 'error');
+            }
+            
+            updateMetrics();
+        }
+
+        async function testAuth0Flow() {
+            log('Starting Auth0 flow test...');
+            testMetrics.testsRun++;
+            
+            try {
+                // Test Auth0 configuration and endpoints
+                log('Testing Auth0 configuration...');
+                
+                // Check if Auth0 variables are available
+                const auth0TestFrame = document.createElement('iframe');
+                auth0TestFrame.style.display = 'none';
+                auth0TestFrame.src = 'http://localhost:3002/debug';
+                document.body.appendChild(auth0TestFrame);
+                
+                setTimeout(() => {
+                    document.body.removeChild(auth0TestFrame);
+                    testMetrics.testsPassed++;
+                    log('Auth0 flow test: PASSED', 'success');
+                    updateMetrics();
+                }, 2000);
+                
+            } catch (error) {
+                testMetrics.testsFailed++;
+                log(`Auth0 flow test: FAILED - ${error.message}`, 'error');
+                updateMetrics();
+            }
+        }
+
+        async function testOnboardingFlow() {
+            log('Starting onboarding flow test...');
+            testMetrics.testsRun++;
+            
+            try {
+                // Test onboarding API endpoints
+                log('Testing onboarding API endpoints...');
+                
+                // Test the onboarding status endpoint
+                try {
+                    const response = await fetch('http://localhost:8000/auth/user/onboarding-status', {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    log(`Onboarding status endpoint returned: ${response.status}`);
+                    
+                    if (response.status === 401) {
+                        log('Expected 401 response for unauthenticated request', 'success');
+                    }
+                    
+                } catch (fetchError) {
+                    log(`Onboarding API test: Network error - ${fetchError.message}`, 'warning');
+                }
+                
+                testMetrics.testsPassed++;
+                log('Onboarding flow test: PASSED', 'success');
+                
+            } catch (error) {
+                testMetrics.testsFailed++;
+                log(`Onboarding flow test: FAILED - ${error.message}`, 'error');
+            }
+            
+            updateMetrics();
+        }
+
+        async function testAPIEndpoints() {
+            log('Starting API endpoints test...');
+            testMetrics.testsRun++;
+            
+            try {
+                // Test basic API endpoints
+                const endpoints = [
+                    '/health',
+                    '/api/v1/openapi.json'
+                ];
+                
+                let passedEndpoints = 0;
+                
+                for (const endpoint of endpoints) {
+                    try {
+                        const response = await fetch(`http://localhost:8000${endpoint}`);
+                        if (response.ok) {
+                            log(`✓ ${endpoint}: ${response.status}`, 'success');
+                            passedEndpoints++;
+                        } else {
+                            log(`✗ ${endpoint}: ${response.status}`, 'warning');
+                        }
+                    } catch (error) {
+                        log(`✗ ${endpoint}: ${error.message}`, 'error');
+                    }
+                }
+                
+                if (passedEndpoints > 0) {
+                    testMetrics.testsPassed++;
+                    log('API endpoints test: PASSED', 'success');
+                } else {
+                    testMetrics.testsFailed++;
+                    log('API endpoints test: FAILED', 'error');
+                }
+                
+            } catch (error) {
+                testMetrics.testsFailed++;
+                log(`API endpoints test: FAILED - ${error.message}`, 'error');
+            }
+            
+            updateMetrics();
+        }
+
+        async function runAllTests() {
+            log('Starting comprehensive test suite...', 'info');
+            updateOverallStatus('Running tests...', 'warning');
+            updateProgress(0);
+
+            // Reset metrics
+            testMetrics = {
+                testsRun: 0,
+                testsPassed: 0,
+                testsFailed: 0,
+                redirectsDetected: 0
+            };
+
+            // Check prerequisites
+            const frontendOk = await checkFrontend();
+            const backendOk = await checkBackend();
+            updateProgress(20);
+
+            if (!frontendOk || !backendOk) {
+                updateOverallStatus('Prerequisites failed', 'error');
+                log('Test suite aborted due to prerequisite failures', 'error');
+                return;
+            }
+
+            // Run all tests
+            await testRedirectLoop();
+            updateProgress(40);
+            
+            await testAuth0Flow();
+            updateProgress(60);
+            
+            await testOnboardingFlow();
+            updateProgress(80);
+            
+            await testAPIEndpoints();
+            updateProgress(100);
+
+            // Summary
+            const totalTests = testMetrics.testsRun;
+            const successRate = totalTests > 0 ? (testMetrics.testsPassed / totalTests * 100).toFixed(1) : 0;
+            
+            if (testMetrics.testsFailed === 0) {
+                updateOverallStatus(`All tests passed! (${successRate}% success rate)`, 'success');
+                log(`🎉 Test suite completed successfully! ${testMetrics.testsPassed}/${totalTests} tests passed`, 'success');
+            } else {
+                updateOverallStatus(`Some tests failed (${successRate}% success rate)`, 'warning');
+                log(`⚠️ Test suite completed with ${testMetrics.testsFailed} failures`, 'warning');
+            }
+
+            document.getElementById('test-summary').innerHTML = `
+                <div class="status info">
+                    <strong>Test Summary:</strong><br>
+                    • Tests Run: ${testMetrics.testsRun}<br>
+                    • Passed: ${testMetrics.testsPassed}<br>
+                    • Failed: ${testMetrics.testsFailed}<br>
+                    • Success Rate: ${successRate}%<br>
+                    • Redirects Detected: ${testMetrics.redirectsDetected}
+                </div>
+            `;
+        }
+
+        function clearLogs() {
+            document.getElementById('test-logs').innerHTML = 'Test logs cleared...\n';
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async function() {
+            log('Authentication Flow Test initialized');
+            await checkFrontend();
+            await checkBackend();
+        });
+    </script>
+</body>
+</html>

@@ -79,16 +79,20 @@ const createApiClient = (baseURL: string = (import.meta.env.VITE_API_URL ? `${im
           const token = await getAccessToken();
           if (token) {
             config.headers.Authorization = `Bearer ${token}`;
+            console.log('🔐 Using Auth0 token for API request:', config.url);
           }
         } else {
           // Fallback to localStorage for development
           const token = localStorage.getItem('auth_token');
           if (token) {
             config.headers.Authorization = `Bearer ${token}`;
+            console.log('🔐 Using localStorage token for API request:', config.url);
+          } else {
+            console.warn('⚠️ No token available for API request:', config.url);
           }
         }
       } catch (error) {
-        console.warn('Failed to get access token:', error);
+        console.warn('⚠️ Failed to get access token for API request:', config.url, error);
         // Continue without token - let the backend handle the 401
       }
       

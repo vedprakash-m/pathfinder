@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Redirect Loop Test - Pathfinder</title>
+    <script src="https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .status { padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; margin: 5px; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        .logs { background: #f8f9fa; border: 1px solid #dee2e6; padding: 15px; margin-top: 20px; border-radius: 4px; max-height: 400px; overflow-y: auto; }
+        .log-entry { margin: 5px 0; font-family: monospace; }
+        .log-error { color: #dc3545; }
+        .log-success { color: #28a745; }
+        .log-warning { color: #ffc107; }
+        .log-info { color: #17a2b8; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Redirect Loop Test - Pathfinder</h1>
+        <p>This page tests the authentication flow to identify and resolve redirect loop issues.</p>
+        
+        <div id="status" class="status info">Initializing...</div>
+        
+        <div id="controls">
+            <button id="login" onclick="testLogin()" disabled>🔐 Test Login</button>
+            <button id="logout" onclick="testLogout()" disabled>🚪 Test Logout</button>
+            <button id="test-api" onclick="testAPICall()" disabled>🌐 Test API Call</button>
+            <button id="clear-logs" onclick="clearLogs()">🗑️ Clear Logs</button>
+        </div>
+
+        <div id="redirect-test" style="margin-top: 20px;">
+            <h3>Redirect Loop Detection</h3>
+            <div id="redirect-count" class="status info">Redirect Count: 0</div>
+            <button id="test-redirect-flow" onclick="testRedirectFlow()">🔄 Test Full Redirect Flow</button>
+        </div>
+
+        <div class="logs">
+            <h3>📋 Test Logs</h3>
+            <div id="logs"></div>
+        </div>
+    </div>
+
+    <script>
+        let auth0Client;
+        let isAuthenticated = false;
+        let redirectCount = 0;
+        let testStartTime = 0;
+        const maxRedirects = 5;
+
+        // Logging functions
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logs = document.getElementById('logs');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
+            logs.appendChild(logEntry);
+            logs.scrollTop = logs.scrollHeight;
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+        }
+
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.className = `status ${type}`;
+            status.textContent = message;
+            log(message, type);
+        }
+
+        function updateRedirectCount() {
+            document.getElementById('redirect-count').innerHTML = 
+                `Redirect Count: <strong>${redirectCount}</strong> ${redirectCount >= maxRedirects ? '⚠️ LOOP DETECTED!' : ''}`;
+        }
+
+        // Track page navigation for redirect detection
+        let navigationHistory = [];
+
+        function trackNavigation(url, source) {
+            const timestamp = Date.now();
+            navigationHistory.push({ url, source, timestamp });
+            
+            // Check for redirect loops (same URL within 5 seconds)
+            const recentNavigations = navigationHistory.filter(nav => 
+                timestamp - nav.timestamp < 5000 && nav.url === url
+            );
+            
+            if (recentNavigations.length > 3) {
+                log(`🚨 REDIRECT LOOP DETECTED: ${url} visited ${recentNavigations.length} times in 5 seconds`, 'error');
+                redirectCount = recentNavigations.length;
+                updateRedirectCount();
+                return true;
+            }
+            
+            return false;
+        }
+
+        // Initialize Auth0
+        async function initAuth0() {
+            try {
+                updateStatus('Initializing Auth0...', 'info');
+                
+                auth0Client = await auth0.createAuth0Client({
+                    domain: 'dev-jwnud3v8ghqnyygr.us.auth0.com',
+                    clientId: 'KXu3KpGiyRHHHgiXX90sHuNC4rfYRcNn',
+                    authorizationParams: {
+                        redirect_uri: window.location.origin + '/test-redirect-loop.html',
+                        audience: 'https://pathfinder-api.com',
+                        scope: 'openid profile email'
+                    },
+                    useRefreshTokens: true,
+                    cacheLocation: 'localstorage'
+                });
+
+                log('✅ Auth0 client initialized successfully', 'success');
+
+                // Handle redirect callback
+                const query = window.location.search;
+                if (query.includes('code=') && query.includes('state=')) {
+                    updateStatus('Processing Auth0 callback...', 'info');
+                    trackNavigation(window.location.href, 'auth0_callback');
+                    
+                    try {
+                        await auth0Client.handleRedirectCallback();
+                        log('✅ Auth0 callback processed successfully', 'success');
+                        
+                        // Clean URL
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                        
+                        // Update status
+                        await checkAuthStatus();
+                        
+                    } catch (error) {
+                        log(`❌ Auth0 callback error: ${error.message}`, 'error');
+                        updateStatus('Auth0 callback failed', 'error');
+                    }
+                } else {
+                    await checkAuthStatus();
+                }
+
+            } catch (error) {
+                log(`❌ Auth0 initialization failed: ${error.message}`, 'error');
+                updateStatus('Auth0 initialization failed', 'error');
+            }
+        }
+
+        async function checkAuthStatus() {
+            try {
+                isAuthenticated = await auth0Client.isAuthenticated();
+                
+                if (isAuthenticated) {
+                    const user = await auth0Client.getUser();
+                    updateStatus(`✅ Authenticated as: ${user.email}`, 'success');
+                    
+                    document.getElementById('login').disabled = true;
+                    document.getElementById('logout').disabled = false;
+                    document.getElementById('test-api').disabled = false;
+                    
+                } else {
+                    updateStatus('❌ Not authenticated', 'warning');
+                    
+                    document.getElementById('login').disabled = false;
+                    document.getElementById('logout').disabled = true;
+                    document.getElementById('test-api').disabled = true;
+                }
+                
+            } catch (error) {
+                log(`❌ Auth status check failed: ${error.message}`, 'error');
+                updateStatus('Auth status check failed', 'error');
+            }
+        }
+
+        async function testLogin() {
+            try {
+                updateStatus('Starting login process...', 'info');
+                trackNavigation(window.location.href, 'login_start');
+                
+                await auth0Client.loginWithRedirect({
+                    authorizationParams: {
+                        redirect_uri: window.location.origin + '/test-redirect-loop.html'
+                    }
+                });
+                
+            } catch (error) {
+                log(`❌ Login failed: ${error.message}`, 'error');
+                updateStatus('Login failed', 'error');
+            }
+        }
+
+        async function testLogout() {
+            try {
+                updateStatus('Logging out...', 'info');
+                
+                await auth0Client.logout({
+                    logoutParams: {
+                        returnTo: window.location.origin + '/test-redirect-loop.html'
+                    }
+                });
+                
+            } catch (error) {
+                log(`❌ Logout failed: ${error.message}`, 'error');
+                updateStatus('Logout failed', 'error');
+            }
+        }
+
+        async function testAPICall() {
+            try {
+                updateStatus('Testing API call...', 'info');
+                
+                const token = await auth0Client.getAccessTokenSilently();
+                log(`🎫 Got access token: ${token.substring(0, 20)}...`, 'info');
+
+                const response = await fetch('https://pathfinder-backend.yellowdune-9b8d769a.eastus.azurecontainerapps.io/api/v1/auth/user/onboarding-status', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.text();
+                
+                if (response.ok) {
+                    log(`✅ API call successful: ${response.status}`, 'success');
+                    log(`📄 Response: ${data}`, 'info');
+                    updateStatus('API call successful', 'success');
+                } else {
+                    log(`⚠️ API call failed: ${response.status} ${response.statusText}`, 'warning');
+                    log(`📄 Response: ${data}`, 'warning');
+                    updateStatus(`API call failed: ${response.status}`, 'warning');
+                }
+
+            } catch (error) {
+                log(`❌ API test failed: ${error.message}`, 'error');
+                updateStatus('API test failed', 'error');
+            }
+        }
+
+        async function testRedirectFlow() {
+            redirectCount = 0;
+            navigationHistory = [];
+            testStartTime = Date.now();
+            
+            updateStatus('Testing full redirect flow...', 'info');
+            updateRedirectCount();
+            
+            // Simulate the full flow
+            try {
+                // 1. Check if authenticated
+                log('🔍 Step 1: Checking authentication status...', 'info');
+                const isAuth = await auth0Client.isAuthenticated();
+                
+                if (!isAuth) {
+                    log('🔐 Step 2: Not authenticated, starting login...', 'info');
+                    await testLogin();
+                } else {
+                    log('✅ Already authenticated, testing API calls...', 'success');
+                    await testAPICall();
+                }
+                
+            } catch (error) {
+                log(`❌ Redirect flow test failed: ${error.message}`, 'error');
+                updateStatus('Redirect flow test failed', 'error');
+            }
+        }
+
+        // Monitor for rapid page changes (potential redirect loops)
+        let pageChangeCount = 0;
+        setInterval(() => {
+            pageChangeCount = 0;
+        }, 5000); // Reset every 5 seconds
+
+        // Track URL changes
+        let lastUrl = window.location.href;
+        setInterval(() => {
+            if (window.location.href !== lastUrl) {
+                pageChangeCount++;
+                trackNavigation(window.location.href, 'url_change');
+                
+                if (pageChangeCount > 3) {
+                    log('🚨 RAPID URL CHANGES DETECTED - Possible redirect loop!', 'error');
+                }
+                
+                lastUrl = window.location.href;
+            }
+        }, 100);
+
+        // Initialize when page loads
+        window.addEventListener('load', initAuth0);
+        
+        // Track page visibility changes
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                log('👁️ Page became visible', 'info');
+            } else {
+                log('👁️ Page became hidden', 'info');
+            }
+        });
+    </script>
+</body>
+</html>
