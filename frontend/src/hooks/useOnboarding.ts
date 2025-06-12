@@ -54,9 +54,12 @@ export const useOnboarding = () => {
         return;
       }
       
-      // Auto-retry up to 3 times with exponential backoff
-      if (retryCount < 3 && isMountedRef.current) {
-        const delay = Math.pow(2, retryCount) * 2000; // 2s, 4s, 8s
+      // Auto-retry up to 3 times with exponential backoff, but only for network errors
+      const isNetworkError = err.code === 'ERR_NETWORK' || err.message?.includes('Network Error');
+      const isServerError = err.response?.status >= 500;
+      
+      if (retryCount < 3 && isMountedRef.current && (isNetworkError || isServerError)) {
+        const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
         retryTimeoutRef.current = setTimeout(() => {
           if (isMountedRef.current) {
             setRetryCount(prev => prev + 1);
@@ -64,7 +67,8 @@ export const useOnboarding = () => {
           }
         }, delay);
       } else {
-        // Final fallback - assume onboarding not completed
+        // Final fallback - assume onboarding not completed for unknown errors
+        // Don't retry for 4xx client errors or authentication issues
         setOnboardingStatus({ completed: false });
       }
     } finally {

@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     
     # CORS settings
     CORS_ORIGINS: Optional[str] = Field(
-        default="http://localhost:3000,http://localhost:5173,*",
+        default="http://localhost:3000,http://localhost:5173,https://pathfinder-frontend.yellowdune-9b8d769a.eastus.azurecontainerapps.io,*",
         env="CORS_ORIGINS",
         description="Comma-separated list of CORS origins"
     )
@@ -47,6 +47,7 @@ class Settings(BaseSettings):
     # Cache settings (Redis-free alternatives for cost optimization)
     USE_REDIS_CACHE: bool = Field(default=False, env="USE_REDIS_CACHE")  # Disabled by default
     REDIS_URL: str = Field(default="", env="REDIS_URL")  # Optional Redis URL
+    REDIS_TTL: int = Field(default=3600, env="REDIS_TTL")  # Redis TTL (same as CACHE_TTL for compatibility)
     CACHE_TTL: int = Field(default=3600, env="CACHE_TTL")  # 1 hour default TTL
     CACHE_MAX_SIZE: int = Field(default=2000, env="CACHE_MAX_SIZE")  # Memory cache size
     CACHE_TYPE: str = Field(default="memory", env="CACHE_TYPE")  # "memory" or "sqlite"

@@ -93,7 +93,7 @@ class InMemoryCache:
     async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
         """Set a value in cache with optional TTL."""
         if ttl is None:
-            ttl = settings.REDIS_TTL  # Default TTL
+            ttl = getattr(settings, 'REDIS_TTL', None) or settings.CACHE_TTL  # Use CACHE_TTL as fallback
         
         with self._lock:
             self._cache[key] = CacheItem(value, ttl)
@@ -141,7 +141,7 @@ class InMemoryCache:
     async def set_many(self, mapping: Dict[str, Any], ttl: Optional[int] = None) -> bool:
         """Set multiple values in cache."""
         if ttl is None:
-            ttl = settings.REDIS_TTL  # Default TTL
+            ttl = getattr(settings, 'REDIS_TTL', None) or settings.CACHE_TTL  # Use CACHE_TTL as fallback
         
         with self._lock:
             for key, value in mapping.items():
@@ -235,7 +235,7 @@ class RedisCache:
                 nx: bool = False) -> bool:
         """Set a value in cache."""
         if ttl is None:
-            ttl = settings.REDIS_TTL
+            ttl = getattr(settings, 'REDIS_TTL', None) or settings.CACHE_TTL
         
         # Always set in memory cache first
         await self.in_memory.set(key, value, ttl)
@@ -399,7 +399,7 @@ class RedisCache:
     async def set_many(self, mapping: Dict[str, Any], ttl: Optional[int] = None) -> bool:
         """Set multiple values in cache."""
         if ttl is None:
-            ttl = settings.REDIS_TTL
+            ttl = getattr(settings, 'REDIS_TTL', None) or settings.CACHE_TTL
             
         # Set all in memory cache
         await self.in_memory.set_many(mapping, ttl)
@@ -447,7 +447,7 @@ def cached(ttl: Optional[int] = None, key_prefix: str = ""):
     Decorator to cache function results.
     
     Args:
-        ttl: Time-to-live in seconds. Defaults to settings.REDIS_TTL.
+        ttl: Time-to-live in seconds. Defaults to settings.CACHE_TTL.
         key_prefix: Prefix for the cache key. Defaults to "".
         
     Example:
