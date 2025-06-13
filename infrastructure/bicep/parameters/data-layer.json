@@ -5,11 +5,14 @@
         "appName": {
             "value": "pathfinder"
         },
+        "environment": {
+            "value": "prod"
+        },
         "sqlAdminLogin": {
             "value": "pathfinderadmin"
         },
-        "openAIApiKey": {
-            "value": ""
+        "enablePrivateEndpoints": {
+            "value": false
         }
     }
 }

@@ -31,51 +31,72 @@ The infrastructure is designed with a **single resource group (`pathfinder-rg`) 
 ```
 infrastructure/
 ├── bicep/
-│   ├── pathfinder-single-rg.bicep     # Main single resource group template (RECOMMENDED)
-│   ├── redis-free.bicep               # Legacy template
-│   ├── main.bicep                     # Legacy enterprise template
-│   ├── container-apps.bicep           # Container Apps module
-│   ├── cosmos-db.bicep               # Cosmos DB module
-│   ├── storage.bicep                 # Storage module
-│   └── ...
-├── scripts/                          # Deployment scripts
-└── README.md                         # This file
+│   ├── pathfinder-single-rg.bicep     # 🎯 Main production template
+│   ├── persistent-data.bicep          # 🔄 Data layer (pause/resume)
+│   ├── compute-layer.bicep            # 🔄 Compute layer (pause/resume)
+│   └── parameters/                    # Parameter files for different environments
+├── scripts/                           # Deployment and management scripts
+└── README.md                          # This file
 ```
+
+### Template Descriptions
+
+| Template | Purpose | Cost | Use Case |
+|----------|---------|------|----------|
+| **pathfinder-single-rg.bicep** | Complete single-RG deployment | $50-75/month | Standard production, CI/CD |
+| **persistent-data.bicep** | Data layer only (databases) | $15-25/month | Pause/resume data layer |
+| **compute-layer.bicep** | Compute apps connecting to data | $35-50/month | Pause/resume compute layer |
+
+### Architecture Strategies
+
+1. **Single Resource Group** (`pathfinder-single-rg.bicep`)
+   - All resources in one RG for simplicity
+   - Used by CI/CD pipeline
+   - $50-75/month total cost
+
+2. **Pause/Resume Architecture** (`persistent-data.bicep` + `compute-layer.bicep`)
+   - Separate data and compute layers
+   - Delete compute layer when idle (70% savings)
+   - $15-25/month when paused, $50-75/month when active
 
 ## 🚀 Deployment
 
 ### Automated Deployment (Recommended)
 
-Infrastructure is automatically deployed via the CI/CD pipeline in `.github/workflows/ci-cd-pipeline.yml`:
+Infrastructure is automatically deployed via the CI/CD pipeline in `.github/workflows/infrastructure-deploy.yml`:
 
-1. **Triggers**: On push to `main` branch
+1. **Triggers**: On push to `main` branch or manual workflow dispatch
 2. **Template**: Uses `pathfinder-single-rg.bicep`
 3. **Parameters**: Injected from GitHub secrets
 4. **Idempotent**: Safe to run multiple times
 
-### Manual Deployment
+### Manual Deployment Options
 
-If you need to deploy manually:
-
+#### Option 1: Standard Single Resource Group
 ```bash
 # Login to Azure
 az login
 
-# Create resource group
-az group create \
-  --name pathfinder-rg \
-  --location "East US"
-
-# Deploy infrastructure
-az deployment group create \
-  --resource-group pathfinder-rg \
-  --template-file bicep/pathfinder-single-rg.bicep \
-  --parameters \
-    appName=pathfinder \
-    sqlAdminLogin="your-admin-login" \
-    sqlAdminPassword="your-secure-password" \
-    openAIApiKey="your-openai-key"
+# Deploy complete infrastructure
+./scripts/deploy-single-rg.sh
 ```
+
+#### Option 2: Pause/Resume Architecture
+```bash
+# Deploy data layer (one-time)
+./scripts/deploy-data-layer.sh
+
+# Deploy/resume compute layer
+./scripts/resume-environment.sh
+
+# Pause (delete compute layer)
+./scripts/pause-environment.sh
+```
+
+### GitHub Actions Workflows
+
+- **Infrastructure Deploy**: `.github/workflows/infrastructure-deploy.yml`
+- **Pause/Resume Management**: `.github/workflows/pause-resume.yml`
 
 ## 🔧 Required Secrets
 
@@ -107,47 +128,83 @@ Example:
 
 ## 🆚 Template Comparison
 
-| Feature | redis-free.bicep | main.bicep |
-|---------|------------------|------------|
-| Redis Cache | ❌ | ✅ |
-| Cost/Month | ~$35 | ~$160 |
-| Complexity | Low | High |
-| Environments | Single | Multi |
-| Best For | Solo Developer | Enterprise |
-| Container Resources | 0.25 CPU / 0.5Gi | Standard allocation |
+| Feature | Single RG | Pause/Resume |
+|---------|-----------|--------------|
+| **Templates** | 1 file | 2 files |
+| **Resource Groups** | 1 (pathfinder-rg) | 2 (pathfinder-rg + pathfinder-db-rg) |
+| **Cost (Active)** | $50-75/month | $50-75/month |
+| **Cost (Paused)** | Not applicable | $15-25/month |
+| **Complexity** | Low | Medium |
+| **Best For** | Always-on production | Cost-optimized development |
+| **Data Safety** | High | Very High (isolated data layer) |
+
+## 🛠️ Template Selection Guide
+
+### Use Single Resource Group (`pathfinder-single-rg.bicep`) when:
+- ✅ Always-on production environment
+- ✅ Consistent traffic patterns
+- ✅ Simplicity is preferred
+- ✅ CI/CD automation is primary deployment method
+
+### Use Pause/Resume Architecture when:
+- ✅ Development or staging environments
+- ✅ Irregular usage patterns
+- ✅ Cost optimization is critical
+- ✅ Need to pause during weekends/nights
 
 ## 🛠️ Customization
 
 ### Adding New Resources
 
-1. Add resource to `redis-free.bicep`
-2. Update parameters if needed
+1. Choose the appropriate template:
+   - `pathfinder-single-rg.bicep` for always-on resources
+   - `persistent-data.bicep` for data resources
+   - `compute-layer.bicep` for application resources
+
+2. Add the resource definition with proper tags
 3. Add outputs for important properties
 4. Test deployment in development
+5. Update documentation
 
 ### Modifying Existing Resources
 
-1. Update the resource definition
-2. Consider backward compatibility
-3. Test changes thoroughly
-4. Document breaking changes
+1. Identify which template contains the resource
+2. Update the resource definition
+3. Consider backward compatibility
+4. Test changes thoroughly
+5. Document breaking changes
 
 ## ⚠️ Important Notes
 
-1. **Redis-Free Design**: The application is designed to work without Redis
-2. **Cost Monitoring**: Monitor Azure costs regularly
-3. **Scaling**: Resources are sized for solo developer workloads
-4. **Security**: Secrets are managed via Key Vault and GitHub Secrets
+1. **Template Focus**: Only 3 production-ready templates remain
+2. **CI/CD Integration**: Main pipeline uses `pathfinder-single-rg.bicep`
+3. **Cost Monitoring**: Monitor both RGs if using pause/resume
+4. **Data Safety**: Never delete `pathfinder-db-rg` in pause/resume architecture
+5. **Scaling**: Resources are sized for solo developer/small team workloads
 
-## 🔄 Migration from Enterprise Template
+## ⚠️ Important Notes
 
-If migrating from the enterprise `main.bicep` template:
+1. **Template Focus**: Only 3 production-ready templates remain
+2. **CI/CD Integration**: Main pipeline uses `pathfinder-single-rg.bicep`
+3. **Cost Monitoring**: Monitor both RGs if using pause/resume
+4. **Data Safety**: Never delete `pathfinder-db-rg` in pause/resume architecture
+5. **Scaling**: Resources are sized for solo developer/small team workloads
 
-1. **Backup**: Export current configuration
-2. **Plan**: Review resource dependencies
-3. **Deploy**: Use `redis-free.bicep` template
-4. **Verify**: Test application functionality
-5. **Cleanup**: Remove unused resources (especially Redis)
+## 🔄 Pause/Resume Quick Reference
+
+```bash
+# Deploy data layer (one-time setup)
+./scripts/deploy-data-layer.sh
+
+# Resume environment
+./scripts/resume-environment.sh
+
+# Pause environment (save $35-50/month)
+./scripts/pause-environment.sh
+
+# Check status
+az group list --query "[?starts_with(name, 'pathfinder')]"
+```
 
 ## 📈 Performance Considerations
 

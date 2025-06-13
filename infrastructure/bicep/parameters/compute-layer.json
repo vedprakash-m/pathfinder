@@ -5,6 +5,15 @@
         "appName": {
             "value": "pathfinder"
         },
+        "dataResourceGroup": {
+            "value": "pathfinder-db-rg"
+        },
+        "sqlServerName": {
+            "value": "pathfinder-sql-prod"
+        },
+        "cosmosAccountName": {
+            "value": "pathfinder-cosmos-prod"
+        },
         "sqlAdminLogin": {
             "value": "pathfinderadmin"
         },

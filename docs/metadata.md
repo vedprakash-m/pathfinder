@@ -87,7 +87,22 @@ graph TB
 - **Better Resource Tracking:** Unified cost monitoring
 - **Faster Deployments:** Unified resource lifecycle
 
-### 4.2 Bicep-Exclusive Infrastructure
+### 4.2 Pause/Resume Architecture
+
+**NEW:** Enhanced cost optimization strategy with **70% savings** during idle periods.
+
+**Architecture:**
+- **Data Layer (`pathfinder-db-rg`):** Persistent databases, never deleted ($15-25/month)
+- **Compute Layer (`pathfinder-rg`):** Ephemeral apps, safe to delete ($35-50/month)
+- **Pause Strategy:** Delete compute layer while preserving all data
+- **Resume Strategy:** Recreate compute layer, reconnect to data (5-10 minutes)
+
+**Cost Benefits:**
+- **Active State:** $50-75/month (full functionality)
+- **Paused State:** $15-25/month (70% savings, data preserved)
+- **Use Cases:** Development breaks, demos, extended idle periods
+
+### 4.3 Bicep-Exclusive Infrastructure
 
 **Decision:** Use Bicep exclusively for Azure-native IaC (Terraform removed).
 
@@ -97,7 +112,7 @@ graph TB
 - **Type safety** with IntelliSense support
 - **Simplified state management** (no remote state required)
 
-### 4.3 Cost Optimizations Implemented
+### 4.4 Cost Optimizations Implemented
 
 | Optimization | Monthly Savings | Details |
 |-------------|-----------------|---------|
@@ -107,7 +122,23 @@ graph TB
 | Serverless Cosmos DB | $10-15 | Pay-per-use pricing model |
 | Basic SQL Tier | $5-10 | Cost-optimized database tier |
 | Local Storage Redundancy | $5-8 | LRS instead of geo-redundant |
-| **Total Monthly Savings** | **$95-128** | **Estimated monthly cost: $45-65** |
+| **Pause/Resume Strategy** | **$35-50** | **Delete compute layer when idle (NEW)** |
+| **Total Monthly Savings** | **$130-178** | **Active: $50-75, Paused: $15-25** |
+
+### 4.5 Infrastructure Template Consolidation
+
+**Decision:** Reduced from 13 to 3 Bicep templates for clarity and maintainability.
+
+**Cleanup Results:**
+- **77% reduction** in template files (13 → 3)
+- **Eliminated confusion** and deployment errors
+- **Focused approach** on production-ready templates only
+- **Maintained functionality** while reducing complexity
+
+**Final Templates:**
+- `pathfinder-single-rg.bicep` - Main production template
+- `persistent-data.bicep` - Data layer for pause/resume
+- `compute-layer.bicep` - Compute layer for pause/resume
 
 ---
 

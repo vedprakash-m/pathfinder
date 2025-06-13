@@ -224,23 +224,35 @@ npm run lint && npm run type-check
 
 ## 💰 Cost Optimization
 
-This deployment implements **aggressive container resource optimization** for maximum cost efficiency:
+This deployment implements **aggressive container resource optimization** and **pause/resume architecture** for maximum cost efficiency:
+
+### 🔄 Pause/Resume Strategy (NEW)
+- **Active**: $50-75/month (full functionality)
+- **Paused**: $15-25/month (70% savings, data preserved)
+- **Resume Time**: 5-10 minutes to full functionality
+- **Use Cases**: Development breaks, demos, extended idle periods
+
+```bash
+# Pause environment (delete compute layer)
+./scripts/pause-environment.sh
+
+# Resume environment (restore compute layer)  
+./scripts/resume-environment.sh
+
+# Or use GitHub Actions workflow for management
+```
 
 ### Resource Configuration
 - **CPU**: 0.25 cores per container (75% reduction from default)
 - **Memory**: 0.5 GiB per container (75% reduction from default)
-- **Estimated Monthly Cost**: ~$35 (down from ~$140)
-
-### Performance Considerations
-- **Trade-off**: Reduced resource allocation for ultra-low cost
-- **Suitable for**: Demo, development, and low-moderate traffic production use
-- **Scaling**: Horizontal scaling compensates for individual container limits
-- **Monitoring**: Application Insights tracks performance metrics
+- **Data Layer**: Persistent databases ($15-25/month, never deleted)
+- **Compute Layer**: Ephemeral apps ($35-50/month, pausable)
 
 ### Architecture Benefits
+- **Pause/Resume**: Delete compute layer when idle for 70% cost savings
+- **Data Preservation**: All user data preserved during pause periods
 - **Redis-free**: Eliminates external cache dependency and costs
 - **In-memory caching**: Application-level caching for essential operations
-- **Lightweight containers**: Optimized for minimal resource consumption
 - **Auto-scaling**: Container Apps can scale based on demand
 
 ## 🚀 Deployment

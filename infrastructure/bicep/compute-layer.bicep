@@ -1,11 +1,21 @@
+// Compute Layer - pathfinder-rg
+// This contains only compute resources that can be safely deleted for cost savings
+// Connects to existing data layer in pathfinder-db-rg
+
 @description('Name of the application')
 param appName string = 'pathfinder'
 
-@description('Environment (dev, test, prod)')
-param environment string = 'dev'
-
 @description('Location for resources')
 param location string = resourceGroup().location
+
+@description('Data layer resource group name')
+param dataResourceGroup string = 'pathfinder-db-rg'
+
+@description('SQL Server name from data layer')
+param sqlServerName string
+
+@description('Cosmos account name from data layer')
+param cosmosAccountName string
 
 @description('SQL Server admin username')
 @secure()
@@ -19,65 +29,87 @@ param sqlAdminPassword string
 @secure()
 param openAIApiKey string = ''
 
-// Tags for all resources
-var tags = {
+@description('LLM Orchestration Service URL')
+param llmOrchestrationUrl string = ''
+
+@description('LLM Orchestration API Key')
+@secure()
+param llmOrchestrationApiKey string = ''
+
+// Compute layer tags - ephemeral resources
+var computeTags = {
   app: appName
-  environment: environment
-  architecture: 'ultra-cost-optimized'
-  deploymentType: 'solo-developer'
-  costTarget: 'under-75-per-month'
+  architecture: 'compute-layer'
+  resourceType: 'ephemeral'
+  dataLayer: dataResourceGroup
+  costOptimization: 'enabled'
+  autoDelete: 'allowed'
+  resumable: 'true'
 }
 
-// Resource naming (simplified for single environment)
-var resourceNames = {
+// Compute resource naming
+var computeResourceNames = {
   containerAppsEnv: '${appName}-env'
   backendApp: '${appName}-backend'
   frontendApp: '${appName}-frontend'
-  cosmosAccount: '${appName}-cosmos'
-  sqlServer: '${appName}-sql'
-  sqlDatabase: '${appName}-db'
   logAnalytics: '${appName}-logs'
   appInsights: '${appName}-insights'
   storageAccount: replace('${appName}storage', '-', '')
+  keyVault: '${appName}-kv' // Compute-specific Key Vault
 }
 
-// Log Analytics workspace for monitoring (cost optimized)
+// ==================== MONITORING INFRASTRUCTURE ====================
 resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2022-10-01' = {
-  name: resourceNames.logAnalytics
+  name: computeResourceNames.logAnalytics
   location: location
-  tags: tags
+  tags: computeTags
   properties: {
     sku: {
       name: 'PerGB2018'
     }
-    retentionInDays: 7  // Reduced from 30 days
+    retentionInDays: 30
     workspaceCapping: {
-      dailyQuotaGb: 1    // Cap at 1GB daily to control costs
+      dailyQuotaGb: 2 // Reasonable cap for cost control
     }
   }
 }
 
-// Application Insights for telemetry (cost optimized)
 resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
-  name: resourceNames.appInsights
+  name: computeResourceNames.appInsights
   location: location
-  tags: tags
+  tags: computeTags
   kind: 'web'
   properties: {
     Application_Type: 'web'
     WorkspaceResourceId: logAnalytics.id
     publicNetworkAccessForIngestion: 'Enabled'
     publicNetworkAccessForQuery: 'Enabled'
-    samplingPercentage: 50  // Sample only 50% of telemetry
-    disableIpMasking: true   // Reduce processing overhead
+    samplingPercentage: 75 // Cost optimization
   }
 }
 
-// Container Apps Environment
-resource containerAppsEnv 'Microsoft.App/managedEnvironments@2023-05-01' = {
-  name: resourceNames.containerAppsEnv
+// ==================== STORAGE ====================
+resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
+  name: computeResourceNames.storageAccount
   location: location
-  tags: tags
+  tags: computeTags
+  sku: {
+    name: 'Standard_LRS' // Local redundancy for cost savings
+  }
+  kind: 'StorageV2'
+  properties: {
+    accessTier: 'Hot'
+    supportsHttpsTrafficOnly: true
+    minimumTlsVersion: 'TLS1_2'
+    allowBlobPublicAccess: false
+  }
+}
+
+// ==================== CONTAINER APPS ENVIRONMENT ====================
+resource containerAppsEnv 'Microsoft.App/managedEnvironments@2023-05-01' = {
+  name: computeResourceNames.containerAppsEnv
+  location: location
+  tags: computeTags
   properties: {
     appLogsConfiguration: {
       destination: 'log-analytics'
@@ -86,116 +118,48 @@ resource containerAppsEnv 'Microsoft.App/managedEnvironments@2023-05-01' = {
         sharedKey: logAnalytics.listKeys().primarySharedKey
       }
     }
+    daprAIInstrumentationKey: appInsights.properties.InstrumentationKey
   }
 }
 
-// Azure SQL Server (cost-optimized)
-resource sqlServer 'Microsoft.Sql/servers@2023-05-01-preview' = {
-  name: resourceNames.sqlServer
+// ==================== KEY VAULT FOR COMPUTE SECRETS ====================
+resource keyVault 'Microsoft.KeyVault/vaults@2023-02-01' = {
+  name: computeResourceNames.keyVault
   location: location
-  tags: tags
+  tags: computeTags
   properties: {
-    administratorLogin: sqlAdminLogin
-    administratorLoginPassword: sqlAdminPassword
-    version: '12.0'
+    sku: {
+      family: 'A'
+      name: 'standard'
+    }
+    tenantId: subscription().tenantId
+    accessPolicies: []
+    enableRbacAuthorization: true
+    enabledForDeployment: false
+    enabledForDiskEncryption: false
+    enabledForTemplateDeployment: true
     publicNetworkAccess: 'Enabled'
   }
-
-  // Allow Azure services to access
-  resource firewallRule 'firewallRules' = {
-    name: 'AllowAzureServices'
-    properties: {
-      startIpAddress: '0.0.0.0'
-      endIpAddress: '0.0.0.0'
-    }
-  }
 }
 
-// Azure SQL Database (Ultra cost-optimized - DTU 5)
-resource sqlDatabase 'Microsoft.Sql/servers/databases@2023-05-01-preview' = {
-  parent: sqlServer
-  name: resourceNames.sqlDatabase
-  location: location
-  tags: tags
-  sku: {
-    name: 'Basic'
-    tier: 'Basic'
-    capacity: 5  // DTU 5 - lowest possible
-  }
-  properties: {
-    collation: 'SQL_Latin1_General_CP1_CI_AS'
-    maxSizeBytes: 1073741824 // 1GB instead of 2GB
-    zoneRedundant: false
-  }
+// ==================== DATA LAYER REFERENCES ====================
+// Reference existing SQL Server in data layer
+resource existingSqlServer 'Microsoft.Sql/servers@2023-05-01-preview' existing = {
+  name: sqlServerName
+  scope: resourceGroup(dataResourceGroup)
 }
 
-// Cosmos DB (serverless with minimal throughput)
-resource cosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2023-04-15' = {
-  name: resourceNames.cosmosAccount
-  location: location
-  tags: tags
-  kind: 'GlobalDocumentDB'
-  properties: {
-    consistencyPolicy: {
-      defaultConsistencyLevel: 'Session'
-    }
-    locations: [
-      {
-        locationName: location
-        failoverPriority: 0
-      }
-    ]
-    databaseAccountOfferType: 'Standard'
-    enableAutomaticFailover: false
-    capabilities: [
-      {
-        name: 'EnableServerless'
-      }
-    ]
-    backupPolicy: {
-      type: 'Periodic'
-      periodicModeProperties: {
-        backupIntervalInMinutes: 1440  // Daily backups only
-        backupRetentionIntervalInHours: 168  // 7 days retention
-        backupStorageRedundancy: 'Local'  // Local instead of geo-redundant
-      }
-    }
-  }
+// Reference existing Cosmos account in data layer
+resource existingCosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2023-04-15' existing = {
+  name: cosmosAccountName
+  scope: resourceGroup(dataResourceGroup)
 }
 
-// Cosmos Database
-resource cosmosDatabase 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@2023-04-15' = {
-  parent: cosmosAccount
-  name: 'pathfinder'
-  properties: {
-    resource: {
-      id: 'pathfinder'
-    }
-  }
-}
-
-// Storage Account for file uploads (optimized)
-resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
-  name: resourceNames.storageAccount
-  location: location
-  tags: tags
-  sku: {
-    name: 'Standard_LRS'  // Local redundancy only
-  }
-  kind: 'StorageV2'
-  properties: {
-    accessTier: 'Cool'    // Cool tier for lower storage costs
-    supportsHttpsTrafficOnly: true
-    minimumTlsVersion: 'TLS1_2'
-    allowBlobPublicAccess: false
-  }
-}
-
-// Backend Container App (ultra-optimized)
+// ==================== BACKEND CONTAINER APP ====================
 resource backendApp 'Microsoft.App/containerApps@2023-05-01' = {
-  name: resourceNames.backendApp
+  name: computeResourceNames.backendApp
   location: location
-  tags: tags
+  tags: computeTags
   properties: {
     managedEnvironmentId: containerAppsEnv.id
     configuration: {
@@ -212,15 +176,19 @@ resource backendApp 'Microsoft.App/containerApps@2023-05-01' = {
       secrets: [
         {
           name: 'sql-connection-string'
-          value: 'Server=tcp:${sqlServer.name}.database.windows.net,1433;Initial Catalog=${sqlDatabase.name};Persist Security Info=False;User ID=${sqlAdminLogin};Password=${sqlAdminPassword};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;'
+          value: 'Server=tcp:${existingSqlServer.properties.fullyQualifiedDomainName},1433;Initial Catalog=${appName}-db-prod;Persist Security Info=False;User ID=${sqlAdminLogin};Password=${sqlAdminPassword};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;'
         }
         {
           name: 'cosmos-connection-string'
-          value: cosmosAccount.listConnectionStrings().connectionStrings[0].connectionString
+          value: existingCosmosAccount.listConnectionStrings().connectionStrings[0].connectionString
         }
         {
           name: 'openai-api-key'
           value: openAIApiKey
+        }
+        {
+          name: 'llm-orchestration-api-key'
+          value: llmOrchestrationApiKey
         }
         {
           name: 'storage-connection-string'
@@ -232,10 +200,10 @@ resource backendApp 'Microsoft.App/containerApps@2023-05-01' = {
       containers: [
         {
           name: 'backend'
-          image: 'nginx:alpine'  // Placeholder - will be updated by CI/CD
+          image: 'nginx:alpine' // Placeholder - CI/CD will update
           resources: {
-            cpu: json('0.25')    // Aggressive but viable CPU allocation (75% reduction from 1.0)
-            memory: '0.5Gi'      // Aggressive but viable memory allocation (75% reduction from 2Gi)
+            cpu: json('0.5')
+            memory: '1.0Gi'
           }
           env: [
             {
@@ -249,6 +217,14 @@ resource backendApp 'Microsoft.App/containerApps@2023-05-01' = {
             {
               name: 'OPENAI_API_KEY'
               secretRef: 'openai-api-key'
+            }
+            {
+              name: 'LLM_ORCHESTRATION_URL'
+              value: llmOrchestrationUrl
+            }
+            {
+              name: 'LLM_ORCHESTRATION_API_KEY'
+              secretRef: 'llm-orchestration-api-key'
             }
             {
               name: 'AZURE_STORAGE_CONNECTION_STRING'
@@ -268,11 +244,15 @@ resource backendApp 'Microsoft.App/containerApps@2023-05-01' = {
             }
             {
               name: 'ENVIRONMENT'
-              value: environment
+              value: 'production'
             }
             {
-              name: 'LOG_LEVEL'
-              value: 'WARNING'  // Reduced logging to save costs
+              name: 'AUTH0_DOMAIN'
+              value: 'dev-jwnud3v8ghqnyygr.us.auth0.com'
+            }
+            {
+              name: 'AUTH0_AUDIENCE'
+              value: 'https://pathfinder-api.com'
             }
             {
               name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
@@ -282,14 +262,14 @@ resource backendApp 'Microsoft.App/containerApps@2023-05-01' = {
         }
       ]
       scale: {
-        minReplicas: 0        // Scale to zero when not in use
-        maxReplicas: 1        // Maximum 1 replica
+        minReplicas: 0 // Scale to zero for cost savings
+        maxReplicas: 3
         rules: [
           {
             name: 'http-scale'
             http: {
               metadata: {
-                concurrentRequests: '50'  // Higher threshold before scaling
+                concurrentRequests: '30'
               }
             }
           }
@@ -299,11 +279,11 @@ resource backendApp 'Microsoft.App/containerApps@2023-05-01' = {
   }
 }
 
-// Frontend Container App (ultra-optimized)
+// ==================== FRONTEND CONTAINER APP ====================
 resource frontendApp 'Microsoft.App/containerApps@2023-05-01' = {
-  name: resourceNames.frontendApp
+  name: computeResourceNames.frontendApp
   location: location
-  tags: tags
+  tags: computeTags
   properties: {
     managedEnvironmentId: containerAppsEnv.id
     configuration: {
@@ -331,10 +311,10 @@ resource frontendApp 'Microsoft.App/containerApps@2023-05-01' = {
       containers: [
         {
           name: 'frontend'
-          image: 'nginx:alpine'  // Placeholder - will be updated by CI/CD
+          image: 'nginx:alpine' // Placeholder - CI/CD will update
           resources: {
-            cpu: json('0.25')    // Aggressive but viable CPU allocation (75% reduction)
-            memory: '0.5Gi'      // Aggressive but viable memory allocation (75% reduction)
+            cpu: json('0.25')
+            memory: '0.5Gi'
           }
           env: [
             {
@@ -359,20 +339,20 @@ resource frontendApp 'Microsoft.App/containerApps@2023-05-01' = {
             }
             {
               name: 'ENVIRONMENT'
-              value: environment
+              value: 'production'
             }
           ]
         }
       ]
       scale: {
-        minReplicas: 0        // Scale to zero when not in use
-        maxReplicas: 1        // Maximum 1 replica
+        minReplicas: 0 // Scale to zero for cost savings
+        maxReplicas: 2
         rules: [
           {
             name: 'http-scale'
             http: {
               metadata: {
-                concurrentRequests: '100'  // High threshold for static content
+                concurrentRequests: '50'
               }
             }
           }
@@ -382,24 +362,32 @@ resource frontendApp 'Microsoft.App/containerApps@2023-05-01' = {
   }
 }
 
-// Outputs
+// ==================== OUTPUTS ====================
 output backendAppUrl string = 'https://${backendApp.properties.configuration.ingress.fqdn}'
 output frontendAppUrl string = 'https://${frontendApp.properties.configuration.ingress.fqdn}'
 output backendAppName string = backendApp.name
 output frontendAppName string = frontendApp.name
-output sqlServerFqdn string = sqlServer.properties.fullyQualifiedDomainName
-output cosmosAccountName string = cosmosAccount.name
 output resourceGroupName string = resourceGroup().name
+output containerAppsEnvironment string = containerAppsEnv.name
+output logAnalyticsWorkspaceId string = logAnalytics.id
 output appInsightsInstrumentationKey string = appInsights.properties.InstrumentationKey
+output keyVaultName string = keyVault.name
 
-// Ultra cost optimization summary
-output ultraCostOptimizations object = {
+// Resume strategy information
+output resumeStrategy object = {
+  architecture: 'Compute layer connecting to persistent data layer'
+  dataLayer: dataResourceGroup
+  scaleToZero: 'Both apps scale to zero when idle'
+  resumeTime: '5-10 minutes from pause state'
+  costSavings: 'Up to 70% savings when paused'
+  connectionMethod: 'Cross-resource group references to data layer'
+}
+
+output costOptimization object = {
+  ephemeralResources: 'All resources in this RG can be safely deleted'
+  dataPreservation: 'All data preserved in ${dataResourceGroup}'
   scaleToZero: 'Both frontend and backend scale to zero when idle'
-  aggressiveResources: 'CPU: 0.25 cores, Memory: 0.5Gi per container (75% reduction from current 1.0/2Gi)'
-  reducedSqlSize: '1GB database instead of 2GB'
-  coolStorage: 'Cool tier storage for 20% savings'
-  reducedLogging: '7-day retention, 1GB daily cap, 50% sampling'
-  localBackups: 'Local redundancy instead of geo-redundant'
-  estimatedMonthlyCost: '$45-65 (down from $85)'
-  potentialSavings: '$20-40 per month (24-47% total reduction)'
+  estimatedMonthlyCost: '$35-50 (compute layer only)'
+  pausedCost: '$0 (when this RG is deleted)'
+  resumeMethod: 'Redeploy this template with same parameters'
 }
