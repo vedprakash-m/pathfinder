@@ -1,13 +1,14 @@
 # Pathfinder Infrastructure
 
-This directory contains the Infrastructure as Code (IaC) templates for the Pathfinder application, optimized for solo developer deployment with significant cost savings.
+This directory contains the Infrastructure as Code (IaC) templates for the Pathfinder application, optimized for solo developer deployment with **single resource group strategy** and significant cost savings.
 
 ## 🏗️ Architecture Overview
 
-The infrastructure is designed with a **Redis-free, single-environment approach** that saves approximately **$110/month** compared to enterprise setups.
+The infrastructure is designed with a **single resource group (`pathfinder-rg`) approach** that saves approximately **$60-80/month** compared to multi-environment setups, while using **Bicep exclusively** for Azure-native infrastructure management.
 
 ### Key Components
 
+- **Single Resource Group**: All resources in `pathfinder-rg` for simplified management
 - **Container Apps**: Serverless containers for backend and frontend
 - **Azure SQL Database**: Basic tier for cost optimization
 - **Cosmos DB**: Serverless mode for pay-per-use pricing
@@ -17,26 +18,28 @@ The infrastructure is designed with a **Redis-free, single-environment approach*
 
 ### Cost Optimizations
 
-- ❌ **No Redis Cache**: Saves ~$40/month
+- 🎯 **Single Resource Group**: Simplified management and better cost tracking
+- ❌ **No Redis Cache**: Saves ~$40/month with in-memory caching
 - 📊 **Basic SQL Tier**: Cost-optimized database
 - 🌍 **Serverless Cosmos DB**: Pay-per-use pricing
-- 🔧 **Single Environment**: Solo developer approach
-- 📦 **Minimal Container Resources**: Right-sized for the workload
+- 🔧 **Bicep-Only Infrastructure**: Faster deployments and better Azure integration
+- 📦 **Right-Sized Container Resources**: Optimized CPU and memory allocation
+- 🔄 **Scale-to-Zero**: Both apps scale to zero when idle
 
 ## 📁 Directory Structure
 
 ```
 infrastructure/
 ├── bicep/
-│   ├── redis-free.bicep           # Main Redis-free template
-│   ├── redis-free.parameters.json # Parameter file
-│   ├── main.bicep                 # Original enterprise template
-│   ├── container-apps.bicep       # Container Apps module
-│   ├── cosmos-db.bicep           # Cosmos DB module
-│   ├── storage.bicep             # Storage module
+│   ├── pathfinder-single-rg.bicep     # Main single resource group template (RECOMMENDED)
+│   ├── redis-free.bicep               # Legacy template
+│   ├── main.bicep                     # Legacy enterprise template
+│   ├── container-apps.bicep           # Container Apps module
+│   ├── cosmos-db.bicep               # Cosmos DB module
+│   ├── storage.bicep                 # Storage module
 │   └── ...
-├── scripts/                      # Deployment scripts
-└── README.md                     # This file
+├── scripts/                          # Deployment scripts
+└── README.md                         # This file
 ```
 
 ## 🚀 Deployment
@@ -46,7 +49,7 @@ infrastructure/
 Infrastructure is automatically deployed via the CI/CD pipeline in `.github/workflows/ci-cd-pipeline.yml`:
 
 1. **Triggers**: On push to `main` branch
-2. **Template**: Uses `redis-free.bicep`
+2. **Template**: Uses `pathfinder-single-rg.bicep`
 3. **Parameters**: Injected from GitHub secrets
 4. **Idempotent**: Safe to run multiple times
 
@@ -60,16 +63,15 @@ az login
 
 # Create resource group
 az group create \
-  --name pathfinder-rg-dev \
+  --name pathfinder-rg \
   --location "East US"
 
 # Deploy infrastructure
 az deployment group create \
-  --resource-group pathfinder-rg-dev \
-  --template-file bicep/redis-free.bicep \
+  --resource-group pathfinder-rg \
+  --template-file bicep/pathfinder-single-rg.bicep \
   --parameters \
     appName=pathfinder \
-    environment=production \
     sqlAdminLogin="your-admin-login" \
     sqlAdminPassword="your-secure-password" \
     openAIApiKey="your-openai-key"

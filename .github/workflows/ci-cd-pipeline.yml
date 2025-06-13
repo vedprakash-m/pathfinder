@@ -16,7 +16,7 @@ on:
         type: boolean
 
 env:
-  AZURE_RESOURCE_GROUP: pathfinder-rg-dev
+  AZURE_RESOURCE_GROUP: pathfinder-rg
   APP_NAME: pathfinder
   ENVIRONMENT: production
   REGISTRY_NAME: pathfinderdevregistry.azurecr.io
@@ -176,8 +176,8 @@ jobs:
             echo "Infrastructure changes detected, updating..."
             az deployment group create \
               --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-              --template-file infrastructure/bicep/redis-free.bicep \
-              --parameters appName=pathfinder environment=production location="East US" \
+              --template-file infrastructure/bicep/pathfinder-single-rg.bicep \
+              --parameters appName=pathfinder location="East US" \
                 sqlAdminLogin="${{ secrets.SQL_ADMIN_LOGIN }}" \
                 sqlAdminPassword="${{ secrets.SQL_ADMIN_PASSWORD }}" \
                 openAIApiKey="${{ secrets.OPENAI_API_KEY }}" \

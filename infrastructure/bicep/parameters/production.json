@@ -1,0 +1,40 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "appName": {
+            "value": "pathfinder"
+        },
+        "environment": {
+            "value": "production"
+        },
+        "enableRedis": {
+            "value": false
+        },
+        "enableCosmosDb": {
+            "value": true
+        },
+        "enableApplicationInsights": {
+            "value": true
+        },
+        "enableKeyVault": {
+            "value": true
+        },
+        "resourceLevel": {
+            "value": "standard"
+        },
+        "databaseTier": {
+            "value": "Basic"
+        },
+        "databaseCapacity": {
+            "value": 5
+        },
+        "autoScaling": {
+            "value": {
+                "minReplicas": 1,
+                "maxReplicas": 5,
+                "concurrentRequests": 30
+            }
+        }
+    }
+}

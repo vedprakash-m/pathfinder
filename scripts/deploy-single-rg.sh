@@ -1,15 +1,16 @@
 #!/bin/bash
-# Deploy cost-optimized Pathfinder infrastructure
+# Deploy Pathfinder to Single Resource Group
+# Optimized for cost-effective solo developer deployment
 
 set -e
 
-echo "🚀 Deploying Ultra Cost-Optimized Pathfinder Infrastructure"
-echo "============================================================"
+echo "🚀 Deploying Pathfinder with Single Resource Group Strategy"
+echo "=========================================================="
 
 # Configuration
-RESOURCE_GROUP="pathfinder-prod"
+RESOURCE_GROUP="pathfinder-rg"
 LOCATION="eastus"
-TEMPLATE_FILE="infrastructure/bicep/ultra-cost-optimized.bicep"
+TEMPLATE_FILE="infrastructure/bicep/pathfinder-single-rg.bicep"
 
 # Color codes for output
 RED='\033[0;31m'
@@ -55,7 +56,8 @@ echo ""
 log_info "Gathering deployment parameters..."
 
 if [ -z "$SQL_ADMIN_USERNAME" ]; then
-    read -p "Enter SQL Server admin username: " SQL_ADMIN_USERNAME
+    read -p "Enter SQL Server admin username (default: pathfinderadmin): " SQL_ADMIN_USERNAME
+    SQL_ADMIN_USERNAME=${SQL_ADMIN_USERNAME:-pathfinderadmin}
 fi
 
 if [ -z "$SQL_ADMIN_PASSWORD" ]; then
@@ -84,26 +86,22 @@ else
     exit 1
 fi
 
-# Show cost estimate
+# Show deployment details
 echo ""
-log_warning "COST OPTIMIZATION SUMMARY"
-echo "=========================="
-echo "Expected monthly cost reduction:"
-echo "• Container Apps: $25-30 → $8-12 (60-70% reduction)"
-echo "• SQL Database: $15-20 → $12-15 (20% reduction)"
-echo "• Cosmos DB: $15-25 → $10-18 (30% reduction)"
-echo "• Monitoring: $5-10 → $2-5 (50% reduction)"
+log_info "Deployment Details:"
+echo "• Resource Group: $RESOURCE_GROUP"
+echo "• Location: $LOCATION"
+echo "• Template: $TEMPLATE_FILE"
+echo "• SQL Admin: $SQL_ADMIN_USERNAME"
+echo "• Strategy: Single Resource Group for Cost Optimization"
 echo ""
-echo "Total estimated cost: $45-65/month (down from $85)"
-echo "Estimated savings: $20-40/month"
-echo ""
-
-log_warning "PERFORMANCE TRADE-OFFS"
-echo "======================"
-echo "• Cold start time: 8-12 seconds after idle periods"
-echo "• Single replica maximum (no high availability)"
-echo "• Reduced monitoring retention (7 days vs 30 days)"
-echo "• Lower resource allocation may affect peak performance"
+echo "💰 Cost Benefits:"
+echo "• Single resource group for simplified management"
+echo "• No Redis cache (saves ~$40/month)"
+echo "• Serverless Cosmos DB (pay-per-use)"
+echo "• Basic SQL tier (cost-optimized)"
+echo "• Scale-to-zero containers"
+echo "• Bicep-only infrastructure (faster deployments)"
 echo ""
 
 read -p "Continue with deployment? (y/N): " -n 1 -r
@@ -125,10 +123,10 @@ fi
 
 # Deploy infrastructure
 echo ""
-log_info "Deploying ultra cost-optimized infrastructure..."
-log_info "This may take 10-15 minutes..."
+log_info "Deploying cost-optimized infrastructure..."
+log_info "This may take 8-12 minutes..."
 
-DEPLOYMENT_NAME="pathfinder-cost-optimized-$(date +%Y%m%d-%H%M%S)"
+DEPLOYMENT_NAME="pathfinder-single-rg-$(date +%Y%m%d-%H%M%S)"
 
 if az deployment group create \
     --resource-group $RESOURCE_GROUP \
@@ -163,51 +161,25 @@ if az deployment group create \
     echo "=================================="
     echo "Frontend URL: $FRONTEND_URL"
     echo "Backend URL: $BACKEND_URL"
+    echo "Resource Group: $RESOURCE_GROUP"
     echo ""
-    
-    log_info "NEXT STEPS:"
-    echo "1. Update your CI/CD pipeline to use the new infrastructure"
-    echo "2. Monitor costs in Azure Portal over the next few days"
-    echo "3. Set up cost alerts if not already configured"
-    echo "4. Test application performance and adjust scaling if needed"
+    echo "💰 Cost Optimization Benefits Applied:"
+    echo "✅ Single resource group for unified management"
+    echo "✅ Redis-free architecture (saves ~$40/month)"
+    echo "✅ Serverless Cosmos DB (pay-per-use pricing)"
+    echo "✅ Basic SQL tier (cost-optimized)"
+    echo "✅ Scale-to-zero containers (no idle costs)"
+    echo "✅ Bicep-exclusive infrastructure"
     echo ""
-    
-    log_warning "PERFORMANCE MONITORING:"
-    echo "• Monitor cold start times and user experience"
-    echo "• Adjust scaling rules if response times are unacceptable"
-    echo "• Consider upgrading resources if performance degrades significantly"
+    echo "🔗 Next Steps:"
+    echo "1. Update your CI/CD pipeline to use the new resource group"
+    echo "2. Configure container app images through CI/CD or manually"
+    echo "3. Set up monitoring alerts for cost control"
+    echo "4. Review Azure costs in the Azure portal"
     echo ""
+    echo "📊 Estimated Monthly Cost: $45-65 (vs $110+ for multi-environment)"
     
 else
-    log_error "Infrastructure deployment failed"
-    log_info "Check the deployment logs in Azure Portal for details"
+    log_error "Deployment failed!"
     exit 1
 fi
-
-# Set up cost alerts
-echo ""
-log_info "Setting up cost monitoring..."
-
-# Create cost alert for 80% of budget
-az consumption budget create \
-    --budget-name "pathfinder-cost-alert" \
-    --amount 75 \
-    --time-grain Monthly \
-    --time-period start-date=$(date +%Y-%m-01) \
-    --category Cost \
-    --resource-group-filter $RESOURCE_GROUP \
-    --notifications \
-        '[{
-          "enabled": true,
-          "operator": "GreaterThan",
-          "threshold": 80,
-          "contactEmails": ["admin@pathfinder.com"]
-        }]' \
-    --output none 2>/dev/null || log_warning "Cost alert setup failed (may already exist)"
-
-log_success "Cost monitoring configured"
-
-echo ""
-log_success "🎉 Ultra cost-optimized Pathfinder deployment complete!"
-log_info "Expected monthly savings: $20-40 compared to previous setup"
-log_info "Monitor your Azure costs over the next billing cycle to confirm savings"

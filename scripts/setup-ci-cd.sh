@@ -14,7 +14,7 @@ NC='\033[0m' # No Color
 
 # Configuration
 SUBSCRIPTION_ID=""
-RESOURCE_GROUP_PREFIX="rg-pathfinder"
+RESOURCE_GROUP_PREFIX="pathfinder-rg"
 APP_NAME="pathfinder"
 LOCATION="eastus"
 

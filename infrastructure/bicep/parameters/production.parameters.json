@@ -1,0 +1,59 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "appName": {
+      "value": "pathfinder"
+    },
+    "environment": {
+      "value": "production"
+    },
+    "enableRedis": {
+      "value": false
+    },
+    "enableCosmosDb": {
+      "value": true
+    },
+    "enableApplicationInsights": {
+      "value": true
+    },
+    "enableKeyVault": {
+      "value": true
+    },
+    "enableStaticWebApp": {
+      "value": false
+    },
+    "resourceLevel": {
+      "value": "standard"
+    },
+    "databaseTier": {
+      "value": "Standard"
+    },
+    "databaseCapacity": {
+      "value": 10
+    },
+    "autoScaling": {
+      "value": {
+        "minReplicas": 1,
+        "maxReplicas": 5,
+        "concurrentRequests": 30
+      }
+    },
+    "auth0Config": {
+      "value": {
+        "domain": "dev-jwnud3v8ghqnyygr.us.auth0.com",
+        "audience": "https://pathfinder-api.com",
+        "clientId": "KXu3KpGiyRHHHgiXX90sHuNC4rfYRcNn",
+        "clientSecret": ""
+      }
+    },
+    "secrets": {
+      "value": {
+        "googleMapsApiKey": "",
+        "secretKey": "",
+        "llmOrchestrationUrl": "",
+        "llmOrchestrationApiKey": ""
+      }
+    }
+  }
+}
