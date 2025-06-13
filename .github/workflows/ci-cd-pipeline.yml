@@ -169,21 +169,25 @@ jobs:
       
       - name: Fast Infrastructure Check & Update
         run: |
-          echo "🏗️ Quick infrastructure validation..."
+          echo "🏗️ Infrastructure validation..."
+          
+          # Check if resource group exists
+          if ! az group show --name ${{ env.AZURE_RESOURCE_GROUP }} --output none 2>/dev/null; then
+            echo "❌ Resource group ${{ env.AZURE_RESOURCE_GROUP }} does not exist!"
+            echo "🚀 Please run the 'Deploy Infrastructure' workflow first:"
+            echo "   Go to Actions → Deploy Infrastructure → Run workflow"
+            echo ""
+            echo "Or run manually:"
+            echo "   ./scripts/deploy-single-rg.sh"
+            exit 1
+          fi
           
           # Only deploy infrastructure if major changes detected
           if [ -n "$(git diff HEAD~1 --name-only | grep 'infrastructure/')" ]; then
-            echo "Infrastructure changes detected, updating..."
-            az deployment group create \
-              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-              --template-file infrastructure/bicep/pathfinder-single-rg.bicep \
-              --parameters appName=pathfinder location="East US" \
-                sqlAdminLogin="${{ secrets.SQL_ADMIN_LOGIN }}" \
-                sqlAdminPassword="${{ secrets.SQL_ADMIN_PASSWORD }}" \
-                openAIApiKey="${{ secrets.OPENAI_API_KEY }}" \
-              --no-wait &
+            echo "📋 Infrastructure changes detected - consider running infrastructure deployment workflow"
+            echo "Proceeding with application deployment only..."
           else
-            echo "No infrastructure changes, skipping deployment"
+            echo "✅ No infrastructure changes, proceeding with application deployment"
           fi
       
       - name: Update Container Apps (Parallel)

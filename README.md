@@ -99,6 +99,61 @@ open http://localhost:3000  # Frontend
 open http://localhost:8000/docs  # API
 ```
 
+## 🏗️ Production Deployment
+
+### Step 1: Infrastructure Setup
+
+**Option A: GitHub Actions (Recommended)**
+1. Fork this repository
+2. Set up GitHub secrets (see below)
+3. Go to Actions → "Deploy Infrastructure" → "Run workflow"
+4. Wait for infrastructure deployment to complete
+
+**Option B: Manual Deployment**
+```bash
+# Login to Azure
+az login
+
+# Deploy infrastructure
+./scripts/deploy-single-rg.sh
+```
+
+### Step 2: Required GitHub Secrets
+
+Set these secrets in your GitHub repository (Settings → Secrets → Actions):
+
+```bash
+# Azure Credentials (Service Principal)
+AZURE_CREDENTIALS='{
+  "clientId": "your-client-id",
+  "clientSecret": "your-client-secret", 
+  "subscriptionId": "your-subscription-id",
+  "tenantId": "your-tenant-id"
+}'
+
+# Database Configuration
+SQL_ADMIN_USERNAME=pathfinderadmin
+SQL_ADMIN_PASSWORD=your-secure-password
+
+# AI Integration (Optional)
+OPENAI_API_KEY=your-openai-key
+```
+
+### Step 3: Application Deployment
+
+Once infrastructure is deployed, the main CI/CD pipeline will automatically:
+1. Build and test the application
+2. Build Docker images 
+3. Deploy to Azure Container Apps
+4. Run health checks
+
+### Infrastructure Architecture
+
+**Single Resource Group Strategy**: All resources in `pathfinder-rg`
+- **Cost Optimized**: $45-65/month (vs $110+ multi-environment)
+- **Simplified Management**: Unified resource lifecycle
+- **Scale-to-Zero**: Container apps scale down when idle
+
 #### Option 2: Development Mode
 ```bash
 # Backend
