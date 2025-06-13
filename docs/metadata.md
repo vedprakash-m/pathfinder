@@ -169,8 +169,12 @@ graph TB
 ### 7.2 Development Workflow
 
 - **Git Strategy:** Solo-developer optimized, direct work on `main`
-- **CI/CD Pipeline:** Parallel quality checks, Docker builds, smart deployment
-- **Setup:** `make setup` for dependencies, `make dev` for local environment
+- **Infrastructure Deployment:** Dedicated workflow (`.github/workflows/infrastructure-deploy.yml`) for one-time infrastructure setup using Bicep templates
+- **Application CI/CD:** Parallel quality checks, Docker builds, smart deployment (`.github/workflows/ci-cd-pipeline.yml`)
+- **Setup:** 
+  - **Infrastructure:** Run `Deploy Infrastructure` GitHub workflow or `./scripts/deploy-single-rg.sh`
+  - **Development:** `make setup` for dependencies, `make dev` for local environment
+  - **GitHub Secrets:** Use `./scripts/setup-github-secrets-helper.sh` for automated Azure service principal setup
 
 ### 7.3 API & Documentation
 
