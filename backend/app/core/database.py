@@ -57,7 +57,6 @@ settings = get_settings()
 engine = create_async_engine(
     settings.database_url_sqlalchemy,
     **settings.database_config,
-    echo=settings.DEBUG,
 )
 
 SessionLocal = async_sessionmaker(

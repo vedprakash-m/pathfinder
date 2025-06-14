@@ -285,26 +285,21 @@ class UnifiedSettings(BaseSettings):
         """Enhanced database configuration with proper validation."""
         db_url = self.database_url_sqlalchemy
         
-        base_config = {
-            "pool_pre_ping": True,
-            "pool_timeout": self.DATABASE_TIMEOUT,
-            "pool_recycle": 3600,
-        }
-        
         # SQLite doesn't support connection pooling
         if "sqlite" in db_url.lower():
-            base_config.update({
+            return {
                 "connect_args": {"check_same_thread": False},
                 "echo": self.DATABASE_ECHO,
-            })
+            }
         else:
-            base_config.update({
+            return {
+                "pool_pre_ping": True,
+                "pool_timeout": self.DATABASE_TIMEOUT,
+                "pool_recycle": 3600,
                 "pool_size": self.DATABASE_POOL_SIZE,
                 "max_overflow": self.DATABASE_MAX_OVERFLOW,
                 "echo": self.DATABASE_ECHO,
-            })
-        
-        return base_config
+            }
     
     @property
     def cors_origins_list(self) -> List[str]:

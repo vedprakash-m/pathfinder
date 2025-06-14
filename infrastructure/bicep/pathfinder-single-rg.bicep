@@ -16,6 +16,18 @@ param sqlAdminPassword string
 @secure()
 param openAIApiKey string = ''
 
+@description('Auth0 domain')
+@secure()
+param auth0Domain string = ''
+
+@description('Auth0 client ID')
+@secure()
+param auth0ClientId string = ''
+
+@description('Auth0 audience')
+@secure()
+param auth0Audience string = ''
+
 // Tags for all resources - single resource group strategy
 var tags = {
   app: appName
@@ -35,8 +47,9 @@ var resourceNames = {
   sqlDatabase: '${appName}-db'
   logAnalytics: '${appName}-logs'
   appInsights: '${appName}-insights'
-  storageAccount: replace('${appName}storage', '-', '')
+  storageAccount: 'pf${uniqueString(resourceGroup().id)}'
   keyVault: '${appName}-kv'
+  containerRegistry: 'pathfinderdevregistry'
 }
 
 // Log Analytics workspace for monitoring (cost optimized)
@@ -66,7 +79,7 @@ resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
     WorkspaceResourceId: logAnalytics.id
     publicNetworkAccessForIngestion: 'Enabled'
     publicNetworkAccessForQuery: 'Enabled'
-    samplingPercentage: 75  // Optimized sampling for cost control
+    SamplingPercentage: 75  // Fixed property name case
   }
 }
 
@@ -189,6 +202,20 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
   }
 }
 
+// Azure Container Registry (cost optimized)
+resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
+  name: resourceNames.containerRegistry
+  location: location
+  tags: tags
+  sku: {
+    name: 'Basic'  // Cost-optimized tier
+  }
+  properties: {
+    adminUserEnabled: true
+    publicNetworkAccess: 'Enabled'
+  }
+}
+
 // Backend Container App (cost optimized)
 resource backendApp 'Microsoft.App/containerApps@2023-05-01' = {
   name: resourceNames.backendApp
@@ -210,7 +237,7 @@ resource backendApp 'Microsoft.App/containerApps@2023-05-01' = {
       secrets: [
         {
           name: 'sql-connection-string'
-          value: 'Server=tcp:${sqlServer.name}.database.windows.net,1433;Initial Catalog=${sqlDatabase.name};Persist Security Info=False;User ID=${sqlAdminLogin};Password=${sqlAdminPassword};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;'
+          value: 'Server=tcp:${sqlServer.name}.${environment().suffixes.sqlServerHostname},1433;Initial Catalog=${sqlDatabase.name};Persist Security Info=False;User ID=${sqlAdminLogin};Password=${sqlAdminPassword};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;'
         }
         {
           name: 'cosmos-connection-string'
@@ -309,15 +336,15 @@ resource frontendApp 'Microsoft.App/containerApps@2023-05-01' = {
       secrets: [
         {
           name: 'auth0-domain'
-          value: 'dev-jwnud3v8ghqnyygr.us.auth0.com'
+          value: !empty(auth0Domain) ? auth0Domain : 'dev-jwnud3v8ghqnyygr.us.auth0.com'
         }
         {
           name: 'auth0-client-id'
-          value: 'KXu3KpGiyRHHHgiXX90sHuNC4rfYRcNn'
+          value: !empty(auth0ClientId) ? auth0ClientId : 'KXu3KpGiyRHHHgiXX90sHuNC4rfYRcNn'
         }
         {
           name: 'auth0-audience'
-          value: 'https://pathfinder-api.com'
+          value: !empty(auth0Audience) ? auth0Audience : 'https://pathfinder-api.com'
         }
       ]
     }
@@ -406,6 +433,8 @@ output cosmosAccountName string = cosmosAccount.name
 output resourceGroupName string = resourceGroup().name
 output appInsightsInstrumentationKey string = appInsights.properties.InstrumentationKey
 output keyVaultName string = keyVault.name
+output containerRegistryName string = containerRegistry.name
+output containerRegistryLoginServer string = containerRegistry.properties.loginServer
 
 // Cost optimization summary for single resource group
 output costOptimizations object = {
