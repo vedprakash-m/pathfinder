@@ -16,7 +16,8 @@ on:
         type: boolean
 
 env:
-  AZURE_RESOURCE_GROUP: pathfinder-rg
+  DATA_RESOURCE_GROUP: pathfinder-db-rg
+  COMPUTE_RESOURCE_GROUP: pathfinder-rg
   APP_NAME: pathfinder
   ENVIRONMENT: production
   REGISTRY_NAME: pathfinderdevregistry.azurecr.io
@@ -171,24 +172,25 @@ jobs:
         run: |
           echo "🏗️ Infrastructure validation..."
           
-          # Check if resource group exists
-          if ! az group show --name ${{ env.AZURE_RESOURCE_GROUP }} --output none 2>/dev/null; then
-            echo "❌ Resource group ${{ env.AZURE_RESOURCE_GROUP }} does not exist!"
+          # Check if compute resource group exists
+          if ! az group show --name ${{ env.COMPUTE_RESOURCE_GROUP }} --output none 2>/dev/null; then
+            echo "❌ Compute resource group ${{ env.COMPUTE_RESOURCE_GROUP }} does not exist!"
             echo "🚀 Please run the 'Deploy Infrastructure' workflow first:"
             echo "   Go to Actions → Deploy Infrastructure → Run workflow"
             echo ""
             echo "Or run manually:"
-            echo "   ./scripts/deploy-single-rg.sh"
+            echo "   ./scripts/resume-environment.sh"
             exit 1
           fi
           
-          # Only deploy infrastructure if major changes detected
-          if [ -n "$(git diff HEAD~1 --name-only | grep 'infrastructure/')" ]; then
-            echo "📋 Infrastructure changes detected - consider running infrastructure deployment workflow"
-            echo "Proceeding with application deployment only..."
-          else
-            echo "✅ No infrastructure changes, proceeding with application deployment"
+          # Check if data layer exists
+          if ! az group show --name ${{ env.DATA_RESOURCE_GROUP }} --output none 2>/dev/null; then
+            echo "❌ Data layer resource group ${{ env.DATA_RESOURCE_GROUP }} does not exist!"
+            echo "🚀 Please deploy the data layer first"
+            exit 1
           fi
+          
+          echo "✅ Infrastructure verified, proceeding with application deployment"
       
       - name: Update Container Apps (Parallel)
         run: |
@@ -197,7 +199,7 @@ jobs:
           # Update backend
           az containerapp update \
             --name pathfinder-backend \
-            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --resource-group ${{ env.COMPUTE_RESOURCE_GROUP }} \
             --image ${{ env.REGISTRY_NAME }}/pathfinder-backend:latest \
             --set-env-vars \
               ENVIRONMENT=production \
@@ -210,7 +212,7 @@ jobs:
           # Update frontend  
           az containerapp update \
             --name pathfinder-frontend \
-            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --resource-group ${{ env.COMPUTE_RESOURCE_GROUP }} \
             --image ${{ env.REGISTRY_NAME }}/pathfinder-frontend:latest \
             --set-env-vars \
               ENVIRONMENT=production \

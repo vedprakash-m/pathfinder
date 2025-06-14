@@ -7,7 +7,7 @@ set -e
 # Configuration
 COMPUTE_RG="pathfinder-rg"
 DATA_RG="pathfinder-db-rg"
-LOCATION="eastus"
+LOCATION="${LOCATION:-westus2}"  # Use environment variable or default to westus2
 COMPUTE_TEMPLATE="infrastructure/bicep/compute-layer.bicep"
 
 # Color codes

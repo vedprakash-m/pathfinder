@@ -1,0 +1,21 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "appName": {
+      "value": "pathfinder"
+    },
+    "environment": {
+      "value": "prod"
+    },
+    "sqlAdminLogin": {
+      "value": "pathfinderadmin"
+    },
+    "sqlAdminPassword": {
+      "value": "TempPassword123!"
+    },
+    "enablePrivateEndpoints": {
+      "value": false
+    }
+  }
+}

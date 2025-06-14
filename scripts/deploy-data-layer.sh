@@ -6,7 +6,7 @@ set -e
 
 # Configuration
 DATA_RG="pathfinder-db-rg"
-LOCATION="eastus"
+LOCATION="${LOCATION:-westus2}"  # Use environment variable or default to westus2
 TEMPLATE_FILE="infrastructure/bicep/persistent-data.bicep"
 
 # Color codes
