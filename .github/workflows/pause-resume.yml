@@ -97,10 +97,14 @@ jobs:
         # Get data layer resources
         SQL_SERVER_NAME=$(az sql server list --resource-group $DATA_RG --query "[0].name" -o tsv)
         COSMOS_ACCOUNT_NAME=$(az cosmosdb list --resource-group $DATA_RG --query "[0].name" -o tsv)
+        STORAGE_ACCOUNT_NAME=$(az storage account list --resource-group $DATA_RG --query "[0].name" -o tsv)
+        DATA_KEY_VAULT_NAME=$(az keyvault list --resource-group $DATA_RG --query "[0].name" -o tsv)
         
         echo "Found data layer resources:"
         echo "  SQL Server: $SQL_SERVER_NAME"
         echo "  Cosmos Account: $COSMOS_ACCOUNT_NAME"
+        echo "  Storage Account: $STORAGE_ACCOUNT_NAME"
+        echo "  Data Key Vault: $DATA_KEY_VAULT_NAME"
         
         # Create compute resource group
         if ! az group show --name $COMPUTE_RG &> /dev/null; then
@@ -123,6 +127,8 @@ jobs:
             dataResourceGroup=$DATA_RG \
             sqlServerName=$SQL_SERVER_NAME \
             cosmosAccountName=$COSMOS_ACCOUNT_NAME \
+            storageAccountName=$STORAGE_ACCOUNT_NAME \
+            dataKeyVaultName=$DATA_KEY_VAULT_NAME \
             sqlAdminLogin="${{ secrets.SQL_ADMIN_USERNAME }}" \
             sqlAdminPassword="${{ secrets.SQL_ADMIN_PASSWORD }}" \
             openAIApiKey="${{ secrets.OPENAI_API_KEY }}" \

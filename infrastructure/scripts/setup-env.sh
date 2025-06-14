@@ -116,10 +116,10 @@ COSMOS_CONNECTION_STRING=$(az cosmosdb keys list \
   --query "connectionStrings[0].connectionString" \
   --output tsv 2>/dev/null)
 
-# Get Storage Account connection string
+# Get Storage Account connection string (from data layer)
 STORAGE_ACCOUNT=$(echo "${APP_NAME}storage${ENV}" | tr -d '-')
 STORAGE_CONNECTION_STRING=$(az storage account show-connection-string \
-  --resource-group $RG_NAME \
+  --resource-group "${APP_NAME}-db-rg" \
   --name $STORAGE_ACCOUNT \
   --query "connectionString" \
   --output tsv 2>/dev/null)

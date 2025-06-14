@@ -107,9 +107,25 @@ if [[ -z "$COSMOS_ACCOUNT_NAME" ]]; then
     exit 1
 fi
 
+# Get Storage account name
+STORAGE_ACCOUNT_NAME=$(az storage account list --resource-group "$DATA_RG" --query "[0].name" -o tsv)
+if [[ -z "$STORAGE_ACCOUNT_NAME" ]]; then
+    log_error "Could not find Storage account in data layer"
+    exit 1
+fi
+
+# Get Data layer Key Vault name
+DATA_KEY_VAULT_NAME=$(az keyvault list --resource-group "$DATA_RG" --query "[0].name" -o tsv)
+if [[ -z "$DATA_KEY_VAULT_NAME" ]]; then
+    log_error "Could not find Key Vault in data layer"
+    exit 1
+fi
+
 log_success "Found data layer resources:"
 log_info "  SQL Server: $SQL_SERVER_NAME"
 log_info "  Cosmos Account: $COSMOS_ACCOUNT_NAME"
+log_info "  Storage Account: $STORAGE_ACCOUNT_NAME"
+log_info "  Data Key Vault: $DATA_KEY_VAULT_NAME"
 
 # Create compute resource group
 log_info "Creating compute resource group: $COMPUTE_RG"
@@ -142,6 +158,12 @@ cat > compute-params.json << EOF
     },
     "cosmosAccountName": {
       "value": "$COSMOS_ACCOUNT_NAME"
+    },
+    "storageAccountName": {
+      "value": "$STORAGE_ACCOUNT_NAME"
+    },
+    "dataKeyVaultName": {
+      "value": "$DATA_KEY_VAULT_NAME"
     },
     "sqlAdminLogin": {
       "value": "$SQL_ADMIN_USERNAME"

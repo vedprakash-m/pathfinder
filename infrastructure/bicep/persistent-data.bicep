@@ -19,9 +19,6 @@ param sqlAdminLogin string
 @secure()
 param sqlAdminPassword string
 
-@description('Enable private endpoints for enhanced security')
-param enablePrivateEndpoints bool = false // Start with false for cost optimization
-
 // Persistent data tags
 var dataTags = {
   app: appName
@@ -38,7 +35,8 @@ var dataResourceNames = {
   sqlServer: '${appName}-sql-${environment}'
   sqlDatabase: '${appName}-db-${environment}'
   cosmosAccount: '${appName}-cosmos-${environment}'
-  keyVault: '${appName}-db-kv-${environment}' // Database-specific Key Vault
+  keyVault: 'pf-${environment}-kv-${uniqueString(resourceGroup().id)}' // Database-specific Key Vault (globally unique)
+  storageAccount: 'pf${environment}st${uniqueString(resourceGroup().id)}' // Storage for file uploads and app data (max 24 chars)
 }
 
 // ==================== DATABASE KEY VAULT ====================
@@ -213,6 +211,25 @@ resource preferencesContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabase
   }
 }
 
+// ==================== STORAGE ACCOUNT ====================
+// Storage Account for file uploads and application data
+// This is persistent and should not be deleted when compute layer is paused
+resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
+  name: dataResourceNames.storageAccount
+  location: location
+  tags: dataTags
+  sku: {
+    name: 'Standard_LRS' // Local redundancy for cost savings
+  }
+  kind: 'StorageV2'
+  properties: {
+    accessTier: 'Hot'
+    supportsHttpsTrafficOnly: true
+    minimumTlsVersion: 'TLS1_2'
+    allowBlobPublicAccess: false
+  }
+}
+
 // ==================== SECRETS MANAGEMENT ====================
 // Store connection strings for compute layer to access
 resource sqlConnectionSecret 'Microsoft.KeyVault/vaults/secrets@2023-02-01' = {
@@ -239,6 +256,18 @@ resource cosmosConnectionSecret 'Microsoft.KeyVault/vaults/secrets@2023-02-01' =
   }
 }
 
+resource storageConnectionSecret 'Microsoft.KeyVault/vaults/secrets@2023-02-01' = {
+  parent: dbKeyVault
+  name: 'storage-connection-string'
+  properties: {
+    value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=core.windows.net'
+    attributes: {
+      enabled: true
+    }
+    contentType: 'Storage Account Connection String'
+  }
+}
+
 // ==================== OUTPUTS ====================
 output persistentDataLayer object = {
   resourceGroupName: resourceGroup().name
@@ -247,6 +276,7 @@ output persistentDataLayer object = {
   sqlDatabaseName: sqlDatabase.name
   cosmosAccountName: cosmosAccount.name
   cosmosAccountEndpoint: cosmosAccount.properties.documentEndpoint
+  storageAccountName: storageAccount.name
   dbKeyVaultName: dbKeyVault.name
   dbKeyVaultUri: dbKeyVault.properties.vaultUri
 }
@@ -254,6 +284,7 @@ output persistentDataLayer object = {
 output connectionSecrets object = {
   sqlConnectionSecretUri: '${dbKeyVault.properties.vaultUri}secrets/sql-connection-string'
   cosmosConnectionSecretUri: '${dbKeyVault.properties.vaultUri}secrets/cosmos-connection-string'
+  storageConnectionSecretUri: '${dbKeyVault.properties.vaultUri}secrets/storage-connection-string'
   keyVaultName: dbKeyVault.name
 }
 
@@ -261,15 +292,16 @@ output costOptimization object = {
   serverlessCosmos: 'Cosmos DB in serverless mode - only pay for RU consumed'
   basicSqlTier: 'SQL Basic tier with DTU 5 - lowest cost option'
   localBackups: 'Local backup redundancy for cost savings'
+  storageAccount: 'Standard LRS storage for file uploads - minimal cost'
   noComputeCosts: 'No compute resources in this RG - can delete pathfinder-rg safely'
-  estimatedIdleCost: '$15-25/month when pathfinder-rg is deleted'
-  estimatedActiveCost: '$25-35/month when both RGs are active'
+  estimatedIdleCost: '$20-30/month when pathfinder-rg is deleted (includes storage)'
+  estimatedActiveCost: '$30-40/month when both RGs are active'
 }
 
 output pauseResumeStrategy object = {
   pauseInstructions: 'Delete pathfinder-rg to save ~$35-50/month'
   resumeInstructions: 'Run CI/CD pipeline to recreate pathfinder-rg'
-  dataPreservation: 'All user data, trips, and preferences remain intact'
+  dataPreservation: 'All user data, trips, preferences, and uploaded files remain intact'
   resumeTime: '5-10 minutes to restore full functionality'
   costSavings: 'Up to 70% savings during pause periods'
 }

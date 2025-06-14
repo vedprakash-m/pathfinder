@@ -17,6 +17,12 @@ param sqlServerName string
 @description('Cosmos account name from data layer')
 param cosmosAccountName string
 
+@description('Storage account name from data layer')
+param storageAccountName string
+
+@description('Data layer Key Vault name')
+param dataKeyVaultName string
+
 @description('SQL Server admin username')
 @secure()
 param sqlAdminLogin string
@@ -54,7 +60,6 @@ var computeResourceNames = {
   frontendApp: '${appName}-frontend'
   logAnalytics: '${appName}-logs'
   appInsights: '${appName}-insights'
-  storageAccount: replace('${appName}storage', '-', '')
   keyVault: '${appName}-kv' // Compute-specific Key Vault
 }
 
@@ -84,24 +89,7 @@ resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
     WorkspaceResourceId: logAnalytics.id
     publicNetworkAccessForIngestion: 'Enabled'
     publicNetworkAccessForQuery: 'Enabled'
-    samplingPercentage: 75 // Cost optimization
-  }
-}
-
-// ==================== STORAGE ====================
-resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
-  name: computeResourceNames.storageAccount
-  location: location
-  tags: computeTags
-  sku: {
-    name: 'Standard_LRS' // Local redundancy for cost savings
-  }
-  kind: 'StorageV2'
-  properties: {
-    accessTier: 'Hot'
-    supportsHttpsTrafficOnly: true
-    minimumTlsVersion: 'TLS1_2'
-    allowBlobPublicAccess: false
+    SamplingPercentage: 75 // Cost optimization
   }
 }
 
@@ -155,6 +143,18 @@ resource existingCosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2023-04-15
   scope: resourceGroup(dataResourceGroup)
 }
 
+// Reference existing storage account in data layer
+resource existingStorageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' existing = {
+  name: storageAccountName
+  scope: resourceGroup(dataResourceGroup)
+}
+
+// Reference existing data layer Key Vault
+resource existingDataKeyVault 'Microsoft.KeyVault/vaults@2023-02-01' existing = {
+  name: dataKeyVaultName
+  scope: resourceGroup(dataResourceGroup)
+}
+
 // ==================== BACKEND CONTAINER APP ====================
 resource backendApp 'Microsoft.App/containerApps@2023-05-01' = {
   name: computeResourceNames.backendApp
@@ -192,7 +192,7 @@ resource backendApp 'Microsoft.App/containerApps@2023-05-01' = {
         }
         {
           name: 'storage-connection-string'
-          value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=core.windows.net'
+          value: 'DefaultEndpointsProtocol=https;AccountName=${existingStorageAccount.name};AccountKey=${existingStorageAccount.listKeys().keys[0].value};EndpointSuffix=core.windows.net'
         }
       ]
     }
