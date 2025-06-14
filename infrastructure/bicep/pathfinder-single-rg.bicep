@@ -42,13 +42,13 @@ var resourceNames = {
   containerAppsEnv: '${appName}-env'
   backendApp: '${appName}-backend'
   frontendApp: '${appName}-frontend'
-  cosmosAccount: '${appName}-cosmos'
+  cosmosAccount: '${appName}-cosmos-${uniqueString(resourceGroup().id)}'
   sqlServer: '${appName}-sql'
   sqlDatabase: '${appName}-db'
   logAnalytics: '${appName}-logs'
   appInsights: '${appName}-insights'
   storageAccount: 'pf${uniqueString(resourceGroup().id)}'
-  keyVault: '${appName}-kv'
+  keyVault: '${appName}-kv-${uniqueString(resourceGroup().id)}'
   containerRegistry: 'pathfinderdevregistry'
 }
 
