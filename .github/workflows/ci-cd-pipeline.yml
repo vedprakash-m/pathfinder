@@ -258,14 +258,21 @@ jobs:
       - name: Adaptive Health Check (max 4 min)
         run: |
           echo "🏥 Adaptive health verification..."
-          BACKEND_FQDN=$(az containerapp show --name pathfinder-backend --resource-group ${{ env.COMPUTE_RESOURCE_GROUP }} --query "properties.configuration.ingress.fqdn" -o tsv)
-          FRONTEND_FQDN=$(az containerapp show --name pathfinder-frontend --resource-group ${{ env.COMPUTE_RESOURCE_GROUP }} --query "properties.configuration.ingress.fqdn" -o tsv)
+          for attempt in {1..12}; do
+            echo "�� Attempt $attempt (every 30s)..."
+            # Fetch latest FQDNs each iteration (apps may appear after a few minutes)
+            BACKEND_FQDN=$(az containerapp show --name pathfinder-backend --resource-group ${{ env.COMPUTE_RESOURCE_GROUP }} --query "properties.configuration.ingress.fqdn" -o tsv 2>/dev/null || true)
+            FRONTEND_FQDN=$(az containerapp show --name pathfinder-frontend --resource-group ${{ env.COMPUTE_RESOURCE_GROUP }} --query "properties.configuration.ingress.fqdn" -o tsv 2>/dev/null || true)
 
-          BACKEND_URL="https://$BACKEND_FQDN/health"
-          FRONTEND_URL="https://$FRONTEND_FQDN"
+            if [[ -z "$BACKEND_FQDN" || -z "$FRONTEND_FQDN" ]]; then
+              echo "⏳ Container apps not yet provisioned. Waiting..."
+              sleep 30
+              continue
+            fi
 
-          for attempt in {1..8}; do
-            echo "🔄 Attempt $attempt (every 30s)..."
+            BACKEND_URL="https://$BACKEND_FQDN/health"
+            FRONTEND_URL="https://$FRONTEND_FQDN"
+
             BACKEND_OK=false
             FRONTEND_OK=false
 
@@ -291,7 +298,7 @@ jobs:
             sleep 30
           done
 
-          echo "❌ Health check failed after 4 minutes"
+          echo "❌ Health check failed after 6 minutes"
           exit 1
 
   # Job 5: Optional Deploy Summary (runs quickly)
