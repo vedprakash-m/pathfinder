@@ -91,11 +91,12 @@ jobs:
           echo "📦 Compute RG: ${{ env.COMPUTE_RESOURCE_GROUP }}"
           echo "🗄️ Data RG: ${{ env.DATA_RESOURCE_GROUP }}"
           
-          # Set environment variables for the script
+          # Set environment variables for the script (non-interactive)
           export SQL_ADMIN_USERNAME="${{ secrets.SQL_ADMIN_USERNAME }}"
           export SQL_ADMIN_PASSWORD="${{ secrets.SQL_ADMIN_PASSWORD }}"
           export OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}"
           export LOCATION="${{ env.AZURE_LOCATION }}"
+          export FORCE_REDEPLOY=true
           
           # Run the resume environment script
           chmod +x ./scripts/resume-environment.sh
