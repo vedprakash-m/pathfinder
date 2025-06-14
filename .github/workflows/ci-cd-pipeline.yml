@@ -224,6 +224,29 @@ jobs:
           
           echo "✅ Infrastructure verified, proceeding with application deployment"
       
+      - name: Wait for Container Apps to Provision (max 10 min)
+        run: |
+          echo "⏳ Waiting for container apps to be provisioned..."
+          for i in {1..20}; do
+            BACKEND_READY=false
+            FRONTEND_READY=false
+            if az containerapp show --name pathfinder-backend --resource-group ${{ env.COMPUTE_RESOURCE_GROUP }} &>/dev/null; then
+              BACKEND_READY=true
+            fi
+            if az containerapp show --name pathfinder-frontend --resource-group ${{ env.COMPUTE_RESOURCE_GROUP }} &>/dev/null; then
+              FRONTEND_READY=true
+            fi
+            if [[ $BACKEND_READY == true && $FRONTEND_READY == true ]]; then
+              echo "✅ Container apps found!"
+              break
+            fi
+            if [[ $i -eq 20 ]]; then
+              echo "❌ Container apps not ready after 10 minutes. Exiting."
+              exit 1
+            fi
+            echo "   attempt $i/20 – still provisioning"; sleep 30
+          done
+      
       - name: Update Container Apps (Parallel)
         run: |
           echo "🚀 Updating container apps in parallel..."
