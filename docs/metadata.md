@@ -1,7 +1,7 @@
 # Pathfinder Project Metadata
 
-**Document Version:** 3.0  
-**Last Updated:** June 12, 2025  
+**Document Version:** 4.0  
+**Last Updated:** June 14, 2025  
 **Maintainer:** Vedprakash Mishra  
 
 ---
@@ -11,16 +11,27 @@
 **Pathfinder** is an AI-powered platform that simplifies the coordination of multi-family group trips. It centralizes communication, preference collection, and AI-driven itinerary generation to create personalized plans while optimizing shared experiences.
 
 - **Core Value:** Eliminates coordination chaos, provides AI-personalized itineraries, and enables seamless collaboration with enterprise-grade security.
-- **Production URL (Frontend):** `https://pathfinder-frontend.yellowdune-9b8d769a.eastus.azurecontainerapps.io`
-- **Production URL (Backend):** `https://pathfinder-backend.yellowdune-9b8d769a.eastus.azurecontainerapps.io`
+- **Production URLs:** Currently being deployed with new architecture
 
 ---
 
 ## 2. System Architecture
 
-The system is a monorepo containing a React PWA frontend, a FastAPI backend, and a dedicated LLM Orchestration service. It is deployed on Azure using a cost-optimized, solo-developer CI/CD pipeline with a **single resource group strategy**.
+### 2.1 NEW: Pause/Resume Architecture (June 14, 2025)
 
-### 2.1 Technology Stack
+**MAJOR ARCHITECTURAL CHANGE:** Migrated from single resource group to **layered architecture** for cost optimization and better data persistence:
+
+#### Resource Group Strategy:
+- **`pathfinder-db-rg` (Persistent Data Layer):** Database, Storage, Key Vault - NEVER DELETE
+- **`pathfinder-rg` (Compute Layer):** Container Apps, App Insights - Can delete to save costs
+
+#### Benefits:
+- **70% cost savings** during pause periods (~$35-50/month saved)
+- **All data preserved** (user data, trips, preferences, uploaded files)
+- **5-10 minute resume time** via CI/CD pipeline
+- **Enhanced data safety** with persistent layer separation
+
+### 2.2 Technology Stack
 
 | Layer                 | Technologies                                                                                             |
 | --------------------- | -------------------------------------------------------------------------------------------------------- |
@@ -28,275 +39,207 @@ The system is a monorepo containing a React PWA frontend, a FastAPI backend, and
 | **Backend**           | FastAPI (Python 3.12+), Pydantic v2, SQLAlchemy, Alembic, Socket.IO                                        |
 | **AI & Intelligence** | Custom LLM Orchestration Service; supports OpenAI, Gemini, Claude                                        |
 | **Data Storage**      | **Hybrid Model:** Azure SQL (Relational: users, trips) & Azure Cosmos DB (Documents: itineraries, chat) |
+| **File Storage**      | **MOVED:** Azure Storage Account now in persistent data layer for file preservation                       |
 | **Infrastructure**    | Azure Container Apps, Azure Key Vault, Application Insights, Docker, Bicep (IaC)                         |
-| **CI/CD**             | GitHub Actions (Optimized for solo developer)                                                            |
-| **Resource Strategy** | Single Resource Group (`pathfinder-rg`) for cost optimization and simplified management                   |
+| **CI/CD**             | GitHub Actions (Layered deployment strategy)                                                             |
+| **Resource Strategy** | **NEW:** Two-layer architecture for cost optimization                                                     |
 | **Authentication**    | Auth0 (Zero-Trust Security Model)                                                                        |
 
 ### 2.2 Architecture Diagram
 
 ```mermaid
 graph TB
-    A[React PWA Frontend] --> B[Azure Container Apps]
+    A[React PWA Frontend] --> B[Azure Container Apps - Compute Layer]
     B --> C[Auth0 Security] & D[Application Gateway]
     D --> E[Azure Container Apps Environment]
-    subgraph E [pathfinder-rg Resource Group]
+    
+    subgraph PersistentLayer [pathfinder-db-rg - Persistent Data Layer]
+        L[Azure SQL Database]
+        M[Azure Cosmos DB]
+        S[Storage Account - Files/Uploads]
+        K[Key Vault - Connection Strings]
+    end
+    
+    subgraph ComputeLayer [pathfinder-rg - Compute Layer - PAUSABLE]
         F[FastAPI Backend]
         H[LLM Orchestration Service]
-        L[Azure SQL]
-        M[Azure Cosmos DB]
         N[Application Insights]
-        O[Key Vault]
-        P[Storage Account]
+        R[Container Registry]
+        E
     end
-    F --> H
-    F --> L & M
-    F --> Q[External APIs: Google Maps]
-    R[GitHub Actions CI/CD] --> E
+    
+    F --> L & M & S
+    F --> K
+    H --> K
+    
+    style PersistentLayer fill:#e1f5fe
+    style ComputeLayer fill:#fff3e0
 ```
 
 ---
 
-## 3. Key Features & Functionality
+## 3. CURRENT STATUS (June 14, 2025)
 
-### 3.1 Core Features
-- **AI Itinerary Generation**: GPT-4 powered personalized trip planning
-- **Multi-Family Coordination**: Role-based access and family-specific preferences
-- **Real-Time Collaboration**: WebSocket chat with live presence
-- **Budget Management**: Transparent cost tracking and expense splitting
-- **Pathfinder Assistant**: @mention functionality with contextual AI suggestions
-- **Magic Polls System**: AI-powered group decision-making with conflict resolution
+### 3.1 Recent Accomplishments ✅
 
-### 3.2 Production Status
-- **Status:** ✅ **PRODUCTION READY** - All core features deployed and operational
-- **Backend:** Revision `pathfinder-backend--0000079` 
-- **Frontend:** Fully operational with zero critical errors
-- **Infrastructure:** Single resource group (`pathfinder-rg`) with cost-optimized architecture
+#### Storage Account Migration (COMPLETED)
+- **Successfully moved** Azure Storage Account from compute layer to persistent data layer
+- **Updated infrastructure templates:** Modified `persistent-data.bicep` and `compute-layer.bicep`
+- **Updated deployment scripts:** Modified `resume-environment.sh` and CI/CD workflows
+- **Fixed resource naming:** Implemented globally unique names for storage and Key Vault
+- **Code pushed to repository:** All changes committed and available in main branch
 
----
+#### Infrastructure Improvements
+- **Enhanced pause/resume architecture** for better data persistence
+- **Improved cost optimization strategy** with clearer separation of concerns
+- **Better resource naming conventions** to avoid Azure naming conflicts
 
-## 4. Infrastructure & Cost Optimization
+### 3.2 Current Issues 🚨
 
-### 4.1 Single Resource Group Strategy
+#### Deployment Challenges (IN PROGRESS)
+1. **SQL Password Complexity:** Azure SQL requires more complex passwords than initially configured
+   - **Status:** Identified issue, password format requirements understood
+   - **Next Action:** Update with compliant password format
 
-**Decision:** All resources consolidated into `pathfinder-rg` for cost optimization and simplified management.
+2. **Container Registry Missing:** CI/CD pipeline expects `pathfinderdevregistry` which doesn't exist
+   - **Status:** Container registry not included in layered architecture
+   - **Root Cause:** Registry was only defined in old single-RG template
+   - **Next Action:** Add container registry to compute layer template
 
-**Benefits:**
-- **Cost Savings:** $60-80/month vs multi-environment setups
-- **Simplified Management:** Single point of control
-- **Better Resource Tracking:** Unified cost monitoring
-- **Faster Deployments:** Unified resource lifecycle
+3. **Resource Group Handling:** Resume script fails when compute RG already exists
+   - **Status:** FIXED - Updated script to handle existing resource groups gracefully
 
-### 4.2 Pause/Resume Architecture
+#### CI/CD Pipeline Status
+- **Data Layer Deployment:** Pending (password issue)
+- **Compute Layer Deployment:** Failing (missing container registry)
+- **Build Pipeline:** Failing (registry login issue)
 
-**NEW:** Enhanced cost optimization strategy with **70% savings** during idle periods.
+### 3.3 Work in Progress 🔄
 
-**Architecture:**
-- **Data Layer (`pathfinder-db-rg`):** Persistent databases, never deleted ($15-25/month)
-- **Compute Layer (`pathfinder-rg`):** Ephemeral apps, safe to delete ($35-50/month)
-- **Pause Strategy:** Delete compute layer while preserving all data
-- **Resume Strategy:** Recreate compute layer, reconnect to data (5-10 minutes)
+#### Infrastructure Templates
+- **persistent-data.bicep:** ✅ Storage account added, unique naming implemented
+- **compute-layer.bicep:** ⚠️ Needs container registry addition
+- **Deployment scripts:** ✅ Updated for new architecture
 
-**Cost Benefits:**
-- **Active State:** $50-75/month (full functionality)
-- **Paused State:** $15-25/month (70% savings, data preserved)
-- **Use Cases:** Development breaks, demos, extended idle periods
-
-### 4.3 Bicep-Exclusive Infrastructure
-
-**Decision:** Use Bicep exclusively for Azure-native IaC (Terraform removed).
-
-**Benefits:**
-- **40% faster deployments** compared to Terraform
-- **Azure-native integration** with better service support
-- **Type safety** with IntelliSense support
-- **Simplified state management** (no remote state required)
-
-### 4.4 Cost Optimizations Implemented
-
-| Optimization | Monthly Savings | Details |
-|-------------|-----------------|---------|
-| Single Resource Group | $20-30 | Unified management and resource lifecycle |
-| Redis-Free Architecture | $40 | SQLite/in-memory hybrid caching |
-| Scale-to-Zero Containers | $15-25 | Apps scale to zero when idle |
-| Serverless Cosmos DB | $10-15 | Pay-per-use pricing model |
-| Basic SQL Tier | $5-10 | Cost-optimized database tier |
-| Local Storage Redundancy | $5-8 | LRS instead of geo-redundant |
-| **Pause/Resume Strategy** | **$35-50** | **Delete compute layer when idle (NEW)** |
-| **Total Monthly Savings** | **$130-178** | **Active: $50-75, Paused: $15-25** |
-
-### 4.5 Infrastructure Template Consolidation
-
-**Decision:** Reduced from 13 to 3 Bicep templates for clarity and maintainability.
-
-**Cleanup Results:**
-- **77% reduction** in template files (13 → 3)
-- **Eliminated confusion** and deployment errors
-- **Focused approach** on production-ready templates only
-- **Maintained functionality** while reducing complexity
-
-**Final Templates:**
-- `pathfinder-single-rg.bicep` - Main production template
-- `persistent-data.bicep` - Data layer for pause/resume
-- `compute-layer.bicep` - Compute layer for pause/resume
+#### Resource Naming Strategy
+- **Storage Account:** `pf{environment}st{uniqueString}` (globally unique)
+- **Key Vault:** `pf-{environment}-kv-{uniqueString}` (globally unique)
+- **SQL Server:** `pathfinder-sql-{environment}` (regional unique)
 
 ---
 
-## 5. Key Design Decisions
+## 4. IMMEDIATE NEXT STEPS (Tomorrow's Plan)
 
-| Decision | Rationale |
-| -------- | --------- |
-| **Monorepo Structure** | Simplified CI/CD, shared types (`/shared`), better code coherence |
-| **Hybrid Database (SQL + Cosmos)** | Best of relational and document storage for performance |
-| **Custom LLM Orchestration** | Cost optimization, multi-provider support, fine-grained control |
-| **Auth0 Authentication** | Professional security, rapid development, focus on core features |
-| **Solo Developer CI/CD** | Single production environment, 70% cost reduction |
-| **Single Resource Group Strategy** | Cost optimization, simplified management, unified tracking |
-| **Bicep Infrastructure as Code** | Azure-native IaC, faster deployments vs Terraform |
-| **Redis-Free Caching** | SQLite/in-memory hybrid saves $40/month |
+### 4.1 Priority 1: Fix Deployment Issues
 
----
+#### SQL Password Resolution
+- [ ] **Update password to meet Azure requirements:**
+  - Minimum 8 characters
+  - Must contain uppercase, lowercase, numbers, and special characters
+  - Test deployment with compliant password
 
-## 6. Development Status & Roadmap
+#### Container Registry Integration
+- [ ] **Add container registry to compute layer:**
+  - Add registry resource to `compute-layer.bicep`
+  - Update resource naming conventions
+  - Ensure registry is available for CI/CD builds
 
-### 6.1 Current Implementation Status
+#### Complete Infrastructure Deployment
+- [ ] **Deploy persistent data layer successfully**
+- [ ] **Deploy compute layer with registry**
+- [ ] **Verify storage account migration works end-to-end**
 
-- **✅ Phase 1 COMPLETE:** Role System Alignment
-- **✅ Phase 2 COMPLETE:** Backend Integration & Auto-Family Creation  
-- **✅ Phase 3 COMPLETE:** Golden Path Onboarding Implementation
-- **🚀 Phase 4 ACTIVE:** AI Integration Enhancement (60% complete)
-  - Backend infrastructure: ✅ Complete (17 API endpoints, 4 database tables)
-  - Frontend components: ✅ Complete (PathfinderAssistant, MagicPolls)
-  - Component integration: 🔄 In Progress
-  - LLM service integration: 📋 Planned
-  - End-to-end testing: 📋 Planned
+### 4.2 Priority 2: Validate CI/CD Pipeline
 
-### 6.2 Next Phases
+#### Fix Build Pipeline
+- [ ] **Update CI/CD to use correct registry name**
+- [ ] **Test complete build and deployment cycle**
+- [ ] **Verify pause/resume functionality**
 
-- **📋 Phase 5 (July-August 2025):** Advanced PWA and Memory Lane Features
-- **📋 Legacy Planning (6-12 months):** Mobile app consideration, advanced AI features
+#### Documentation Updates
+- [ ] **Update deployment guides with new architecture**
+- [ ] **Create migration guide for existing deployments**
+- [ ] **Document new cost optimization procedures**
 
-### 6.3 Key Risks & Mitigation
+### 4.3 Priority 3: Testing and Validation
 
-- **LLM Service Costs:** ✅ Mitigated by custom orchestration with budget caps
-- **User Adoption:** ✅ Resolved with Golden Path Onboarding
-- **Azure Spending:** ✅ Mitigated with cost-optimized architecture and alerts
-- **Production Stability:** ✅ Resolved - all critical browser errors fixed
-
----
-
-## 7. Technical Architecture
-
-### 7.1 Infrastructure Stack
-
-- **Resource Group:** `pathfinder-rg` (single, unified)
-- **Compute:** Azure Container Apps with scale-to-zero
-- **Database:** Azure SQL (Basic tier) + Cosmos DB (Serverless)
-- **Storage:** Azure Storage Account (LRS)
-- **Monitoring:** Application Insights with cost controls
-- **Security:** Azure Key Vault + Auth0
-- **CI/CD:** GitHub Actions with optimized pipeline
-
-### 7.2 Development Workflow
-
-- **Git Strategy:** Solo-developer optimized, direct work on `main`
-- **Infrastructure Deployment:** Dedicated workflow (`.github/workflows/infrastructure-deploy.yml`) for one-time infrastructure setup using Bicep templates
-- **Application CI/CD:** Parallel quality checks, Docker builds, smart deployment (`.github/workflows/ci-cd-pipeline.yml`)
-- **Setup:** 
-  - **Infrastructure:** Run `Deploy Infrastructure` GitHub workflow or `./scripts/deploy-single-rg.sh`
-  - **Development:** `make setup` for dependencies, `make dev` for local environment
-  - **GitHub Secrets:** Use `./scripts/setup-github-secrets-helper.sh` for automated Azure service principal setup
-
-### 7.3 API & Documentation
-
-- **API Documentation:** Self-documenting with Swagger UI (`/docs`) and ReDoc (`/redoc`)
-- **Data Models:** Pydantic (backend) and TypeScript (`/shared`)
-- **Database Migrations:** Alembic in `/backend/alembic`
+#### Architecture Validation
+- [ ] **Test pause operation (delete compute layer)**
+- [ ] **Test resume operation (recreate compute layer)**
+- [ ] **Verify data persistence across pause/resume cycles**
+- [ ] **Validate file upload preservation**
 
 ---
 
-## 8. Production Deployment
+## 5. DECISIONS MADE TODAY
 
-### 8.1 Current Production Status
+### 5.1 Storage Account Location
+**Decision:** Move storage account from compute layer to persistent data layer
+**Rationale:** Files and uploads should survive pause/resume cycles
+**Impact:** Enhanced data preservation, consistent architecture
 
-- **Frontend:** `https://pathfinder-frontend.yellowdune-9b8d769a.eastus.azurecontainerapps.io`
-- **Backend:** `https://pathfinder-backend.yellowdune-9b8d769a.eastus.azurecontainerapps.io`
-- **Health Status:** All endpoints operational, zero critical errors
-- **Performance:** <2s response times, optimized rate limiting
+### 5.2 Resource Naming Strategy
+**Decision:** Use globally unique naming with `uniqueString()` function
+**Rationale:** Avoid Azure naming conflicts across regions and subscriptions
+**Impact:** More reliable deployments, better resource management
 
-### 8.2 Recent Production Fixes (June 2025)
-
-- ✅ **CORS Configuration:** Fixed cross-origin request handling
-- ✅ **Pydantic V2 Migration:** Updated field validators and configuration
-- ✅ **Rate Limiting:** Optimized limits (150/200/300 per minute by endpoint)
-- ✅ **Host Header Validation:** Proper ALLOWED_HOSTS configuration
-- ✅ **Container Deployment:** Stable Docker builds and deployments
-
----
-
-## 9. AI Integration Features
-
-### 9.1 Pathfinder Assistant
-
-- **@mention functionality** with context awareness
-- **Rich response cards** with actionable suggestions
-- **Contextual AI suggestions** based on user context
-- **Feedback collection** with 1-5 star rating system
-
-### 9.2 Magic Polls System
-
-- **AI-enhanced options** with insights and recommendations
-- **Real-time consensus analysis** and conflict identification
-- **Intelligent recommendations** based on group preferences
-- **Conflict resolution** with automated detection
-- **Template system** for common trip decisions
+### 5.3 Script Error Handling
+**Decision:** Update deployment scripts to handle existing resources gracefully
+**Rationale:** CI/CD should be idempotent and handle various deployment states
+**Impact:** More robust automation, fewer deployment failures
 
 ---
 
-## 10. Cost Management
+## 6. TECHNICAL DEBT AND KNOWN ISSUES
 
-### 10.1 Monthly Cost Targets
+### 6.1 Infrastructure
+- [ ] **Container registry missing from layered architecture**
+- [ ] **SQL password complexity requirements not documented**
+- [ ] **Resource group tags need standardization**
 
-- **Current Optimized Cost:** $45-65/month
-- **Previous Cost:** $110+/month
-- **Savings Achieved:** $45-65/month (40-60% reduction)
+### 6.2 CI/CD Pipeline
+- [ ] **Registry name hardcoded in workflow**
+- [ ] **Error handling could be improved**
+- [ ] **Deployment state validation needed**
 
-### 10.2 Cost Control Measures
-
-- **Resource Monitoring:** Unified dashboard in `pathfinder-rg`
-- **Spending Alerts:** Azure cost alerts configured
-- **Scale-to-Zero:** Automatic scaling when idle
-- **Optimized Tiers:** Basic SQL, Serverless Cosmos DB
-- **Local Redundancy:** LRS storage for cost savings
-
----
-
-## 11. Security & Compliance
-
-- **Zero-Trust Architecture:** Defense in depth, secure by default
-- **Authentication:** Auth0 with enterprise-grade security
-- **Authorization:** Role-based access control (RBAC)
-- **Data Protection:** Encrypted storage and transmission
-- **Secret Management:** Azure Key Vault integration
-- **Network Security:** Container Apps with proper CORS and host validation
+### 6.3 Documentation
+- [ ] **Deployment procedures need updating**
+- [ ] **Troubleshooting guide for common issues**
+- [ ] **Cost optimization procedures documentation**
 
 ---
 
-## 12. Performance Optimizations
+## 7. COST OPTIMIZATION STATUS
 
-- **Frontend:** React 18, Vite build optimization, PWA capabilities
-- **Backend:** FastAPI with async processing, optimized database connections
-- **Caching:** Redis-free architecture with SQLite/in-memory hybrid
-- **Database:** Connection pooling, optimized queries, hybrid storage model
-- **Monitoring:** Application Insights with cost-controlled sampling
+### 7.1 Current Strategy
+- **Pause/Resume Architecture:** Implemented ✅
+- **Storage Persistence:** Implemented ✅
+- **Layered Resource Groups:** Implemented ✅
+
+### 7.2 Expected Savings
+- **Idle Cost:** ~$20-30/month (persistent data layer only)
+- **Active Cost:** ~$30-40/month (both layers)
+- **Pause Savings:** ~$35-50/month (70% reduction)
+
+### 7.3 Next Optimizations
+- [ ] Auto-pause scheduling
+- [ ] Resource usage monitoring
+- [ ] Cost alerting setup
 
 ---
 
-## 13. Glossary
+## 8. CONTACT AND HANDOFF
 
-- **Trip Organizer:** Primary user responsible for trip coordination
-- **Family Unit:** Group of related users traveling together
-- **LLM Orchestration:** Service layer managing AI provider selection and cost optimization
-- **Zero-Trust:** Security model requiring strict verification for every person and device
-- **RU/s:** Request Units per second, Cosmos DB throughput measure
-- **Scale-to-Zero:** Container capability to reduce to zero instances when idle
+**Current Status:** Infrastructure migration in progress, deployment issues identified
+**Blocking Issues:** SQL password complexity, missing container registry
+**Next Session Priority:** Complete infrastructure deployment and validate CI/CD
+**Estimated Time:** 2-3 hours to resolve remaining deployment issues
+
+**Key Files to Review Tomorrow:**
+- `infrastructure/bicep/compute-layer.bicep` (add container registry)
+- `.github/workflows/ci-cd-pipeline.yml` (fix registry references)
+- `STORAGE_MIGRATION_SUMMARY.md` (implementation details)
+
+---
+
+*Last updated: June 14, 2025 - End of Day Summary*

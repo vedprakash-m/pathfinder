@@ -128,12 +128,17 @@ log_info "  Storage Account: $STORAGE_ACCOUNT_NAME"
 log_info "  Data Key Vault: $DATA_KEY_VAULT_NAME"
 
 # Create compute resource group
-log_info "Creating compute resource group: $COMPUTE_RG"
-az group create --name "$COMPUTE_RG" --location "$LOCATION" --tags \
-    "app=pathfinder" \
-    "type=compute-layer" \
-    "dataLayer=$DATA_RG" \
-    "resumedAt=$(date -u +"%Y-%m-%dT%H:%M:%S.%3NZ")"
+log_info "Checking compute resource group: $COMPUTE_RG"
+if az group show --name "$COMPUTE_RG" &> /dev/null; then
+    log_warning "Compute resource group '$COMPUTE_RG' already exists"
+else
+    log_info "Creating compute resource group: $COMPUTE_RG"
+    az group create --name "$COMPUTE_RG" --location "$LOCATION" --tags \
+        "app=pathfinder" \
+        "type=compute-layer" \
+        "dataLayer=$DATA_RG" \
+        "resumedAt=$(date -u +"%Y-%m-%dT%H:%M:%S.%3NZ")"
+fi
 
 # Deploy compute layer template
 log_info "Deploying compute layer infrastructure..."
