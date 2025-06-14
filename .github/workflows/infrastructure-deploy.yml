@@ -1,130 +1,15 @@
-# Infrastructure Deployment Pipeline - Pause/Resume Architecture
-# Deploy Azure infrastructure for Pathfinder using two resource groups
-name: Deploy Infrastructure
+# DEPRECATED WORKFLOW: All infrastructure deployment logic is now embedded in ci-cd-pipeline.yml
+name: _Deprecated Infrastructure Deploy (No-Op)
 
-on:
-  workflow_dispatch:
-    inputs:
-      deploy_data_layer:
-        description: 'Deploy persistent data layer (pathfinder-db-rg)'
-        required: false
-        default: false
-        type: boolean
-      force_deploy:
-        description: 'Force redeploy infrastructure'
-        required: false
-        default: false
-        type: boolean
-  push:
-    branches: [ main ]
-    paths:
-      - 'infrastructure/**'
-      - 'scripts/deploy-data-layer.sh'
-      - 'scripts/resume-environment.sh'
+# No automatic triggers
+on: workflow_dispatch
 
 env:
-  AZURE_LOCATION: westus2  # Changed from eastus due to capacity issues
-  APP_NAME: pathfinder
-  DATA_RESOURCE_GROUP: pathfinder-db-rg
-  COMPUTE_RESOURCE_GROUP: pathfinder-rg
+  NOTE: "This workflow is kept for historical reference only and does nothing."
 
 jobs:
-  # Job 1: Deploy Persistent Data Layer (if requested or doesn't exist)
-  deploy-data-layer:
-    name: Deploy Data Layer
+  noop:
     runs-on: ubuntu-latest
-    if: github.event.inputs.deploy_data_layer == 'true' || github.event.inputs.force_deploy == 'true'
-    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Azure Login
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-      
-      - name: Deploy persistent data layer
-        run: |
-          echo "🏗️ Deploying persistent data layer..."
-          echo "📍 Location: ${{ env.AZURE_LOCATION }}"
-          echo "📦 Resource Group: ${{ env.DATA_RESOURCE_GROUP }}"
-          
-          # Set environment variables for the script
-          export SQL_ADMIN_USERNAME="${{ secrets.SQL_ADMIN_USERNAME }}"
-          export SQL_ADMIN_PASSWORD="${{ secrets.SQL_ADMIN_PASSWORD }}"
-          export LOCATION="${{ env.AZURE_LOCATION }}"
-          
-          # Run the data layer deployment script
-          chmod +x ./scripts/deploy-data-layer.sh
-          ./scripts/deploy-data-layer.sh
-
-  # Job 2: Deploy Compute Layer (Resume Environment)
-  deploy-compute-layer:
-    name: Deploy Compute Layer
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.event.inputs.force_deploy == 'true'
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Azure Login
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-      
-      - name: Check data layer exists
-        run: |
-          echo "🔍 Verifying data layer exists..."
-          if ! az group show --name ${{ env.DATA_RESOURCE_GROUP }} --output none 2>/dev/null; then
-            echo "❌ Data layer resource group ${{ env.DATA_RESOURCE_GROUP }} does not exist!"
-            echo "🚀 Please run the 'Deploy Data Layer' workflow first or trigger this workflow with 'deploy_data_layer=true'"
-            exit 1
-          fi
-          echo "✅ Data layer verified"
-      
-      - name: Resume environment (deploy compute layer)
-        run: |
-          echo "🚀 Resuming environment (deploying compute layer)..."
-          echo "📍 Location: ${{ env.AZURE_LOCATION }}"
-          echo "📦 Compute RG: ${{ env.COMPUTE_RESOURCE_GROUP }}"
-          echo "🗄️ Data RG: ${{ env.DATA_RESOURCE_GROUP }}"
-          
-          # Set environment variables for the script (non-interactive)
-          export SQL_ADMIN_USERNAME="${{ secrets.SQL_ADMIN_USERNAME }}"
-          export SQL_ADMIN_PASSWORD="${{ secrets.SQL_ADMIN_PASSWORD }}"
-          export OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}"
-          export LOCATION="${{ env.AZURE_LOCATION }}"
-          export FORCE_REDEPLOY=true
-          
-          # Run the resume environment script
-          chmod +x ./scripts/resume-environment.sh
-          ./scripts/resume-environment.sh
-      
-      - name: Verify compute layer deployment
-        run: |
-          echo "🔍 Verifying compute layer deployment..."
-          az resource list --resource-group ${{ env.COMPUTE_RESOURCE_GROUP }} --query "[].{Name:name,Type:type}" -o table
-
-  # Job 3: Create Deployment Summary
-  deployment-summary:
-    name: Deployment Summary
-    runs-on: ubuntu-latest
-    needs: [deploy-compute-layer]
-    if: always()
-    
-    steps:
-      - name: Create summary
-        run: |
-          echo "## 🏗️ Pause/Resume Infrastructure Deployment" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🏛️ Architecture Overview" >> $GITHUB_STEP_SUMMARY
-          echo "- **Data Layer**: ${{ env.DATA_RESOURCE_GROUP }} (persistent, never delete)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Compute Layer**: ${{ env.COMPUTE_RESOURCE_GROUP }} (pausable, can delete to save costs)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Location**: ${{ env.AZURE_LOCATION }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 💰 Cost Optimization" >> $GITHUB_STEP_SUMMARY
-          echo "- **Pause**: Delete ${{ env.COMPUTE_RESOURCE_GROUP }} to save ~70% costs" >> $GITHUB_STEP_SUMMARY
-          echo "- **Resume**: Run CI/CD pipeline to recreate compute layer" >> $GITHUB_STEP_SUMMARY
-          echo "- **Data Safety**: All data preserved in ${{ env.DATA_RESOURCE_GROUP }}" >> $GITHUB_STEP_SUMMARY
+      - name: Notice
+        run: echo "This workflow is deprecated. Use main CI/CD pipeline instead."
