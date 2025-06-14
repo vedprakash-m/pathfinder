@@ -173,7 +173,7 @@ jobs:
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
-    needs: [backend-quality, frontend-quality, build-images]
+    needs: [infrastructure, backend-quality, frontend-quality, build-images]
     if: github.ref == 'refs/heads/main' && (success() || failure())
     
     steps:
@@ -347,4 +347,55 @@ jobs:
           echo "- **Backend**: https://pathfinder-backend.yellowdune-9b8d769a.eastus.azurecontainerapps.io" >> $GITHUB_STEP_SUMMARY
           echo "- **Frontend**: https://pathfinder-frontend.yellowdune-9b8d769a.eastus.azurecontainerapps.io" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Status**: Optimized pipeline ⚡" >> $GITHUB_STEP_SUMMARY 
+          echo "- **Status**: Optimized pipeline ⚡" >> $GITHUB_STEP_SUMMARY
+
+  infrastructure:
+    name: Deploy Infrastructure (Compute Layer)
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Ensure Data Layer Exists
+        run: |
+          echo "🔎 Checking data layer RG $DATA_RESOURCE_GROUP"
+          if ! az group show --name $DATA_RESOURCE_GROUP >/dev/null 2>&1; then
+            echo "❌ Data layer $DATA_RESOURCE_GROUP not found. Failing build."
+            exit 1
+          fi
+          echo "✅ Data layer exists"
+
+      - name: Resume / Deploy Compute Layer
+        run: |
+          echo "🚀 Deploying compute layer via resume script"
+          chmod +x ./scripts/resume-environment.sh
+          export SQL_ADMIN_USERNAME="${{ secrets.SQL_ADMIN_USERNAME }}"
+          export SQL_ADMIN_PASSWORD="${{ secrets.SQL_ADMIN_PASSWORD }}"
+          export OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}"
+          export LOCATION="$AZURE_LOCATION"
+          export FORCE_REDEPLOY=true
+          ./scripts/resume-environment.sh
+
+      - name: Wait for ARM deployment to finish (max 30 min)
+        run: |
+          echo "⏳ Waiting for compute-layer ARM deployment to finish..."
+          DEPLOY=$(az deployment group list -g ${{ env.COMPUTE_RESOURCE_GROUP }} --query "[?starts_with(name,'compute-layer-')]|[-1].name" -o tsv)
+          if [ -z "$DEPLOY" ]; then
+            echo "❌ Could not find recent compute-layer deployment in ${{ env.COMPUTE_RESOURCE_GROUP }}"; exit 1
+          fi
+          az deployment group wait --created \
+            --resource-group ${{ env.COMPUTE_RESOURCE_GROUP }} \
+            --name "$DEPLOY" \
+            --interval 30 --timeout 1800 || {
+              echo "❌ ARM deployment failed. Error details:";
+              az deployment group show -g ${{ env.COMPUTE_RESOURCE_GROUP }} -n "$DEPLOY" --query "properties.error" -o json;
+              exit 1;
+          }
+          echo "✅ ARM deployment completed" 
