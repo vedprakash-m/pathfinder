@@ -137,21 +137,11 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-02-01' = {
 }
 
 // ==================== AZURE CONTAINER REGISTRY (for images) ====================
-resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-01-01-preview' = {
+resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-01-01-preview' existing = {
   name: acrName
-  location: location
-  tags: computeTags
-  sku: {
-    name: acrSku
-  }
-  properties: {
-    adminUserEnabled: true
-    publicNetworkAccess: 'Enabled'
-  }
 }
 
-// Container Apps pull images from ACR in same subscription automatically. If needed,
-// additional role assignments can be added here.
+// Container Apps pull images from ACR automatically. Ensure ACR exists before this deployment.
 
 // ==================== DATA LAYER REFERENCES ====================
 // Reference existing SQL Server in data layer
