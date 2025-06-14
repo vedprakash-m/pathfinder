@@ -42,6 +42,12 @@ param llmOrchestrationUrl string = ''
 @secure()
 param llmOrchestrationApiKey string = ''
 
+@description('Azure Container Registry name (must be globally unique; leave default for dev)')
+param acrName string = 'pathfinderdevregistry'
+
+@description('Azure Container Registry SKU')
+param acrSku string = 'Basic'
+
 // Compute layer tags - ephemeral resources
 var computeTags = {
   app: appName
@@ -129,6 +135,23 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-02-01' = {
     publicNetworkAccess: 'Enabled'
   }
 }
+
+// ==================== AZURE CONTAINER REGISTRY (for images) ====================
+resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-01-01-preview' = {
+  name: acrName
+  location: location
+  tags: computeTags
+  sku: {
+    name: acrSku
+  }
+  properties: {
+    adminUserEnabled: true
+    publicNetworkAccess: 'Enabled'
+  }
+}
+
+// Container Apps pull images from ACR in same subscription automatically. If needed,
+// additional role assignments can be added here.
 
 // ==================== DATA LAYER REFERENCES ====================
 // Reference existing SQL Server in data layer
@@ -372,6 +395,8 @@ output containerAppsEnvironment string = containerAppsEnv.name
 output logAnalyticsWorkspaceId string = logAnalytics.id
 output appInsightsInstrumentationKey string = appInsights.properties.InstrumentationKey
 output keyVaultName string = keyVault.name
+output acrNameOut string = containerRegistry.name
+output acrLoginServer string = containerRegistry.properties.loginServer
 
 // Resume strategy information
 output resumeStrategy object = {

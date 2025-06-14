@@ -26,7 +26,8 @@ env:
   AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
   COMPUTE_RG: pathfinder-rg
   DATA_RG: pathfinder-db-rg
-  LOCATION: eastus
+  AZURE_LOCATION: westus2
+  LOCATION: westus2
 
 jobs:
   pause-resume-manager:
@@ -36,21 +37,10 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup Azure CLI
-      uses: azure/CLI@v1
-      with:
-        azcliversion: latest
-
     - name: Azure Login
-      uses: azure/login@v1
+      uses: azure/login@v2
       with:
-        creds: |
-          {
-            "clientId": "${{ env.AZURE_CLIENT_ID }}",
-            "clientSecret": "${{ env.AZURE_CLIENT_SECRET }}",
-            "subscriptionId": "${{ env.AZURE_SUBSCRIPTION_ID }}",
-            "tenantId": "${{ env.AZURE_TENANT_ID }}"
-          }
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
 
     - name: Deploy Data Layer
       if: github.event.inputs.action == 'deploy-data-layer'

@@ -74,10 +74,16 @@ if [[ -z "$SQL_ADMIN_PASSWORD" ]]; then
     echo
 fi
 
-# Validate password complexity
-if [[ ${#SQL_ADMIN_PASSWORD} -lt 8 ]]; then
-    log_error "Password must be at least 8 characters long"
+# Validate password complexity (min 8 chars, upper, lower, digit, special)
+if [[ ${#SQL_ADMIN_PASSWORD} -lt 8 || ! "$SQL_ADMIN_PASSWORD" =~ [A-Z] || ! "$SQL_ADMIN_PASSWORD" =~ [a-z] || ! "$SQL_ADMIN_PASSWORD" =~ [0-9] || ! "$SQL_ADMIN_PASSWORD" =~ [^A-Za-z0-9] ]]; then
+    log_error "Password does not meet Azure SQL complexity requirements (≥8 chars, upper, lower, number, special)."
     exit 1
+fi
+
+# Skip prompts in CI/non-interactive mode
+ASK_CONFIRM=true
+if [[ -n "$CI" || -n "$FORCE_DEPLOY" ]]; then
+    ASK_CONFIRM=false
 fi
 
 # Check if resource group already exists
@@ -88,11 +94,13 @@ if az group show --name "$DATA_RG" &> /dev/null; then
     RESOURCE_COUNT=$(az resource list --resource-group "$DATA_RG" --query "length(@)")
     if [[ $RESOURCE_COUNT -gt 0 ]]; then
         log_warning "Resource group contains $RESOURCE_COUNT resources"
-        read -p "Do you want to update the deployment? (y/N): " -n 1 -r
-        echo
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            log_info "Operation cancelled"
-            exit 0
+        if [[ $ASK_CONFIRM == true ]]; then
+            read -p "Do you want to update the deployment? (y/N): " -n 1 -r
+            echo
+            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                log_info "Operation cancelled"
+                exit 0
+            fi
         fi
     fi
 else

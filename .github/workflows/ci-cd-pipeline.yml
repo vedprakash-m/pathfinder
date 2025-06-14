@@ -21,6 +21,8 @@ env:
   APP_NAME: pathfinder
   ENVIRONMENT: production
   REGISTRY_NAME: pathfinderdevregistry.azurecr.io
+  AZURE_LOCATION: westus2
+  ACR_NAME: pathfinderdevregistry
 
 jobs:
   # Job 1: Backend Quality Checks (Parallel)
@@ -135,7 +137,7 @@ jobs:
       
       - name: Login to Azure Container Registry
         run: |
-          az acr login --name pathfinderdevregistry
+          az acr login --name $ACR_NAME
       
       - name: Build and push ${{ matrix.service }}
         uses: docker/build-push-action@v5
@@ -223,24 +225,44 @@ jobs:
           wait
           echo "✅ Container apps updated"
       
-      - name: Quick Health Check
+      - name: Adaptive Health Check (max 4 min)
         run: |
-          echo "🏥 Quick health verification..."
-          sleep 45  # Reduced wait time
-          
-          # Parallel health checks
-          {
-            curl -sf "https://pathfinder-backend.yellowdune-9b8d769a.eastus.azurecontainerapps.io/health" > /dev/null 2>&1 && 
-            echo "✅ Backend healthy"
-          } &
-          
-          {
-            curl -sf "https://pathfinder-frontend.yellowdune-9b8d769a.eastus.azurecontainerapps.io" > /dev/null 2>&1 && 
-            echo "✅ Frontend healthy"
-          } &
-          
-          wait
-          echo "🎉 Deployment complete!"
+          echo "🏥 Adaptive health verification..."
+          BACKEND_FQDN=$(az containerapp show --name pathfinder-backend --resource-group ${{ env.COMPUTE_RESOURCE_GROUP }} --query "properties.configuration.ingress.fqdn" -o tsv)
+          FRONTEND_FQDN=$(az containerapp show --name pathfinder-frontend --resource-group ${{ env.COMPUTE_RESOURCE_GROUP }} --query "properties.configuration.ingress.fqdn" -o tsv)
+
+          BACKEND_URL="https://$BACKEND_FQDN/health"
+          FRONTEND_URL="https://$FRONTEND_FQDN"
+
+          for attempt in {1..8}; do
+            echo "🔄 Attempt $attempt (every 30s)..."
+            BACKEND_OK=false
+            FRONTEND_OK=false
+
+            if curl -fs $BACKEND_URL > /dev/null 2>&1; then
+              echo "✅ Backend healthy"
+              BACKEND_OK=true
+            else
+              echo "⏳ Backend not ready"
+            fi
+
+            if curl -fs $FRONTEND_URL > /dev/null 2>&1; then
+              echo "✅ Frontend healthy"
+              FRONTEND_OK=true
+            else
+              echo "⏳ Frontend not ready"
+            fi
+
+            if [[ $BACKEND_OK == true && $FRONTEND_OK == true ]]; then
+              echo "🎉 Deployment healthy!"
+              exit 0
+            fi
+
+            sleep 30
+          done
+
+          echo "❌ Health check failed after 4 minutes"
+          exit 1
 
   # Job 5: Optional Deploy Summary (runs quickly)
   summary:

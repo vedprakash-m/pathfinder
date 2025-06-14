@@ -38,12 +38,16 @@ log_warning "This will delete the compute layer ($COMPUTE_RG) to save costs"
 log_info "All your data will be preserved in $DATA_RG"
 echo ""
 
-# Check if user wants to continue
-read -p "Are you sure you want to pause the environment? (y/N): " -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    log_info "Operation cancelled"
-    exit 0
+# Skip prompt in non-interactive environments (CI) or when FORCE_PAUSE is set
+if [[ -n "$CI" || -n "$FORCE_PAUSE" ]]; then
+    log_info "Non-interactive or forced pause requested, proceeding without confirmation"
+else
+    read -p "Are you sure you want to pause the environment? (y/N): " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        log_info "Operation cancelled"
+        exit 0
+    fi
 fi
 
 # Check if Azure CLI is logged in
