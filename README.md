@@ -1,7 +1,7 @@
 # Pathfinder – AI-Powered Group Trip Planner
 
-[![CI / CD](https://github.com/vedprakashmishra/pathfinder/actions/workflows/ci-cd-pipeline.yml/badge.svg)](https://github.com/vedprakashmishra/pathfinder/actions)
-[![Pause / Resume](https://github.com/vedprakashmishra/pathfinder/actions/workflows/pause-resume.yml/badge.svg)](https://github.com/vedprakashmishra/pathfinder/actions)
+[![CI / CD](https://github.com/vedprakash-m/pathfinder/actions/workflows/ci-cd-pipeline.yml/badge.svg)](https://github.com/vedprakash-m/pathfinder/actions)
+[![Pause / Resume](https://github.com/vedprakash-m/pathfinder/actions/workflows/pause-resume.yml/badge.svg)](https://github.com/vedprakash-m/pathfinder/actions)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
 
 Pathfinder eliminates the chaos of planning **multi-family group trips** by centralising communication, preference gathering and AI-generated itineraries – all secured by Auth0 and deployed cost-efficiently on Azure.
@@ -68,7 +68,7 @@ Infrastructure is defined with **Bicep** in `infrastructure/bicep/` and automate
 1. **Secrets** – Add `AZURE_CREDENTIALS`, `SQL_ADMIN_USERNAME`, `SQL_ADMIN_PASSWORD`, (optional) `OPENAI_API_KEY` to your repository.  
 2. **Deploy Data Layer (one-time)**
    ```bash
-   ./scripts/deploy-data-layer.sh   # or run the “Deploy Infrastructure” workflow
+   ./scripts/deploy-data-layer.sh   # or run the "Deploy Infrastructure" workflow
    ```
 3. **Resume / Deploy Compute Layer**
    ```bash
