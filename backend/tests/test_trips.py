@@ -13,7 +13,7 @@ from app.models.trip import (
 )
 from app.models.family import Family
 from app.models.user import User
-from app.services.trip_service import TripService
+from backend.domain.trip import TripDomainService as TripService
 
 
 @pytest.mark.asyncio

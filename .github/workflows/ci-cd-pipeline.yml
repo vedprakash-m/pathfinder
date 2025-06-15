@@ -53,11 +53,12 @@ jobs:
           cd backend
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install flake8 black mypy isort pytest pytest-asyncio httpx pytest-mock
+          pip install flake8 black mypy isort ruff import-linter pytest pytest-asyncio httpx pytest-mock
           
           # Run all quality checks in parallel where possible
           echo "🔍 Running quality checks..."
           flake8 . --max-line-length=88 --extend-ignore=E203,W503 --exclude=venv,migrations &
+          ruff check . --line-length=100 --target-version=py311 &
           black --check --diff . &
           isort --check-only --diff . &
           wait
@@ -65,8 +66,13 @@ jobs:
           echo "🏷️ Type checking..."
           mypy app/ --ignore-missing-imports || true
           
+          echo "🏛️ Enforcing architectural contracts..."
+          lint-imports --config importlinter_contracts/layers.toml || (echo "⚠️ Import-Linter violations detected" && exit 1)
+          
           echo "🧪 Running fast tests..."
-          python -m pytest tests/ -v --maxfail=3 -x --tb=short || echo "⚠️ Tests completed"
+          coverage run -m pytest tests/ -v --maxfail=3 -x --tb=short
+          coverage xml -o coverage.xml
+          coverage report --fail-under=70 || echo "⚠️ Coverage below threshold; will enforce 80% once refactor stabilises"
 
   # Job 2: Frontend Quality Checks (Parallel)
   frontend-quality:

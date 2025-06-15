@@ -1,0 +1,75 @@
+[[contract]]
+name = "Layered architecture for backend"
+module = "backend.app"
+
+layers = [
+    "api",
+    "services",
+    "core",
+]
+
+[[contract.layers]]
+name = "api"
+contains = [
+  "backend.app.api"
+]
+
+[[contract.layers]]
+name = "services"
+contains = [
+  "backend.app.services"
+]
+
+[[contract.layers]]
+name = "core"
+contains = [
+  "backend.app.core"
+]
+
+# Forbidden imports
+[contract.forbidden]
+api = ["services", "core"]
+services = ["core"]
+
+[[contract]]
+name = "Clean architecture enforcement"
+module = "backend.app"
+
+layers = [
+    "interface",
+    "application",
+    "domain",
+    "infrastructure",
+]
+
+[[contract.layers]]
+name = "interface"
+contains = [
+  "backend.app.api",
+  "frontend.src",
+]
+
+[[contract.layers]]
+name = "application"
+contains = [
+  "backend.app.services",
+  "backend.app.tasks",
+]
+
+[[contract.layers]]
+name = "domain"
+contains = [
+  "backend.domain",
+]
+
+[[contract.layers]]
+name = "infrastructure"
+contains = [
+  "backend.app.core",
+  "backend.data",
+]
+
+[contract.forbidden]
+interface = ["application", "domain", "infrastructure"]
+application = ["domain", "infrastructure"]
+domain = ["infrastructure"] 

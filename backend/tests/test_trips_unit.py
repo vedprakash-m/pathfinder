@@ -16,7 +16,7 @@ client = TestClient(app)
 class TestTripCreation:
     """Test trip creation functionality."""
     
-    @patch('app.services.trip_service.TripService')
+    @patch('backend.domain.trip.TripDomainService')
     @patch('app.core.security.get_current_user')
     def test_create_trip_success(self, mock_get_user, mock_trip_service):
         """Test successful trip creation."""

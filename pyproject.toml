@@ -1,0 +1,36 @@
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.ruff]
+line-length = 100
+indent-width = 4
+target-version = "py311"
+exclude = [
+    "node_modules",
+    ".git",
+    "dist"
+]
+# Enable high-value rulesets
+select = [
+    "E",  # pycodestyle errors
+    "F",  # pyflakes
+    "I",  # isort
+    "B",  # bugbear
+    "Q",  # quotes
+]
+ignore = [
+    "E501",  # handled by black
+]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+plugins = []
+
+[tool.importlinter]
+contract_files = ["importlinter_contracts/*.toml"] 

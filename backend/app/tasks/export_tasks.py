@@ -11,7 +11,7 @@ from app.tasks.task_compat import conditional_task, run_async_task
 from app.core.logging_config import get_logger
 from app.core.database import get_db
 from app.services.export_service import DataExportService
-from app.services.trip_service import TripService
+from app.core.task_context import get_trip_service
 from app.services.notification_service import NotificationService
 
 logger = get_logger(__name__)
@@ -33,7 +33,7 @@ def export_trip_data(self, trip_id: str, user_id: str, export_format: str = "exc
                 
                 # Initialize services
                 export_service = DataExportService()
-                trip_service = TripService(db)
+                trip_service = await get_trip_service()
                 notification_service = NotificationService(db)
                 
                 # Get trip data

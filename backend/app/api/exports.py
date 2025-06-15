@@ -13,7 +13,7 @@ from app.core.security import get_current_user, require_permissions
 from app.core.logging_config import get_logger
 from app.models.user import User
 from app.services.export_service import DataExportService
-from app.services.trip_service import TripService
+from app.core.container import Container
 from app.tasks.export_tasks import export_trip_data, bulk_export_trips
 from pydantic import BaseModel
 
@@ -47,7 +47,7 @@ async def export_trip(
     """Export trip data in various formats."""
     try:
         # Verify user has access to trip
-        trip_service = TripService(db)
+        trip_service = Container().trip_domain_service()
         trip = await trip_service.get_trip_by_id(trip_id, str(current_user.id))
         
         if not trip:
@@ -142,7 +142,7 @@ async def bulk_export_trips_endpoint(
     """Export multiple trips in a single archive."""
     try:
         # Verify user has access to all trips
-        trip_service = TripService(db)
+        trip_service = Container().trip_domain_service()
         accessible_trips = []
         
         for trip_id in bulk_request.trip_ids:
@@ -251,7 +251,7 @@ async def export_activity_summary(
     """Export activity summary for quick reference."""
     try:
         # Verify user has access to trip
-        trip_service = TripService(db)
+        trip_service = Container().trip_domain_service()
         trip = await trip_service.get_trip_by_id(trip_id, str(current_user.id))
         
         if not trip:

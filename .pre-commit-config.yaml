@@ -1,0 +1,43 @@
+repos:
+  - repo: https://github.com/psf/black
+    rev: 24.4.2
+    hooks:
+      - id: black
+        language_version: python3.11
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.4
+    hooks:
+      - id: ruff
+        additional_dependencies: ["ruff==0.4.4"]
+        args: [
+          "--fix", "--exit-non-zero-on-fix",
+          "--line-length=100",
+          "--target-version=py311",
+        ]
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.10.0
+    hooks:
+      - id: mypy
+        args: ["--strict"]
+
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args: ["--profile", "black"]
+
+  - repo: https://github.com/joaopalmeiro/pre-commit-hooks
+    rev: v2.5.0
+    hooks:
+      - id: check-added-large-files
+        args: ["--maxkb", "512"]
+
+  - repo: https://github.com/seddonym/import-linter
+    rev: v2.3.0
+    hooks:
+      - id: lint-imports
+        name: "Import Linter – enforce layer contracts"
+        args: ["--config", "importlinter_contracts/layers.toml"]
+        language_version: python3.11 

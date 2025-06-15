@@ -113,6 +113,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         if settings.ENVIRONMENT == "production":
             raise
     
+    # Initialize dependency-injector container
+    from app.core.container import Container
+    container = Container()
+    container.init_resources()
+    container.wire(packages=("app.api",))
+    app.state.container = container
+    
     yield
     
     # Cleanup

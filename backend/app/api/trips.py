@@ -6,9 +6,9 @@ from typing import List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.ext.asyncio import AsyncSession
+# from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
+# from app.core.database import get_db
 # from app.core.security import get_current_active_user  # No longer needed
 from app.core.zero_trust import require_permissions
 from app.models.user import User
@@ -17,24 +17,38 @@ from app.models.trip import (
     ParticipationCreate, ParticipationUpdate, ParticipationResponse,
     TripInvitation
 )
-from app.services.trip_service import TripService
+# from app.services.trip_service import TripService  # TODO: will be removed after repository migration
 from app.services.trip_cosmos import TripCosmosOperations
+from dependency_injector.wiring import Provide, inject
+from app.core.container import Container
+from app.application.trip_use_cases import (
+    CreateTripUseCase,
+    DeleteTripUseCase,
+    GetTripUseCase,
+    ListUserTripsUseCase,
+    UpdateTripUseCase,
+    GetTripStatsUseCase,
+    AddParticipantUseCase,
+    GetParticipantsUseCase,
+    UpdateParticipationUseCase,
+    RemoveParticipantUseCase,
+    SendInvitationUseCase,
+)
 
 router = APIRouter()
 
 
 @router.post("/", response_model=TripResponse)
+@inject
 async def create_trip(
     trip_data: TripCreate,
     current_user: User = Depends(require_permissions("trips", "create")),
-    db: AsyncSession = Depends(get_db)
+    use_case: CreateTripUseCase = Depends(Provide[Container.create_trip_use_case]),
 ):
-    """Create a new trip."""
-    trip_service = TripService(db)
-    
+    """Create a new trip (application layer)."""
+
     try:
-        trip = await trip_service.create_trip(trip_data, current_user.id)
-        return trip
+        return await use_case(trip_data, current_user.id)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -43,229 +57,197 @@ async def create_trip(
 
 
 @router.get("/", response_model=List[TripResponse])
+@inject
 async def get_trips(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     status_filter: Optional[str] = Query(None),
     current_user: User = Depends(require_permissions("trips", "read")),
-    db: AsyncSession = Depends(get_db)
+    use_case: ListUserTripsUseCase = Depends(Provide[Container.list_user_trips_use_case]),
 ):
-    """Get user's trips with optional filtering."""
-    trip_service = TripService(db)
-    return await trip_service.get_user_trips(
-        current_user.id, 
-        skip=skip, 
-        limit=limit, 
-        status_filter=status_filter
+    """Get user's trips with optional filtering (application layer)."""
+
+    return await use_case(
+        user_id=current_user.id,
+        skip=skip,
+        limit=limit,
+        status_filter=status_filter,
     )
 
 
 @router.get("/{trip_id}", response_model=TripDetail)
+@inject
 async def get_trip(
     trip_id: UUID,
     current_user: User = Depends(require_permissions("trips", "read")),
-    db: AsyncSession = Depends(get_db)
+    use_case: GetTripUseCase = Depends(Provide[Container.get_trip_use_case]),
 ):
-    """Get trip details by ID."""
-    trip_service = TripService(db)
-    
-    trip = await trip_service.get_trip_by_id(trip_id, current_user.id)
-    if not trip:
+    """Get trip details by ID (application layer)."""
+
+    trip = await use_case(trip_id, current_user.id)
+    if trip is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Trip not found"
+            detail="Trip not found",
         )
-    
     return trip
 
 
 @router.put("/{trip_id}", response_model=TripResponse)
+@inject
 async def update_trip(
     trip_id: UUID,
     trip_update: TripUpdate,
     current_user: User = Depends(require_permissions("trips", "update")),
-    db: AsyncSession = Depends(get_db)
+    use_case: UpdateTripUseCase = Depends(Provide[Container.update_trip_use_case]),
 ):
-    """Update trip details."""
-    trip_service = TripService(db)
-    
+    """Update trip details (application layer)."""
+
     try:
-        trip = await trip_service.update_trip(trip_id, trip_update, current_user.id)
-        return trip
+        return await use_case(trip_id, trip_update, current_user.id)
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except PermissionError:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to update this trip"
+            detail="Not authorized to update this trip",
         )
 
 
 @router.delete("/{trip_id}")
+@inject
 async def delete_trip(
     trip_id: UUID,
     current_user: User = Depends(require_permissions("trips", "delete")),
-    db: AsyncSession = Depends(get_db)
+    use_case: DeleteTripUseCase = Depends(Provide[Container.delete_trip_use_case]),
 ):
-    """Delete a trip."""
-    trip_service = TripService(db)
-    
+    """Delete a trip (application layer)."""
+
     try:
-        await trip_service.delete_trip(trip_id, current_user.id)
+        await use_case(trip_id, current_user.id)
         return {"message": "Trip deleted successfully"}
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except PermissionError:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to delete this trip"
+            detail="Not authorized to delete this trip",
         )
 
 
 @router.get("/{trip_id}/stats", response_model=TripStats)
+@inject
 async def get_trip_stats(
     trip_id: UUID,
     current_user: User = Depends(require_permissions("trips", "read")),
-    db: AsyncSession = Depends(get_db)
+    use_case: GetTripStatsUseCase = Depends(Provide[Container.get_trip_stats_use_case]),
 ):
-    """Get trip statistics."""
-    trip_service = TripService(db)
-    
-    stats = await trip_service.get_trip_stats(trip_id, current_user.id)
-    if not stats:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Trip not found"
-        )
-    
+    """Get trip statistics (application layer)."""
+
+    stats = await use_case(trip_id, current_user.id)
+    if stats is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
     return stats
 
 
 # Participation endpoints
 
 @router.post("/{trip_id}/participants", response_model=ParticipationResponse)
+@inject
 async def add_participant(
     trip_id: UUID,
     participation_data: ParticipationCreate,
     current_user: User = Depends(require_permissions("trips", "update")),
-    db: AsyncSession = Depends(get_db)
+    use_case: AddParticipantUseCase = Depends(Provide[Container.add_participant_use_case]),
 ):
-    """Add a family to the trip."""
-    trip_service = TripService(db)
-    
-    # Override trip_id from URL
-    participation_data.trip_id = str(trip_id)
-    
+    """Add a family to the trip (application layer)."""
+
     try:
-        participation = await trip_service.add_participant(participation_data, current_user.id)
-        return participation
+        return await use_case(trip_id, participation_data, current_user.id)
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.get("/{trip_id}/participants", response_model=List[ParticipationResponse])
+@inject
 async def get_participants(
     trip_id: UUID,
     current_user: User = Depends(require_permissions("trips", "read")),
-    db: AsyncSession = Depends(get_db)
+    use_case: GetParticipantsUseCase = Depends(Provide[Container.get_participants_use_case]),
 ):
-    """Get trip participants."""
-    trip_service = TripService(db)
-    return await trip_service.get_trip_participants(trip_id, current_user.id)
+    """Get trip participants (application layer)."""
+
+    return await use_case(trip_id, current_user.id)
 
 
 @router.put("/{trip_id}/participants/{participation_id}", response_model=ParticipationResponse)
+@inject
 async def update_participation(
     trip_id: UUID,
     participation_id: UUID,
     participation_update: ParticipationUpdate,
     current_user: User = Depends(require_permissions("trips", "update")),
-    db: AsyncSession = Depends(get_db)
+    use_case: UpdateParticipationUseCase = Depends(Provide[Container.update_participation_use_case]),
 ):
-    """Update family participation status."""
-    trip_service = TripService(db)
-    
+    """Update family participation status (application layer)."""
+
     try:
-        participation = await trip_service.update_participation(
-            participation_id, participation_update, current_user.id
-        )
-        return participation
+        return await use_case(participation_id, participation_update, current_user.id)
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except PermissionError:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to update this participation"
+            detail="Not authorized to update this participation",
         )
 
 
 @router.delete("/{trip_id}/participants/{participation_id}")
+@inject
 async def remove_participant(
     trip_id: UUID,
     participation_id: UUID,
     current_user: User = Depends(require_permissions("trips", "delete")),
-    db: AsyncSession = Depends(get_db)
+    use_case: RemoveParticipantUseCase = Depends(Provide[Container.remove_participant_use_case]),
 ):
-    """Remove a family from the trip."""
-    trip_service = TripService(db)
-    
+    """Remove a family from the trip (application layer)."""
+
     try:
-        await trip_service.remove_participant(participation_id, current_user.id)
+        await use_case(participation_id, current_user.id)
         return {"message": "Participant removed successfully"}
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except PermissionError:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to remove this participant"
+            detail="Not authorized to remove this participant",
         )
 
 
 # Invitation endpoints
 
 @router.post("/{trip_id}/invitations")
+@inject
 async def send_invitation(
     trip_id: UUID,
     invitation_data: TripInvitation,
     current_user: User = Depends(require_permissions("trips", "update")),
-    db: AsyncSession = Depends(get_db)
+    use_case: SendInvitationUseCase = Depends(Provide[Container.send_invitation_use_case]),
 ):
-    """Send trip invitation to a family."""
-    trip_service = TripService(db)
-    
-    # Override trip_id from URL
-    invitation_data.trip_id = str(trip_id)
-    
+    """Send trip invitation to a family (application layer)."""
+
     try:
-        await trip_service.send_invitation(invitation_data, current_user.id)
+        await use_case(trip_id, invitation_data, current_user.id)
         return {"message": "Invitation sent successfully"}
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.get("/{trip_id}/messages")
 async def get_trip_messages(
     trip_id: UUID,
     current_user: User = Depends(require_permissions("trips", "read")),
-    db: AsyncSession = Depends(get_db)
+    # db: AsyncSession = Depends(get_db)
 ):
     """Get trip messages."""
     cosmos_service = TripCosmosOperations()

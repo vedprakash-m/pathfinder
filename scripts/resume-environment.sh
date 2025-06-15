@@ -56,11 +56,16 @@ fi
 # Check if compute layer already exists
 if az group show --name "$COMPUTE_RG" &> /dev/null; then
     log_warning "Compute resource group '$COMPUTE_RG' already exists"
-    read -p "Do you want to redeploy it? (y/N): " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        log_info "Operation cancelled"
-        exit 0
+    # In non-interactive environments (e.g., CI/CD) automatically proceed
+    if [[ -n "$CI" || -n "$FORCE_REDEPLOY" ]]; then
+        log_info "Non-interactive or force mode detected, proceeding with redeploy"
+    else
+        read -p "Do you want to redeploy it? (y/N): " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            log_info "Operation cancelled"
+            exit 0
+        fi
     fi
 fi
 
@@ -220,3 +225,6 @@ log_info "🔗 Health check: $BACKEND_URL/health"
 echo ""
 log_warning "Note: CI/CD pipeline deployment will update container images"
 log_info "📋 To pause again: ./scripts/pause-environment.sh"
+
+az deployment group wait --created ... ||
+az deployment group show -g $RG -n "$DEPLOY" --query "properties.error" -o json

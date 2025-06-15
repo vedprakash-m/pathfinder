@@ -11,10 +11,11 @@ from typing import Dict, Any, Optional, List
 
 from app.core.config import get_settings
 from app.core.database import get_db
-from app.services.ai_service import AIService
-from app.services.trip_service import TripService
 from app.core.logging_config import get_logger
 from app.core.cache_alternatives import task_queue
+# Domain helper
+from app.services.ai_service import AIService
+from app.core.task_context import get_trip_service
 
 logger = get_logger(__name__)
 settings = get_settings()
@@ -49,7 +50,7 @@ async def _generate_itinerary_async(trip_id: str, preferences: Dict[str, Any], u
         try:
             # Initialize services
             ai_service = AIService()
-            trip_service = TripService(db)
+            trip_service = await get_trip_service()
             
             # Get trip details
             trip = await trip_service.get_trip_by_id(trip_id, user_id)

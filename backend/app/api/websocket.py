@@ -15,7 +15,7 @@ from app.core.security import get_current_user_websocket, get_current_user
 from app.core.database import get_db
 from app.models.user import User
 from app.services.websocket import websocket_manager, handle_websocket_message
-from app.services.trip_service import TripService
+from app.core.container import Container
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +38,7 @@ async def websocket_trip_endpoint(
         token: Authentication token
         db: Database session
     """
-    trip_service = TripService(db)
+    trip_service = Container().trip_domain_service()
     try:
         # Authenticate user from token
         user = await get_current_user_websocket(token)
@@ -201,7 +201,7 @@ async def get_trip_connections(
     Returns:
         List of active connection information
     """
-    trip_service = TripService(db)
+    trip_service = Container().trip_domain_service()
     try:
         # Check if user has access to the trip
         trip = await trip_service.get_trip_by_id(trip_id, current_user.id)
@@ -250,7 +250,7 @@ async def broadcast_to_trip(
     Returns:
         Success confirmation
     """
-    trip_service = TripService(db)
+    trip_service = Container().trip_domain_service()
     try:
         # Check if user has access to the trip
         trip = await trip_service.get_trip_by_id(trip_id, current_user.id)

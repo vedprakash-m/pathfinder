@@ -50,7 +50,6 @@ opentelemetry-exporter-otlp-proto-grpc>=1.20.0
 
 # Background tasks
 celery==5.3.4
-redis==5.0.1
 
 # Image processing
 Pillow==10.1.0
@@ -78,3 +77,10 @@ mypy==1.7.1
 
 # Environment and configuration
 python-dotenv==1.0.0
+
+# Dependency Injection
+dependency-injector==4.41.0
+
+# Static analysis and architecture governance
+ruff==0.4.4
+import-linter==2.3.0
