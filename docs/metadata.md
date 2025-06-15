@@ -70,9 +70,20 @@ _Optional (pause/resume):_ `AZURE_SUBSCRIPTION_ID`, `AZURE_TENANT_ID`, `AZURE_CL
 
 ---
 ## 6  Open Tasks (as of June 14 2025)
-1. Add Container Registry resource to `compute-layer.bicep` and workflows.  
-2. Update SQL admin password to meet Azure complexity rules.  
-3. Final CI/CD pipeline validation after tasks 1-2.  
+### Completed (June 15 2025)
+✔ Implemented `/trips/sample` API endpoint to support Golden-Path onboarding.
+
+### In-Progress
+1. Add Container Registry resource to `compute-layer.bicep` and update GitHub Actions build/push steps.  
+2. Harden security guards – auditing all new routes for missing `require_permissions`.  
+3. Restore Families navigation link & accessibility fixes (`aria-label`s).  
+
+### Planned
+4. Refactor CI/CD for efficiency:  
+   • Single reusable composite action for Docker build & push  
+   • Matrix strategy for backend / frontend tests  
+   • Cache dependencies to cut build time by >40 %  
+5. Final pipeline validation and SLA alerting integration.  
 
 ---
 ## 7  Contact / Handoff

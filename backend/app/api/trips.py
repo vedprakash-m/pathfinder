@@ -56,6 +56,70 @@ async def create_trip(
         )
 
 
+# --------------------------------------------------------------
+# 🆕  Sample Trip Endpoint for Golden-Path Onboarding
+# --------------------------------------------------------------
+
+
+from datetime import date, timedelta  # NEW import (keep grouped at top if sorted)
+
+
+@router.post("/sample", response_model=TripResponse, status_code=status.HTTP_201_CREATED)
+@inject
+async def create_sample_trip(
+    template: str = Query(
+        "weekend_getaway",
+        regex="^(weekend_getaway|family_vacation|adventure_trip)$",
+        description="Sample trip template to use",
+    ),
+    current_user: User = Depends(require_permissions("trips", "create")),
+    use_case: CreateTripUseCase = Depends(Provide[Container.create_trip_use_case]),
+):
+    """Create a pre-populated *sample* trip used by the Golden Path onboarding flow.
+
+    The trip is **private** (`is_public=False`) and linked to the creator’s family only.
+    """
+
+    # Basic defaults per template
+    template_map = {
+        "weekend_getaway": {
+            "name": "Sample Weekend Getaway",
+            "description": "2-3 day nearby escape to showcase Pathfinder features.",
+            "destination": "Sample City",
+            "duration": 2,
+        },
+        "family_vacation": {
+            "name": "Sample Family Vacation",
+            "description": "Kid-friendly 1-week vacation demo.",
+            "destination": "Sample Beach Resort",
+            "duration": 6,
+        },
+        "adventure_trip": {
+            "name": "Sample Adventure Trip",
+            "description": "Outdoor adventure template.",
+            "destination": "Sample National Park",
+            "duration": 4,
+        },
+    }
+
+    cfg = template_map[template]
+    today = date.today()
+
+    trip_data = TripCreate(
+        name=cfg["name"],
+        description=cfg["description"],
+        destination=cfg["destination"],
+        start_date=today + timedelta(days=14),
+        end_date=today + timedelta(days=14 + cfg["duration"]),
+        budget_total=0.0,
+        preferences=None,
+        is_public=False,
+        family_ids=[],  # The CreateTripUseCase will auto-attach creator’s family
+    )
+
+    return await use_case(trip_data, current_user.id)
+
+
 @router.get("/", response_model=List[TripResponse])
 @inject
 async def get_trips(
