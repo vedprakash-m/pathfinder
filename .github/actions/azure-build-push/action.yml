@@ -1,0 +1,39 @@
+name: "Azure Build & Push"
+description: "Build a Docker image for a service and push it to Azure Container Registry"
+
+inputs:
+  registry:
+    description: "ACR name (without .azurecr.io)"
+    required: true
+  context:
+    description: "Docker build context path"
+    required: true
+  image-name:
+    description: "Image repository name (e.g. backend or frontend)"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Login to Azure using OIDC
+      uses: azure/login@v2
+      with:
+        client-id: ${{ env.AZURE_CLIENT_ID }}
+        tenant-id: ${{ env.AZURE_TENANT_ID }}
+        subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
+
+    - name: Login to ACR
+      run: az acr login --name ${{ inputs.registry }}
+      shell: bash
+
+    - name: Build & Push docker image
+      run: |
+        docker buildx build --push --platform linux/amd64 \
+          -t ${{ inputs.registry }}.azurecr.io/${{ inputs.image-name }}:${{ github.sha }} \
+          -t ${{ inputs.registry }}.azurecr.io/${{ inputs.image-name }}:latest \
+          ${{ inputs.context }}
+      shell: bash
+
+    - name: Logout of Azure
+      run: az logout
+      shell: bash 

@@ -150,30 +150,12 @@ jobs:
             echo "✅ ACR $ACR_NAME already exists"
           fi
       
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Build & push ${{ matrix.service }} image
+        uses: ./.github/actions/azure-build-push
         with:
-          driver-opts: |
-            network=host
-      
-      - name: Login to Azure Container Registry
-        run: |
-          az acr login --name $ACR_NAME
-      
-      - name: Build and push ${{ matrix.service }}
-        uses: docker/build-push-action@v5
-        with:
+          registry: $ACR_NAME
           context: ./${{ matrix.service }}
-          push: true
-          tags: ${{ env.REGISTRY_NAME }}/pathfinder-${{ matrix.service }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          build-args: |
-            VITE_AUTH0_DOMAIN=dev-jwnud3v8ghqnyygr.us.auth0.com
-            VITE_AUTH0_CLIENT_ID=KXu3KpGiyRHHHgiXX90sHuNC4rfYRcNn
-            VITE_AUTH0_AUDIENCE=https://pathfinder-api.com
-            VITE_API_URL=https://pathfinder-backend.yellowdune-9b8d769a.eastus.azurecontainerapps.io
-            ENVIRONMENT=production
+          image-name: pathfinder-${{ matrix.service }}
 
   # Job 4: Deploy to Azure (Fastest approach)
   deploy:
