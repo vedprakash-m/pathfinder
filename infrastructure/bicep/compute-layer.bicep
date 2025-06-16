@@ -42,11 +42,14 @@ param llmOrchestrationUrl string = ''
 @secure()
 param llmOrchestrationApiKey string = ''
 
-@description('Azure Container Registry name (must be globally unique; leave default for dev)')
-param acrName string = 'pathfinderdevregistry'
+@description('Azure Container Registry name (optional). If blank, a unique name will be generated.')
+param acrName string = ''
 
 @description('Azure Container Registry SKU')
 param acrSku string = 'Basic'
+
+// Generate globally-unique ACR name when param not supplied
+var resolvedAcrName = empty(acrName) ? toLower('${appName}acr${uniqueString(resourceGroup().id)}') : acrName
 
 // Compute layer tags - ephemeral resources
 var computeTags = {
@@ -137,8 +140,26 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-02-01' = {
 }
 
 // ==================== AZURE CONTAINER REGISTRY (for images) ====================
-resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-01-01-preview' existing = {
-  name: acrName
+resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-01-01-preview' = {
+  name: resolvedAcrName
+  location: location
+  sku: {
+    name: acrSku
+  }
+  tags: computeTags
+  properties: {
+    adminUserEnabled: false
+    publicNetworkAccess: 'Enabled'
+    policies: {
+      quarantinePolicy: {
+        status: 'disabled'
+      }
+      retentionPolicy: {
+        status: 'disabled'
+        days: 0
+      }
+    }
+  }
 }
 
 // Container Apps pull images from ACR automatically. Ensure ACR exists before this deployment.
