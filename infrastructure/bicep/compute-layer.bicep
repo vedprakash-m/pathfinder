@@ -20,9 +20,6 @@ param cosmosAccountName string
 @description('Storage account name from data layer')
 param storageAccountName string
 
-@description('Data layer Key Vault name')
-param dataKeyVaultName string
-
 @description('SQL Server admin username')
 @secure()
 param sqlAdminLogin string
@@ -34,6 +31,18 @@ param sqlAdminPassword string
 @description('OpenAI API key')
 @secure()
 param openAIApiKey string = ''
+
+@description('Auth0 domain for authentication')
+@secure()
+param auth0Domain string = ''
+
+@description('Auth0 client ID for authentication')
+@secure()
+param auth0ClientId string = ''
+
+@description('Auth0 audience for API authorization')
+@secure()
+param auth0Audience string = ''
 
 @description('LLM Orchestration Service URL')
 param llmOrchestrationUrl string = ''
@@ -183,12 +192,6 @@ resource existingStorageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' e
   scope: resourceGroup(dataResourceGroup)
 }
 
-// Reference existing data layer Key Vault
-resource existingDataKeyVault 'Microsoft.KeyVault/vaults@2023-02-01' existing = {
-  name: dataKeyVaultName
-  scope: resourceGroup(dataResourceGroup)
-}
-
 // ==================== BACKEND CONTAINER APP ====================
 resource backendApp 'Microsoft.App/containerApps@2023-05-01' = {
   name: computeResourceNames.backendApp
@@ -282,11 +285,11 @@ resource backendApp 'Microsoft.App/containerApps@2023-05-01' = {
             }
             {
               name: 'AUTH0_DOMAIN'
-              value: 'dev-jwnud3v8ghqnyygr.us.auth0.com'
+              value: auth0Domain
             }
             {
               name: 'AUTH0_AUDIENCE'
-              value: 'https://pathfinder-api.com'
+              value: auth0Audience
             }
             {
               name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
@@ -329,15 +332,15 @@ resource frontendApp 'Microsoft.App/containerApps@2023-05-01' = {
       secrets: [
         {
           name: 'auth0-domain'
-          value: 'dev-jwnud3v8ghqnyygr.us.auth0.com'
+          value: !empty(auth0Domain) ? auth0Domain : 'dev-jwnud3v8ghqnyygr.us.auth0.com'
         }
         {
           name: 'auth0-client-id'
-          value: 'KXu3KpGiyRHHHgiXX90sHuNC4rfYRcNn'
+          value: !empty(auth0ClientId) ? auth0ClientId : 'KXu3KpGiyRHHHgiXX90sHuNC4rfYRcNn'
         }
         {
           name: 'auth0-audience'
-          value: 'https://pathfinder-api.com'
+          value: !empty(auth0Audience) ? auth0Audience : 'https://pathfinder-api.com'
         }
       ]
     }

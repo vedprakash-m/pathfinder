@@ -184,6 +184,15 @@ cat > compute-params.json << EOF
     "openAIApiKey": {
       "value": "$OPENAI_API_KEY"
     },
+    "auth0Domain": {
+      "value": "${AUTH0_DOMAIN:-}"
+    },
+    "auth0ClientId": {
+      "value": "${AUTH0_CLIENT_ID:-}"
+    },
+    "auth0Audience": {
+      "value": "${AUTH0_AUDIENCE:-}"
+    },
     "acrName": {
       "value": "${ACR_NAME:-pathfinderdevregistry}"
     }
