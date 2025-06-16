@@ -8,6 +8,19 @@ on:
   schedule:
     # Run weekly security scans
     - cron: '0 2 * * 1'
+  workflow_dispatch:
+    inputs:
+      scan_type:
+        description: 'Type of scan to run'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - dependencies
+          - containers
+          - secrets
+          - code
 
 jobs:
   dependency-scan:
