@@ -183,6 +183,9 @@ cat > compute-params.json << EOF
     },
     "openAIApiKey": {
       "value": "$OPENAI_API_KEY"
+    },
+    "acrName": {
+      "value": "${ACR_NAME:-pathfinderdevregistry}"
     }
   }
 }
