@@ -156,6 +156,7 @@ jobs:
           registry: $ACR_NAME
           context: ./${{ matrix.service }}
           image-name: pathfinder-${{ matrix.service }}
+          azure-credentials: ${{ secrets.AZURE_CREDENTIALS }}
 
   # Job 4: Deploy to Azure (Fastest approach)
   deploy:
