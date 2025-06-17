@@ -1,0 +1,173 @@
+version: '3.8'
+
+name: pathfinder-e2e
+
+services:
+  # Backend FastAPI Service for E2E Testing
+  backend-e2e:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - ENVIRONMENT=testing
+      - DEBUG=true
+      - SECRET_KEY=e2e_test_secret_key_change_in_production
+      - CSRF_SECRET_KEY=e2e_test_csrf_secret_key
+      - DATABASE_URL=sqlite:///./data/e2e_test.db
+      # MongoDB for E2E tests instead of Cosmos DB
+      - COSMOS_DB_ENABLED=false
+      - MONGODB_URL=mongodb://mongodb-e2e:27017/pathfinder_e2e
+      - REDIS_URL=redis://redis-e2e:6379
+      - REDIS_TTL=3600
+      # Mock external services for E2E testing
+      - AUTH0_DOMAIN=mock-auth.local
+      - AUTH0_AUDIENCE=api://pathfinder-e2e
+      - AUTH0_CLIENT_ID=e2e_test_client_id
+      - AUTH0_CLIENT_SECRET=e2e_test_client_secret
+      - OPENAI_API_KEY=sk-mock-e2e-key
+      - GOOGLE_MAPS_API_KEY=mock_e2e_maps_key
+      - SENDGRID_API_KEY=mock_e2e_sendgrid_key
+      # E2E specific settings
+      - CORS_ORIGINS=http://localhost:3001,http://frontend-e2e:3000
+      - ALLOWED_HOSTS=localhost,backend-e2e
+      - AI_ENABLED=false
+      - EMAIL_ENABLED=false
+      - WEBSOCKET_ENABLED=true
+    ports:
+      - "8001:8000"
+    depends_on:
+      - redis-e2e
+      - mongodb-e2e
+    volumes:
+      - ./backend:/app
+      - e2e-backend-data:/app/data
+    command: uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # Frontend React Service for E2E Testing
+  frontend-e2e:
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: base
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8001
+      - VITE_API_URL=http://localhost:8001
+      - VITE_AUTH0_DOMAIN=mock-auth.local
+      - VITE_AUTH0_CLIENT_ID=e2e_test_client_id
+      - VITE_AUTH0_AUDIENCE=api://pathfinder-e2e
+      - VITE_GOOGLE_MAPS_API_KEY=mock_e2e_maps_key
+      - VITE_ENVIRONMENT=testing
+      - NODE_ENV=development
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm run dev -- --host 0.0.0.0 --port 3000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # MongoDB for E2E Testing (isolated test data)
+  mongodb-e2e:
+    image: mongo:7.0
+    environment:
+      - MONGO_INITDB_DATABASE=pathfinder_e2e
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongodb-e2e-data:/data/db
+      - ./tests/e2e/mongodb-init:/docker-entrypoint-initdb.d
+    command: mongod --replSet rs0 --bind_ip_all
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for E2E Testing
+  redis-e2e:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis-e2e-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Playwright E2E Test Runner
+  playwright-e2e:
+    build:
+      context: ./tests/e2e
+      dockerfile: Dockerfile
+    environment:
+      - PLAYWRIGHT_BASE_URL=http://frontend-e2e:3000
+      - API_BASE_URL=http://backend-e2e:8000
+      - MONGODB_URL=mongodb://mongodb-e2e:27017/pathfinder_e2e
+      - REDIS_URL=redis://redis-e2e:6379
+      - E2E_HEADLESS=true
+      - E2E_SLOWMO=100
+      - E2E_TIMEOUT=30000
+    volumes:
+      - ./tests/e2e:/app
+      - ./playwright-report:/app/playwright-report
+      - ./test-results:/app/test-results
+    depends_on:
+      frontend-e2e:
+        condition: service_healthy
+      backend-e2e:
+        condition: service_healthy
+      mongodb-e2e:
+        condition: service_healthy
+      redis-e2e:
+        condition: service_healthy
+    profiles:
+      - e2e-tests
+
+  # Mock services for E2E testing
+  mock-auth-e2e:
+    image: nginx:alpine
+    volumes:
+      - ./tests/e2e/mock-services/auth:/usr/share/nginx/html
+      - ./tests/e2e/mock-services/nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - "9001:80"
+    profiles:
+      - mock-services
+
+  # MongoDB Express for database inspection during E2E testing
+  mongo-express-e2e:
+    image: mongo-express:latest
+    environment:
+      - ME_CONFIG_MONGODB_SERVER=mongodb-e2e
+      - ME_CONFIG_MONGODB_PORT=27017
+      - ME_CONFIG_BASICAUTH_USERNAME=admin
+      - ME_CONFIG_BASICAUTH_PASSWORD=admin123
+    ports:
+      - "8082:8081"
+    depends_on:
+      - mongodb-e2e
+    profiles:
+      - debug
+
+volumes:
+  mongodb-e2e-data:
+  redis-e2e-data:
+  e2e-backend-data:
+
+networks:
+  default:
+    name: pathfinder-e2e-network

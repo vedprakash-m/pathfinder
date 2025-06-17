@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mock Auth Service</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 400px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; }
+        .btn { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
+        .btn:hover { background: #0056b3; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Mock Authentication Service</h2>
+        <p>This is a mock authentication service for E2E testing.</p>
+        
+        <form id="loginForm">
+            <h3>Login</h3>
+            <input type="email" id="email" placeholder="Email" value="user1@e2e.test" required>
+            <input type="password" id="password" placeholder="Password" value="TestPass123!" required>
+            <button type="submit" class="btn">Login</button>
+        </form>
+        
+        <div id="message"></div>
+        
+        <hr style="margin: 20px 0;">
+        
+        <h3>Available Test Accounts</h3>
+        <ul>
+            <li><strong>user1@e2e.test</strong> - Test User One</li>
+            <li><strong>user2@e2e.test</strong> - Test User Two</li>
+            <li><strong>admin@family.test</strong> - Family Admin</li>
+        </ul>
+        
+        <p><em>Password for all accounts: TestPass123!</em></p>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const messageDiv = document.getElementById('message');
+            
+            // Mock authentication logic
+            const validAccounts = [
+                'user1@e2e.test',
+                'user2@e2e.test', 
+                'admin@family.test'
+            ];
+            
+            if (validAccounts.includes(email) && password === 'TestPass123!') {
+                messageDiv.innerHTML = '<p class="success">✅ Login successful! Redirecting...</p>';
+                
+                // Simulate redirect to callback URL
+                setTimeout(() => {
+                    const callbackUrl = new URLSearchParams(window.location.search).get('redirect_uri') || 'http://localhost:3001/callback';
+                    const mockCode = 'mock_auth_code_' + Date.now();
+                    window.location.href = callbackUrl + '?code=' + mockCode + '&state=mock_state';
+                }, 1000);
+            } else {
+                messageDiv.innerHTML = '<p class="error">❌ Invalid credentials</p>';
+            }
+        });
+    </script>
+</body>
+</html>

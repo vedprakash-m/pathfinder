@@ -1,0 +1,33 @@
+{
+  "name": "pathfinder-e2e-tests",
+  "version": "1.0.0",
+  "description": "End-to-End tests for Pathfinder application",
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report",
+    "test:e2e:smoke": "playwright test --grep '@smoke'",
+    "test:e2e:critical": "playwright test --grep '@critical'",
+    "test:e2e:auth": "playwright test tests/auth/",
+    "test:e2e:trips": "playwright test tests/trips/",
+    "test:e2e:families": "playwright test tests/families/",
+    "setup:data": "node scripts/setup-test-data.js",
+    "cleanup:data": "node scripts/cleanup-test-data.js",
+    "health:check": "node scripts/health-check.js",
+    "mongo:init": "node scripts/mongodb-init.js"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "@types/node": "^20.0.0",
+    "mongodb": "^6.3.0",
+    "redis": "^4.6.0",
+    "axios": "^1.6.0",
+    "faker": "^6.6.6",
+    "typescript": "^5.2.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

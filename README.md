@@ -13,8 +13,9 @@ Pathfinder eliminates the chaos of planning **multi-family group trips** by cent
 3. Quick Start (Local)  
 4. Cloud Deployment (Azure)  
 5. Development Workflow  
-6. Cost Optimisation & Pause/Resume  
-7. License
+6. Testing  
+7. Cost Optimisation & Pause/Resume  
+8. License
 
 ---
 ## 1. Key Features
@@ -97,7 +98,36 @@ pre-commit run --all-files
 Continuous integration executes the full test suite and, on main, builds & deploys containers to Azure Container Apps.
 
 ---
-## 6. Cost Optimisation
+## 6. Testing
+
+### Unit and Integration Tests
+```bash
+# Back-end tests
+cd backend && pytest -v
+
+# Front-end tests  
+cd frontend && npm test
+```
+
+### End-to-End Testing
+Pathfinder includes a comprehensive E2E testing suite using Docker Compose and Playwright for complete workflow validation:
+
+```bash
+# Run full E2E test suite
+./scripts/run-e2e-tests.sh
+```
+
+The E2E suite tests:
+- User authentication flows
+- Trip management (CRUD operations)
+- Family management and invitations
+- API integration and error handling
+- Complete user workflows across multiple features
+
+For detailed E2E testing documentation, setup instructions, and debugging guides, see [`E2E_TESTING.md`](E2E_TESTING.md).
+
+---
+## 7. Cost Optimisation
 • **Active**: ≈ $50–75 / month  
 • **Paused (compute deleted)**: ≈ $15–25 / month  
 Save ≈ 70 % with one command:
@@ -107,6 +137,6 @@ Save ≈ 70 % with one command:
 ```
 
 ---
-## 7. License
+## 8. License
 This project is licensed under the **GNU Affero General Public License v3.0** – see [`LICENSE`](LICENSE).  
 Commercial or closed-source usage is available via dual-licensing; contact the maintainer for details.
