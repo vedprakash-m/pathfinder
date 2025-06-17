@@ -79,6 +79,9 @@ mypy==1.7.1
 python-dotenv==1.0.0
 
 # Dependency Injection
+# Dependency injection (pinned to compatible version)
+# Note: dependency-injector has compilation issues with Python 3.12+
+# Keep Python 3.11 in CI/CD to avoid build failures
 dependency-injector==4.41.0
 
 # Static analysis and architecture governance
