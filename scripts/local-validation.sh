@@ -461,6 +461,46 @@ else
     print_status "On branch: $CURRENT_BRANCH" "info"
 fi
 
+# Test execution with same environment as CI/CD
+echo "   Running tests with coverage..."
+if python3 -c "import pytest" 2>/dev/null; then
+    # Set test environment variables (same as CI/CD)
+    export ENVIRONMENT=testing
+    export DATABASE_URL="sqlite+aiosqlite:///:memory:"
+    export AUTH0_DOMAIN="test-domain.auth0.com"
+    export AUTH0_AUDIENCE="test-audience"
+    export AUTH0_CLIENT_ID="test-client-id"
+    export AUTH0_CLIENT_SECRET="test-client-secret"
+    export OPENAI_API_KEY="sk-test-key-for-testing"
+    export GOOGLE_MAPS_API_KEY="test-maps-key-for-testing"
+    
+    # Install test dependencies if not available
+    if ! python3 -c "import coverage" 2>/dev/null; then
+        echo "   Installing test dependencies..."
+        python3 -m pip install pytest pytest-asyncio httpx pytest-mock coverage >/dev/null 2>&1 || true
+    fi
+    
+    # Run tests with coverage (same as CI/CD)
+    if coverage run -m pytest tests/ -v --maxfail=3 -x --tb=short 2>/dev/null; then
+        print_status "Tests: Passed" "success"
+        
+        # Generate coverage report
+        if coverage report --fail-under=70 >/dev/null 2>&1; then
+            print_status "Test coverage: Above 70%" "success"
+        else
+            COVERAGE_PERCENT=$(coverage report | tail -1 | awk '{print $4}' | sed 's/%//')
+            print_status "Test coverage: ${COVERAGE_PERCENT}% (below 70% threshold)" "warning"
+        fi
+    else
+        print_status "Tests failed" "error"
+        echo "   ❌ Run: cd backend && ENVIRONMENT=testing coverage run -m pytest tests/ -v"
+        echo "   📝 Check test configuration and environment variables"
+    fi
+else
+    print_status "Pytest not available for testing" "warning"
+    echo "   💡 Install: pip install pytest pytest-asyncio coverage"
+fi
+
 # Summary
 print_header "📊 Validation Summary"
 

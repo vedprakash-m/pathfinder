@@ -49,7 +49,10 @@ class UnifiedSettings(BaseSettings):
     CORS_ALLOW_HEADERS: List[str] = Field(default=["*"], description="Allowed CORS headers")
 
     # ==================== DATABASE CONFIGURATION ====================
-    DATABASE_URL: str = Field(..., description="Primary database connection URL")
+    DATABASE_URL: str = Field(
+        default_factory=lambda: "sqlite+aiosqlite:///:memory:" if os.getenv("ENVIRONMENT", "").lower() in ["test", "testing"] else "sqlite:///pathfinder.db",
+        description="Primary database connection URL"
+    )
     DATABASE_POOL_SIZE: int = Field(
         default=10, ge=1, le=50, description="Database connection pool size"
     )
@@ -91,10 +94,22 @@ class UnifiedSettings(BaseSettings):
     USE_REDIS_CACHE: bool = Field(default=False, description="Use Redis for caching")
 
     # ==================== AUTHENTICATION CONFIGURATION ====================
-    AUTH0_DOMAIN: str = Field(..., description="Auth0 domain")
-    AUTH0_AUDIENCE: str = Field(..., description="Auth0 API audience")
-    AUTH0_CLIENT_ID: str = Field(..., description="Auth0 client ID")
-    AUTH0_CLIENT_SECRET: str = Field(..., description="Auth0 client secret")
+    AUTH0_DOMAIN: str = Field(
+        default_factory=lambda: "test-domain.auth0.com" if os.getenv("ENVIRONMENT", "").lower() in ["test", "testing"] else None,
+        description="Auth0 domain"
+    )
+    AUTH0_AUDIENCE: str = Field(
+        default_factory=lambda: "test-audience" if os.getenv("ENVIRONMENT", "").lower() in ["test", "testing"] else None,
+        description="Auth0 API audience"
+    )
+    AUTH0_CLIENT_ID: str = Field(
+        default_factory=lambda: "test-client-id" if os.getenv("ENVIRONMENT", "").lower() in ["test", "testing"] else None,
+        description="Auth0 client ID"
+    )
+    AUTH0_CLIENT_SECRET: str = Field(
+        default_factory=lambda: "test-client-secret" if os.getenv("ENVIRONMENT", "").lower() in ["test", "testing"] else None,
+        description="Auth0 client secret"
+    )
     AUTH0_ISSUER: Optional[str] = Field(default=None, description="Auth0 token issuer")
     JWT_ALGORITHM: str = Field(default="RS256", description="JWT signing algorithm")
     JWT_EXPIRATION: int = Field(
@@ -102,7 +117,10 @@ class UnifiedSettings(BaseSettings):
     )
 
     # ==================== AI SERVICES CONFIGURATION ====================
-    OPENAI_API_KEY: str = Field(..., description="OpenAI API key")
+    OPENAI_API_KEY: str = Field(
+        default_factory=lambda: "sk-test-key-for-testing" if os.getenv("ENVIRONMENT", "").lower() in ["test", "testing"] else None,
+        description="OpenAI API key"
+    )
     OPENAI_MODEL_PRIMARY: str = Field(default="gpt-4o-mini", description="Primary OpenAI model")
     OPENAI_MODEL_FALLBACK: str = Field(default="gpt-4o", description="Fallback OpenAI model")
     OPENAI_MAX_TOKENS: int = Field(
@@ -112,7 +130,10 @@ class UnifiedSettings(BaseSettings):
     OPENAI_TIMEOUT: int = Field(default=60, ge=10, le=300, description="API request timeout")
 
     # ==================== EXTERNAL SERVICES ====================
-    GOOGLE_MAPS_API_KEY: str = Field(..., description="Google Maps API key")
+    GOOGLE_MAPS_API_KEY: str = Field(
+        default_factory=lambda: "test-maps-key-for-testing" if os.getenv("ENVIRONMENT", "").lower() in ["test", "testing"] else None,
+        description="Google Maps API key"
+    )
 
     # Email services
     SENDGRID_API_KEY: Optional[str] = Field(default=None, description="SendGrid API key")
@@ -297,6 +318,8 @@ class UnifiedSettings(BaseSettings):
             logger.warning("CORS wildcard '*' detected in production - this is a security risk")
 
         return v
+
+
 
     @model_validator(mode="after")
     def validate_database_configuration(self):
