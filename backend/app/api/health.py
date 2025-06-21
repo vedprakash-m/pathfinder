@@ -89,8 +89,7 @@ async def liveness_check() -> Dict:
 
 @router.get("/detailed")
 async def detailed_health_check(
-    db: AsyncSession = Depends(get_db), 
-    cosmos_client=Depends(get_cosmos_client)
+    db: AsyncSession = Depends(get_db), cosmos_client=Depends(get_cosmos_client)
 ) -> Dict:
     """
     Detailed health check endpoint that provides comprehensive system status.
@@ -104,8 +103,8 @@ async def detailed_health_check(
     try:
         cpu_percent = psutil.cpu_percent(interval=0.1)
         memory = psutil.virtual_memory()
-        disk = psutil.disk_usage('/')
-        
+        disk = psutil.disk_usage("/")
+
         details["system"] = {
             "status": "healthy",
             "cpu_percent": round(cpu_percent, 2),
@@ -114,13 +113,13 @@ async def detailed_health_check(
             "disk_percent": round(disk.percent, 2),
             "disk_free_gb": round(disk.free / (1024**3), 2),
         }
-        
+
         # Check for resource warnings
         if cpu_percent > 80 or memory.percent > 80 or disk.percent > 90:
             details["system"]["status"] = "warning"
             if status == "healthy":
                 status = "degraded"
-                
+
     except Exception as e:
         details["system"] = {"status": "error", "error": str(e)}
         status = "degraded"
@@ -130,19 +129,23 @@ async def detailed_health_check(
         db_start = time.time()
         result = await db.execute("SELECT 1")
         db_time = round((time.time() - db_start) * 1000, 2)
-        
+
         details["database"] = {
-            "status": "connected", 
+            "status": "connected",
             "type": "sqlite" if "sqlite" in settings.DATABASE_URL else "postgresql",
             "response_time_ms": db_time,
-            "url_type": settings.DATABASE_URL.split("://")[0] if "://" in settings.DATABASE_URL else "unknown"
+            "url_type": (
+                settings.DATABASE_URL.split("://")[0]
+                if "://" in settings.DATABASE_URL
+                else "unknown"
+            ),
         }
-        
+
         if db_time > 1000:  # More than 1 second is concerning
             details["database"]["status"] = "slow"
             if status == "healthy":
                 status = "degraded"
-                
+
     except Exception as e:
         status = "degraded"
         details["database"] = {"status": "error", "error": str(e)}
@@ -154,12 +157,12 @@ async def detailed_health_check(
             cosmos_start = time.time()
             cosmos_databases = list(cosmos_client.list_databases())
             cosmos_time = round((time.time() - cosmos_start) * 1000, 2)
-            
+
             details["cosmos_db"] = {
-                "status": "connected", 
+                "status": "connected",
                 "type": "azure_cosmos",
                 "database_count": len(cosmos_databases),
-                "response_time_ms": cosmos_time
+                "response_time_ms": cosmos_time,
             }
         else:
             details["cosmos_db"] = {"status": "disabled", "type": "azure_cosmos"}
@@ -173,13 +176,21 @@ async def detailed_health_check(
 
     # Check email service
     try:
-        email_status = "configured" if (email_service.sendgrid_client or email_service.smtp_config) else "not_configured"
-        email_type = "sendgrid" if email_service.sendgrid_client else ("smtp" if email_service.smtp_config else "none")
-        
+        email_status = (
+            "configured"
+            if (email_service.sendgrid_client or email_service.smtp_config)
+            else "not_configured"
+        )
+        email_type = (
+            "sendgrid"
+            if email_service.sendgrid_client
+            else ("smtp" if email_service.smtp_config else "none")
+        )
+
         details["email_service"] = {
             "status": email_status,
             "type": email_type,
-            "templates_loaded": bool(email_service.template_env)
+            "templates_loaded": bool(email_service.template_env),
         }
     except Exception as e:
         details["email_service"] = {"status": "error", "error": str(e)}
@@ -191,7 +202,7 @@ async def detailed_health_check(
             "status": ai_status,
             "type": "openai",
             "llm_orchestration_enabled": settings.LLM_ORCHESTRATION_ENABLED,
-            "cost_tracking_enabled": settings.AI_COST_TRACKING_ENABLED
+            "cost_tracking_enabled": settings.AI_COST_TRACKING_ENABLED,
         }
     except Exception as e:
         details["ai_service"] = {"status": "error", "error": str(e)}
@@ -203,7 +214,7 @@ async def detailed_health_check(
             "status": "enabled" if settings.CACHE_ENABLED else "disabled",
             "type": cache_type,
             "ttl": settings.CACHE_TTL,
-            "max_size": settings.CACHE_MAX_SIZE
+            "max_size": settings.CACHE_MAX_SIZE,
         }
     except Exception as e:
         details["cache"] = {"status": "error", "error": str(e)}
@@ -228,13 +239,13 @@ async def metrics_endpoint() -> Dict:
     Prometheus-style metrics endpoint for monitoring.
     """
     settings = get_settings()
-    
+
     try:
         # System metrics
         cpu_percent = psutil.cpu_percent(interval=0.1)
         memory = psutil.virtual_memory()
-        disk = psutil.disk_usage('/')
-        
+        disk = psutil.disk_usage("/")
+
         # Application metrics (placeholder - would be collected from actual usage)
         metrics = {
             "system_cpu_percent": cpu_percent,
@@ -254,18 +265,18 @@ async def metrics_endpoint() -> Dict:
             "active_trips_count": 0,  # Placeholder
             "active_families_count": 0,  # Placeholder
         }
-        
+
         return {
             "status": "ok",
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "metrics": metrics
+            "metrics": metrics,
         }
-        
+
     except Exception as e:
         logger.error(f"Error collecting metrics: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to collect metrics: {str(e)}"
+            detail=f"Failed to collect metrics: {str(e)}",
         )
 
 
@@ -275,7 +286,7 @@ async def version_info() -> Dict:
     Version and build information endpoint.
     """
     settings = get_settings()
-    
+
     return {
         "version": "1.0.0",
         "service": "pathfinder-api",
@@ -287,5 +298,5 @@ async def version_info() -> Dict:
             "fastapi": "0.104+",
             "sqlalchemy": "2.0+",
             "pydantic": "2.0+",
-        }
+        },
     }

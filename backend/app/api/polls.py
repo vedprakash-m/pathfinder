@@ -1,6 +1,7 @@
 """
 API endpoints for Magic Polls functionality
 """
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import Dict, List, Optional, Any
@@ -307,15 +308,15 @@ async def get_poll_analytics(
             "response_rate": len(responses),  # Would calculate based on invited users
             "time_to_respond": [],  # Average time from poll creation to response
             "consensus_metrics": {
-                "consensus_level": poll.ai_analysis.get("consensus_level", 0)
-                if poll.ai_analysis
-                else 0,
-                "conflicts_identified": len(poll.ai_analysis.get("conflicts", []))
-                if poll.ai_analysis
-                else 0,
-                "patterns_found": len(poll.ai_analysis.get("patterns", []))
-                if poll.ai_analysis
-                else 0,
+                "consensus_level": (
+                    poll.ai_analysis.get("consensus_level", 0) if poll.ai_analysis else 0
+                ),
+                "conflicts_identified": (
+                    len(poll.ai_analysis.get("conflicts", [])) if poll.ai_analysis else 0
+                ),
+                "patterns_found": (
+                    len(poll.ai_analysis.get("patterns", [])) if poll.ai_analysis else 0
+                ),
             },
             "response_timeline": [
                 {

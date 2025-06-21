@@ -306,9 +306,11 @@ class RealTimeFeedbackService:
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "change_data": change_data,
                 "impact_analysis": asdict(impact),
-                "status": "pending_approval"
-                if impact.impact_level in [ChangeImpactLevel.HIGH, ChangeImpactLevel.CRITICAL]
-                else "auto_approved",
+                "status": (
+                    "pending_approval"
+                    if impact.impact_level in [ChangeImpactLevel.HIGH, ChangeImpactLevel.CRITICAL]
+                    else "auto_approved"
+                ),
             }
 
             session.pending_changes.append(change_record)

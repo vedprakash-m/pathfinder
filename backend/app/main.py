@@ -17,7 +17,7 @@ from app.api.router import api_router
 from app.core.config import get_settings
 from app.core.database import init_db
 from app.core.logging_config import setup_logging
-from app.core.telemetry import setup_opentelemetry
+# from app.core.telemetry import setup_opentelemetry  # Commented out - not used yet
 from app.services.websocket import websocket_manager
 
 # Setup logging
@@ -69,27 +69,45 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             # Initialize or confirm containers
             try:
                 await database.create_container(
-                    id=settings.COSMOS_DB_CONTAINER_ITINERARIES, partition_key="/trip_id"
+                    id=settings.COSMOS_DB_CONTAINER_ITINERARIES,
+                    partition_key="/trip_id"
                 )
-                logger.info(f"Created container: {settings.COSMOS_DB_CONTAINER_ITINERARIES}")
+                logger.info(
+                    f"Created container: {settings.COSMOS_DB_CONTAINER_ITINERARIES}"
+                )
             except CosmosResourceExistsError:
-                logger.info(f"Container already exists: {settings.COSMOS_DB_CONTAINER_ITINERARIES}")
+                logger.info(
+                    f"Container already exists: "
+                    f"{settings.COSMOS_DB_CONTAINER_ITINERARIES}"
+                )
 
             try:
                 await database.create_container(
-                    id=settings.COSMOS_DB_CONTAINER_MESSAGES, partition_key="/trip_id"
+                    id=settings.COSMOS_DB_CONTAINER_MESSAGES,
+                    partition_key="/trip_id"
                 )
-                logger.info(f"Created container: {settings.COSMOS_DB_CONTAINER_MESSAGES}")
+                logger.info(
+                    f"Created container: {settings.COSMOS_DB_CONTAINER_MESSAGES}"
+                )
             except CosmosResourceExistsError:
-                logger.info(f"Container already exists: {settings.COSMOS_DB_CONTAINER_MESSAGES}")
+                logger.info(
+                    f"Container already exists: "
+                    f"{settings.COSMOS_DB_CONTAINER_MESSAGES}"
+                )
 
             try:
                 await database.create_container(
-                    id=settings.COSMOS_DB_CONTAINER_PREFERENCES, partition_key="/entity_id"
+                    id=settings.COSMOS_DB_CONTAINER_PREFERENCES,
+                    partition_key="/entity_id"
                 )
-                logger.info(f"Created container: {settings.COSMOS_DB_CONTAINER_PREFERENCES}")
+                logger.info(
+                    f"Created container: {settings.COSMOS_DB_CONTAINER_PREFERENCES}"
+                )
             except CosmosResourceExistsError:
-                logger.info(f"Container already exists: {settings.COSMOS_DB_CONTAINER_PREFERENCES}")
+                logger.info(
+                    f"Container already exists: "
+                    f"{settings.COSMOS_DB_CONTAINER_PREFERENCES}"
+                )
 
             logger.info("Cosmos DB initialization complete")
 
@@ -162,15 +180,15 @@ app.add_middleware(PerformanceMonitoringMiddleware)
 app.add_middleware(
     RateLimiter,
     window_size=60,  # 1 minute window
-    default_limit=500,  # Default 500 requests per minute (temporarily increased)
-    api_limit=2000,  # API endpoints 2000 requests per minute (temporarily increased)
-    public_limit=500,  # Public endpoints 500 requests per minute (temporarily increased for debugging)
+    default_limit=500,  # Default 500 requests per minute
+    api_limit=2000,  # API endpoints 2000 requests per minute
+    public_limit=500,  # Public endpoints 500 requests per minute
     endpoint_limits={
         "POST:/api/v1/auth/login": 20,  # Limit login attempts (increased)
         "POST:/api/v1/auth/register": 10,  # Limit registration (increased)
         "GET:/api/v1/auth/me": 1000,  # Allow frequent auth checks (increased)
-        "GET:/api/v1/auth/user/onboarding-status": 500,  # Allow onboarding status checks (temporarily increased)
-        "GET:/api/v1/trips/": 500,  # Allow frequent trips checks (temporarily increased)
+        "GET:/api/v1/auth/user/onboarding-status": 500,  # Onboarding checks
+        "GET:/api/v1/trips/": 500,  # Allow frequent trips checks
     },
 )
 
@@ -182,7 +200,7 @@ if settings.ENVIRONMENT == "production":
         cookie_secure=True,
         exempt_urls=[
             "/health",
-            "/health/ready", 
+            "/health/ready",
             "/health/live",
             "/health/detailed",
             "/docs",
@@ -201,7 +219,7 @@ elif settings.ENVIRONMENT != "testing":
         exempt_urls=[
             "/health",
             "/health/ready",
-            "/health/live", 
+            "/health/live",
             "/health/detailed",
             "/docs",
             "/redoc",
@@ -219,7 +237,9 @@ app.add_middleware(
     allow_origins=settings.cors_origins_list,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allow_headers=["*", "Authorization", "Content-Type", "X-CSRF-Token"],
+    allow_headers=[
+        "*", "Authorization", "Content-Type", "X-CSRF-Token"
+    ],
     expose_headers=["X-CSRF-Token"],  # Expose CSRF token to frontend
 )
 

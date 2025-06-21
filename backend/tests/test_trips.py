@@ -1,6 +1,7 @@
 """
 Tests for trip service functionality.
 """
+
 import pytest
 import json
 from datetime import date, datetime, timedelta

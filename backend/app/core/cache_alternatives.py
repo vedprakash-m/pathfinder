@@ -3,6 +3,7 @@ Redis-free caching alternatives for cost optimization.
 Provides in-memory and SQLite-based caching to replace Redis.
 Saves ~$40/month while maintaining performance for solo developer projects.
 """
+
 import json
 import sqlite3
 import time

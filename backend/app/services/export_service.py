@@ -1,6 +1,7 @@
 """
 Data export service for exporting trip data to Excel/CSV formats.
 """
+
 import io
 import csv
 from typing import Dict, Any, List, Optional
@@ -474,9 +475,11 @@ class DataExportService:
                             "Duration": activity.get("duration", ""),
                             "Cost": activity.get("cost", 0),
                             "Category": activity.get("category", ""),
-                            "Description": activity.get("description", "")[:100] + "..."
-                            if len(activity.get("description", "")) > 100
-                            else activity.get("description", ""),
+                            "Description": (
+                                activity.get("description", "")[:100] + "..."
+                                if len(activity.get("description", "")) > 100
+                                else activity.get("description", "")
+                            ),
                         }
                     )
 

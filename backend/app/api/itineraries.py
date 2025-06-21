@@ -119,12 +119,16 @@ async def generate_itinerary(
                 family_data = {
                     "user_id": str(p.user.id),
                     "family_size": 1,  # Could be enhanced to include actual family size
-                    "preferences": p.user.preferences
-                    if hasattr(p.user, "preferences") and p.user.preferences
-                    else {},
-                    "budget_share": float(trip.budget_total or 0) / len(trip.participations)
-                    if trip.budget_total
-                    else None,
+                    "preferences": (
+                        p.user.preferences
+                        if hasattr(p.user, "preferences") and p.user.preferences
+                        else {}
+                    ),
+                    "budget_share": (
+                        float(trip.budget_total or 0) / len(trip.participations)
+                        if trip.budget_total
+                        else None
+                    ),
                 }
                 families_data.append(family_data)
 

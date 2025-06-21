@@ -1,6 +1,7 @@
 """
 Tests for authentication service and functionality.
 """
+
 import pytest
 import json
 from unittest.mock import patch, MagicMock, AsyncMock

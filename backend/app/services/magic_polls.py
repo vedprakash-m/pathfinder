@@ -1,6 +1,7 @@
 """
 Magic Polls Service - AI-powered group decision making with intelligent preference aggregation
 """
+
 import json
 import time
 from typing import Dict, List, Optional, Any, Tuple
@@ -343,11 +344,11 @@ class MagicPollsService:
                     "vote_count": top_choice[1],
                     "total_votes": len(responses),
                     "consensus_strength": consensus_strength,
-                    "confidence": "high"
-                    if consensus_strength > 0.7
-                    else "moderate"
-                    if consensus_strength > 0.5
-                    else "low",
+                    "confidence": (
+                        "high"
+                        if consensus_strength > 0.7
+                        else "moderate" if consensus_strength > 0.5 else "low"
+                    ),
                     "rationale": ai_analysis.get("summary", "Based on group preferences"),
                     "generated_at": datetime.utcnow().isoformat(),
                 }

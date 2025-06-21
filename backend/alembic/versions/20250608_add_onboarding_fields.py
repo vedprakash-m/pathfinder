@@ -5,6 +5,7 @@ Revises: 20250608_add_user_role_field
 Create Date: 2025-06-08 10:00:00.000000
 
 """
+
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql

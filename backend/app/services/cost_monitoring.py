@@ -1,6 +1,7 @@
 """
 Cost monitoring service for tracking AI and infrastructure usage.
 """
+
 import asyncio
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, Optional

@@ -656,9 +656,11 @@ class SmartCoordinationService:
                     "name": family.name,
                     "members": [{"id": str(family.admin_user_id), "name": "Admin"}],
                     "preferences": {},
-                    "budget_allocation": float(participation.budget_allocation)
-                    if participation.budget_allocation
-                    else 0.0,
+                    "budget_allocation": (
+                        float(participation.budget_allocation)
+                        if participation.budget_allocation
+                        else 0.0
+                    ),
                     "is_trip_admin": str(trip.creator_id) == str(family.admin_user_id),
                 }
 

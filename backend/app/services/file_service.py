@@ -225,9 +225,9 @@ class FileService:
                     "blob_name": blob.name,
                     "size": blob.size,
                     "last_modified": blob.last_modified.isoformat(),
-                    "content_type": blob.content_settings.content_type
-                    if blob.content_settings
-                    else None,
+                    "content_type": (
+                        blob.content_settings.content_type if blob.content_settings else None
+                    ),
                     "etag": blob.etag,
                 }
 

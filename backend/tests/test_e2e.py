@@ -1,6 +1,7 @@
 """
 End-to-end tests for the Pathfinder application.
 """
+
 import pytest
 from httpx import AsyncClient
 from fastapi import status
@@ -358,9 +359,9 @@ class TestMultiFamilyCoordination:
             # Collaborative preference collection
             for i, headers in enumerate([headers1, headers2]):
                 family_prefs = {
-                    "activities": ["wine_tasting", "hiking"]
-                    if i == 0
-                    else ["shopping", "restaurants"],
+                    "activities": (
+                        ["wine_tasting", "hiking"] if i == 0 else ["shopping", "restaurants"]
+                    ),
                     "budget_per_day": 200.0 if i == 0 else 350.0,
                     "special_requirements": f"Family {i} specific requirements",
                 }

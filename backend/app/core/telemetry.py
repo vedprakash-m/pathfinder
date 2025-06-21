@@ -1,6 +1,7 @@
 """
 OpenTelemetry instrumentation for monitoring and observability.
 """
+
 import os
 from fastapi import FastAPI
 
@@ -81,13 +82,7 @@ def setup_opentelemetry(app: FastAPI, sqlalchemy_engine=None):
     Setup OpenTelemetry instrumentation for the application.
     Uses Azure Monitor if configured, or default exporter otherwise.
     """
-    global \
-        tracer, \
-        meter, \
-        request_duration, \
-        ai_generation_duration, \
-        database_operation_duration, \
-        cost_tracking_counter
+    global tracer, meter, request_duration, ai_generation_duration, database_operation_duration, cost_tracking_counter
 
     # Skip telemetry setup during testing or if telemetry is not available
     if TESTING or not TELEMETRY_AVAILABLE:

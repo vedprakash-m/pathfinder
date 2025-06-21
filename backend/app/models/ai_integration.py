@@ -1,6 +1,7 @@
 """
 Data models for AI integration features including Pathfinder Assistant and Magic Polls
 """
+
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
 from enum import Enum

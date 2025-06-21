@@ -201,20 +201,24 @@ if command -v ruff &> /dev/null; then
         if [ "$FIX_ISSUES" = true ]; then
             echo "   🔧 Auto-fixing with ruff..."
             ruff format . >/dev/null 2>&1
+            ruff check . --fix >/dev/null 2>&1
             print_status "Code formatted with ruff" "success"
         else
-            echo "   ❌ Run: cd backend && ruff format ."
+            echo "   ❌ Run: cd backend && ruff format . && ruff check . --fix"
         fi
     fi
 elif python3 -c "import black" 2>/dev/null; then
-    if black --check --diff . 2>/dev/null | grep -q "would reformat"; then
+    BLACK_CHECK=$(python3 -m black --check --diff . 2>&1)
+    if echo "$BLACK_CHECK" | grep -q "would reformat"; then
         print_status "Code formatting issues detected" "error"
         if [ "$FIX_ISSUES" = true ]; then
             echo "   🔧 Auto-fixing with black..."
-            black . >/dev/null 2>&1
+            python3 -m black . >/dev/null 2>&1
             print_status "Code formatted with black" "success"
         else
-            echo "   ❌ Run: cd backend && black ."
+            echo "   ❌ Run: cd backend && python3 -m black ."
+            echo "   📝 Files that need formatting:"
+            echo "$BLACK_CHECK" | grep "would reformat" | head -5
         fi
     else
         print_status "Code formatting (black): Passed" "success"
@@ -226,14 +230,14 @@ fi
 # Import sorting
 echo "   Checking import sorting..."
 if python3 -c "import isort" 2>/dev/null; then
-    if isort --check-only --diff . 2>/dev/null | grep -q "Fixing"; then
+    if python3 -m isort --check-only --diff . 2>/dev/null | grep -q "Fixing"; then
         print_status "Import sorting issues detected" "error"
         if [ "$FIX_ISSUES" = true ]; then
             echo "   🔧 Auto-fixing imports..."
-            isort . >/dev/null 2>&1
+            python3 -m isort . >/dev/null 2>&1
             print_status "Imports sorted" "success"
         else
-            echo "   ❌ Run: cd backend && isort ."
+            echo "   ❌ Run: cd backend && python3 -m isort ."
         fi
     else
         print_status "Import sorting: Passed" "success"
@@ -250,11 +254,11 @@ if command -v ruff &> /dev/null; then
         echo "   ❌ Run: cd backend && ruff check . --fix"
     fi
 elif python3 -c "import flake8" 2>/dev/null; then
-    if flake8 . --max-line-length=88 --extend-ignore=E203,W503 --exclude=venv,migrations 2>/dev/null; then
+    if python3 -m flake8 . --max-line-length=88 --extend-ignore=E203,W503 --exclude=venv,migrations 2>/dev/null; then
         print_status "Linting (flake8): Passed" "success"
     else
         print_status "Linting issues detected" "error"
-        echo "   ❌ Run: cd backend && flake8 . --max-line-length=88"
+        echo "   ❌ Run: cd backend && python3 -m flake8 . --max-line-length=88"
     fi
 fi
 
@@ -262,11 +266,12 @@ fi
 if [ "$QUICK_MODE" = false ]; then
     echo "   Checking type annotations..."
     if python3 -c "import mypy" 2>/dev/null; then
-        if mypy app/ --ignore-missing-imports 2>/dev/null; then
+        # Fix MyPy path issues by using explicit package bases
+        if python3 -m mypy app/ --ignore-missing-imports --explicit-package-bases 2>/dev/null; then
             print_status "Type checking (mypy): Passed" "success"
         else
             print_status "Type checking issues detected" "warning"
-            echo "   ⚠️  Run: cd backend && mypy app/"
+            echo "   ⚠️  Run: cd backend && python3 -m mypy app/ --explicit-package-bases"
         fi
     else
         print_status "MyPy not available" "warning"
@@ -275,9 +280,9 @@ fi
 
 # Architecture governance
 echo "   Checking import structure..."
-if [ -f "../importlinter_contracts/layers.toml" ]; then
+if [ -f "importlinter_contracts/layers.toml" ]; then
     if python3 -c "import importlinter" 2>/dev/null; then
-        if import-linter --config ../importlinter_contracts/layers.toml 2>/dev/null; then
+        if lint-imports --config importlinter_contracts/layers.toml 2>/dev/null; then
             print_status "Import structure: Passed" "success"
         else
             print_status "Import structure violations detected" "error"
@@ -288,6 +293,31 @@ if [ -f "../importlinter_contracts/layers.toml" ]; then
     fi
 else
     print_status "Import linter configuration missing" "error"
+fi
+
+# Infrastructure validation (NEW)
+echo "   Checking infrastructure prerequisites..."
+if [ -f "../scripts/resume-environment.sh" ]; then
+    # Check if data layer exists (if Azure CLI available)
+    if command -v az &> /dev/null && az account show >/dev/null 2>&1; then
+        DATA_RG="pathfinder-db-rg"
+        if az group exists --name "$DATA_RG" >/dev/null 2>&1; then
+            SQL_COUNT=$(az sql server list --resource-group "$DATA_RG" --query "length([])" -o tsv 2>/dev/null || echo "0")
+            if [ "$SQL_COUNT" -gt 0 ]; then
+                print_status "Data layer SQL server exists" "success"
+            else
+                print_status "Missing SQL server in data layer - will cause deployment failure" "error"
+                echo "   ❌ Run: ./scripts/deploy-data-layer.sh"
+            fi
+        else
+            print_status "Data layer not deployed - will cause deployment failure" "error"
+            echo "   ❌ Run: ./scripts/deploy-data-layer.sh"
+        fi
+    else
+        print_status "Azure CLI not available - skipping infrastructure check" "warning"
+    fi
+else
+    print_status "Infrastructure scripts missing" "warning"
 fi
 
 cd ..
@@ -365,7 +395,44 @@ if [ "$QUICK_MODE" = false ]; then
     fi
 fi
 
-# 6. Git Status Check
+# 6. GitHub Actions Validation (NEW)
+print_header "🔧 GitHub Actions Validation"
+
+echo "   Checking workflow syntax..."
+for workflow in .github/workflows/*.yml; do
+    if [ -f "$workflow" ]; then
+        WORKFLOW_NAME=$(basename "$workflow")
+        # Check for basic YAML syntax
+        if python3 -c "import yaml; yaml.safe_load(open('$workflow'))" 2>/dev/null; then
+            print_status "$WORKFLOW_NAME: Valid YAML" "success"
+        else
+            print_status "$WORKFLOW_NAME: Invalid YAML syntax" "error"
+        fi
+        
+        # Check for missing action references
+        if grep -q "uses:.*/.github/actions/" "$workflow"; then
+            MISSING_ACTIONS=$(grep "uses:.*/.github/actions/" "$workflow" | sed 's/.*uses: *//' | sed 's/@.*//' | while read action; do
+                if [ ! -d "$action" ]; then
+                    echo "$action"
+                fi
+            done)
+            if [ -n "$MISSING_ACTIONS" ]; then
+                print_status "$WORKFLOW_NAME: Missing action references" "error"
+                echo "   ❌ Missing: $MISSING_ACTIONS"
+            fi
+        fi
+    fi
+done
+
+# Check for action directories that don't exist but are referenced
+echo "   Checking for orphaned action references..."
+if find .github/workflows -name "*.yml" -exec grep -l "/.github/actions/" {} \; | wc -l | grep -q "0"; then
+    print_status "No custom GitHub Actions referenced" "success"
+else
+    print_status "Custom GitHub Actions found - verify they exist" "warning"
+fi
+
+# 7. Git Status Check
 print_header "📝 Git Status Check"
 
 # Check for uncommitted changes

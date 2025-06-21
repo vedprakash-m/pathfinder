@@ -1,6 +1,7 @@
 """
 Unit tests for trip management functionality.
 """
+
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from fastapi.testclient import TestClient

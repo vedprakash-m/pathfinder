@@ -2,6 +2,7 @@
 Cache Service - Redis-free implementation for cost optimization.
 Provides unified caching interface using in-memory and SQLite alternatives.
 """
+
 import json
 import asyncio
 from typing import Any, Optional, Dict

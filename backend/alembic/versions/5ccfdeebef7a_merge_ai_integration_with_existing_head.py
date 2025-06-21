@@ -5,6 +5,7 @@ Revises: 20250609_add_ai_integration_tables, 63ee57d6765a
 Create Date: 2025-06-09 20:04:56.316971
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op

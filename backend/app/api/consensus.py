@@ -100,9 +100,11 @@ async def analyze_consensus(
                 "name": family.name,
                 "members": [{"id": str(family.admin_user_id), "name": "Admin"}],  # Simplified
                 "preferences": {},
-                "budget_allocation": float(participation.budget_allocation)
-                if participation.budget_allocation
-                else 0.0,
+                "budget_allocation": (
+                    float(participation.budget_allocation)
+                    if participation.budget_allocation
+                    else 0.0
+                ),
                 "is_trip_admin": str(trip.creator_id) == str(family.admin_user_id),
             }
 
@@ -177,9 +179,11 @@ async def get_consensus_dashboard(
                 "name": family.name,
                 "members": [{"id": str(family.admin_user_id), "name": "Admin"}],
                 "preferences": {},
-                "budget_allocation": float(participation.budget_allocation)
-                if participation.budget_allocation
-                else 0.0,
+                "budget_allocation": (
+                    float(participation.budget_allocation)
+                    if participation.budget_allocation
+                    else 0.0
+                ),
                 "is_trip_admin": str(trip.creator_id) == str(family.admin_user_id),
             }
 
@@ -197,9 +201,11 @@ async def get_consensus_dashboard(
 
         dashboard_data = {
             "consensus_score": consensus_result.consensus_score,
-            "status": "Strong Consensus"
-            if consensus_result.consensus_score >= 0.8
-            else "Needs Discussion",
+            "status": (
+                "Strong Consensus"
+                if consensus_result.consensus_score >= 0.8
+                else "Needs Discussion"
+            ),
             "family_count": len(families_data),
             "conflicts_summary": {
                 "total": len(consensus_result.conflicts),
@@ -315,9 +321,11 @@ async def get_consensus_recommendations(
                 "name": family.name,
                 "members": [{"id": str(family.admin_user_id), "name": "Admin"}],
                 "preferences": {},
-                "budget_allocation": float(participation.budget_allocation)
-                if participation.budget_allocation
-                else 0.0,
+                "budget_allocation": (
+                    float(participation.budget_allocation)
+                    if participation.budget_allocation
+                    else 0.0
+                ),
             }
 
             if participation.preferences:

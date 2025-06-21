@@ -1,6 +1,7 @@
 """
 API endpoints for Pathfinder Assistant functionality
 """
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from typing import Dict, List, Optional, Any

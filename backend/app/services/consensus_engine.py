@@ -407,9 +407,11 @@ class FamilyConsensusEngine:
                     id=f"vote_{i}_{conflict.category}",
                     category=conflict.category,
                     question=f"How should we resolve the {conflict.category} preference conflict?",
-                    options=conflict.conflicting_values + [conflict.suggested_compromise]
-                    if conflict.suggested_compromise
-                    else conflict.conflicting_values,
+                    options=(
+                        conflict.conflicting_values + [conflict.suggested_compromise]
+                        if conflict.suggested_compromise
+                        else conflict.conflicting_values
+                    ),
                     current_votes={},
                     threshold=0.6 if conflict.severity != ConflictSeverity.CRITICAL else 0.8,
                 )

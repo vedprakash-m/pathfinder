@@ -94,7 +94,7 @@ async def get_feature_adoption_metrics(
 
 @router.get("/dashboard/summary")
 async def get_analytics_dashboard_summary(
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ) -> Dict[str, Any]:
     """Get analytics dashboard summary for the current user."""
 

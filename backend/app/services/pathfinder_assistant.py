@@ -1,6 +1,7 @@
 """
 Pathfinder Assistant Service - AI-powered assistant with @mention functionality
 """
+
 import re
 import json
 import time

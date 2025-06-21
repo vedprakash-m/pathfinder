@@ -5,6 +5,7 @@ Revises: add_family_invitations_table_20250528
 Create Date: 2025-06-08 00:00:00.000000
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op

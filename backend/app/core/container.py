@@ -41,11 +41,7 @@ from backend.domain.messaging import MessagingDomainService
 class Container(containers.DeclarativeContainer):
     """Global application service container."""
 
-    wiring_config = containers.WiringConfiguration(
-        packages=(
-            "app.api",  # wire all API routers
-        )
-    )
+    wiring_config = containers.WiringConfiguration(packages=("app.api",))  # wire all API routers
 
     # -------------------------------
     # Infrastructure / external deps

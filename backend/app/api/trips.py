@@ -7,6 +7,7 @@ from uuid import UUID
 from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+
 # from sqlalchemy.ext.asyncio import AsyncSession
 
 # from app.core.database import get_db
@@ -97,20 +98,23 @@ async def create_sample_trip(
                 "Family-friendly wineries with kids' activities",
                 "Hot air balloon ride over vineyards",
                 "Oxbow Public Market food tour",
-                "Castello di Amorosa castle tour"
+                "Castello di Amorosa castle tour",
             ],
             "decision_scenarios": [
                 {
                     "title": "Balloon Ride Timing",
                     "options": ["Early morning (6 AM)", "Late afternoon (4 PM)"],
-                    "context": "Weather is best in morning, but kids prefer afternoon"
+                    "context": "Weather is best in morning, but kids prefer afternoon",
                 },
                 {
                     "title": "Dining Choice",
-                    "options": ["Fancy restaurant ($80/person)", "Casual family place ($35/person)"],
-                    "context": "Budget vs experience decision"
-                }
-            ]
+                    "options": [
+                        "Fancy restaurant ($80/person)",
+                        "Casual family place ($35/person)",
+                    ],
+                    "context": "Budget vs experience decision",
+                },
+            ],
         },
         "family_vacation": {
             "name": "Yellowstone National Park Adventure",
@@ -123,20 +127,28 @@ async def create_sample_trip(
                 "Wildlife safari in Lamar Valley",
                 "Junior Ranger program participation",
                 "Grand Prismatic Spring boardwalk",
-                "Yellowstone Lake boat tour"
+                "Yellowstone Lake boat tour",
             ],
             "decision_scenarios": [
                 {
                     "title": "Accommodation Type",
-                    "options": ["Park lodge ($200/night)", "Camping ($30/night)", "Outside hotel ($120/night)"],
-                    "context": "Comfort vs budget vs park experience"
+                    "options": [
+                        "Park lodge ($200/night)",
+                        "Camping ($30/night)",
+                        "Outside hotel ($120/night)",
+                    ],
+                    "context": "Comfort vs budget vs park experience",
                 },
                 {
                     "title": "Activity Level",
-                    "options": ["Easy trails only", "Mix of easy and moderate", "Include challenging hikes"],
-                    "context": "Family fitness levels vary"
-                }
-            ]
+                    "options": [
+                        "Easy trails only",
+                        "Mix of easy and moderate",
+                        "Include challenging hikes",
+                    ],
+                    "context": "Family fitness levels vary",
+                },
+            ],
         },
         "adventure_trip": {
             "name": "Costa Rica Eco-Adventure",
@@ -149,20 +161,28 @@ async def create_sample_trip(
                 "Arenal Volcano hiking and hot springs",
                 "Manuel Antonio beach and wildlife",
                 "Coffee plantation tour",
-                "White water rafting (family-friendly)"
+                "White water rafting (family-friendly)",
             ],
             "decision_scenarios": [
                 {
                     "title": "Adventure Intensity",
-                    "options": ["High adventure (zip-line, rafting)", "Moderate (hiking, wildlife)", "Relaxed (beaches, culture)"],
-                    "context": "Different comfort levels with adventure activities"
+                    "options": [
+                        "High adventure (zip-line, rafting)",
+                        "Moderate (hiking, wildlife)",
+                        "Relaxed (beaches, culture)",
+                    ],
+                    "context": "Different comfort levels with adventure activities",
                 },
                 {
                     "title": "Transportation",
-                    "options": ["Rental car (flexible)", "Private shuttle (convenient)", "Public transport (budget)"],
-                    "context": "Independence vs convenience vs cost"
-                }
-            ]
+                    "options": [
+                        "Rental car (flexible)",
+                        "Private shuttle (convenient)",
+                        "Public transport (budget)",
+                    ],
+                    "context": "Independence vs convenience vs cost",
+                },
+            ],
         },
     }
 
@@ -181,7 +201,7 @@ async def create_sample_trip(
             "activities": cfg["activities"],
             "decision_scenarios": cfg["decision_scenarios"],
             "sample_trip": True,
-            "template_used": template
+            "template_used": template,
         },
         is_public=False,
         family_ids=[],  # The CreateTripUseCase will auto-attach creator’s family

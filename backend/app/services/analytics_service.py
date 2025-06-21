@@ -243,9 +243,9 @@ class AnalyticsService:
                 adoption_metrics[feature] = {
                     "usage_count": stats["usage_count"],
                     "unique_users": unique_user_count,
-                    "adoption_rate": unique_user_count / total_unique_users
-                    if total_unique_users > 0
-                    else 0,
+                    "adoption_rate": (
+                        unique_user_count / total_unique_users if total_unique_users > 0 else 0
+                    ),
                 }
 
             return {

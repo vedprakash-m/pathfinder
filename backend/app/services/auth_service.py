@@ -111,9 +111,9 @@ class AuthService:
                 auth0_id=user_data.auth0_id,  # Both User DB model and UserCreate use 'auth0_id'
                 picture=None,  # Not provided in UserCreate
                 phone=user_data.phone,  # Both use 'phone'
-                preferences=str(user_data.preferences)
-                if user_data.preferences
-                else None,  # User DB model stores as string
+                preferences=(
+                    str(user_data.preferences) if user_data.preferences else None
+                ),  # User DB model stores as string
                 is_active=True,
                 created_at=datetime.utcnow(),
                 updated_at=datetime.utcnow(),

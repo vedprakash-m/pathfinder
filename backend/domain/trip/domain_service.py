@@ -296,12 +296,12 @@ class TripDomainService:  # pragma: no cover – thin façade for now
             family_id=str(participation.family_id),
             user_id=str(participation.user_id),
             status=participation.status,
-            budget_allocation=float(participation.budget_allocation)
-            if participation.budget_allocation
-            else None,
-            preferences=json.loads(participation.preferences)
-            if participation.preferences
-            else None,
+            budget_allocation=(
+                float(participation.budget_allocation) if participation.budget_allocation else None
+            ),
+            preferences=(
+                json.loads(participation.preferences) if participation.preferences else None
+            ),
             notes=participation.notes,
             joined_at=participation.joined_at,
             updated_at=participation.updated_at,

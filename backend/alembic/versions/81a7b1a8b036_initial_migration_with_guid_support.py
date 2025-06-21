@@ -1,10 +1,11 @@
 """Initial migration with GUID support
 
 Revision ID: 81a7b1a8b036
-Revises: 
+Revises:
 Create Date: 2025-05-25 20:08:00.975953
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op

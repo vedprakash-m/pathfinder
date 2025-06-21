@@ -213,12 +213,14 @@ class ItineraryDocumentService:
                             latitude=sql_activity.latitude,
                             longitude=sql_activity.longitude,
                             google_place_id=sql_activity.google_place_id,
-                            start_time=sql_activity.start_time.isoformat()
-                            if sql_activity.start_time
-                            else None,
-                            end_time=sql_activity.end_time.isoformat()
-                            if sql_activity.end_time
-                            else None,
+                            start_time=(
+                                sql_activity.start_time.isoformat()
+                                if sql_activity.start_time
+                                else None
+                            ),
+                            end_time=(
+                                sql_activity.end_time.isoformat() if sql_activity.end_time else None
+                            ),
                             duration_minutes=sql_activity.duration_minutes,
                             estimated_cost_per_person=sql_activity.estimated_cost_per_person,
                             booking_required=sql_activity.booking_required,

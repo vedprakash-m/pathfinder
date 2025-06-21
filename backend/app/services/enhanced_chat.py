@@ -1,6 +1,7 @@
 """
 Enhanced real-time chat service for collaborative trip planning.
 """
+
 import asyncio
 import json
 import logging

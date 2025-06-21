@@ -45,9 +45,11 @@ class NotificationService:
             alert_notification = NotificationCreate(
                 user_id=None,  # Will be set for each admin
                 type=NotificationType.SYSTEM_ALERT,
-                priority=NotificationPriority.HIGH
-                if alert_data.get("severity") == "high"
-                else NotificationPriority.MEDIUM,
+                priority=(
+                    NotificationPriority.HIGH
+                    if alert_data.get("severity") == "high"
+                    else NotificationPriority.MEDIUM
+                ),
                 title=f"System Alert: {alert_data.get('type', 'Unknown')}",
                 message=alert_data.get("message", "System alert triggered"),
                 data=alert_data,

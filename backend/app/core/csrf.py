@@ -92,7 +92,9 @@ class CSRFMiddleware(BaseHTTPMiddleware):
                     )
                 else:
                     # In non-strict mode, just log the warning
-                    logger.warning(f"CSRF validation failed for {request.url.path} (non-strict mode)")
+                    logger.warning(
+                        f"CSRF validation failed for {request.url.path} (non-strict mode)"
+                    )
 
         # Process the request
         response = await call_next(request)

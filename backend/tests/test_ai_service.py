@@ -1,6 +1,7 @@
 """
 Tests for the AI service functionality.
 """
+
 import pytest
 import json
 from unittest.mock import patch, MagicMock, AsyncMock

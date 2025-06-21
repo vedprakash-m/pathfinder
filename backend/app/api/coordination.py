@@ -243,19 +243,21 @@ async def suggest_coordination_meeting(
             "meeting_type": meeting_type,
             "timezone_friendly": True,
             "participation_score": 0.85,  # 85% of families can attend
-            "agenda_items": [
-                "Review current consensus status",
-                "Discuss conflicting preferences",
-                "Find compromise solutions",
-                "Plan next steps",
-            ]
-            if meeting_type == "consensus"
-            else [
-                "Welcome and introductions",
-                "Review trip objectives",
-                "Collect family preferences",
-                "Set planning timeline",
-            ],
+            "agenda_items": (
+                [
+                    "Review current consensus status",
+                    "Discuss conflicting preferences",
+                    "Find compromise solutions",
+                    "Plan next steps",
+                ]
+                if meeting_type == "consensus"
+                else [
+                    "Welcome and introductions",
+                    "Review trip objectives",
+                    "Collect family preferences",
+                    "Set planning timeline",
+                ]
+            ),
             "alternative_times": [
                 (suggested_time + timedelta(hours=24)).isoformat(),
                 (suggested_time + timedelta(days=1, hours=2)).isoformat(),
