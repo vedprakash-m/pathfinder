@@ -12,7 +12,15 @@ from app.core.security import get_current_user, require_permissions
 from app.models.user import User
 from app.services.export_service import DataExportService
 from app.tasks.export_tasks import bulk_export_trips, export_trip_data
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Query,
+    Request,
+    status,
+)
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -52,7 +60,9 @@ async def export_trip(
         trip = await trip_service.get_trip_by_id(trip_id, str(current_user.id))
 
         if not trip:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found"
+            )
 
         if export_request.async_processing:
             # Process export asynchronously
@@ -152,7 +162,8 @@ async def bulk_export_trips_endpoint(
 
         if not accessible_trips:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="No accessible trips found"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No accessible trips found",
             )
 
         if len(accessible_trips) != len(bulk_request.trip_ids):
@@ -193,7 +204,9 @@ async def bulk_export_trips_endpoint(
 
 
 @router.get("/tasks/{task_id}")
-async def get_export_task_status(task_id: str, current_user: User = Depends(get_current_user)):
+async def get_export_task_status(
+    task_id: str, current_user: User = Depends(get_current_user)
+):
     """Get the status of an export task."""
     try:
         from app.core.celery_app import celery_app
@@ -235,7 +248,8 @@ async def get_export_task_status(task_id: str, current_user: User = Depends(get_
     except Exception as e:
         logger.error(f"Error getting task status for {task_id}: {e}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error retrieving task status"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error retrieving task status",
         )
 
 
@@ -252,20 +266,27 @@ async def export_activity_summary(
         trip = await trip_service.get_trip_by_id(trip_id, str(current_user.id))
 
         if not trip:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found"
+            )
 
         # Get itinerary data
-        itinerary_data = await trip_service.get_latest_itinerary(trip_id, str(current_user.id))
+        itinerary_data = await trip_service.get_latest_itinerary(
+            trip_id, str(current_user.id)
+        )
 
         if not itinerary_data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="No itinerary found for this trip"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No itinerary found for this trip",
             )
 
         # Export activity summary
         export_service = DataExportService()
         result = await export_service.export_activity_summary(
-            itinerary_data=itinerary_data, trip_id=str(trip_id), user_id=str(current_user.id)
+            itinerary_data=itinerary_data,
+            trip_id=str(trip_id),
+            user_id=str(current_user.id),
         )
 
         return {
@@ -278,7 +299,8 @@ async def export_activity_summary(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error exporting activity summary for trip {trip_id}: {e}")
+        logger.error(
+            f"Error exporting activity summary for trip {trip_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error exporting activity summary",
@@ -287,7 +309,9 @@ async def export_activity_summary(
 
 @router.delete("/cleanup")
 async def cleanup_old_exports(
-    days_old: int = Query(7, ge=1, le=365, description="Delete exports older than this many days"),
+    days_old: int = Query(
+        7, ge=1, le=365, description="Delete exports older than this many days"
+    ),
     current_user: User = Depends(require_permissions("exports", "admin")),
 ):
     """Clean up old export files (admin only)."""

@@ -61,7 +61,8 @@ class FeedbackItem:
     trip_id: str
     family_id: str
     user_id: str
-    target_element: str  # What they're commenting on (activity, accommodation, etc.)
+    # What they're commenting on (activity, accommodation, etc.)
+    target_element: str
     content: str
     suggested_change: Optional[str] = None
     impact_analysis: Optional[Dict[str, Any]] = None
@@ -84,7 +85,8 @@ class ChangeImpact:
     """Analysis of how a proposed change affects the trip."""
 
     impact_level: ChangeImpactLevel
-    cost_delta: float  # Change in cost (positive = increase, negative = decrease)
+    # Change in cost (positive = increase, negative = decrease)
+    cost_delta: float
     time_delta: int  # Change in time/duration (minutes)
     affected_families: List[str]  # Family IDs that would be affected
     alternative_options: List[str]  # Alternative approaches
@@ -119,7 +121,9 @@ class RealTimeFeedbackService:
     def __init__(self, db: AsyncSession):
         self.db = db
         self.active_sessions: Dict[str, LiveEditingSession] = {}
-        self.feedback_store: Dict[str, List[FeedbackItem]] = {}  # trip_id -> feedback list
+        self.feedback_store: Dict[str, List[FeedbackItem]] = (
+            {}
+        )  # trip_id -> feedback list
 
     # Real-time feedback collection
 
@@ -142,7 +146,10 @@ class RealTimeFeedbackService:
             await self._notify_feedback_received(feedback_item)
 
             # Check if immediate action is needed
-            if feedback_item.feedback_type in [FeedbackType.CONCERN, FeedbackType.REJECTION]:
+            if feedback_item.feedback_type in [
+                FeedbackType.CONCERN,
+                FeedbackType.REJECTION,
+            ]:
                 await self._trigger_urgent_review(feedback_item)
 
             logger.info(
@@ -168,7 +175,8 @@ class RealTimeFeedbackService:
             feedback_list = self.feedback_store.get(trip_id, [])
 
             if status_filter:
-                feedback_list = [f for f in feedback_list if f.status == status_filter]
+                feedback_list = [
+                    f for f in feedback_list if f.status == status_filter]
 
             # Convert to dict format and add summary stats
             feedback_data = []
@@ -184,7 +192,9 @@ class RealTimeFeedbackService:
             logger.error(f"Failed to get trip feedback: {str(e)}")
             return []
 
-    async def respond_to_feedback(self, feedback_id: str, response: Dict[str, Any]) -> bool:
+    async def respond_to_feedback(
+        self, feedback_id: str, response: Dict[str, Any]
+    ) -> bool:
         """Respond to existing feedback item."""
         try:
             # Find feedback item
@@ -243,14 +253,17 @@ class RealTimeFeedbackService:
             # Notify other editors
             await self._notify_editor_joined(session, user_id)
 
-            logger.info(f"User {user_id} joined editing session for trip {trip_id}")
+            logger.info(
+                f"User {user_id} joined editing session for trip {trip_id}")
             return session_id
 
         except Exception as e:
             logger.error(f"Failed to start editing session: {str(e)}")
             return ""
 
-    async def lock_element(self, session_id: str, user_id: str, element_id: str) -> bool:
+    async def lock_element(
+        self, session_id: str, user_id: str, element_id: str
+    ) -> bool:
         """Lock an element for editing by a specific user."""
         try:
             if session_id not in self.active_sessions:
@@ -262,7 +275,9 @@ class RealTimeFeedbackService:
             if element_id in session.locked_elements:
                 current_owner = session.locked_elements[element_id]
                 if current_owner != user_id:
-                    logger.info(f"Element {element_id} already locked by {current_owner}")
+                    logger.info(
+                        f"Element {element_id} already locked by {current_owner}"
+                    )
                     return False
 
             # Lock the element
@@ -295,7 +310,9 @@ class RealTimeFeedbackService:
                     return {"success": False, "error": "Element locked by another user"}
 
             # Analyze change impact
-            impact = await self._analyze_live_change_impact(change_data, session.trip_id)
+            impact = await self._analyze_live_change_impact(
+                change_data, session.trip_id
+            )
 
             # Add change to pending list
             change_record = {
@@ -306,7 +323,8 @@ class RealTimeFeedbackService:
                 "impact_analysis": asdict(impact),
                 "status": (
                     "pending_approval"
-                    if impact.impact_level in [ChangeImpactLevel.HIGH, ChangeImpactLevel.CRITICAL]
+                    if impact.impact_level
+                    in [ChangeImpactLevel.HIGH, ChangeImpactLevel.CRITICAL]
                     else "auto_approved"
                 ),
             }
@@ -335,7 +353,9 @@ class RealTimeFeedbackService:
             logger.error(f"Failed to submit live change: {str(e)}")
             return {"success": False, "error": str(e)}
 
-    async def approve_change(self, session_id: str, change_id: str, approver_id: str) -> bool:
+    async def approve_change(
+        self, session_id: str, change_id: str, approver_id: str
+    ) -> bool:
         """Approve a pending change."""
         try:
             if session_id not in self.active_sessions:
@@ -357,12 +377,14 @@ class RealTimeFeedbackService:
             await self._implement_change(change_record, session.trip_id)
             change_record["status"] = "approved_and_implemented"
             change_record["approved_by"] = approver_id
-            change_record["approved_at"] = datetime.now(timezone.utc).isoformat()
+            change_record["approved_at"] = datetime.now(
+                timezone.utc).isoformat()
 
             # Notify editors
             await self._notify_change_approved(session, change_record)
 
-            logger.info(f"Change {change_id} approved and implemented by {approver_id}")
+            logger.info(
+                f"Change {change_id} approved and implemented by {approver_id}")
             return True
 
         except Exception as e:
@@ -382,12 +404,16 @@ class RealTimeFeedbackService:
             time_delta = 0
 
             # Cost-related changes
-            if any(word in content for word in ["expensive", "budget", "cost", "price"]):
+            if any(
+                word in content for word in ["expensive", "budget", "cost", "price"]
+            ):
                 impact_level = ChangeImpactLevel.MEDIUM
                 cost_delta = 50.0
 
             # Time-related changes
-            if any(word in content for word in ["time", "schedule", "duration", "delay"]):
+            if any(
+                word in content for word in ["time", "schedule", "duration", "delay"]
+            ):
                 impact_level = ChangeImpactLevel.MEDIUM
                 time_delta = 30
 
@@ -409,7 +435,8 @@ class RealTimeFeedbackService:
                 time_delta=time_delta,
                 affected_families=[feedback_item.family_id],
                 alternative_options=self._generate_alternatives(feedback_item),
-                implementation_complexity=self._assess_complexity(impact_level),
+                implementation_complexity=self._assess_complexity(
+                    impact_level),
                 risk_assessment=self._assess_risks(impact_level),
             )
 
@@ -497,7 +524,9 @@ class RealTimeFeedbackService:
         next_steps = []
 
         if feedback_item.impact_analysis:
-            impact_level = ChangeImpactLevel(feedback_item.impact_analysis["impact_level"])
+            impact_level = ChangeImpactLevel(
+                feedback_item.impact_analysis["impact_level"]
+            )
 
             if impact_level == ChangeImpactLevel.CRITICAL:
                 next_steps.extend(
@@ -509,11 +538,17 @@ class RealTimeFeedbackService:
                 )
             elif impact_level == ChangeImpactLevel.HIGH:
                 next_steps.extend(
-                    ["Review with other families", "Assess cost and schedule implications"]
+                    [
+                        "Review with other families",
+                        "Assess cost and schedule implications",
+                    ]
                 )
             else:
                 next_steps.extend(
-                    ["Review and implement if appropriate", "Notify affected families of change"]
+                    [
+                        "Review and implement if appropriate",
+                        "Notify affected families of change",
+                    ]
                 )
 
         return next_steps
@@ -528,7 +563,8 @@ class RealTimeFeedbackService:
 
     async def _trigger_urgent_review(self, feedback_item: FeedbackItem):
         """Trigger urgent review for critical feedback."""
-        logger.info(f"🚨 Urgent review triggered for feedback: {feedback_item.id}")
+        logger.info(
+            f"🚨 Urgent review triggered for feedback: {feedback_item.id}")
 
     async def _notify_feedback_response(
         self, feedback_item: FeedbackItem, response: Dict[str, Any]
@@ -538,7 +574,8 @@ class RealTimeFeedbackService:
 
     async def _notify_editor_joined(self, session: LiveEditingSession, user_id: str):
         """Notify about user joining editing session."""
-        logger.info(f"👥 User {user_id} joined editing session {session.session_id}")
+        logger.info(
+            f"👥 User {user_id} joined editing session {session.session_id}")
 
     async def _notify_element_locked(
         self, session: LiveEditingSession, user_id: str, element_id: str
@@ -546,7 +583,9 @@ class RealTimeFeedbackService:
         """Notify about element being locked for editing."""
         logger.info(f"🔒 Element {element_id} locked by {user_id}")
 
-    async def _notify_live_change(self, session: LiveEditingSession, change_record: Dict[str, Any]):
+    async def _notify_live_change(
+        self, session: LiveEditingSession, change_record: Dict[str, Any]
+    ):
         """Notify about live change being made."""
         logger.info(f"⚡ Live change submitted: {change_record['change_id']}")
 
@@ -559,7 +598,9 @@ class RealTimeFeedbackService:
     async def _implement_change(self, change_record: Dict[str, Any], trip_id: str):
         """Actually implement the approved change."""
         # In production, this would update the trip data
-        logger.info(f"🔧 Implementing change {change_record['change_id']} for trip {trip_id}")
+        logger.info(
+            f"🔧 Implementing change {change_record['change_id']} for trip {trip_id}"
+        )
 
 
 # Helper functions for easy integration
@@ -610,7 +651,8 @@ async def get_feedback_dashboard_data(db: AsyncSession, trip_id: str) -> Dict[st
         "total_feedback_items": len(all_feedback),
         "pending_items": len(pending_feedback),
         "feedback_by_type": feedback_by_type,
-        "recent_feedback": all_feedback[-5:] if all_feedback else [],  # Last 5 items
+        # Last 5 items
+        "recent_feedback": all_feedback[-5:] if all_feedback else [],
         "active_editing_sessions": len(service.active_sessions),
         "response_rate": 0.85,  # Placeholder - calculate based on actual responses
         "average_resolution_time_hours": 4.2,  # Placeholder

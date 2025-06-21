@@ -73,18 +73,26 @@ async def verify_token(token: str) -> TokenData:
     try:
         # Check if we're in test mode or if the token looks like a test token
         # (created with our SECRET_KEY rather than Auth0)
-        is_test_token = settings.is_testing or not token.startswith("ey")  # Basic heuristic
-        
-        if is_test_token or settings.ENVIRONMENT.lower() in ["development", "test", "testing"]:
+        is_test_token = settings.is_testing or not token.startswith(
+            "ey"
+        )  # Basic heuristic
+
+        if is_test_token or settings.ENVIRONMENT.lower() in [
+            "development",
+            "test",
+            "testing",
+        ]:
             # For test tokens, use simple verification with our secret key
-            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            payload = jwt.decode(
+                token, settings.SECRET_KEY, algorithms=["HS256"])
         else:
             # For Auth0 tokens, we need to verify against Auth0's public key
             # This is a simplified version - in production, you'd fetch the public key
             # from Auth0's JWKS endpoint and verify the signature
             payload = jwt.decode(
                 token,
-                options={"verify_signature": False},  # In production, set to True
+                # In production, set to True
+                options={"verify_signature": False},
                 audience=settings.AUTH0_AUDIENCE,
                 issuer=settings.AUTH0_ISSUER,
             )
@@ -142,7 +150,9 @@ async def verify_token(token: str) -> TokenData:
         )
 
 
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> User:
+async def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+) -> User:
     """Get current authenticated user."""
     token_data = await verify_token(credentials.credentials)
 
@@ -179,7 +189,9 @@ async def get_current_user_websocket(token: str) -> Optional[User]:
         return None
 
 
-async def get_current_active_user(current_user: User = Depends(get_current_user)) -> User:
+async def get_current_active_user(
+    current_user: User = Depends(get_current_user),
+) -> User:
     """Get current active user."""
     # In a real application, you'd check if the user is active in the database
     return current_user
@@ -191,7 +203,8 @@ def require_permission(permission: str):
     def permission_checker(current_user: User = Depends(get_current_user)):
         if permission not in current_user.permissions:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail=f"Permission '{permission}' required"
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Permission '{permission}' required",
             )
         return current_user
 
@@ -243,7 +256,9 @@ class RateLimiter:
 
 
 # Global rate limiter instance
-rate_limiter = RateLimiter(requests=settings.RATE_LIMIT_REQUESTS, window=settings.RATE_LIMIT_WINDOW)
+rate_limiter = RateLimiter(
+    requests=settings.RATE_LIMIT_REQUESTS, window=settings.RATE_LIMIT_WINDOW
+)
 
 
 async def check_rate_limit(request: Request):
@@ -290,7 +305,9 @@ def require_permissions(*permissions):
         # For now, we'll implement a basic permission check
         # In a full implementation, this would check user roles and permissions
         if not user.is_active:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Inactive user")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Inactive user"
+            )
         return user
 
     return permission_checker

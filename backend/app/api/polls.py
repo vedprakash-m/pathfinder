@@ -24,29 +24,40 @@ class PollOption(BaseModel):
     """Model for poll option"""
 
     value: str = Field(..., description="The option value")
-    label: Optional[str] = Field(None, description="Display label for the option")
-    description: Optional[str] = Field(None, description="Optional description")
-    metadata: Optional[Dict[str, Any]] = Field(None, description="Additional metadata")
+    label: Optional[str] = Field(
+        None, description="Display label for the option")
+    description: Optional[str] = Field(
+        None, description="Optional description")
+    metadata: Optional[Dict[str, Any]] = Field(
+        None, description="Additional metadata")
 
 
 class CreatePollRequest(BaseModel):
     """Request model for creating a Magic Poll"""
 
-    trip_id: str = Field(..., description="ID of the trip this poll belongs to")
-    title: str = Field(..., min_length=1, max_length=255, description="Poll title")
-    description: Optional[str] = Field(None, description="Optional poll description")
+    trip_id: str = Field(...,
+                         description="ID of the trip this poll belongs to")
+    title: str = Field(..., min_length=1, max_length=255,
+                       description="Poll title")
+    description: Optional[str] = Field(
+        None, description="Optional poll description")
     poll_type: str = Field(
         ..., description="Type of poll (destination_choice, activity_preference, etc.)"
     )
-    options: List[PollOption] = Field(..., min_items=2, description="Poll options")
-    expires_hours: int = Field(72, ge=1, le=168, description="Hours until poll expires (1-168)")
+    options: List[PollOption] = Field(...,
+                                      min_items=2, description="Poll options")
+    expires_hours: int = Field(
+        72, ge=1, le=168, description="Hours until poll expires (1-168)"
+    )
 
 
 class PollResponse(BaseModel):
     """Model for poll response"""
 
     choice: str = Field(..., description="Selected choice")
-    preferences: Optional[Dict[str, Any]] = Field(None, description="Additional preferences")
+    preferences: Optional[Dict[str, Any]] = Field(
+        None, description="Additional preferences"
+    )
     comments: Optional[str] = Field(None, description="Optional comments")
 
 
@@ -90,20 +101,29 @@ async def create_poll(
         )
 
         if result.get("success"):
-            return {"success": True, "data": result["poll"], "message": result["message"]}
+            return {
+                "success": True,
+                "data": result["poll"],
+                "message": result["message"],
+            }
         else:
-            raise HTTPException(status_code=400, detail=result.get("error", "Unknown error"))
+            raise HTTPException(
+                status_code=400, detail=result.get("error", "Unknown error")
+            )
 
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error creating poll: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Poll creation error: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Poll creation error: {str(e)}")
 
 
 @router.get("/trip/{trip_id}")
 async def get_trip_polls(
-    trip_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+    trip_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """Get all polls for a specific trip"""
     try:
@@ -115,12 +135,15 @@ async def get_trip_polls(
 
     except Exception as e:
         logger.error(f"Error getting trip polls: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Trip polls error: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Trip polls error: {str(e)}")
 
 
 @router.get("/{poll_id}")
 async def get_poll_details(
-    poll_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+    poll_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """Get details of a specific poll"""
     try:
@@ -139,13 +162,16 @@ async def get_poll_details(
                 },
             }
         else:
-            raise HTTPException(status_code=404, detail=result.get("error", "Poll not found"))
+            raise HTTPException(
+                status_code=404, detail=result.get("error", "Poll not found")
+            )
 
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error getting poll details: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Poll details error: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Poll details error: {str(e)}")
 
 
 @router.post("/{poll_id}/respond")
@@ -158,28 +184,39 @@ async def submit_poll_response(
     """Submit a response to a Magic Poll"""
     try:
         result = await magic_polls_service.submit_response(
-            poll_id=poll_id, user_id=current_user.id, response_data=request.response.dict(), db=db
+            poll_id=poll_id,
+            user_id=current_user.id,
+            response_data=request.response.dict(),
+            db=db,
         )
 
         if result.get("success"):
             return {
                 "success": True,
-                "data": {"poll": result["poll"], "response_count": result["response_count"]},
+                "data": {
+                    "poll": result["poll"],
+                    "response_count": result["response_count"],
+                },
                 "message": "Response submitted successfully",
             }
         else:
-            raise HTTPException(status_code=400, detail=result.get("error", "Unknown error"))
+            raise HTTPException(
+                status_code=400, detail=result.get("error", "Unknown error")
+            )
 
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error submitting poll response: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Response error: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Response error: {str(e)}")
 
 
 @router.get("/{poll_id}/results")
 async def get_poll_results(
-    poll_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+    poll_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """Get current results of a poll"""
     try:
@@ -197,7 +234,9 @@ async def get_poll_results(
                 },
             }
         else:
-            raise HTTPException(status_code=404, detail=result.get("error", "Poll not found"))
+            raise HTTPException(
+                status_code=404, detail=result.get("error", "Poll not found")
+            )
 
     except HTTPException:
         raise
@@ -209,7 +248,9 @@ async def get_poll_results(
 @router.put("/{poll_id}/status")
 async def update_poll_status(
     poll_id: str,
-    status: str = Query(..., description="New poll status (active, completed, cancelled)"),
+    status: str = Query(
+        ..., description="New poll status (active, completed, cancelled)"
+    ),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -232,7 +273,9 @@ async def update_poll_status(
             raise HTTPException(status_code=404, detail="Poll not found")
 
         if poll.creator_id != current_user.id:
-            raise HTTPException(status_code=403, detail="Only poll creator can update status")
+            raise HTTPException(
+                status_code=403, detail="Only poll creator can update status"
+            )
 
         poll.status = status
         poll.updated_at = datetime.utcnow()
@@ -248,7 +291,8 @@ async def update_poll_status(
         raise
     except Exception as e:
         logger.error(f"Error updating poll status: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Status update error: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Status update error: {str(e)}")
 
 
 @router.get("/types/available")
@@ -281,12 +325,15 @@ async def get_available_poll_types():
 
     except Exception as e:
         logger.error(f"Error getting poll types: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Poll types error: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Poll types error: {str(e)}")
 
 
 @router.get("/{poll_id}/analytics")
 async def get_poll_analytics(
-    poll_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+    poll_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """Get detailed analytics for a poll (creator only)"""
     try:
@@ -299,30 +346,40 @@ async def get_poll_analytics(
             raise HTTPException(status_code=404, detail="Poll not found")
 
         if poll.creator_id != current_user.id:
-            raise HTTPException(status_code=403, detail="Only poll creator can view analytics")
+            raise HTTPException(
+                status_code=403, detail="Only poll creator can view analytics"
+            )
 
         # Get detailed analytics
-        responses = poll.responses.get("user_responses", []) if poll.responses else []
+        responses = poll.responses.get(
+            "user_responses", []) if poll.responses else []
 
         analytics = {
             "total_responses": len(responses),
-            "response_rate": len(responses),  # Would calculate based on invited users
+            # Would calculate based on invited users
+            "response_rate": len(responses),
             "time_to_respond": [],  # Average time from poll creation to response
             "consensus_metrics": {
                 "consensus_level": (
-                    poll.ai_analysis.get("consensus_level", 0) if poll.ai_analysis else 0
+                    poll.ai_analysis.get("consensus_level", 0)
+                    if poll.ai_analysis
+                    else 0
                 ),
                 "conflicts_identified": (
-                    len(poll.ai_analysis.get("conflicts", [])) if poll.ai_analysis else 0
+                    len(poll.ai_analysis.get("conflicts", []))
+                    if poll.ai_analysis
+                    else 0
                 ),
                 "patterns_found": (
-                    len(poll.ai_analysis.get("patterns", [])) if poll.ai_analysis else 0
+                    len(poll.ai_analysis.get("patterns", [])
+                        ) if poll.ai_analysis else 0
                 ),
             },
             "response_timeline": [
                 {
                     "timestamp": response.get("timestamp"),
-                    "user_id": response.get("user_id")[:8] + "...",  # Anonymized
+                    # Anonymized
+                    "user_id": response.get("user_id")[:8] + "...",
                     "choice": response.get("response", {}).get("choice"),
                 }
                 for response in responses
@@ -335,7 +392,8 @@ async def get_poll_analytics(
         raise
     except Exception as e:
         logger.error(f"Error getting poll analytics: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Analytics error: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Analytics error: {str(e)}")
 
 
 @router.get("/health")

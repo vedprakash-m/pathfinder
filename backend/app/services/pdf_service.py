@@ -15,7 +15,14 @@ try:
     from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
     from reportlab.lib.units import inch
     from reportlab.pdfgen import canvas
-    from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+    from reportlab.platypus import (
+        Image,
+        Paragraph,
+        SimpleDocTemplate,
+        Spacer,
+        Table,
+        TableStyle,
+    )
     from reportlab.platypus.tableofcontents import TableOfContents
 except ImportError:
     logger = logging.getLogger(__name__)
@@ -52,7 +59,9 @@ class PDFService:
     """Service for generating PDF documents."""
 
     def __init__(self):
-        self.styles = getSampleStyleSheet() if "getSampleStyleSheet" in globals() else {}
+        self.styles = (
+            getSampleStyleSheet() if "getSampleStyleSheet" in globals() else {}
+        )
         self._setup_custom_styles()
 
     def _setup_custom_styles(self):
@@ -97,7 +106,11 @@ class PDFService:
         # Body text style
         self.styles.add(
             ParagraphStyle(
-                "CustomBody", parent=self.styles["Normal"], fontSize=11, spaceAfter=6, leftIndent=20
+                "CustomBody",
+                parent=self.styles["Normal"],
+                fontSize=11,
+                spaceAfter=6,
+                leftIndent=20,
             )
         )
 
@@ -141,7 +154,8 @@ class PDFService:
             story.extend(self._create_trip_overview(trip))
 
             # Daily itinerary
-            story.extend(self._create_daily_itinerary(itinerary_days, activities))
+            story.extend(self._create_daily_itinerary(
+                itinerary_days, activities))
 
             # Important information
             story.extend(self._create_important_info(trip))
@@ -163,7 +177,8 @@ class PDFService:
 
         # Title
         title = Paragraph(
-            f"Trip Itinerary: {trip.name}", self.styles.get("CustomTitle", self.styles.get("Title"))
+            f"Trip Itinerary: {trip.name}",
+            self.styles.get("CustomTitle", self.styles.get("Title")),
         )
         elements.append(title)
         elements.append(Spacer(1, 20))
@@ -187,7 +202,8 @@ class PDFService:
         # Duration
         duration = (trip.end_date - trip.start_date).days + 1
         duration_text = Paragraph(
-            f"Duration: {duration} days", self.styles.get("CustomBody", self.styles.get("Normal"))
+            f"Duration: {duration} days",
+            self.styles.get("CustomBody", self.styles.get("Normal")),
         )
         elements.append(duration_text)
         elements.append(Spacer(1, 30))
@@ -195,11 +211,14 @@ class PDFService:
         # Description
         if trip.description:
             desc_title = Paragraph(
-                "Trip Description", self.styles.get("CustomSubHeader", self.styles.get("Heading3"))
+                "Trip Description",
+                self.styles.get("CustomSubHeader",
+                                self.styles.get("Heading3")),
             )
             elements.append(desc_title)
             description = Paragraph(
-                trip.description, self.styles.get("CustomBody", self.styles.get("Normal"))
+                trip.description,
+                self.styles.get("CustomBody", self.styles.get("Normal")),
             )
             elements.append(description)
             elements.append(Spacer(1, 20))
@@ -219,7 +238,8 @@ class PDFService:
 
         # Section header
         header = Paragraph(
-            "Trip Overview", self.styles.get("CustomHeader", self.styles.get("Heading2"))
+            "Trip Overview",
+            self.styles.get("CustomHeader", self.styles.get("Heading2")),
         )
         elements.append(header)
         elements.append(Spacer(1, 12))
@@ -259,17 +279,22 @@ class PDFService:
         # Participants
         if hasattr(trip, "participations") and trip.participations:
             participants_header = Paragraph(
-                "Participants", self.styles.get("CustomSubHeader", self.styles.get("Heading3"))
+                "Participants",
+                self.styles.get("CustomSubHeader",
+                                self.styles.get("Heading3")),
             )
             elements.append(participants_header)
 
             for participation in trip.participations:
-                participant_text = f"• {participation.user.name} ({participation.family.name})"
+                participant_text = (
+                    f"• {participation.user.name} ({participation.family.name})"
+                )
                 if participation.status:
                     participant_text += f" - {participation.status.value.title()}"
 
                 participant = Paragraph(
-                    participant_text, self.styles.get("CustomBody", self.styles.get("Normal"))
+                    participant_text,
+                    self.styles.get("CustomBody", self.styles.get("Normal")),
                 )
                 elements.append(participant)
 
@@ -278,14 +303,17 @@ class PDFService:
         return elements
 
     def _create_daily_itinerary(
-        self, itinerary_days: List[ItineraryDay], activities: Dict[str, List[ItineraryActivity]]
+        self,
+        itinerary_days: List[ItineraryDay],
+        activities: Dict[str, List[ItineraryActivity]],
     ) -> List[Any]:
         """Create daily itinerary section."""
         elements = []
 
         # Section header
         header = Paragraph(
-            "Daily Itinerary", self.styles.get("CustomHeader", self.styles.get("Heading2"))
+            "Daily Itinerary",
+            self.styles.get("CustomHeader", self.styles.get("Heading2")),
         )
         elements.append(header)
         elements.append(Spacer(1, 12))
@@ -294,13 +322,15 @@ class PDFService:
             # Day header
             day_header = Paragraph(
                 f"Day {day.day_number}: {day.date.strftime('%A, %B %d, %Y')}",
-                self.styles.get("CustomSubHeader", self.styles.get("Heading3")),
+                self.styles.get("CustomSubHeader",
+                                self.styles.get("Heading3")),
             )
             elements.append(day_header)
 
             if day.theme:
                 theme = Paragraph(
-                    f"Theme: {day.theme}", self.styles.get("CustomBody", self.styles.get("Normal"))
+                    f"Theme: {day.theme}",
+                    self.styles.get("CustomBody", self.styles.get("Normal")),
                 )
                 elements.append(theme)
 
@@ -337,7 +367,10 @@ class PDFService:
                 time_str += f" - {activity.end_time.strftime('%I:%M %p')}"
 
         activity_title = f"{time_str} - {activity.name}" if time_str else activity.name
-        title = Paragraph(activity_title, self.styles.get("CustomBody", self.styles.get("Normal")))
+        title = Paragraph(
+            activity_title, self.styles.get(
+                "CustomBody", self.styles.get("Normal"))
+        )
         elements.append(title)
 
         # Activity details
@@ -356,7 +389,8 @@ class PDFService:
 
         for detail in details:
             detail_para = Paragraph(
-                f"  {detail}", self.styles.get("CustomBody", self.styles.get("Normal"))
+                f"  {detail}", self.styles.get(
+                    "CustomBody", self.styles.get("Normal"))
             )
             elements.append(detail_para)
 
@@ -369,14 +403,16 @@ class PDFService:
 
         # Section header
         header = Paragraph(
-            "Important Information", self.styles.get("CustomHeader", self.styles.get("Heading2"))
+            "Important Information",
+            self.styles.get("CustomHeader", self.styles.get("Heading2")),
         )
         elements.append(header)
         elements.append(Spacer(1, 12))
 
         # Emergency contacts
         emergency_header = Paragraph(
-            "Emergency Contacts", self.styles.get("CustomSubHeader", self.styles.get("Heading3"))
+            "Emergency Contacts",
+            self.styles.get("CustomSubHeader", self.styles.get("Heading3")),
         )
         elements.append(emergency_header)
 
@@ -388,14 +424,17 @@ class PDFService:
         ]
 
         for info in emergency_info:
-            info_para = Paragraph(info, self.styles.get("CustomBody", self.styles.get("Normal")))
+            info_para = Paragraph(
+                info, self.styles.get("CustomBody", self.styles.get("Normal"))
+            )
             elements.append(info_para)
 
         elements.append(Spacer(1, 15))
 
         # Travel tips
         tips_header = Paragraph(
-            "Travel Tips", self.styles.get("CustomSubHeader", self.styles.get("Heading3"))
+            "Travel Tips",
+            self.styles.get("CustomSubHeader", self.styles.get("Heading3")),
         )
         elements.append(tips_header)
 
@@ -409,7 +448,9 @@ class PDFService:
         ]
 
         for tip in tips:
-            tip_para = Paragraph(tip, self.styles.get("CustomBody", self.styles.get("Normal")))
+            tip_para = Paragraph(
+                tip, self.styles.get("CustomBody", self.styles.get("Normal"))
+            )
             elements.append(tip_para)
 
         return elements
@@ -459,13 +500,16 @@ class PDFService:
         finally:
             buffer.close()
 
-    def _create_reservations_summary(self, reservations: List[Reservation]) -> List[Any]:
+    def _create_reservations_summary(
+        self, reservations: List[Reservation]
+    ) -> List[Any]:
         """Create reservations summary section."""
         elements = []
 
         # Section header
         header = Paragraph(
-            "Reservations", self.styles.get("CustomHeader", self.styles.get("Heading2"))
+            "Reservations", self.styles.get(
+                "CustomHeader", self.styles.get("Heading2"))
         )
         elements.append(header)
         elements.append(Spacer(1, 12))
@@ -480,7 +524,9 @@ class PDFService:
 
         for res_type, res_list in grouped_reservations.items():
             type_header = Paragraph(
-                res_type.title(), self.styles.get("CustomSubHeader", self.styles.get("Heading3"))
+                res_type.title(),
+                self.styles.get("CustomSubHeader",
+                                self.styles.get("Heading3")),
             )
             elements.append(type_header)
 
@@ -498,7 +544,8 @@ class PDFService:
 
         # Reservation name
         name = Paragraph(
-            f"• {reservation.name}", self.styles.get("CustomBody", self.styles.get("Normal"))
+            f"• {reservation.name}",
+            self.styles.get("CustomBody", self.styles.get("Normal")),
         )
         elements.append(name)
 
@@ -509,9 +556,13 @@ class PDFService:
         if reservation.confirmation_number:
             details.append(f"Confirmation: {reservation.confirmation_number}")
         if reservation.check_in_date:
-            details.append(f"Check-in: {reservation.check_in_date.strftime('%B %d, %Y')}")
+            details.append(
+                f"Check-in: {reservation.check_in_date.strftime('%B %d, %Y')}"
+            )
         if reservation.check_out_date:
-            details.append(f"Check-out: {reservation.check_out_date.strftime('%B %d, %Y')}")
+            details.append(
+                f"Check-out: {reservation.check_out_date.strftime('%B %d, %Y')}"
+            )
         if reservation.total_cost:
             details.append(f"Cost: ${reservation.total_cost}")
         if reservation.status:
@@ -519,7 +570,8 @@ class PDFService:
 
         for detail in details:
             detail_para = Paragraph(
-                f"    {detail}", self.styles.get("CustomBody", self.styles.get("Normal"))
+                f"    {detail}",
+                self.styles.get("CustomBody", self.styles.get("Normal")),
             )
             elements.append(detail_para)
 
@@ -544,7 +596,8 @@ class PDFService:
 
             # Title
             title = Paragraph(
-                "Family Roster", self.styles.get("CustomTitle", self.styles.get("Title"))
+                "Family Roster",
+                self.styles.get("CustomTitle", self.styles.get("Title")),
             )
             story.append(title)
             story.append(Spacer(1, 20))
@@ -552,7 +605,9 @@ class PDFService:
             for family in families:
                 # Family name
                 family_header = Paragraph(
-                    family.name, self.styles.get("CustomHeader", self.styles.get("Heading2"))
+                    family.name,
+                    self.styles.get(
+                        "CustomHeader", self.styles.get("Heading2")),
                 )
                 story.append(family_header)
                 story.append(Spacer(1, 8))
@@ -567,7 +622,9 @@ class PDFService:
                             member_info += f" - {member.role.value.title()}"
 
                         member_para = Paragraph(
-                            member_info, self.styles.get("CustomBody", self.styles.get("Normal"))
+                            member_info,
+                            self.styles.get(
+                                "CustomBody", self.styles.get("Normal")),
                         )
                         story.append(member_para)
 

@@ -61,7 +61,8 @@ async def trigger_coordination_event(
         executed_actions = []
 
         if request.event_type == "family_joined":
-            trip_name = request.context_data.get("trip_name", f"Trip {request.trip_id}")
+            trip_name = request.context_data.get(
+                "trip_name", f"Trip {request.trip_id}")
             success = await notify_family_joined(
                 trip_name, request.trip_id, request.family_id or ""
             )
@@ -69,14 +70,18 @@ async def trigger_coordination_event(
                 executed_actions.append("welcome_notification_sent")
 
         elif request.event_type == "preferences_updated":
-            trip_name = request.context_data.get("trip_name", f"Trip {request.trip_id}")
+            trip_name = request.context_data.get(
+                "trip_name", f"Trip {request.trip_id}")
             consensus_score = request.context_data.get("consensus_score", 0.5)
             score_change = request.context_data.get("score_change", 0.0)
 
             if abs(score_change) > 0.1:
-                success = await notify_consensus_update(trip_name, consensus_score, score_change)
+                success = await notify_consensus_update(
+                    trip_name, consensus_score, score_change
+                )
                 if success:
-                    executed_actions.append("consensus_update_notification_sent")
+                    executed_actions.append(
+                        "consensus_update_notification_sent")
 
         return {
             "success": True,
@@ -88,7 +93,9 @@ async def trigger_coordination_event(
 
     except Exception as e:
         logger.error(f"Error triggering coordination event: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to trigger coordination automation")
+        raise HTTPException(
+            status_code=500, detail="Failed to trigger coordination automation"
+        )
 
 
 @router.get("/status/{trip_id}", response_model=CoordinationStatusResponse)
@@ -119,7 +126,8 @@ async def get_coordination_status(
 
     except Exception as e:
         logger.error(f"Error getting coordination status: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to get coordination status")
+        raise HTTPException(
+            status_code=500, detail="Failed to get coordination status")
 
 
 @router.post("/smart-notification")
@@ -136,13 +144,15 @@ async def send_smart_notification(
     try:
         service = SmartNotificationService()
 
-        trigger = NotificationTrigger(notification_data.get("trigger", "FAMILY_JOINED"))
+        trigger = NotificationTrigger(
+            notification_data.get("trigger", "FAMILY_JOINED"))
         context = notification_data.get("context", {})
 
         success = await service.send_smart_notification(trigger, context)
 
         if success:
-            logger.info(f"Smart notification sent successfully: {trigger.value}")
+            logger.info(
+                f"Smart notification sent successfully: {trigger.value}")
             return {
                 "success": True,
                 "message": "Smart notification sent successfully",
@@ -150,13 +160,16 @@ async def send_smart_notification(
                 "context": context,
             }
         else:
-            raise HTTPException(status_code=400, detail="Failed to send notification")
+            raise HTTPException(
+                status_code=400, detail="Failed to send notification")
 
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=f"Invalid trigger type: {str(e)}")
+        raise HTTPException(
+            status_code=400, detail=f"Invalid trigger type: {str(e)}")
     except Exception as e:
         logger.error(f"Error sending smart notification: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to send smart notification")
+        raise HTTPException(
+            status_code=500, detail="Failed to send smart notification")
 
 
 @router.get("/automation-health/{trip_id}")
@@ -200,16 +213,22 @@ async def get_automation_health(
             )
 
         if health_data["coordination_metrics"]["response_rate"] < 0.8:
-            health_data["bottlenecks"].append("Low family response rate to notifications")
+            health_data["bottlenecks"].append(
+                "Low family response rate to notifications"
+            )
 
         if health_data["coordination_metrics"]["average_response_time_hours"] > 8:
-            health_data["bottlenecks"].append("Slow response time to coordination requests")
+            health_data["bottlenecks"].append(
+                "Slow response time to coordination requests"
+            )
 
         return health_data
 
     except Exception as e:
-        logger.error(f"Error getting automation health for trip {trip_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to get automation health")
+        logger.error(
+            f"Error getting automation health for trip {trip_id}: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail="Failed to get automation health")
 
 
 @router.post("/schedule-meeting/{trip_id}")
@@ -234,7 +253,9 @@ async def suggest_coordination_meeting(
         from datetime import datetime, timedelta, timezone
 
         suggested_time = datetime.now(timezone.utc) + timedelta(days=2)
-        suggested_time = suggested_time.replace(hour=19, minute=0, second=0, microsecond=0)
+        suggested_time = suggested_time.replace(
+            hour=19, minute=0, second=0, microsecond=0
+        )
 
         meeting_suggestion = {
             "trip_id": trip_id,
@@ -264,10 +285,12 @@ async def suggest_coordination_meeting(
             ],
         }
 
-        logger.info(f"Meeting suggestion generated for trip {trip_id}: {meeting_type}")
+        logger.info(
+            f"Meeting suggestion generated for trip {trip_id}: {meeting_type}")
 
         return meeting_suggestion
 
     except Exception as e:
         logger.error(f"Error suggesting meeting for trip {trip_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to suggest meeting time")
+        raise HTTPException(
+            status_code=500, detail="Failed to suggest meeting time")

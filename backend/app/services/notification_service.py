@@ -27,7 +27,9 @@ logger = get_logger(__name__)
 class NotificationService:
     """Service for managing notifications."""
 
-    def __init__(self, db: AsyncSession, websocket_manager: Optional[ConnectionManager] = None):
+    def __init__(
+        self, db: AsyncSession, websocket_manager: Optional[ConnectionManager] = None
+    ):
         self.db = db
         self.websocket_manager = websocket_manager
 
@@ -88,7 +90,9 @@ class NotificationService:
 
         return await self.send_admin_alert(alert_data)
 
-    async def send_system_health_alert(self, metric: str, value: float, threshold: float):
+    async def send_system_health_alert(
+        self, metric: str, value: float, threshold: float
+    ):
         """Send system health alerts."""
         alert_data = {
             "type": "system_health_alert",
@@ -116,7 +120,11 @@ class NotificationService:
                 message=notification_data.message,
                 trip_id=notification_data.trip_id,
                 family_id=notification_data.family_id,
-                data=json.dumps(notification_data.data) if notification_data.data else None,
+                data=(
+                    json.dumps(notification_data.data)
+                    if notification_data.data
+                    else None
+                ),
                 expires_at=notification_data.expires_at,
             )
 
@@ -128,7 +136,9 @@ class NotificationService:
 
             # Send real-time notification
             if self.websocket_manager:
-                await self._send_real_time_notification(str(notification_data.user_id), response)
+                await self._send_real_time_notification(
+                    str(notification_data.user_id), response
+                )
 
             # Send email notification based on type and user preferences
             await self._send_email_notification(notification, response)
@@ -158,7 +168,8 @@ class NotificationService:
                     message=bulk_data.message,
                     trip_id=bulk_data.trip_id,
                     family_id=bulk_data.family_id,
-                    data=json.dumps(bulk_data.data) if bulk_data.data else None,
+                    data=json.dumps(
+                        bulk_data.data) if bulk_data.data else None,
                     expires_at=bulk_data.expires_at,
                 )
                 notifications.append(notification)
@@ -174,9 +185,13 @@ class NotificationService:
 
                 # Send real-time notification
                 if self.websocket_manager:
-                    await self._send_real_time_notification(str(notification.user_id), response)
+                    await self._send_real_time_notification(
+                        str(notification.user_id), response
+                    )
 
-            logger.info(f"Bulk notifications created for {len(bulk_data.user_ids)} users")
+            logger.info(
+                f"Bulk notifications created for {len(bulk_data.user_ids)} users"
+            )
             return responses
 
         except Exception as e:
@@ -189,7 +204,8 @@ class NotificationService:
     ) -> List[NotificationResponse]:
         """Get notifications for a user."""
         try:
-            query = select(Notification).where(Notification.user_id == UUID(user_id))
+            query = select(Notification).where(
+                Notification.user_id == UUID(user_id))
 
             # Filter by read status if requested
             if unread_only:
@@ -202,13 +218,17 @@ class NotificationService:
             )
 
             # Order by creation date (newest first) and apply pagination
-            query = query.order_by(desc(Notification.created_at)).offset(skip).limit(limit)
+            query = (
+                query.order_by(desc(Notification.created_at)
+                               ).offset(skip).limit(limit)
+            )
 
             result = await self.db.execute(query)
             notifications = result.scalars().all()
 
             # Build responses
-            responses = [self._build_notification_response(n) for n in notifications]
+            responses = [self._build_notification_response(
+                n) for n in notifications]
 
             return responses
 
@@ -223,7 +243,8 @@ class NotificationService:
         try:
             # Get notification and verify ownership
             query = select(Notification).where(
-                Notification.id == UUID(notification_id), Notification.user_id == UUID(user_id)
+                Notification.id == UUID(notification_id),
+                Notification.user_id == UUID(user_id),
             )
 
             result = await self.db.execute(query)
@@ -255,7 +276,12 @@ class NotificationService:
             # Update all unread notifications
             result = await self.db.execute(
                 update(Notification)
-                .where(and_(Notification.user_id == UUID(user_id), Notification.is_read == False))
+                .where(
+                    and_(
+                        Notification.user_id == UUID(user_id),
+                        Notification.is_read == False,
+                    )
+                )
                 .values(is_read=True, read_at=datetime.now(timezone.utc))
                 .returning(Notification.id)
             )
@@ -263,7 +289,9 @@ class NotificationService:
             updated_count = len(result.fetchall())
             await self.db.commit()
 
-            logger.info(f"Marked {updated_count} notifications as read for user {user_id}")
+            logger.info(
+                f"Marked {updated_count} notifications as read for user {user_id}"
+            )
             return updated_count
 
         except Exception as e:
@@ -290,7 +318,9 @@ class NotificationService:
                 logger.info(f"Notification deleted: {notification_id}")
                 return True
             else:
-                logger.warning(f"Notification not found or not owned by user: {notification_id}")
+                logger.warning(
+                    f"Notification not found or not owned by user: {notification_id}"
+                )
                 return False
 
         except Exception as e:
@@ -308,7 +338,8 @@ class NotificationService:
                         Notification.is_read == False,
                         or_(
                             Notification.expires_at.is_(None),
-                            Notification.expires_at > datetime.now(timezone.utc),
+                            Notification.expires_at > datetime.now(
+                                timezone.utc),
                         ),
                     )
                 )
@@ -334,7 +365,8 @@ class NotificationService:
             title="Trip Invitation",
             message=f"You've been invited to join '{trip_name}' by {inviter_name}",
             trip_id=UUID(trip_id),
-            data={"trip_id": trip_id, "trip_name": trip_name, "inviter": inviter_name},
+            data={"trip_id": trip_id, "trip_name": trip_name,
+                "inviter": inviter_name},
         )
         await self.create_notification(notification_data)
 
@@ -349,7 +381,11 @@ class NotificationService:
             title="Trip Update",
             message=f"'{trip_name}' has been updated: {update_type}",
             trip_id=UUID(trip_id),
-            data={"trip_id": trip_id, "trip_name": trip_name, "update_type": update_type},
+            data={
+                "trip_id": trip_id,
+                "trip_name": trip_name,
+                "update_type": update_type,
+            },
         )
         await self.create_bulk_notifications(bulk_data)
 
@@ -368,7 +404,9 @@ class NotificationService:
         )
         await self.create_bulk_notifications(bulk_data)
 
-    def _build_notification_response(self, notification: Notification) -> NotificationResponse:
+    def _build_notification_response(
+        self, notification: Notification
+    ) -> NotificationResponse:
         """Build notification response from database model."""
         return NotificationResponse(
             id=notification.id,
@@ -391,7 +429,8 @@ class NotificationService:
     ) -> None:
         """Send real-time notification via WebSocket."""
         if self.websocket_manager:
-            message = {"type": "notification", "data": notification.model_dump()}
+            message = {"type": "notification",
+                "data": notification.model_dump()}
             await self.websocket_manager.send_to_user(user_id, json.dumps(message))
 
     async def _send_email_notification(
@@ -404,7 +443,8 @@ class NotificationService:
             user_name = await self._get_user_name(str(notification.user_id))
 
             if not user_email:
-                logger.warning(f"No email found for user {notification.user_id}")
+                logger.warning(
+                    f"No email found for user {notification.user_id}")
                 return
 
             # Check if user has email notifications enabled for this type
@@ -427,12 +467,21 @@ class NotificationService:
                     notification, user_email, user_name
                 )
             elif notification.type == NotificationType.TRIP_UPDATE:
-                success = await self._send_trip_update_email(notification, user_email, user_name)
-            elif notification.type in [NotificationType.SYSTEM_ANNOUNCEMENT, "SYSTEM_ALERT"]:
-                success = await self._send_system_alert_email(notification, user_email, user_name)
+                success = await self._send_trip_update_email(
+                    notification, user_email, user_name
+                )
+            elif notification.type in [
+                NotificationType.SYSTEM_ANNOUNCEMENT,
+                "SYSTEM_ALERT",
+            ]:
+                success = await self._send_system_alert_email(
+                    notification, user_email, user_name
+                )
 
             if success:
-                logger.info(f"Email notification sent for {notification.type} to {user_email}")
+                logger.info(
+                    f"Email notification sent for {notification.type} to {user_email}"
+                )
             else:
                 logger.warning(
                     f"Failed to send email notification for {notification.type} to {user_email}"
@@ -491,7 +540,9 @@ class NotificationService:
             inviter = data.get("inviter", "Someone")
 
             # Create invitation link (placeholder)
-            invitation_link = f"https://pathfinder.com/trips/{notification.trip_id}/accept"
+            invitation_link = (
+                f"https://pathfinder.com/trips/{notification.trip_id}/accept"
+            )
 
             trip_data = {
                 "name": trip_name,
@@ -521,9 +572,14 @@ class NotificationService:
             trip_name = data.get("trip_name", "Your Trip")
 
             # Create itinerary link
-            itinerary_link = f"https://pathfinder.com/trips/{notification.trip_id}/itinerary"
+            itinerary_link = (
+                f"https://pathfinder.com/trips/{notification.trip_id}/itinerary"
+            )
 
-            trip_data = {"name": trip_name, "destination": data.get("destination", "Unknown")}
+            trip_data = {
+                "name": trip_name,
+                "destination": data.get("destination", "Unknown"),
+            }
 
             itinerary_summary = {
                 "duration_days": data.get("duration_days", "Unknown"),
@@ -581,7 +637,8 @@ class NotificationService:
             data = json.loads(notification.data) if notification.data else {}
 
             # Send to administrators
-            admin_emails = [user_email]  # In this case, the user is likely an admin
+            # In this case, the user is likely an admin
+            admin_emails = [user_email]
 
             return await email_service.send_cost_alert_email(
                 admin_emails=admin_emails, alert_data=data

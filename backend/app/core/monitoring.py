@@ -20,7 +20,8 @@ from typing import Any, AsyncGenerator, Callable, Dict, List, Optional
 import structlog
 
 # Context variables for correlation tracking
-correlation_id: ContextVar[Optional[str]] = ContextVar("correlation_id", default=None)
+correlation_id: ContextVar[Optional[str]] = ContextVar(
+    "correlation_id", default=None)
 request_id: ContextVar[Optional[str]] = ContextVar("request_id", default=None)
 user_id: ContextVar[Optional[str]] = ContextVar("user_id", default=None)
 
@@ -140,7 +141,9 @@ class StructuredLogger:
         if user_id_val:
             user_id.set(user_id_val)
 
-    def log_operation(self, operation: str, duration_ms: float, success: bool, **kwargs):
+    def log_operation(
+        self, operation: str, duration_ms: float, success: bool, **kwargs
+    ):
         """Log operation with standardized format"""
         level = "info" if success else "error"
 
@@ -224,11 +227,15 @@ class MetricsCollector:
             if len(self.metrics) > 10000:
                 await self.flush_metrics()
 
-    async def increment_counter(self, name: str, labels: Optional[Dict[str, str]] = None):
+    async def increment_counter(
+        self, name: str, labels: Optional[Dict[str, str]] = None
+    ):
         """Increment a counter metric"""
         await self.record_metric(name, 1.0, MetricType.COUNTER, labels)
 
-    async def record_gauge(self, name: str, value: float, labels: Optional[Dict[str, str]] = None):
+    async def record_gauge(
+        self, name: str, value: float, labels: Optional[Dict[str, str]] = None
+    ):
         """Record a gauge metric"""
         await self.record_metric(name, value, MetricType.GAUGE, labels)
 
@@ -316,7 +323,9 @@ class MetricsCollector:
 
 
 def monitor_performance(
-    operation_name: str, threshold_ms: Optional[float] = None, record_metrics: bool = True
+    operation_name: str,
+    threshold_ms: Optional[float] = None,
+    record_metrics: bool = True,
 ):
     """Decorator for monitoring function performance"""
 
@@ -337,17 +346,22 @@ def monitor_performance(
                 metrics.finalize(success=True)
 
                 # Log operation
-                logger.log_operation(operation_name, metrics.duration_ms, True, **metrics.context)
+                logger.log_operation(
+                    operation_name, metrics.duration_ms, True, **metrics.context
+                )
 
                 # Record metrics
                 if record_metrics:
                     await collector.record_timer(
-                        f"operation.{operation_name.replace(' ', '_').lower()}", metrics.duration_ms
+                        f"operation.{operation_name.replace(' ', '_').lower()}",
+                        metrics.duration_ms,
                     )
 
                 # Check custom threshold
                 if threshold_ms and metrics.duration_ms > threshold_ms:
-                    logger.log_performance_alert(operation_name, metrics.duration_ms, threshold_ms)
+                    logger.log_performance_alert(
+                        operation_name, metrics.duration_ms, threshold_ms
+                    )
 
                 return result
 
@@ -426,7 +440,9 @@ async def monitoring_context(
         metrics.finalize(success=True)
 
         # Log successful operation
-        logger.log_operation(operation_name, metrics.duration_ms, True, **metrics.context)
+        logger.log_operation(
+            operation_name, metrics.duration_ms, True, **metrics.context
+        )
 
         # Record metrics
         await collector.record_timer(
@@ -521,7 +537,9 @@ class HealthChecker:
         if not self.last_results:
             return {"status": "unknown", "message": "No health checks run yet"}
 
-        healthy_count = sum(1 for r in self.last_results.values() if r.get("status") == "healthy")
+        healthy_count = sum(
+            1 for r in self.last_results.values() if r.get("status") == "healthy"
+        )
         total_count = len(self.last_results)
 
         if healthy_count == total_count:

@@ -34,7 +34,9 @@ async def test_create_trip(trip_service, test_user, test_family):
 
     # Create a proper mock for cosmos operations
     mock_cosmos_ops = AsyncMock()
-    mock_cosmos_ops.save_trip_preferences_to_cosmos = AsyncMock(return_value={"id": "mock-pref-id"})
+    mock_cosmos_ops.save_trip_preferences_to_cosmos = AsyncMock(
+        return_value={"id": "mock-pref-id"}
+    )
     mock_cosmos_ops.itinerary_service = AsyncMock()
     mock_cosmos_ops.message_service = AsyncMock()
     mock_cosmos_ops.preference_service = AsyncMock()
@@ -96,7 +98,9 @@ async def test_update_trip(trip_service, test_user, test_trip):
     # Arrange
     user_id = str(test_user.id)
     trip_id = test_trip.id
-    trip_update = TripUpdate(name="Updated Trip Name", description="Updated description")
+    trip_update = TripUpdate(
+        name="Updated Trip Name", description="Updated description"
+    )
 
     # Act
     updated_trip = await trip_service.update_trip(trip_id, trip_update, user_id)
@@ -123,7 +127,9 @@ async def test_delete_trip(trip_service, test_user, test_trip):
 
 
 @pytest.mark.asyncio
-async def test_get_trip_stats(trip_service, test_user, test_trip, test_trip_participation):
+async def test_get_trip_stats(
+    trip_service, test_user, test_trip, test_trip_participation
+):
     """Test retrieving trip statistics."""
     # Arrange
     user_id = str(test_user.id)
@@ -173,7 +179,9 @@ async def test_add_family_to_trip(trip_service, test_user, test_trip, db_session
 
 
 @pytest.mark.asyncio
-async def test_cannot_update_trip_without_permission(trip_service, test_trip, db_session):
+async def test_cannot_update_trip_without_permission(
+    trip_service, test_trip, db_session
+):
     """Test that a non-creator cannot update a trip."""
     # Arrange
     # Create another user
@@ -198,7 +206,9 @@ async def test_cannot_update_trip_without_permission(trip_service, test_trip, db
 
 
 @pytest.mark.asyncio
-async def test_cannot_delete_trip_without_permission(trip_service, test_trip, db_session):
+async def test_cannot_delete_trip_without_permission(
+    trip_service, test_trip, db_session
+):
     """Test that a non-creator cannot delete a trip."""
     # Arrange
     # Create another user

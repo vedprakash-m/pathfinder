@@ -79,10 +79,13 @@ class TripChatRoom:
         self.connections: Dict[str, WebSocket] = {}  # user_id -> websocket
         self.user_presence: Dict[str, UserPresence] = {}  # user_id -> presence
         self.message_history: List[ChatMessage] = []
-        self.active_votes: Dict[str, Dict[str, Any]] = {}  # vote_id -> vote_data
+        # vote_id -> vote_data
+        self.active_votes: Dict[str, Dict[str, Any]] = {}
         self.typing_users: Set[str] = set()
 
-    async def add_user(self, user_id: str, user_name: str, family_id: str, websocket: WebSocket):
+    async def add_user(
+        self, user_id: str, user_name: str, family_id: str, websocket: WebSocket
+    ):
         """Add a user to the chat room."""
         self.connections[user_id] = websocket
         self.user_presence[user_id] = UserPresence(
@@ -115,7 +118,9 @@ class TripChatRoom:
 
             logger.info(f"User {user_name} left trip chat {self.trip_id}")
 
-    async def broadcast_message(self, message: ChatMessage, exclude_user: Optional[str] = None):
+    async def broadcast_message(
+        self, message: ChatMessage, exclude_user: Optional[str] = None
+    ):
         """Broadcast a message to all users in the room."""
         message_data = message.to_dict()
 
@@ -135,7 +140,8 @@ class TripChatRoom:
             try:
                 await websocket.send_text(json.dumps(message_data))
             except Exception as e:
-                logger.warning(f"Failed to send message to user {user_id}: {e}")
+                logger.warning(
+                    f"Failed to send message to user {user_id}: {e}")
                 disconnected_users.append(user_id)
 
         # Clean up disconnected users
@@ -161,7 +167,8 @@ class TripChatRoom:
         websocket = self.connections[user_id]
 
         # Send last 20 messages
-        recent_messages = self.message_history[-20:] if self.message_history else []
+        recent_messages = self.message_history[-20:
+            ] if self.message_history else []
 
         history_data = {
             "type": "message_history",
@@ -171,9 +178,12 @@ class TripChatRoom:
         try:
             await websocket.send_text(json.dumps(history_data))
         except Exception as e:
-            logger.warning(f"Failed to send message history to user {user_id}: {e}")
+            logger.warning(
+                f"Failed to send message history to user {user_id}: {e}")
 
-    async def broadcast_presence_update(self, user_id: str, action: str, user_name: str = None):
+    async def broadcast_presence_update(
+        self, user_id: str, action: str, user_name: str = None
+    ):
         """Broadcast user presence updates."""
         if not user_name and user_id in self.user_presence:
             user_name = self.user_presence[user_id].user_name
@@ -199,7 +209,8 @@ class TripChatRoom:
             try:
                 await websocket.send_text(json.dumps(presence_data))
             except Exception as e:
-                logger.warning(f"Failed to send presence update to user {uid}: {e}")
+                logger.warning(
+                    f"Failed to send presence update to user {uid}: {e}")
                 disconnected_users.append(uid)
 
         # Clean up disconnected users
@@ -242,7 +253,8 @@ class TripChatRoom:
             try:
                 await websocket.send_text(json.dumps(typing_data))
             except Exception as e:
-                logger.warning(f"Failed to send typing indicator to user {uid}: {e}")
+                logger.warning(
+                    f"Failed to send typing indicator to user {uid}: {e}")
                 disconnected_users.append(uid)
 
         # Clean up disconnected users
@@ -270,12 +282,14 @@ class TripChatRoom:
             id=str(uuid.uuid4()),
             trip_id=self.trip_id,
             user_id=creator_id,
-            user_name=self.user_presence.get(creator_id, {}).user_name or "Unknown",
+            user_name=self.user_presence.get(
+                creator_id, {}).user_name or "Unknown",
             family_id=self.user_presence.get(creator_id, {}).family_id or "",
             message_type=MessageType.VOTE_REQUEST,
             content=f"New vote: {vote_data.get('title', 'Untitled')}",
             timestamp=datetime.utcnow(),
-            metadata={"vote_id": vote_id, "vote_data": self.active_votes[vote_id]},
+            metadata={"vote_id": vote_id,
+                "vote_data": self.active_votes[vote_id]},
         )
 
         await self.broadcast_message(vote_message)
@@ -298,7 +312,8 @@ class TripChatRoom:
             id=str(uuid.uuid4()),
             trip_id=self.trip_id,
             user_id=user_id,
-            user_name=self.user_presence.get(user_id, {}).user_name or "Unknown",
+            user_name=self.user_presence.get(
+                user_id, {}).user_name or "Unknown",
             family_id=self.user_presence.get(user_id, {}).family_id or "",
             message_type=MessageType.VOTE_RESPONSE,
             content=f"Voted on: {vote['title']}",
@@ -343,7 +358,8 @@ class EnhancedChatService:
     """Enhanced chat service for managing multiple trip chat rooms."""
 
     def __init__(self):
-        self.chat_rooms: Dict[str, TripChatRoom] = {}  # trip_id -> TripChatRoom
+        # trip_id -> TripChatRoom
+        self.chat_rooms: Dict[str, TripChatRoom] = {}
 
     def get_or_create_room(self, trip_id: str) -> TripChatRoom:
         """Get or create a chat room for a trip."""
@@ -352,7 +368,12 @@ class EnhancedChatService:
         return self.chat_rooms[trip_id]
 
     async def add_user_to_trip(
-        self, trip_id: str, user_id: str, user_name: str, family_id: str, websocket: WebSocket
+        self,
+        trip_id: str,
+        user_id: str,
+        user_name: str,
+        family_id: str,
+        websocket: WebSocket,
     ):
         """Add a user to a trip's chat room."""
         room = self.get_or_create_room(trip_id)
@@ -400,7 +421,9 @@ class EnhancedChatService:
         await room.broadcast_message(message)
         return True
 
-    async def handle_typing_indicator(self, trip_id: str, user_id: str, is_typing: bool):
+    async def handle_typing_indicator(
+        self, trip_id: str, user_id: str, is_typing: bool
+    ):
         """Handle typing indicators for a trip."""
         if trip_id in self.chat_rooms:
             await self.chat_rooms[trip_id].handle_typing_indicator(user_id, is_typing)
@@ -413,17 +436,23 @@ class EnhancedChatService:
             return await self.chat_rooms[trip_id].create_vote(user_id, vote_data)
         return None
 
-    async def cast_vote(self, trip_id: str, user_id: str, vote_id: str, option_index: int) -> bool:
+    async def cast_vote(
+        self, trip_id: str, user_id: str, vote_id: str, option_index: int
+    ) -> bool:
         """Cast a vote in a trip's chat room."""
         if trip_id in self.chat_rooms:
-            return await self.chat_rooms[trip_id].cast_vote(user_id, vote_id, option_index)
+            return await self.chat_rooms[trip_id].cast_vote(
+                user_id, vote_id, option_index
+            )
         return False
 
     def get_room_stats(self) -> Dict[str, Any]:
         """Get statistics about all chat rooms."""
         return {
             "total_rooms": len(self.chat_rooms),
-            "total_connections": sum(len(room.connections) for room in self.chat_rooms.values()),
+            "total_connections": sum(
+                len(room.connections) for room in self.chat_rooms.values()
+            ),
             "rooms": {
                 trip_id: {
                     "user_count": len(room.connections),

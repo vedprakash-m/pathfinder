@@ -50,14 +50,19 @@ class TripCosmosOperations:
         try:
             # Create or update preference document
             await self.preference_service.convert_from_model(
-                entity_type=PreferenceType.TRIP, entity_id=trip_id, preferences_data=preferences
+                entity_type=PreferenceType.TRIP,
+                entity_id=trip_id,
+                preferences_data=preferences,
             )
             return True
         except Exception as e:
-            logger.error(f"Error saving trip preferences to Cosmos DB: {str(e)}")
+            logger.error(
+                f"Error saving trip preferences to Cosmos DB: {str(e)}")
             return False
 
-    async def get_trip_preferences_from_cosmos(self, trip_id: str) -> Optional[Dict[str, Any]]:
+    async def get_trip_preferences_from_cosmos(
+        self, trip_id: str
+    ) -> Optional[Dict[str, Any]]:
         """
         Get trip preferences from Cosmos DB.
 
@@ -85,7 +90,8 @@ class TripCosmosOperations:
                 }
             return None
         except Exception as e:
-            logger.error(f"Error getting trip preferences from Cosmos DB: {str(e)}")
+            logger.error(
+                f"Error getting trip preferences from Cosmos DB: {str(e)}")
             return None
 
     async def send_trip_message(
@@ -187,7 +193,9 @@ class TripCosmosOperations:
             logger.error(f"Error getting trip messages: {str(e)}")
             return []
 
-    async def get_current_itinerary_from_cosmos(self, trip_id: str) -> Optional[ItineraryDocument]:
+    async def get_current_itinerary_from_cosmos(
+        self, trip_id: str
+    ) -> Optional[ItineraryDocument]:
         """
         Get the current itinerary for a trip from Cosmos DB.
 
@@ -200,5 +208,6 @@ class TripCosmosOperations:
         try:
             return await self.itinerary_service.get_current_itinerary(trip_id)
         except Exception as e:
-            logger.error(f"Error getting current itinerary from Cosmos DB: {str(e)}")
+            logger.error(
+                f"Error getting current itinerary from Cosmos DB: {str(e)}")
             return None

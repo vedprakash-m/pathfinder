@@ -31,7 +31,9 @@ class PreferenceDocumentService:
             partition_key="entity_id",
         )
 
-    async def create_preference(self, preference: PreferenceDocument) -> PreferenceDocument:
+    async def create_preference(
+        self, preference: PreferenceDocument
+    ) -> PreferenceDocument:
         """Create a new preference document."""
         # Ensure we have an ID
         if not preference.id:
@@ -111,7 +113,9 @@ class PreferenceDocumentService:
 
         # Update the document in Cosmos DB
         result = await self.cosmos_service.replace_item(
-            item_id=preference.id, item=preference, partition_key_value=preference.entity_id
+            item_id=preference.id,
+            item=preference,
+            partition_key_value=preference.entity_id,
         )
 
         # Convert back to Pydantic model and return
@@ -205,7 +209,10 @@ class PreferenceDocumentService:
             )
 
     async def convert_from_model(
-        self, entity_type: PreferenceType, entity_id: str, preferences_data: Dict[str, Any]
+        self,
+        entity_type: PreferenceType,
+        entity_id: str,
+        preferences_data: Dict[str, Any],
     ) -> PreferenceDocument:
         """
         Convert preferences from a model to a document.

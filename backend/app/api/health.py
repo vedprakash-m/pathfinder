@@ -165,14 +165,16 @@ async def detailed_health_check(
                 "response_time_ms": cosmos_time,
             }
         else:
-            details["cosmos_db"] = {"status": "disabled", "type": "azure_cosmos"}
+            details["cosmos_db"] = {
+                "status": "disabled", "type": "azure_cosmos"}
     except Exception as e:
         if settings.COSMOS_DB_ENABLED:
             status = "degraded"
             details["cosmos_db"] = {"status": "error", "error": str(e)}
             logger.error(f"Cosmos DB connection error: {e}")
         else:
-            details["cosmos_db"] = {"status": "disabled", "type": "azure_cosmos"}
+            details["cosmos_db"] = {
+                "status": "disabled", "type": "azure_cosmos"}
 
     # Check email service
     try:

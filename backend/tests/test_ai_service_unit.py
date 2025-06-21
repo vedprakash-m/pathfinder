@@ -97,7 +97,11 @@ class TestAIServiceItineraryGeneration:
                     "budget_summary": {
                         "total_estimated_cost": 1200.50,
                         "daily_breakdown": [85.50],
-                        "categories": {"accommodation": 600.0, "food": 400.0, "activities": 200.50},
+                        "categories": {
+                            "accommodation": 600.0,
+                            "food": 400.0,
+                            "activities": 200.50,
+                        },
                     },
                 }
             )
@@ -135,13 +139,18 @@ class TestAIServiceItineraryGeneration:
         mock_to_thread.side_effect = Exception("API Error")
 
         # Extract parameters from trip data
-        destination = sample_trip_data["destinations"][0]  # Use first destination
-        duration_days = (sample_trip_data["end_date"] - sample_trip_data["start_date"]).days
+        # Use first destination
+        destination = sample_trip_data["destinations"][0]
+        duration_days = (
+            sample_trip_data["end_date"] - sample_trip_data["start_date"]
+        ).days
         families_data = sample_trip_data["participants"]
 
         # Should handle the error gracefully
         with pytest.raises(Exception):
-            await ai_service.generate_itinerary(destination, duration_days, families_data, sample_preferences)
+            await ai_service.generate_itinerary(
+                destination, duration_days, families_data, sample_preferences
+            )
 
     @patch("asyncio.to_thread")
     @pytest.mark.asyncio
@@ -159,13 +168,18 @@ class TestAIServiceItineraryGeneration:
         mock_to_thread.return_value = mock_response
 
         # Extract parameters from trip data
-        destination = sample_trip_data["destinations"][0]  # Use first destination
-        duration_days = (sample_trip_data["end_date"] - sample_trip_data["start_date"]).days
+        # Use first destination
+        destination = sample_trip_data["destinations"][0]
+        duration_days = (
+            sample_trip_data["end_date"] - sample_trip_data["start_date"]
+        ).days
         families_data = sample_trip_data["participants"]
 
         # Should handle invalid response
         with pytest.raises((json.JSONDecodeError, KeyError, ValueError)):
-            await ai_service.generate_itinerary(destination, duration_days, families_data, sample_preferences)
+            await ai_service.generate_itinerary(
+                destination, duration_days, families_data, sample_preferences
+            )
 
 
 class TestAIServiceRecommendations:
@@ -241,7 +255,11 @@ class TestAIServiceRecommendations:
                         "price_range": "$$$$",
                         "rating": 4.7,
                         "address": "Building A, Fort Mason",
-                        "dietary_accommodations": ["vegetarian", "vegan", "gluten-free"],
+                        "dietary_accommodations": [
+                            "vegetarian",
+                            "vegan",
+                            "gluten-free",
+                        ],
                         "accessibility": "wheelchair_accessible",
                         "recommended_dishes": [
                             "Seasonal Vegetable Tasting",
@@ -323,7 +341,11 @@ class TestAIServiceOptimization:
 
         # Optimize route
         destinations = ["San Francisco", "Monterey", "Los Angeles"]
-        vehicle_constraints = {"ev_vehicles": True, "charging_range": 300, "prefer_scenic": True}
+        vehicle_constraints = {
+            "ev_vehicles": True,
+            "charging_range": 300,
+            "prefer_scenic": True,
+        }
 
         result = await ai_service.optimize_route(destinations, vehicle_constraints)
 
@@ -408,7 +430,8 @@ class TestAIServiceOptimization:
         assert allocation["total_budget"] == 5000.0
 
         # Check category allocations sum to total
-        category_total = sum(cat["amount"] for cat in allocation["categories"].values())
+        category_total = sum(cat["amount"]
+                             for cat in allocation["categories"].values())
         assert abs(category_total - allocation["total_budget"]) < 0.01
 
 
@@ -430,7 +453,7 @@ class TestAIServiceErrorHandling:
         with pytest.raises((ValueError, TypeError)):
             await ai_service.generate_itinerary("", 0, [], {})
 
-    @patch("asyncio.to_thread")  
+    @patch("asyncio.to_thread")
     @pytest.mark.asyncio
     async def test_api_timeout_handling(self, mock_to_thread, ai_service):
         """Test handling of API timeouts."""
@@ -438,7 +461,9 @@ class TestAIServiceErrorHandling:
         mock_to_thread.side_effect = TimeoutError("Request timeout")
 
         with pytest.raises(ValueError, match="AI service timeout"):
-            await ai_service.generate_itinerary("Paris", 3, [{"id": "family1"}], {"interests": ["culture"]})
+            await ai_service.generate_itinerary(
+                "Paris", 3, [{"id": "family1"}], {"interests": ["culture"]}
+            )
 
     @patch("asyncio.to_thread")
     @pytest.mark.asyncio
@@ -451,8 +476,12 @@ class TestAIServiceErrorHandling:
 
         mock_to_thread.side_effect = RateLimitError("Rate limit exceeded")
 
-        with pytest.raises(ValueError, match="AI service temporarily unavailable due to rate limits"):
-            await ai_service.generate_itinerary("Paris", 3, [{"id": "family1"}], {"interests": ["culture"]})
+        with pytest.raises(
+            ValueError, match="AI service temporarily unavailable due to rate limits"
+        ):
+            await ai_service.generate_itinerary(
+                "Paris", 3, [{"id": "family1"}], {"interests": ["culture"]}
+            )
 
 
 class TestAIServiceCostMonitoring:
@@ -469,36 +498,38 @@ class TestAIServiceCostMonitoring:
         # Mock OpenAI response with proper format
         mock_response = MagicMock()
         mock_response.choices = [MagicMock()]
-        mock_response.choices[0].message.content = json.dumps({
-            "overview": {
-                "destination": "Paris",
-                "duration": "3 days",
-                "group_size": 2,
-                "total_budget": "$1000"
-            },
-            "daily_itinerary": [
-                {
-                    "day": 1,
-                    "date": "2024-01-01",
-                    "activities": [
-                        {
-                            "name": "Test Activity",
-                            "time": "10:00",
-                            "description": "Test description"
-                        }
-                    ]
-                }
-            ],
-            "budget_summary": {
-                "total_cost": "$1000",
-                "breakdown": {
-                    "accommodation": "$300",
-                    "food": "$300",
-                    "activities": "$300",
-                    "transport": "$100"
-                }
+        mock_response.choices[0].message.content = json.dumps(
+            {
+                "overview": {
+                    "destination": "Paris",
+                    "duration": "3 days",
+                    "group_size": 2,
+                    "total_budget": "$1000",
+                },
+                "daily_itinerary": [
+                    {
+                        "day": 1,
+                        "date": "2024-01-01",
+                        "activities": [
+                            {
+                                "name": "Test Activity",
+                                "time": "10:00",
+                                "description": "Test description",
+                            }
+                        ],
+                    }
+                ],
+                "budget_summary": {
+                    "total_cost": "$1000",
+                    "breakdown": {
+                        "accommodation": "$300",
+                        "food": "$300",
+                        "activities": "$300",
+                        "transport": "$100",
+                    },
+                },
             }
-        })
+        )
         mock_response.usage.total_tokens = 1500
         mock_response.usage.completion_tokens = 500
 
@@ -506,10 +537,8 @@ class TestAIServiceCostMonitoring:
 
         # Make API call
         result = await ai_service.generate_itinerary(
-            "Paris", 
-            3, 
-            [{"id": "family1", "size": 2}], 
-            {"interests": ["culture"]}
+            "Paris", 3, [{"id": "family1", "size": 2}], {
+                "interests": ["culture"]}
         )
 
         # Verify the call was made and result is valid

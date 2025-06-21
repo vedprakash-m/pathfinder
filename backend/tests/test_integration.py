@@ -25,11 +25,16 @@ class TestTripIntegration:
                 "last_name": "Test",
             }
 
-            register_response = await client.post("/api/v1/auth/register", json=user_data)
+            register_response = await client.post(
+                "/api/v1/auth/register", json=user_data
+            )
             # May fail if user exists, which is okay for integration tests
 
             # Step 2: Login to get token
-            login_data = {"email": "integration@test.com", "password": "securepassword123"}
+            login_data = {
+                "email": "integration@test.com",
+                "password": "securepassword123",
+            }
 
             login_response = await client.post("/api/v1/auth/login", json=login_data)
             if login_response.status_code == 200:
@@ -50,7 +55,9 @@ class TestTripIntegration:
                 "is_public": False,
             }
 
-            create_response = await client.post("/api/v1/trips", json=trip_data, headers=headers)
+            create_response = await client.post(
+                "/api/v1/trips", json=trip_data, headers=headers
+            )
             assert create_response.status_code == status.HTTP_201_CREATED
 
             trip = create_response.json()
@@ -90,7 +97,9 @@ class TestTripIntegration:
             assert trip_id in trip_ids
 
             # Step 7: Delete the trip (cleanup)
-            delete_response = await client.delete(f"/api/v1/trips/{trip_id}", headers=headers)
+            delete_response = await client.delete(
+                f"/api/v1/trips/{trip_id}", headers=headers
+            )
             # Delete might not be implemented yet
             assert delete_response.status_code in [
                 status.HTTP_200_OK,
@@ -107,7 +116,10 @@ class TestFamilyManagementIntegration:
         """Test family creation and member management."""
         async with AsyncClient(app=app, base_url="http://test") as client:
             # Login as admin user
-            login_data = {"email": "integration@test.com", "password": "securepassword123"}
+            login_data = {
+                "email": "integration@test.com",
+                "password": "securepassword123",
+            }
 
             login_response = await client.post("/api/v1/auth/login", json=login_data)
             if login_response.status_code != 200:
@@ -135,7 +147,9 @@ class TestFamilyManagementIntegration:
                 family_id = family["id"]
 
                 # Get family details
-                get_response = await client.get(f"/api/v1/families/{family_id}", headers=headers)
+                get_response = await client.get(
+                    f"/api/v1/families/{family_id}", headers=headers
+                )
                 assert get_response.status_code == status.HTTP_200_OK
 
                 retrieved_family = get_response.json()
@@ -167,7 +181,10 @@ class TestItineraryGenerationIntegration:
         """Test complete itinerary generation workflow."""
         async with AsyncClient(app=app, base_url="http://test") as client:
             # Login
-            login_data = {"email": "integration@test.com", "password": "securepassword123"}
+            login_data = {
+                "email": "integration@test.com",
+                "password": "securepassword123",
+            }
 
             login_response = await client.post("/api/v1/auth/login", json=login_data)
             if login_response.status_code != 200:
@@ -185,7 +202,9 @@ class TestItineraryGenerationIntegration:
                 "budget_total": 4000.0,
             }
 
-            create_response = await client.post("/api/v1/trips", json=trip_data, headers=headers)
+            create_response = await client.post(
+                "/api/v1/trips", json=trip_data, headers=headers
+            )
             if create_response.status_code != 201:
                 pytest.skip("Trip creation failed")
 
@@ -207,7 +226,9 @@ class TestItineraryGenerationIntegration:
             }
 
             itinerary_response = await client.post(
-                f"/api/v1/itineraries/{trip_id}/generate", json=itinerary_request, headers=headers
+                f"/api/v1/itineraries/{trip_id}/generate",
+                json=itinerary_request,
+                headers=headers,
             )
 
             # Note: This might fail if AI service is not properly configured
@@ -217,7 +238,9 @@ class TestItineraryGenerationIntegration:
                 assert len(itinerary["days"]) > 0
 
                 # Get generated itinerary
-                get_response = await client.get(f"/api/v1/itineraries/{trip_id}", headers=headers)
+                get_response = await client.get(
+                    f"/api/v1/itineraries/{trip_id}", headers=headers
+                )
                 assert get_response.status_code == status.HTTP_200_OK
 
                 retrieved_itinerary = get_response.json()
@@ -235,7 +258,10 @@ class TestNotificationIntegration:
         """Test notification creation and retrieval."""
         async with AsyncClient(app=app, base_url="http://test") as client:
             # Login
-            login_data = {"email": "integration@test.com", "password": "securepassword123"}
+            login_data = {
+                "email": "integration@test.com",
+                "password": "securepassword123",
+            }
 
             login_response = await client.post("/api/v1/auth/login", json=login_data)
             if login_response.status_code != 200:
@@ -245,7 +271,9 @@ class TestNotificationIntegration:
             headers = {"Authorization": f"Bearer {token}"}
 
             # Get user notifications
-            notifications_response = await client.get("/api/v1/notifications", headers=headers)
+            notifications_response = await client.get(
+                "/api/v1/notifications", headers=headers
+            )
             assert notifications_response.status_code == status.HTTP_200_OK
 
             notifications = notifications_response.json()
@@ -284,7 +312,8 @@ class TestHealthCheckIntegration:
             response = await client.get("/health")
             assert response.status_code == status.HTTP_200_OK
             data = response.json()
-            assert data["status"] == "healthy"  # Main app endpoint returns "healthy"
+            # Main app endpoint returns "healthy"
+            assert data["status"] == "healthy"
             assert "environment" in data
 
     @pytest.mark.asyncio
@@ -306,7 +335,10 @@ class TestDataConsistencyIntegration:
         """Test data consistency between trips and participants."""
         async with AsyncClient(app=app, base_url="http://test") as client:
             # Login
-            login_data = {"email": "integration@test.com", "password": "securepassword123"}
+            login_data = {
+                "email": "integration@test.com",
+                "password": "securepassword123",
+            }
 
             login_response = await client.post("/api/v1/auth/login", json=login_data)
             if login_response.status_code != 200:
@@ -323,7 +355,9 @@ class TestDataConsistencyIntegration:
                 "budget_total": 2000.0,
             }
 
-            create_response = await client.post("/api/v1/trips", json=trip_data, headers=headers)
+            create_response = await client.post(
+                "/api/v1/trips", json=trip_data, headers=headers
+            )
             if create_response.status_code != 201:
                 pytest.skip("Trip creation failed")
 
@@ -331,7 +365,9 @@ class TestDataConsistencyIntegration:
             trip_id = trip["id"]
 
             # Join the trip
-            join_response = await client.post(f"/api/v1/trips/{trip_id}/join", headers=headers)
+            join_response = await client.post(
+                f"/api/v1/trips/{trip_id}/join", headers=headers
+            )
 
             if join_response.status_code == 200:
                 # Verify participation is reflected in trip details
@@ -348,10 +384,14 @@ class TestDataConsistencyIntegration:
                 )
                 if participants_response.status_code == 200:
                     participants = participants_response.json()
-                    assert len(participants) >= 1  # At least the creator should be a participant
+                    assert (
+                        len(participants) >= 1
+                    )  # At least the creator should be a participant
 
             # Leave the trip
-            leave_response = await client.post(f"/api/v1/trips/{trip_id}/leave", headers=headers)
+            leave_response = await client.post(
+                f"/api/v1/trips/{trip_id}/leave", headers=headers
+            )
 
             if leave_response.status_code == 200:
                 # Verify participation is removed

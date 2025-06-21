@@ -55,22 +55,24 @@ async def test_cost_tracker_budget_limit():
     # gpt-4o costs: input $0.005/1K, output $0.015/1K tokens
     # 1000 input + 1000 output = (1000/1000 * 0.005) + (1000/1000 * 0.015) = $0.02 per call
     # Need 2500+ calls to exceed $50 budget, but let's be more efficient:
-    
+
     # Track high token usage to exceed budget faster
     for _ in range(10):
-        tracker.track_usage("gpt-4o", 5000, 5000, "general")  # Each call costs ~$0.10, total ~$1.00
-    
+        tracker.track_usage(
+            "gpt-4o", 5000, 5000, "general"
+        )  # Each call costs ~$0.10, total ~$1.00
+
     # Verify the data structure was created correctly
     assert today in tracker.daily_usage
     assert "cost" in tracker.daily_usage[today]
     assert "requests" in tracker.daily_usage[today]
     assert "models" in tracker.daily_usage[today]
     assert "request_types" in tracker.daily_usage[today]
-    
+
     # Verify we have some cost tracked
     daily_cost = tracker.daily_usage[today]["cost"]
     assert daily_cost > 0
-    
+
     # Now simulate exceeding budget by manually setting cost
     tracker.daily_usage[today]["cost"] = 55.0  # Exceeds default $50 limit
 
@@ -88,15 +90,27 @@ async def test_itinerary_prompts():
         {
             "name": "Smith",
             "members": [
-                {"age": 35, "dietary_restrictions": ["vegetarian"], "accessibility_needs": []},
+                {
+                    "age": 35,
+                    "dietary_restrictions": ["vegetarian"],
+                    "accessibility_needs": [],
+                },
                 {"age": 33, "dietary_restrictions": [], "accessibility_needs": []},
-                {"age": 8, "dietary_restrictions": ["nut-free"], "accessibility_needs": []},
+                {
+                    "age": 8,
+                    "dietary_restrictions": ["nut-free"],
+                    "accessibility_needs": [],
+                },
             ],
         },
         {
             "name": "Johnson",
             "members": [
-                {"age": 40, "dietary_restrictions": [], "accessibility_needs": ["wheelchair"]},
+                {
+                    "age": 40,
+                    "dietary_restrictions": [],
+                    "accessibility_needs": ["wheelchair"],
+                },
                 {"age": 12, "dietary_restrictions": [], "accessibility_needs": []},
             ],
         },

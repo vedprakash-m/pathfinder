@@ -43,7 +43,9 @@ async def get_llm_health(
             "usage_stats": usage_stats,
             "services": {
                 "direct_openai": "available",
-                "llm_orchestration": "available" if orchestration_healthy else "unavailable",
+                "llm_orchestration": (
+                    "available" if orchestration_healthy else "unavailable"
+                ),
             },
         }
 

@@ -15,8 +15,12 @@ from celery import current_task
 logger = get_logger(__name__)
 
 
-@conditional_task(bind=True, name="app.tasks.notification_tasks.send_bulk_notifications")
-def send_bulk_notifications(self, notification_data: Dict[str, Any], user_ids: List[str]):
+@conditional_task(
+    bind=True, name="app.tasks.notification_tasks.send_bulk_notifications"
+)
+def send_bulk_notifications(
+    self, notification_data: Dict[str, Any], user_ids: List[str]
+):
     """Send notifications to multiple users efficiently."""
 
     async def _send_bulk():
@@ -26,27 +30,42 @@ def send_bulk_notifications(self, notification_data: Dict[str, Any], user_ids: L
 
                 current_task.update_state(
                     state="PROGRESS",
-                    meta={"current": 10, "total": 100, "status": "Preparing bulk notifications"},
+                    meta={
+                        "current": 10,
+                        "total": 100,
+                        "status": "Preparing bulk notifications",
+                    },
                 )
 
                 # Create bulk notification data
                 from app.models.notification import BulkNotificationCreate
 
-                bulk_data = BulkNotificationCreate(user_ids=user_ids, **notification_data)
+                bulk_data = BulkNotificationCreate(
+                    user_ids=user_ids, **notification_data
+                )
 
                 current_task.update_state(
                     state="PROGRESS",
-                    meta={"current": 50, "total": 100, "status": "Creating notifications"},
+                    meta={
+                        "current": 50,
+                        "total": 100,
+                        "status": "Creating notifications",
+                    },
                 )
 
                 # Create notifications
-                notifications = await notification_service.create_bulk_notifications(bulk_data)
-
-                current_task.update_state(
-                    state="PROGRESS", meta={"current": 90, "total": 100, "status": "Finalizing"}
+                notifications = await notification_service.create_bulk_notifications(
+                    bulk_data
                 )
 
-                logger.info(f"Successfully sent bulk notifications to {len(user_ids)} users")
+                current_task.update_state(
+                    state="PROGRESS",
+                    meta={"current": 90, "total": 100, "status": "Finalizing"},
+                )
+
+                logger.info(
+                    f"Successfully sent bulk notifications to {len(user_ids)} users"
+                )
 
                 return {
                     "status": "SUCCESS",
@@ -75,9 +94,12 @@ def cleanup_expired_notifications():
                 notification_service = NotificationService(db)
 
                 # Clean up expired notifications
-                deleted_count = await notification_service.cleanup_expired_notifications()
+                deleted_count = (
+                    await notification_service.cleanup_expired_notifications()
+                )
 
-                logger.info(f"Cleaned up {deleted_count} expired notifications")
+                logger.info(
+                    f"Cleaned up {deleted_count} expired notifications")
 
                 return {
                     "status": "SUCCESS",
@@ -95,8 +117,12 @@ def cleanup_expired_notifications():
     return run_async(_cleanup())
 
 
-@conditional_task(bind=True, name="app.tasks.notification_tasks.send_email_notifications")
-def send_email_notifications(self, email_data: Dict[str, Any], recipient_emails: List[str]):
+@conditional_task(
+    bind=True, name="app.tasks.notification_tasks.send_email_notifications"
+)
+def send_email_notifications(
+    self, email_data: Dict[str, Any], recipient_emails: List[str]
+):
     """Send email notifications to multiple recipients."""
 
     async def _send_emails():
@@ -105,7 +131,11 @@ def send_email_notifications(self, email_data: Dict[str, Any], recipient_emails:
 
             current_task.update_state(
                 state="PROGRESS",
-                meta={"current": 10, "total": 100, "status": "Initializing email service"},
+                meta={
+                    "current": 10,
+                    "total": 100,
+                    "status": "Initializing email service",
+                },
             )
 
             results = []
@@ -142,11 +172,15 @@ def send_email_notifications(self, email_data: Dict[str, Any], recipient_emails:
                         logger.warning(f"Unknown email type: {email_type}")
                         success = False
 
-                    results.append({"email": email, "status": "SUCCESS" if success else "FAILED"})
+                    results.append(
+                        {"email": email, "status": "SUCCESS" if success else "FAILED"}
+                    )
 
                 except Exception as e:
                     logger.error(f"Failed to send email to {email}: {e}")
-                    results.append({"email": email, "status": "FAILED", "error": str(e)})
+                    results.append(
+                        {"email": email, "status": "FAILED", "error": str(e)}
+                    )
 
             successful = len([r for r in results if r["status"] == "SUCCESS"])
 

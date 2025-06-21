@@ -57,7 +57,8 @@ async def get_unread_count(
 async def create_notification(
     notification_data: NotificationCreate,
     request: Request,
-    current_user: User = Depends(require_permissions("notifications", "create")),
+    current_user: User = Depends(
+        require_permissions("notifications", "create")),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a notification (admin/system use)."""
@@ -67,14 +68,16 @@ async def create_notification(
         notification = await notification_service.create_notification(notification_data)
         return notification
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.post("/bulk", response_model=List[NotificationResponse])
 async def create_bulk_notifications(
     bulk_data: BulkNotificationCreate,
     request: Request,
-    current_user: User = Depends(require_permissions("notifications", "create")),
+    current_user: User = Depends(
+        require_permissions("notifications", "create")),
     db: AsyncSession = Depends(get_db),
 ):
     """Create bulk notifications (admin/system use)."""
@@ -84,14 +87,16 @@ async def create_bulk_notifications(
         notifications = await notification_service.create_bulk_notifications(bulk_data)
         return notifications
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.put("/{notification_id}/read", response_model=NotificationResponse)
 async def mark_notification_read(
     notification_id: UUID,
     request: Request,
-    current_user: User = Depends(require_permissions("notifications", "update")),
+    current_user: User = Depends(
+        require_permissions("notifications", "update")),
     db: AsyncSession = Depends(get_db),
 ):
     """Mark a notification as read."""
@@ -102,7 +107,9 @@ async def mark_notification_read(
     )
 
     if not notification:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Notification not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Notification not found"
+        )
 
     return notification
 
@@ -110,13 +117,16 @@ async def mark_notification_read(
 @router.put("/mark-all-read")
 async def mark_all_notifications_read(
     request: Request,
-    current_user: User = Depends(require_permissions("notifications", "update")),
+    current_user: User = Depends(
+        require_permissions("notifications", "update")),
     db: AsyncSession = Depends(get_db),
 ):
     """Mark all notifications as read."""
     notification_service = NotificationService(db)
 
-    updated_count = await notification_service.mark_all_notifications_read(str(current_user.id))
+    updated_count = await notification_service.mark_all_notifications_read(
+        str(current_user.id)
+    )
 
     return {"message": f"Marked {updated_count} notifications as read"}
 
@@ -125,7 +135,8 @@ async def mark_all_notifications_read(
 async def delete_notification(
     notification_id: UUID,
     request: Request,
-    current_user: User = Depends(require_permissions("notifications", "delete")),
+    current_user: User = Depends(
+        require_permissions("notifications", "delete")),
     db: AsyncSession = Depends(get_db),
 ):
     """Delete a notification."""
@@ -136,7 +147,9 @@ async def delete_notification(
     )
 
     if not success:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Notification not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Notification not found"
+        )
 
     return {"message": "Notification deleted successfully"}
 
@@ -144,7 +157,8 @@ async def delete_notification(
 @router.post("/cleanup")
 async def cleanup_expired_notifications(
     request: Request,
-    current_user: User = Depends(require_permissions("notifications", "admin")),
+    current_user: User = Depends(
+        require_permissions("notifications", "admin")),
     db: AsyncSession = Depends(get_db),
 ):
     """Clean up expired notifications (admin use)."""

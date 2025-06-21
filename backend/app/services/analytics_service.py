@@ -178,7 +178,8 @@ class AnalyticsService:
                 elif event["event_type"] == EventType.FEATURE_USAGE.value:
                     feature = event["properties"].get("feature")
                     if feature:
-                        feature_usage[feature] = feature_usage.get(feature, 0) + 1
+                        feature_usage[feature] = feature_usage.get(
+                            feature, 0) + 1
 
                 # Track session activity
                 session_id = event.get("session_id")
@@ -229,7 +230,8 @@ class AnalyticsService:
 
                     feature_stats[feature]["usage_count"] += 1
                     if event["user_id"]:
-                        feature_stats[feature]["unique_users"].add(event["user_id"])
+                        feature_stats[feature]["unique_users"].add(
+                            event["user_id"])
                         unique_users.add(event["user_id"])
 
             # Convert sets to counts and calculate adoption rates
@@ -242,7 +244,9 @@ class AnalyticsService:
                     "usage_count": stats["usage_count"],
                     "unique_users": unique_user_count,
                     "adoption_rate": (
-                        unique_user_count / total_unique_users if total_unique_users > 0 else 0
+                        unique_user_count / total_unique_users
+                        if total_unique_users > 0
+                        else 0
                     ),
                 }
 
@@ -270,7 +274,8 @@ class AnalyticsService:
                 unit = event["properties"].get("unit", "ms")
 
                 if metric_name not in metrics:
-                    metrics[metric_name] = {"values": [], "unit": unit, "count": 0}
+                    metrics[metric_name] = {
+                        "values": [], "unit": unit, "count": 0}
 
                 metrics[metric_name]["values"].append(value)
                 metrics[metric_name]["count"] += 1
@@ -294,10 +299,12 @@ class AnalyticsService:
                 "time_period_hours": hours,
                 "metrics": performance_summary,
                 "summary": {
-                    "total_measurements": sum(m["count"] for m in performance_summary.values()),
-                    "avg_response_time": performance_summary.get("api_response_time", {}).get(
-                        "avg", 0
+                    "total_measurements": sum(
+                        m["count"] for m in performance_summary.values()
                     ),
+                    "avg_response_time": performance_summary.get(
+                        "api_response_time", {}
+                    ).get("avg", 0),
                 },
             }
 
@@ -351,10 +358,12 @@ class AnalyticsService:
                     if isinstance(m["value"], (int, float))
                 ]
                 if satisfaction_scores:
-                    business_summary["avg_satisfaction"] = sum(satisfaction_scores) / len(
+                    business_summary["avg_satisfaction"] = sum(
+                        satisfaction_scores
+                    ) / len(satisfaction_scores)
+                    business_summary["satisfaction_responses"] = len(
                         satisfaction_scores
                     )
-                    business_summary["satisfaction_responses"] = len(satisfaction_scores)
 
             # Time saved metrics
             if "time_saved_hours" in metrics:
@@ -364,10 +373,11 @@ class AnalyticsService:
                     if isinstance(m["value"], (int, float))
                 ]
                 if time_saved_values:
-                    business_summary["total_time_saved_hours"] = sum(time_saved_values)
-                    business_summary["avg_time_saved_per_trip"] = sum(time_saved_values) / len(
+                    business_summary["total_time_saved_hours"] = sum(
+                        time_saved_values)
+                    business_summary["avg_time_saved_per_trip"] = sum(
                         time_saved_values
-                    )
+                    ) / len(time_saved_values)
 
             return {
                 "time_period_hours": hours,
@@ -410,7 +420,9 @@ class AnalyticsService:
             existing_events.append(event.to_dict())
 
             # Store back with 7-day TTL
-            await cache_service.set(cache_key, json.dumps(existing_events), ttl=7 * 24 * 3600)
+            await cache_service.set(
+                cache_key, json.dumps(existing_events), ttl=7 * 24 * 3600
+            )
 
         except Exception as e:
             logger.error(f"Failed to store analytics event: {e}")
@@ -432,7 +444,9 @@ class AnalyticsService:
 
             # Update counters
             event_key = f"{event.event_type.value}:{event.event_name}"
-            metrics["event_counts"][event_key] = metrics["event_counts"].get(event_key, 0) + 1
+            metrics["event_counts"][event_key] = (
+                metrics["event_counts"].get(event_key, 0) + 1
+            )
             metrics["last_updated"] = datetime.utcnow().isoformat()
 
             # Store with 1-hour TTL
@@ -463,7 +477,9 @@ class AnalyticsService:
             for event in day_events:
                 if (
                     event.get("user_id") == user_id
-                    and start_date <= datetime.fromisoformat(event["timestamp"]) <= end_date
+                    and start_date
+                    <= datetime.fromisoformat(event["timestamp"])
+                    <= end_date
                 ):
                     events.append(event)
 
@@ -471,7 +487,9 @@ class AnalyticsService:
 
         return events
 
-    async def _get_events_by_type(self, event_type: EventType, hours: int) -> List[Dict[str, Any]]:
+    async def _get_events_by_type(
+        self, event_type: EventType, hours: int
+    ) -> List[Dict[str, Any]]:
         """Get events of a specific type within time range."""
         events = []
 
@@ -493,7 +511,9 @@ class AnalyticsService:
             for event in day_events:
                 if (
                     event.get("event_type") == event_type.value
-                    and start_date <= datetime.fromisoformat(event["timestamp"]) <= end_date
+                    and start_date
+                    <= datetime.fromisoformat(event["timestamp"])
+                    <= end_date
                 ):
                     events.append(event)
 

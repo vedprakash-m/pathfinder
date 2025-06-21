@@ -117,11 +117,13 @@ class MagicPoll(Base):
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     poll_type = Column(String(50), nullable=False)
-    options = Column(JSON, nullable=False)  # List of poll options with metadata
+    # List of poll options with metadata
+    options = Column(JSON, nullable=False)
     responses = Column(JSON, nullable=True)  # User responses and preferences
     ai_analysis = Column(JSON, nullable=True)  # AI analysis of responses
     consensus_recommendation = Column(JSON, nullable=True)  # AI recommendation
-    status = Column(String(50), nullable=False, default=PollStatus.ACTIVE.value)
+    status = Column(String(50), nullable=False,
+                    default=PollStatus.ACTIVE.value)
     expires_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, onupdate=datetime.utcnow)
@@ -166,7 +168,8 @@ class AIResponseCard(Base):
     interaction_id = Column(String, nullable=False)
     card_type = Column(String(50), nullable=False)
     title = Column(String(255), nullable=False)
-    content = Column(JSON, nullable=False)  # Rich content with images, text, etc.
+    # Rich content with images, text, etc.
+    content = Column(JSON, nullable=False)
     actions = Column(JSON, nullable=True)  # Available actions for the card
     card_metadata = Column(JSON, nullable=True)  # Additional metadata
     display_order = Column(Integer, nullable=False, default=0)
@@ -200,8 +203,10 @@ class AISuggestion(Base):
     context = Column(String(100), nullable=False)  # Current context/page
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
-    action_data = Column(JSON, nullable=True)  # Data needed to execute the suggestion
-    priority = Column(Integer, nullable=False, default=5)  # 1-10 priority scale
+    # Data needed to execute the suggestion
+    action_data = Column(JSON, nullable=True)
+    priority = Column(Integer, nullable=False,
+                      default=5)  # 1-10 priority scale
     is_acknowledged = Column(Boolean, nullable=False, default=False)
     is_dismissed = Column(Boolean, nullable=False, default=False)
     expires_at = Column(DateTime, nullable=True)
@@ -232,7 +237,9 @@ class AISuggestion(Base):
 
     def is_active(self) -> bool:
         """Check if the suggestion is still active"""
-        return not self.is_dismissed and not self.is_acknowledged and not self.is_expired()
+        return (
+            not self.is_dismissed and not self.is_acknowledged and not self.is_expired()
+        )
 
 
 # Helper functions for creating common AI interactions

@@ -31,10 +31,16 @@ class CostMonitoringService:
 
     def __init__(self, notification_service: Optional[NotificationService] = None):
         self.cost_thresholds = {
-            "cosmos_db_ru_daily": float(os.getenv("COSMOS_DB_RU_DAILY_LIMIT", "100000")),
-            "openai_tokens_daily": float(os.getenv("OPENAI_TOKENS_DAILY_LIMIT", "1000000")),
+            "cosmos_db_ru_daily": float(
+                os.getenv("COSMOS_DB_RU_DAILY_LIMIT", "100000")
+            ),
+            "openai_tokens_daily": float(
+                os.getenv("OPENAI_TOKENS_DAILY_LIMIT", "1000000")
+            ),
             "storage_gb_monthly": float(os.getenv("STORAGE_GB_MONTHLY_LIMIT", "100")),
-            "bandwidth_gb_monthly": float(os.getenv("BANDWIDTH_GB_MONTHLY_LIMIT", "500")),
+            "bandwidth_gb_monthly": float(
+                os.getenv("BANDWIDTH_GB_MONTHLY_LIMIT", "500")
+            ),
             "ai_cost_daily": float(os.getenv("AI_COST_DAILY_LIMIT", "50.0")),
         }
         self.current_usage = {}
@@ -67,7 +73,9 @@ class CostMonitoringService:
             threshold=self.cost_thresholds.get(key, 0),
         )
 
-    async def send_cost_alert(self, service: str, percentage: float, threshold: float) -> None:
+    async def send_cost_alert(
+        self, service: str, percentage: float, threshold: float
+    ) -> None:
         """Send cost alerts to administrators."""
         # Only send alerts if notification service is available
         if not self.notification_service:
@@ -140,7 +148,8 @@ class CostMonitoringService:
 
     async def reset_daily_usage(self) -> None:
         """Reset daily usage counters (called by scheduler)."""
-        daily_keys = [key for key in self.current_usage.keys() if "daily" in key]
+        daily_keys = [key for key in self.current_usage.keys()
+                                                             if "daily" in key]
         for key in daily_keys:
             self.current_usage[key] = 0
 
@@ -148,7 +157,8 @@ class CostMonitoringService:
 
     async def reset_monthly_usage(self) -> None:
         """Reset monthly usage counters (called by scheduler)."""
-        monthly_keys = [key for key in self.current_usage.keys() if "monthly" in key]
+        monthly_keys = [key for key in self.current_usage.keys()
+                                                               if "monthly" in key]
         for key in monthly_keys:
             self.current_usage[key] = 0
 
@@ -183,7 +193,10 @@ class AIModelSelector:
         self.cost_monitor = cost_monitor
 
     async def select_model(
-        self, task_type: str, quality_requirement: str = "balanced", budget_priority: bool = False
+        self,
+        task_type: str,
+        quality_requirement: str = "balanced",
+        budget_priority: bool = False,
     ) -> str:
         """Select the best model based on requirements and current budget."""
 

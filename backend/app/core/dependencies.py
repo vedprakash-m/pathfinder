@@ -26,7 +26,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 from domain.family import FamilyDomainService
 from domain.messaging import MessagingDomainService
 from domain.reservation import ReservationDomainService
@@ -50,15 +51,14 @@ def get_trip_cosmos_repository() -> TripCosmosRepository:
 
 # Domain service providers
 async def get_trip_domain_service(
-    trip_repo: TripRepository = None,
-    cosmos_repo: TripCosmosRepository = None
+    trip_repo: TripRepository = None, cosmos_repo: TripCosmosRepository = None
 ) -> TripDomainService:
     """Get TripDomainService instance."""
     if trip_repo is None:
         trip_repo = await get_trip_repository()
     if cosmos_repo is None:
         cosmos_repo = get_trip_cosmos_repository()
-    
+
     return TripDomainService(
         legacy_service=None,
         trip_repository=trip_repo,

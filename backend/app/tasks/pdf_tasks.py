@@ -25,7 +25,11 @@ def generate_trip_pdf(self, trip_id: str, user_id: str, pdf_type: str = "itinera
                 # Update task progress
                 current_task.update_state(
                     state="PROGRESS",
-                    meta={"current": 10, "total": 100, "status": "Initializing PDF service"},
+                    meta={
+                        "current": 10,
+                        "total": 100,
+                        "status": "Initializing PDF service",
+                    },
                 )
 
                 # Initialize services
@@ -36,7 +40,8 @@ def generate_trip_pdf(self, trip_id: str, user_id: str, pdf_type: str = "itinera
                 # Get trip data
                 current_task.update_state(
                     state="PROGRESS",
-                    meta={"current": 30, "total": 100, "status": "Fetching trip data"},
+                    meta={"current": 30, "total": 100,
+                        "status": "Fetching trip data"},
                 )
 
                 trip_data = await trip_service.get_trip_by_id(trip_id, user_id)
@@ -46,12 +51,18 @@ def generate_trip_pdf(self, trip_id: str, user_id: str, pdf_type: str = "itinera
                 # Generate PDF based on type
                 current_task.update_state(
                     state="PROGRESS",
-                    meta={"current": 60, "total": 100, "status": f"Generating {pdf_type} PDF"},
+                    meta={
+                        "current": 60,
+                        "total": 100,
+                        "status": f"Generating {pdf_type} PDF",
+                    },
                 )
 
                 if pdf_type == "itinerary":
                     result = await pdf_service.generate_itinerary_pdf(
-                        trip_id=trip_id, itinerary_data=trip_data.dict(), user_id=user_id
+                        trip_id=trip_id,
+                        itinerary_data=trip_data.dict(),
+                        user_id=user_id,
                     )
                 elif pdf_type == "summary":
                     result = await pdf_service.generate_trip_summary_pdf(
@@ -62,7 +73,11 @@ def generate_trip_pdf(self, trip_id: str, user_id: str, pdf_type: str = "itinera
 
                 current_task.update_state(
                     state="PROGRESS",
-                    meta={"current": 90, "total": 100, "status": "Sending notification"},
+                    meta={
+                        "current": 90,
+                        "total": 100,
+                        "status": "Sending notification",
+                    },
                 )
 
                 # Notify user that PDF is ready
@@ -82,7 +97,8 @@ def generate_trip_pdf(self, trip_id: str, user_id: str, pdf_type: str = "itinera
                     }
                 )
 
-                logger.info(f"Successfully generated {pdf_type} PDF for trip {trip_id}")
+                logger.info(
+                    f"Successfully generated {pdf_type} PDF for trip {trip_id}")
 
                 return {
                     "status": "SUCCESS",
@@ -93,7 +109,8 @@ def generate_trip_pdf(self, trip_id: str, user_id: str, pdf_type: str = "itinera
                 }
 
             except Exception as e:
-                logger.error(f"Error generating {pdf_type} PDF for trip {trip_id}: {e}")
+                logger.error(
+                    f"Error generating {pdf_type} PDF for trip {trip_id}: {e}")
 
                 # Notify user of failure
                 try:
@@ -109,7 +126,9 @@ def generate_trip_pdf(self, trip_id: str, user_id: str, pdf_type: str = "itinera
                         }
                     )
                 except Exception as notify_error:
-                    logger.error(f"Failed to send PDF error notification: {notify_error}")
+                    logger.error(
+                        f"Failed to send PDF error notification: {notify_error}"
+                    )
 
                 raise
 
@@ -120,7 +139,9 @@ def generate_trip_pdf(self, trip_id: str, user_id: str, pdf_type: str = "itinera
 
 
 @conditional_task(bind=True, name="app.tasks.pdf_tasks.generate_bulk_pdfs")
-def generate_bulk_pdfs(self, trip_id: str, participant_user_ids: list, pdf_type: str = "itinerary"):
+def generate_bulk_pdfs(
+    self, trip_id: str, participant_user_ids: list, pdf_type: str = "itinerary"
+):
     """Generate PDFs for multiple trip participants."""
 
     async def _generate_bulk():
@@ -139,13 +160,19 @@ def generate_bulk_pdfs(self, trip_id: str, participant_user_ids: list, pdf_type:
                 )
 
                 # Generate PDF for this participant
-                result = generate_trip_pdf.apply(args=[trip_id, user_id, pdf_type]).get()
+                result = generate_trip_pdf.apply(
+                    args=[trip_id, user_id, pdf_type]
+                ).get()
 
-                results.append({"user_id": user_id, "status": "SUCCESS", "result": result})
+                results.append(
+                    {"user_id": user_id, "status": "SUCCESS", "result": result}
+                )
 
             except Exception as e:
                 logger.error(f"Failed to generate PDF for user {user_id}: {e}")
-                results.append({"user_id": user_id, "status": "FAILED", "error": str(e)})
+                results.append(
+                    {"user_id": user_id, "status": "FAILED", "error": str(e)}
+                )
 
         logger.info(
             f"Bulk PDF generation completed for trip {trip_id}: {len(results)} PDFs processed"

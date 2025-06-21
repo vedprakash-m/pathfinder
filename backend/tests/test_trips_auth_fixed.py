@@ -24,16 +24,19 @@ class TestTripCreationFixed:
         }
 
         response = authenticated_client.post("/api/v1/trips", json=trip_data)
-        
+
         # Check that we get past authentication (not 401/403)
-        assert response.status_code not in [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN]
+        assert response.status_code not in [
+            status.HTTP_401_UNAUTHORIZED,
+            status.HTTP_403_FORBIDDEN,
+        ]
         # The actual response will depend on the backend implementation
         # For now, let's just ensure auth is working
-        
+
     def test_create_trip_unauthorized(self):
         """Test trip creation without authentication."""
         client = TestClient(app)  # No auth overrides
-        
+
         trip_data = {
             "name": "Test Trip",
             "description": "Test description",
@@ -44,7 +47,10 @@ class TestTripCreationFixed:
 
         response = client.post("/api/v1/trips", json=trip_data)
         # Accept either 401 or 403 as both are valid for unauthorized access
-        assert response.status_code in [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN]
+        assert response.status_code in [
+            status.HTTP_401_UNAUTHORIZED,
+            status.HTTP_403_FORBIDDEN,
+        ]
 
     def test_create_trip_invalid_dates(self, authenticated_client):
         """Test trip creation with invalid date range."""
@@ -58,11 +64,14 @@ class TestTripCreationFixed:
         }
 
         response = authenticated_client.post("/api/v1/trips", json=trip_data)
-        
+
         # Should not be unauthorized (auth is working)
-        assert response.status_code not in [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN]
+        assert response.status_code not in [
+            status.HTTP_401_UNAUTHORIZED,
+            status.HTTP_403_FORBIDDEN,
+        ]
         # May get validation error instead
-        
+
 
 class TestTripRetrievalFixed:
     """Test trip retrieval functionality with proper auth setup."""
@@ -70,23 +79,29 @@ class TestTripRetrievalFixed:
     def test_get_user_trips(self, authenticated_client):
         """Test retrieving user trips."""
         response = authenticated_client.get("/api/v1/trips")
-        
+
         # Check that we get past authentication (not 401/403)
-        assert response.status_code not in [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN]
-        
+        assert response.status_code not in [
+            status.HTTP_401_UNAUTHORIZED,
+            status.HTTP_403_FORBIDDEN,
+        ]
+
 
 class TestBasicAPIEndpoints:
     """Test basic API endpoints to ensure they're working."""
-    
+
     def test_health_endpoint(self):
         """Test health endpoint (should not require auth)."""
         client = TestClient(app)
         response = client.get("/health")
         assert response.status_code == status.HTTP_200_OK
-        
+
     def test_trips_without_auth_returns_401_or_403(self):
         """Test trips endpoint without auth returns 401 or 403."""
         client = TestClient(app)
         response = client.get("/api/v1/trips")
         # Accept either 401 or 403 as both are valid for unauthorized access
-        assert response.status_code in [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN]
+        assert response.status_code in [
+            status.HTTP_401_UNAUTHORIZED,
+            status.HTTP_403_FORBIDDEN,
+        ]

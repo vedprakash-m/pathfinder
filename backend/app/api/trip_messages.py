@@ -43,7 +43,10 @@ async def get_trip_messages(
         )
 
         # Convert Cosmos DB documents to dictionary responses
-        return [message.dict(exclude={"_resource_id", "_etag", "_ts"}) for message in messages]
+        return [
+            message.dict(exclude={"_resource_id", "_etag", "_ts"})
+            for message in messages
+        ]
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -69,7 +72,8 @@ async def send_trip_message(
     """
     if "text" not in message:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Message must contain 'text'"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Message must contain 'text'",
         )
 
     message_type = MessageType(message.get("type", "chat"))
@@ -88,7 +92,8 @@ async def send_trip_message(
             return result.dict(exclude={"_resource_id", "_etag", "_ts"})
         else:
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to send message"
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to send message",
             )
     except Exception as e:
         raise HTTPException(

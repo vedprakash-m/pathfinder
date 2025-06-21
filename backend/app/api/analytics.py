@@ -56,7 +56,10 @@ async def track_business_metric(
 
     try:
         await analytics_service.track_business_metric(
-            metric=metric, value=value, user_id=current_user.get("sub"), properties=properties
+            metric=metric,
+            value=value,
+            user_id=current_user.get("sub"),
+            properties=properties,
         )
 
         return {"success": True, "message": f"Business metric tracked: {metric}"}
@@ -79,7 +82,9 @@ async def get_feature_adoption_metrics(
     # Check if user has admin permissions
     user_roles = current_user.get("https://pathfinder.com/roles", [])
     if "admin" not in user_roles:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required"
+        )
 
     try:
         metrics = await analytics_service.get_feature_adoption_metrics(hours=hours)
@@ -101,7 +106,9 @@ async def get_analytics_dashboard_summary(
 
     try:
         # Get feature adoption metrics (last 7 days)
-        feature_metrics = await analytics_service.get_feature_adoption_metrics(hours=168)
+        feature_metrics = await analytics_service.get_feature_adoption_metrics(
+            hours=168
+        )
 
         # Calculate user-specific insights
         user_features = []

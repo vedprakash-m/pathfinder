@@ -118,7 +118,11 @@ class SmartCoordinationService:
             AutomationRule(
                 event_type=CoordinationEventType.PREFERENCES_UPDATED,
                 conditions={},
-                actions=["analyze_consensus_impact", "notify_if_conflicts", "update_dashboard"],
+                actions=[
+                    "analyze_consensus_impact",
+                    "notify_if_conflicts",
+                    "update_dashboard",
+                ],
                 delay_minutes=5,  # Allow batch updates
                 target_audience="all",
             ),
@@ -126,14 +130,22 @@ class SmartCoordinationService:
             AutomationRule(
                 event_type=CoordinationEventType.CONSENSUS_CHANGED,
                 conditions={"score_change": "> 0.2"},
-                actions=["alert_organizer", "suggest_next_steps", "schedule_meeting_if_needed"],
+                actions=[
+                    "alert_organizer",
+                    "suggest_next_steps",
+                    "schedule_meeting_if_needed",
+                ],
                 target_audience="organizer",
             ),
             # Critical conflict detected - immediate action needed
             AutomationRule(
                 event_type=CoordinationEventType.CONFLICT_DETECTED,
                 conditions={"severity": "critical"},
-                actions=["urgent_notification", "suggest_resolution", "pause_itinerary_generation"],
+                actions=[
+                    "urgent_notification",
+                    "suggest_resolution",
+                    "pause_itinerary_generation",
+                ],
                 target_audience="all",
                 delay_minutes=0,
             ),
@@ -152,7 +164,11 @@ class SmartCoordinationService:
             AutomationRule(
                 event_type=CoordinationEventType.DEADLINE_APPROACHING,
                 conditions={"days_until": "< 7"},
-                actions=["send_deadline_reminder", "check_readiness", "escalate_if_needed"],
+                actions=[
+                    "send_deadline_reminder",
+                    "check_readiness",
+                    "escalate_if_needed",
+                ],
                 target_audience="all",
             ),
         ]
@@ -175,20 +191,27 @@ class SmartCoordinationService:
                 for action in rule.actions:
                     try:
                         await self._execute_action(action, event, rule)
-                        executed_actions.append(f"{action} (rule: {rule.event_type.value})")
+                        executed_actions.append(
+                            f"{action} (rule: {rule.event_type.value})"
+                        )
                         logger.info(
                             f"Executed coordination action: {action} for event {event.event_type.value}"
                         )
                     except Exception as e:
-                        logger.error(f"Failed to execute action {action}: {str(e)}")
+                        logger.error(
+                            f"Failed to execute action {action}: {str(e)}")
 
             return executed_actions
 
         except Exception as e:
-            logger.error(f"Error processing coordination event {event.event_type.value}: {str(e)}")
+            logger.error(
+                f"Error processing coordination event {event.event_type.value}: {str(e)}"
+            )
             return []
 
-    def _check_conditions(self, conditions: Dict[str, Any], event: CoordinationEvent) -> bool:
+    def _check_conditions(
+        self, conditions: Dict[str, Any], event: CoordinationEvent
+    ) -> bool:
         """Check if event meets rule conditions."""
         if not conditions:
             return True
@@ -200,7 +223,9 @@ class SmartCoordinationService:
             event_value = event.event_data[condition_key]
 
             # Handle comparison operators
-            if isinstance(condition_value, str) and condition_value.startswith((">", "<", "=")):
+            if isinstance(condition_value, str) and condition_value.startswith(
+                (">", "<", "=")
+            ):
                 operator = condition_value[0]
                 threshold = float(condition_value.split()[1])
 
@@ -216,7 +241,9 @@ class SmartCoordinationService:
 
         return True
 
-    async def _execute_action(self, action: str, event: CoordinationEvent, rule: AutomationRule):
+    async def _execute_action(
+        self, action: str, event: CoordinationEvent, rule: AutomationRule
+    ):
         """Execute a specific coordination action."""
         action_map = {
             "send_welcome_package": self._send_welcome_package,
@@ -246,7 +273,9 @@ class SmartCoordinationService:
 
     # Action implementations
 
-    async def _send_welcome_package(self, event: CoordinationEvent, rule: AutomationRule):
+    async def _send_welcome_package(
+        self, event: CoordinationEvent, rule: AutomationRule
+    ):
         """Send welcome package to newly joined family."""
         trip = await self._get_trip(event.trip_id)
         if not trip:
@@ -277,10 +306,13 @@ class SmartCoordinationService:
                 event.family_id, welcome_message, NotificationPriority.HIGH.value
             )
 
-    async def _trigger_preference_collection(self, event: CoordinationEvent, rule: AutomationRule):
+    async def _trigger_preference_collection(
+        self, event: CoordinationEvent, rule: AutomationRule
+    ):
         """Trigger preference collection for a family."""
         # Implementation would trigger preference collection workflow
-        logger.info(f"Triggering preference collection for family {event.family_id}")
+        logger.info(
+            f"Triggering preference collection for family {event.family_id}")
 
     async def _update_consensus(self, event: CoordinationEvent, rule: AutomationRule):
         """Update consensus analysis after changes."""
@@ -289,7 +321,8 @@ class SmartCoordinationService:
             trip = await self._get_trip(event.trip_id)
 
             if families_data and trip:
-                total_budget = float(trip.budget_total) if trip.budget_total else 0.0
+                total_budget = float(
+                    trip.budget_total) if trip.budget_total else 0.0
                 consensus_analysis = analyze_trip_consensus(
                     event.trip_id, families_data, total_budget
                 )
@@ -301,7 +334,9 @@ class SmartCoordinationService:
         except Exception as e:
             logger.error(f"Failed to update consensus: {str(e)}")
 
-    async def _analyze_consensus_impact(self, event: CoordinationEvent, rule: AutomationRule):
+    async def _analyze_consensus_impact(
+        self, event: CoordinationEvent, rule: AutomationRule
+    ):
         """Analyze how preference changes impact consensus."""
         try:
             # Get current consensus
@@ -309,7 +344,8 @@ class SmartCoordinationService:
             trip = await self._get_trip(event.trip_id)
 
             if families_data and trip:
-                total_budget = float(trip.budget_total) if trip.budget_total else 0.0
+                total_budget = float(
+                    trip.budget_total) if trip.budget_total else 0.0
                 consensus_result = self.consensus_engine.generate_weighted_consensus(
                     families_data, total_budget
                 )
@@ -339,21 +375,26 @@ class SmartCoordinationService:
         except Exception as e:
             logger.error(f"Failed to analyze consensus impact: {str(e)}")
 
-    async def _notify_if_conflicts(self, event: CoordinationEvent, rule: AutomationRule):
+    async def _notify_if_conflicts(
+        self, event: CoordinationEvent, rule: AutomationRule
+    ):
         """Notify families if new conflicts are detected."""
         try:
             families_data = await self._get_families_data(event.trip_id)
             trip = await self._get_trip(event.trip_id)
 
             if families_data and trip:
-                total_budget = float(trip.budget_total) if trip.budget_total else 0.0
+                total_budget = float(
+                    trip.budget_total) if trip.budget_total else 0.0
                 consensus_result = self.consensus_engine.generate_weighted_consensus(
                     families_data, total_budget
                 )
 
                 # Check for critical conflicts
                 critical_conflicts = [
-                    c for c in consensus_result.conflicts if c.severity.value == "critical"
+                    c
+                    for c in consensus_result.conflicts
+                    if c.severity.value == "critical"
                 ]
 
                 if critical_conflicts:
@@ -408,9 +449,12 @@ class SmartCoordinationService:
     async def _suggest_next_steps(self, event: CoordinationEvent, rule: AutomationRule):
         """Suggest next steps based on current situation."""
         # Implementation would analyze situation and suggest actions
-        logger.info(f"Generating next steps suggestions for trip {event.trip_id}")
+        logger.info(
+            f"Generating next steps suggestions for trip {event.trip_id}")
 
-    async def _schedule_meeting_if_needed(self, event: CoordinationEvent, rule: AutomationRule):
+    async def _schedule_meeting_if_needed(
+        self, event: CoordinationEvent, rule: AutomationRule
+    ):
         """Schedule coordination meeting if consensus is low."""
         consensus_score = event.event_data.get("new_score", 1.0)
 
@@ -435,7 +479,10 @@ class SmartCoordinationService:
                         """,
                         "action_buttons": [
                             {"text": "Accept Time", "action": "accept_meeting"},
-                            {"text": "Suggest Different Time", "action": "propose_alternative"},
+                            {
+                                "text": "Suggest Different Time",
+                                "action": "propose_alternative",
+                            },
                         ],
                     }
 
@@ -443,10 +490,14 @@ class SmartCoordinationService:
                     families_data = await self._get_families_data(event.trip_id)
                     for family_data in families_data:
                         await self.notification_service.send_family_notification(
-                            family_data["id"], message, NotificationPriority.MEDIUM.value
+                            family_data["id"],
+                            message,
+                            NotificationPriority.MEDIUM.value,
                         )
 
-    async def _urgent_notification(self, event: CoordinationEvent, rule: AutomationRule):
+    async def _urgent_notification(
+        self, event: CoordinationEvent, rule: AutomationRule
+    ):
         """Send urgent notification for critical issues."""
         trip = await self._get_trip(event.trip_id)
         if not trip:
@@ -464,7 +515,10 @@ class SmartCoordinationService:
             """,
             "action_buttons": [
                 {"text": "View Conflicts", "action": "navigate_conflicts"},
-                {"text": "Schedule Emergency Meeting", "action": "schedule_urgent_meeting"},
+                {
+                    "text": "Schedule Emergency Meeting",
+                    "action": "schedule_urgent_meeting",
+                },
             ],
         }
 
@@ -478,16 +532,22 @@ class SmartCoordinationService:
     async def _suggest_resolution(self, event: CoordinationEvent, rule: AutomationRule):
         """Suggest conflict resolution approaches."""
         # Implementation would provide AI-powered resolution suggestions
-        logger.info(f"Generating conflict resolution suggestions for trip {event.trip_id}")
+        logger.info(
+            f"Generating conflict resolution suggestions for trip {event.trip_id}"
+        )
 
-    async def _pause_itinerary_generation(self, event: CoordinationEvent, rule: AutomationRule):
+    async def _pause_itinerary_generation(
+        self, event: CoordinationEvent, rule: AutomationRule
+    ):
         """Pause itinerary generation until conflicts are resolved."""
         # Implementation would set a flag to prevent AI generation
         logger.info(
             f"Pausing itinerary generation for trip {event.trip_id} due to critical conflicts"
         )
 
-    async def _congratulate_families(self, event: CoordinationEvent, rule: AutomationRule):
+    async def _congratulate_families(
+        self, event: CoordinationEvent, rule: AutomationRule
+    ):
         """Congratulate families on reaching consensus."""
         trip = await self._get_trip(event.trip_id)
         if not trip:
@@ -514,12 +574,17 @@ class SmartCoordinationService:
                 family_data["id"], celebration_message, NotificationPriority.HIGH.value
             )
 
-    async def _auto_generate_itinerary(self, event: CoordinationEvent, rule: AutomationRule):
+    async def _auto_generate_itinerary(
+        self, event: CoordinationEvent, rule: AutomationRule
+    ):
         """Automatically trigger itinerary generation when consensus is high."""
         # Implementation would trigger AI itinerary generation
-        logger.info(f"Auto-triggering itinerary generation for trip {event.trip_id}")
+        logger.info(
+            f"Auto-triggering itinerary generation for trip {event.trip_id}")
 
-    async def _schedule_review_meeting(self, event: CoordinationEvent, rule: AutomationRule):
+    async def _schedule_review_meeting(
+        self, event: CoordinationEvent, rule: AutomationRule
+    ):
         """Schedule review meeting for generated itinerary."""
         meeting_suggestion = await self.suggest_optimal_meeting_time(
             event.trip_id, meeting_type="review"
@@ -527,7 +592,9 @@ class SmartCoordinationService:
         # Implementation would schedule the meeting
         logger.info(f"Scheduling review meeting for trip {event.trip_id}")
 
-    async def _send_deadline_reminder(self, event: CoordinationEvent, rule: AutomationRule):
+    async def _send_deadline_reminder(
+        self, event: CoordinationEvent, rule: AutomationRule
+    ):
         """Send deadline reminder to families."""
         days_until = event.event_data.get("days_until", 0)
 
@@ -574,7 +641,9 @@ class SmartCoordinationService:
             # For now, suggest a reasonable default time
             # In production, this would analyze family time zones and preferences
 
-            suggested_time = datetime.now(timezone.utc) + timedelta(days=2)  # 2 days from now
+            suggested_time = datetime.now(timezone.utc) + timedelta(
+                days=2
+            )  # 2 days from now
             suggested_time = suggested_time.replace(
                 hour=19, minute=0, second=0, microsecond=0
             )  # 7 PM UTC
@@ -585,7 +654,8 @@ class SmartCoordinationService:
                 participation_score=0.85,  # 85% of families can attend
                 optimal_duration_minutes=45 if meeting_type == "planning" else 30,
                 meeting_type=meeting_type,
-                agenda_items=self._generate_meeting_agenda(meeting_type, families_data),
+                agenda_items=self._generate_meeting_agenda(
+                    meeting_type, families_data),
             )
         except Exception as e:
             logger.error(f"Failed to suggest meeting time: {str(e)}")
@@ -634,7 +704,11 @@ class SmartCoordinationService:
         try:
             stmt = (
                 select(Trip)
-                .options(selectinload(Trip.participations).selectinload(TripParticipation.family))
+                .options(
+                    selectinload(Trip.participations).selectinload(
+                        TripParticipation.family
+                    )
+                )
                 .where(Trip.id == trip_id)
             )
 
@@ -665,7 +739,9 @@ class SmartCoordinationService:
 
                 if participation.preferences:
                     try:
-                        family_data["preferences"] = json.loads(participation.preferences)
+                        family_data["preferences"] = json.loads(
+                            participation.preferences
+                        )
                     except (json.JSONDecodeError, TypeError):
                         family_data["preferences"] = {}
 
@@ -673,7 +749,8 @@ class SmartCoordinationService:
 
             return families_data
         except Exception as e:
-            logger.error(f"Failed to get families data for trip {trip_id}: {str(e)}")
+            logger.error(
+                f"Failed to get families data for trip {trip_id}: {str(e)}")
             return []
 
 
@@ -710,11 +787,18 @@ async def trigger_coordination_event(
 
 
 async def family_joined_trip(
-    db: AsyncSession, notification_service: NotificationService, trip_id: str, family_id: str
+    db: AsyncSession,
+    notification_service: NotificationService,
+    trip_id: str,
+    family_id: str,
 ) -> List[str]:
     """Handle family joining trip automation."""
     return await trigger_coordination_event(
-        db, notification_service, CoordinationEventType.FAMILY_JOINED, trip_id, family_id=family_id
+        db,
+        notification_service,
+        CoordinationEventType.FAMILY_JOINED,
+        trip_id,
+        family_id=family_id,
     )
 
 

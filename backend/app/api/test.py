@@ -55,7 +55,8 @@ async def test_ai_service(
         }
 
         # Test AI service
-        logger.info(f"Testing AI service for destination: {request.destination}")
+        logger.info(
+            f"Testing AI service for destination: {request.destination}")
 
         result = await ai_service.generate_itinerary(
             destination=request.destination,
@@ -95,5 +96,8 @@ async def test_health():
     return {
         "status": "ok",
         "message": "Test endpoints are available",
-        "endpoints": ["/api/v1/test/ai - Test AI service", "/api/v1/test/health - This endpoint"],
+        "endpoints": [
+            "/api/v1/test/ai - Test AI service",
+            "/api/v1/test/health - This endpoint",
+        ],
     }

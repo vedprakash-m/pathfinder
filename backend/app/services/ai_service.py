@@ -10,8 +10,10 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 import openai
+
 try:
     import tiktoken
+
     HAS_TIKTOKEN = True
 except ImportError:
     tiktoken = None
@@ -48,7 +50,9 @@ class CostTracker:
         self.daily_usage: Dict[str, Dict[str, Any]] = {}
         self.usage_patterns: Dict[str, Dict[str, Any]] = {}
 
-    def calculate_cost(self, model: str, input_tokens: int, output_tokens: int) -> float:
+    def calculate_cost(
+        self, model: str, input_tokens: int, output_tokens: int
+    ) -> float:
         """Calculate cost for token usage."""
         if model not in self.MODEL_COSTS:
             logger.warning(f"Unknown model for cost calculation: {model}")
@@ -61,7 +65,11 @@ class CostTracker:
         return input_cost + output_cost
 
     def track_usage(
-        self, model: str, input_tokens: int, output_tokens: int, request_type: str = "general"
+        self,
+        model: str,
+        input_tokens: int,
+        output_tokens: int,
+        request_type: str = "general",
     ) -> float:
         """Track usage and return cost."""
         cost = self.calculate_cost(model, input_tokens, output_tokens)
@@ -82,14 +90,18 @@ class CostTracker:
 
         # Track by model
         if model not in self.daily_usage[today]["models"]:
-            self.daily_usage[today]["models"][model] = {"cost": 0.0, "requests": 0}
+            self.daily_usage[today]["models"][model] = {
+                "cost": 0.0, "requests": 0}
 
         self.daily_usage[today]["models"][model]["cost"] += cost
         self.daily_usage[today]["models"][model]["requests"] += 1
 
         # Track by request type
         if request_type not in self.daily_usage[today]["request_types"]:
-            self.daily_usage[today]["request_types"][request_type] = {"cost": 0.0, "requests": 0}
+            self.daily_usage[today]["request_types"][request_type] = {
+                "cost": 0.0,
+                "requests": 0,
+            }
 
         self.daily_usage[today]["request_types"][request_type]["cost"] += cost
         self.daily_usage[today]["request_types"][request_type]["requests"] += 1
@@ -120,14 +132,17 @@ class CostTracker:
 
         # Check request-type specific limits
         request_type_limits = {
-            "itinerary_generation": daily_budget_limit * 0.6,  # 60% for itinerary generation
+            "itinerary_generation": daily_budget_limit
+            * 0.6,  # 60% for itinerary generation
             "optimization": daily_budget_limit * 0.2,  # 20% for optimization
             "general": daily_budget_limit * 0.2,  # 20% for other requests
         }
 
         if request_type in request_type_limits:
             type_cost = (
-                self.daily_usage[today]["request_types"].get(request_type, {}).get("cost", 0)
+                self.daily_usage[today]["request_types"]
+                .get(request_type, {})
+                .get("cost", 0)
             )
             if type_cost >= request_type_limits[request_type]:
                 return False
@@ -150,16 +165,22 @@ class CostTracker:
             mini_requests = usage["models"]["gpt-4o-mini"]["requests"]
 
             if gpt4_requests > mini_requests:
-                suggestions.append("Consider using gpt-4o-mini for more requests to reduce costs")
+                suggestions.append(
+                    "Consider using gpt-4o-mini for more requests to reduce costs"
+                )
 
         # Suggest caching
         if usage["requests"] > 20:
-            suggestions.append("High request volume detected - ensure caching is enabled")
+            suggestions.append(
+                "High request volume detected - ensure caching is enabled"
+            )
 
         # Budget warnings
         daily_budget_limit = getattr(settings, "AI_DAILY_BUDGET_LIMIT", 50.0)
         if usage["cost"] > daily_budget_limit * 0.8:
-            suggestions.append("Approaching daily budget limit - consider request optimization")
+            suggestions.append(
+                "Approaching daily budget limit - consider request optimization"
+            )
 
         return suggestions
 
@@ -168,7 +189,9 @@ class MultiFamilyPreferenceEngine:
     """Engine for reconciling preferences across multiple families."""
 
     @staticmethod
-    def reconcile_family_preferences(families_data: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def reconcile_family_preferences(
+        families_data: List[Dict[str, Any]],
+    ) -> Dict[str, Any]:
         """Reconcile conflicting preferences across multiple families."""
         if not families_data:
             return {}
@@ -189,7 +212,8 @@ class MultiFamilyPreferenceEngine:
                 if isinstance(member.get("dietary_restrictions"), list):
                     all_dietary.extend(member.get("dietary_restrictions", []))
                 if isinstance(member.get("accessibility_needs"), list):
-                    all_accessibility.extend(member.get("accessibility_needs", []))
+                    all_accessibility.extend(
+                        member.get("accessibility_needs", []))
 
             if "budget_level" in family_prefs:
                 budget_levels.append(family_prefs["budget_level"])
@@ -202,20 +226,24 @@ class MultiFamilyPreferenceEngine:
         # Select activities preferred by at least 30% of families
         threshold = max(1, len(families_data) * 0.3)
         popular_activities = [
-            activity for activity, count in activity_counts.items() if count >= threshold
+            activity
+            for activity, count in activity_counts.items()
+            if count >= threshold
         ]
 
         # Handle budget level conflicts (take conservative approach)
         budget_priority = {"low": 1, "medium": 2, "high": 3}
         if budget_levels:
-            unified_budget = min(budget_levels, key=lambda x: budget_priority.get(x, 2))
+            unified_budget = min(
+                budget_levels, key=lambda x: budget_priority.get(x, 2))
         else:
             unified_budget = "medium"
 
         # Handle travel style (take most relaxed approach for families)
         style_priority = {"relaxed": 1, "moderate": 2, "active": 3}
         if travel_styles:
-            unified_style = min(travel_styles, key=lambda x: style_priority.get(x, 2))
+            unified_style = min(
+                travel_styles, key=lambda x: style_priority.get(x, 2))
         else:
             unified_style = "moderate"
 
@@ -226,7 +254,9 @@ class MultiFamilyPreferenceEngine:
             "unified_budget_level": unified_budget,
             "unified_travel_style": unified_style,
             "family_count": len(families_data),
-            "total_participants": sum(len(family.get("members", [])) for family in families_data),
+            "total_participants": sum(
+                len(family.get("members", [])) for family in families_data
+            ),
             "preference_conflicts": {
                 "budget_levels": budget_levels,
                 "travel_styles": travel_styles,
@@ -261,7 +291,9 @@ class ItineraryPrompts:
         """Create enhanced prompt with multi-family preference reconciliation."""
 
         # Use preference engine to reconcile family preferences
-        unified_prefs = MultiFamilyPreferenceEngine.reconcile_family_preferences(families_data)
+        unified_prefs = MultiFamilyPreferenceEngine.reconcile_family_preferences(
+            families_data
+        )
 
         # Format family information
         family_info: List[str] = []
@@ -270,16 +302,23 @@ class ItineraryPrompts:
         for i, family in enumerate(families_data, 1):
             family_size = len(family.get("members", []))
 
-            ages = [str(member.get("age", "adult")) for member in family.get("members", [])]
+            ages = [
+                str(member.get("age", "adult")) for member in family.get("members", [])
+            ]
             dietary_lists = [
-                member.get("dietary_restrictions", []) for member in family.get("members", [])
+                member.get("dietary_restrictions", [])
+                for member in family.get("members", [])
             ]
             dietary_flat = [
-                item for sublist in dietary_lists for item in sublist if isinstance(sublist, list)
+                item
+                for sublist in dietary_lists
+                for item in sublist
+                if isinstance(sublist, list)
             ]
 
             accessibility_lists = [
-                member.get("accessibility_needs", []) for member in family.get("members", [])
+                member.get("accessibility_needs", [])
+                for member in family.get("members", [])
             ]
             accessibility_flat = [
                 item
@@ -298,7 +337,11 @@ class ItineraryPrompts:
             """
             )
 
-        budget_info = f"Total budget: ${budget_total:,.2f}" if budget_total else "Budget: Flexible"
+        budget_info = (
+            f"Total budget: ${budget_total:,.2f}"
+            if budget_total
+            else "Budget: Flexible"
+        )
 
         # Create conflict resolution notes
         conflicts = unified_prefs.get("preference_conflicts", {})
@@ -398,7 +441,8 @@ class AIService:
     def _select_optimal_model(self, request_type: str, input_tokens: int) -> str:
         """Select optimal model based on request type and complexity."""
         # Simple model selection logic - can be enhanced with ML
-        primary_model = getattr(settings, "OPENAI_MODEL_PRIMARY", "gpt-4o-mini")
+        primary_model = getattr(
+            settings, "OPENAI_MODEL_PRIMARY", "gpt-4o-mini")
         fallback_model = getattr(settings, "OPENAI_MODEL_FALLBACK", "gpt-4o")
 
         if request_type == "itinerary_generation":
@@ -442,8 +486,10 @@ class AIService:
             )
 
             # Try primary model first (cost-optimized)
-            primary_model = getattr(settings, "OPENAI_MODEL_PRIMARY", "gpt-4o-mini")
-            fallback_model = getattr(settings, "OPENAI_MODEL_FALLBACK", "gpt-4o")
+            primary_model = getattr(
+                settings, "OPENAI_MODEL_PRIMARY", "gpt-4o-mini")
+            fallback_model = getattr(
+                settings, "OPENAI_MODEL_FALLBACK", "gpt-4o")
 
             try:
                 response = await self._make_api_call(
@@ -509,7 +555,9 @@ class AIService:
                 temperature = getattr(settings, "OPENAI_TEMPERATURE", 0.7)
 
                 # Enhanced prompt for LLM orchestration with system context
-                enhanced_prompt = f"{ItineraryPrompts.SYSTEM_PROMPT}\n\nUser Request:\n{prompt}"
+                enhanced_prompt = (
+                    f"{ItineraryPrompts.SYSTEM_PROMPT}\n\nUser Request:\n{prompt}"
+                )
 
                 orchestration_response = await llm_orchestration_client.generate_text(
                     prompt=enhanced_prompt,
@@ -536,13 +584,18 @@ class AIService:
                     "input_tokens": input_tokens,
                     "output_tokens": output_tokens,
                     "cost": orchestration_cost,
-                    "processing_time": orchestration_response.get("processing_time", 0.0),
-                    "orchestration_metadata": orchestration_response.get("metadata", {}),
+                    "processing_time": orchestration_response.get(
+                        "processing_time", 0.0
+                    ),
+                    "orchestration_metadata": orchestration_response.get(
+                        "metadata", {}
+                    ),
                     "source": "llm_orchestration",
                 }
 
             except Exception as e:
-                logger.warning(f"LLM Orchestration failed, falling back to OpenAI: {e}")
+                logger.warning(
+                    f"LLM Orchestration failed, falling back to OpenAI: {e}")
                 # Fall through to OpenAI fallback
 
         # Fallback to direct OpenAI API
@@ -571,7 +624,8 @@ class AIService:
             output_tokens = response.usage.completion_tokens if response.usage else 0
 
             # Track costs
-            cost = self.cost_tracker.track_usage(model, input_tokens, output_tokens)
+            cost = self.cost_tracker.track_usage(
+                model, input_tokens, output_tokens)
 
             return {
                 "content": content,
@@ -587,7 +641,9 @@ class AIService:
             error_message = str(e).lower()
             if "rate limit" in error_message:
                 logger.error("OpenAI rate limit exceeded")
-                raise ValueError("AI service temporarily unavailable due to rate limits")
+                raise ValueError(
+                    "AI service temporarily unavailable due to rate limits"
+                )
             elif "timeout" in error_message:
                 logger.error("OpenAI API timeout")
                 raise ValueError("AI service timeout - please try again")
@@ -658,7 +714,8 @@ class AIService:
 
         try:
             input_tokens = self.count_tokens(prompt)
-            primary_model = getattr(settings, "OPENAI_MODEL_PRIMARY", "gpt-4o-mini")
+            primary_model = getattr(
+                settings, "OPENAI_MODEL_PRIMARY", "gpt-4o-mini")
             response = await self._make_api_call(
                 primary_model, prompt, input_tokens, task_type="activity_enhancement"
             )
@@ -672,7 +729,9 @@ class AIService:
     def get_usage_stats(self) -> Dict[str, Any]:
         """Get current usage statistics."""
         today = datetime.now().date().isoformat()
-        today_usage = self.cost_tracker.daily_usage.get(today, {"cost": 0, "requests": 0})
+        today_usage = self.cost_tracker.daily_usage.get(
+            today, {"cost": 0, "requests": 0}
+        )
         daily_budget_limit = getattr(settings, "AI_DAILY_BUDGET_LIMIT", 50.0)
 
         return {
@@ -739,7 +798,8 @@ class AIService:
 
         try:
             input_tokens = self.count_tokens(prompt)
-            primary_model = getattr(settings, "OPENAI_MODEL_PRIMARY", "gpt-4o-mini")
+            primary_model = getattr(
+                settings, "OPENAI_MODEL_PRIMARY", "gpt-4o-mini")
             response = await self._make_api_call(
                 primary_model, prompt, input_tokens, task_type="route_optimization"
             )
@@ -817,7 +877,8 @@ class AIService:
 
         try:
             input_tokens = self.count_tokens(prompt)
-            primary_model = getattr(settings, "OPENAI_MODEL_PRIMARY", "gpt-4o-mini")
+            primary_model = getattr(
+                settings, "OPENAI_MODEL_PRIMARY", "gpt-4o-mini")
             response = await self._make_api_call(
                 primary_model, prompt, input_tokens, task_type="budget_optimization"
             )
@@ -878,9 +939,13 @@ class AIService:
 
         try:
             input_tokens = self.count_tokens(prompt)
-            primary_model = getattr(settings, "OPENAI_MODEL_PRIMARY", "gpt-4o-mini")
+            primary_model = getattr(
+                settings, "OPENAI_MODEL_PRIMARY", "gpt-4o-mini")
             response = await self._make_api_call(
-                primary_model, prompt, input_tokens, task_type="activity_recommendations"
+                primary_model,
+                prompt,
+                input_tokens,
+                task_type="activity_recommendations",
             )
 
             return json.loads(response["content"])
@@ -940,9 +1005,13 @@ class AIService:
 
         try:
             input_tokens = self.count_tokens(prompt)
-            primary_model = getattr(settings, "OPENAI_MODEL_PRIMARY", "gpt-4o-mini")
+            primary_model = getattr(
+                settings, "OPENAI_MODEL_PRIMARY", "gpt-4o-mini")
             response = await self._make_api_call(
-                primary_model, prompt, input_tokens, task_type="restaurant_recommendations"
+                primary_model,
+                prompt,
+                input_tokens,
+                task_type="restaurant_recommendations",
             )
 
             return json.loads(response["content"])
@@ -968,7 +1037,8 @@ class AIService:
         def json_serializer(obj):
             if isinstance(obj, datetime):
                 return obj.isoformat()
-            raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
+            raise TypeError(
+                f"Object of type {type(obj)} is not JSON serializable")
 
         prompt = f"""
         Optimize this existing itinerary for {optimization_type}:
@@ -1005,7 +1075,8 @@ class AIService:
 
         try:
             input_tokens = self.count_tokens(prompt)
-            primary_model = getattr(settings, "OPENAI_MODEL_PRIMARY", "gpt-4o-mini")
+            primary_model = getattr(
+                settings, "OPENAI_MODEL_PRIMARY", "gpt-4o-mini")
             response = await self._make_api_call(
                 primary_model, prompt, input_tokens, task_type="itinerary_optimization"
             )
@@ -1051,7 +1122,8 @@ class AIService:
 
         try:
             input_tokens = self.count_tokens(prompt)
-            primary_model = getattr(settings, "OPENAI_MODEL_PRIMARY", "gpt-4o-mini")
+            primary_model = getattr(
+                settings, "OPENAI_MODEL_PRIMARY", "gpt-4o-mini")
             response = await self._make_api_call(
                 primary_model, prompt, input_tokens, task_type="activity_suggestions"
             )

@@ -104,7 +104,9 @@ class ZeroTrustSecurity:
 
         # 2. Verify resource-specific access
         if resource_id:
-            resource_access = await self._check_resource_access(user, resource_type, resource_id)
+            resource_access = await self._check_resource_access(
+                user, resource_type, resource_id
+            )
             if not resource_access:
                 logger.warning(
                     f"Access denied: User {user.id} cannot access {resource_type}/{resource_id}"
@@ -126,7 +128,9 @@ class ZeroTrustSecurity:
 
         return True
 
-    async def _check_permission(self, user: User, resource_type: str, action: str) -> bool:
+    async def _check_permission(
+        self, user: User, resource_type: str, action: str
+    ) -> bool:
         """Check if user has permission for the action on the resource type."""
         # Map of resource types to required permissions
         permission_map = {
@@ -194,7 +198,9 @@ class ZeroTrustSecurity:
                     """
                     )
 
-                    result = await db.execute(query, {"trip_id": resource_id, "user_id": user.id})
+                    result = await db.execute(
+                        query, {"trip_id": resource_id, "user_id": user.id}
+                    )
                     has_access = result.scalar()
 
                     if not has_access:
@@ -222,7 +228,9 @@ class ZeroTrustSecurity:
                     """
                     )
 
-                    result = await db.execute(query, {"family_id": resource_id, "user_id": user.id})
+                    result = await db.execute(
+                        query, {"family_id": resource_id, "user_id": user.id}
+                    )
                     has_access = result.scalar()
 
                     if not has_access:
@@ -254,7 +262,8 @@ class ZeroTrustSecurity:
                     )
 
                     result = await db.execute(
-                        query, {"itinerary_id": resource_id, "user_id": user.id}
+                        query, {"itinerary_id": resource_id,
+                            "user_id": user.id}
                     )
                     has_access = result.scalar()
 
@@ -355,7 +364,9 @@ def require_permissions(resource_type: str, action: str):
                             status_code=status.HTTP_403_FORBIDDEN,
                             detail="Access denied due to suspicious activity",
                         )
-                    elif validation_result["risk_score"] > settings.MFA_TRIGGER_THRESHOLD:
+                    elif (
+                        validation_result["risk_score"] > settings.MFA_TRIGGER_THRESHOLD
+                    ):
                         raise HTTPException(
                             status_code=status.HTTP_401_UNAUTHORIZED,
                             detail="Additional verification required",

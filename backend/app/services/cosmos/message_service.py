@@ -48,7 +48,9 @@ class MessageDocumentService:
         # Convert back to Pydantic model and return
         return MessageDocument(**result)
 
-    async def get_message(self, message_id: str, trip_id: str) -> Optional[MessageDocument]:
+    async def get_message(
+        self, message_id: str, trip_id: str
+    ) -> Optional[MessageDocument]:
         """Get a message document by ID and trip ID."""
         return await self.cosmos_service.get_item(message_id, trip_id)
 
@@ -196,7 +198,9 @@ class MessageDocumentService:
 
         return MessageDocument(**result)
 
-    async def delete_message(self, message_id: str, trip_id: str, soft_delete: bool = True) -> None:
+    async def delete_message(
+        self, message_id: str, trip_id: str, soft_delete: bool = True
+    ) -> None:
         """
         Delete a message.
 

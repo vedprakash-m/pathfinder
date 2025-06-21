@@ -55,7 +55,8 @@ async def clear_cache(current_user=Depends(require_role("admin"))):
     success = await cache.clear()
     if not success:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to clear cache"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to clear cache",
         )
 
     return {"message": "Cache cleared successfully"}

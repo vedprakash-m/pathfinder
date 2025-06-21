@@ -71,9 +71,12 @@ async def create_trip(
         result = await use_case(trip_data, current_user.id)
         return result
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
 
 
 # --------------------------------------------------------------
@@ -81,10 +84,13 @@ async def create_trip(
 # --------------------------------------------------------------
 
 
-from datetime import date, timedelta  # NEW import (keep grouped at top if sorted)
+# NEW import (keep grouped at top if sorted)
+from datetime import date, timedelta
 
 
-@router.post("/sample", response_model=TripResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/sample", response_model=TripResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_sample_trip(
     template: str = Query(
         "weekend_getaway",
@@ -270,7 +276,8 @@ async def update_trip(
     try:
         return await use_case(trip_id, trip_update, current_user.id)
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except PermissionError:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -290,7 +297,8 @@ async def delete_trip(
         await use_case(trip_id, current_user.id)
         return {"message": "Trip deleted successfully"}
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except PermissionError:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -308,7 +316,9 @@ async def get_trip_stats(
 
     stats = await use_case(trip_id, current_user.id)
     if stats is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found"
+        )
     return stats
 
 
@@ -327,7 +337,8 @@ async def add_participant(
     try:
         return await use_case(trip_id, participation_data, current_user.id)
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.get("/{trip_id}/participants", response_model=List[ParticipationResponse])
@@ -341,22 +352,24 @@ async def get_participants(
     return await use_case(trip_id, current_user.id)
 
 
-@router.put("/{trip_id}/participants/{participation_id}", response_model=ParticipationResponse)
+@router.put(
+    "/{trip_id}/participants/{participation_id}", response_model=ParticipationResponse
+)
 async def update_participation(
     trip_id: UUID,
     participation_id: UUID,
     participation_update: ParticipationUpdate,
     current_user: User = Depends(require_permissions("trips", "update")),
     use_case: UpdateParticipationUseCase = Depends(
-        get_update_participation_use_case
-    ),
+        get_update_participation_use_case),
 ):
     """Update family participation status (application layer)."""
 
     try:
         return await use_case(participation_id, participation_update, current_user.id)
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except PermissionError:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -369,7 +382,8 @@ async def remove_participant(
     trip_id: UUID,
     participation_id: UUID,
     current_user: User = Depends(require_permissions("trips", "delete")),
-    use_case: RemoveParticipantUseCase = Depends(get_remove_participant_use_case),
+    use_case: RemoveParticipantUseCase = Depends(
+        get_remove_participant_use_case),
 ):
     """Remove a family from the trip (application layer)."""
 
@@ -377,7 +391,8 @@ async def remove_participant(
         await use_case(participation_id, current_user.id)
         return {"message": "Participant removed successfully"}
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except PermissionError:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -401,7 +416,8 @@ async def send_invitation(
         await use_case(trip_id, invitation_data, current_user.id)
         return {"message": "Invitation sent successfully"}
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.get("/{trip_id}/messages")
@@ -415,6 +431,8 @@ async def get_trip_messages(
 
     messages = await cosmos_service.get_trip_messages(str(trip_id))
     if messages is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip messages not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Trip messages not found"
+        )
 
     return messages

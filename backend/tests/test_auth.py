@@ -31,7 +31,8 @@ async def test_create_access_token():
         token,
         "test-secret-key",  # This would be replaced by the actual test env secret
         algorithms=["HS256"],
-        options={"verify_signature": False},  # Skip signature verification in test
+        # Skip signature verification in test
+        options={"verify_signature": False},
     )
     assert decoded["sub"] == "test-user"
     assert decoded["email"] == "test@example.com"
@@ -133,7 +134,9 @@ async def test_auth_service_get_current_user():
     mock_user.auth0_id = "auth0|test123"
 
     # Mock both AuthService methods directly
-    with patch.object(auth_service, "verify_token", new=AsyncMock(return_value=mock_token_data)):
+    with patch.object(
+        auth_service, "verify_token", new=AsyncMock(return_value=mock_token_data)
+    ):
         with patch.object(
             auth_service, "get_user_by_auth0_id", new=AsyncMock(return_value=mock_user)
         ):

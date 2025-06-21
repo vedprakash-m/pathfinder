@@ -39,7 +39,8 @@ class TripCosmosRepository:  # pragma: no cover – infra wrapper
     # ------------------------------------------------------------------
 
     async def save_itinerary(self, trip_id: str, itinerary: Dict[str, Any]) -> bool:
-        return await self._ops.itinerary_service.save_itinerary(trip_id, itinerary)  # type: ignore[arg-type]
+        # type: ignore[arg-type]
+        return await self._ops.itinerary_service.save_itinerary(trip_id, itinerary)
 
     async def get_latest_itinerary(self, trip_id: str) -> Optional[Dict[str, Any]]:
         return await self._ops.itinerary_service.get_latest_itinerary(trip_id)
@@ -49,7 +50,8 @@ class TripCosmosRepository:  # pragma: no cover – infra wrapper
     # ------------------------------------------------------------------
 
     async def save_message(self, trip_id: str, message: Dict[str, Any]) -> None:
-        await self._ops.message_service.save_message(trip_id, message)  # type: ignore[arg-type]
+        # type: ignore[arg-type]
+        await self._ops.message_service.save_message(trip_id, message)
 
     async def get_messages(self, trip_id: str, limit: int = 50) -> List[Dict[str, Any]]:
         return await self._ops.message_service.get_messages(trip_id, limit)

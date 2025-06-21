@@ -13,7 +13,14 @@ from app.core.database import get_db
 from app.core.security import get_current_user, get_current_user_websocket
 from app.models.user import User
 from app.services.websocket import handle_websocket_message, websocket_manager
-from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Query,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
@@ -90,7 +97,8 @@ async def websocket_trip_endpoint(
 
         except Exception as e:
             # Handle other errors
-            logger.error(f"WebSocket error for user {user.id} in trip {trip_id}: {e}")
+            logger.error(
+                f"WebSocket error for user {user.id} in trip {trip_id}: {e}")
             error_message = {
                 "type": "error",
                 "message": "Internal server error",
@@ -167,7 +175,8 @@ async def websocket_notifications_endpoint(
 
         except Exception as e:
             # Handle other errors
-            logger.error(f"Notifications WebSocket error for user {user.id}: {e}")
+            logger.error(
+                f"Notifications WebSocket error for user {user.id}: {e}")
             error_message = {
                 "type": "error",
                 "message": "Internal server error",
@@ -209,7 +218,8 @@ async def get_trip_connections(
 
         # Get connection info using the correct method
         connected_users = websocket_manager.get_trip_users(str(trip_id))
-        connection_count = websocket_manager.get_trip_connection_count(str(trip_id))
+        connection_count = websocket_manager.get_trip_connection_count(
+            str(trip_id))
 
         return {
             "trip_id": str(trip_id),
@@ -221,7 +231,9 @@ async def get_trip_connections(
         raise
     except Exception as e:
         logger.error(f"Error getting trip connections: {e}")
-        raise HTTPException(status_code=500, detail="Error retrieving connection information")
+        raise HTTPException(
+            status_code=500, detail="Error retrieving connection information"
+        )
 
 
 @router.post("/broadcast/trip/{trip_id}")
@@ -272,4 +284,5 @@ async def broadcast_to_trip(
         raise
     except Exception as e:
         logger.error(f"Error broadcasting to trip {trip_id}: {e}")
-        raise HTTPException(status_code=500, detail="Error broadcasting message")
+        raise HTTPException(
+            status_code=500, detail="Error broadcasting message")

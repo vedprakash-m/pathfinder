@@ -45,7 +45,9 @@ class Notification(Base):
     id = Column(GUID(), primary_key=True, default=uuid4)
     user_id = Column(GUID(), ForeignKey("users.id"), nullable=False)
     type = Column(SQLEnum(NotificationType), nullable=False)
-    priority = Column(SQLEnum(NotificationPriority), default=NotificationPriority.NORMAL)
+    priority = Column(
+        SQLEnum(NotificationPriority), default=NotificationPriority.NORMAL
+    )
     title = Column(String(200), nullable=False)
     message = Column(Text, nullable=False)
 
@@ -60,7 +62,8 @@ class Notification(Base):
     expires_at = Column(DateTime, nullable=True)
 
     # Additional data as JSON string
-    data = Column(Text, nullable=True)  # JSON string for additional notification data
+    # JSON string for additional notification data
+    data = Column(Text, nullable=True)
 
     # Relationships
     user = relationship("User", back_populates="notifications")

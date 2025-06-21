@@ -717,44 +717,64 @@ else
     echo "   🔧 Fix imports in conftest.py and related modules"
 fi
 
-# First test the specific failing test from CI/CD
-echo "   Testing specific CI/CD failure case..."
+# Test specific auth unit tests that were failing in CI/CD
+echo "   Testing auth unit tests (exact CI/CD failure)..."
 if python3 -c "import pytest" 2>/dev/null; then
-    if python3 -m pytest tests/test_ai_service.py::test_cost_tracker_budget_limit -v 2>/dev/null; then
-        print_status "Previously failing test: Passed" "success"
+    # Run the exact failing test without silencing errors
+    echo "   Running test_auth_unit.py::TestAuthEndpoints::test_login_success..."
+    TEST_OUTPUT=$(python3 -m pytest tests/test_auth_unit.py::TestAuthEndpoints::test_login_success -v --tb=short 2>&1)
+    if echo "$TEST_OUTPUT" | grep -q "PASSED\|1 passed"; then
+        print_status "Previously failing CI/CD test: Passed" "success"
     else
         print_status "CI/CD failure test still failing" "error"
-        echo "   ❌ Test: tests/test_ai_service.py::test_cost_tracker_budget_limit"
+        echo "   ❌ Test: tests/test_auth_unit.py::TestAuthEndpoints::test_login_success"
+        echo "   🔍 Error details:"
+        echo "$TEST_OUTPUT" | head -20
         echo "   💡 This exact test is blocking CI/CD - must fix first"
         VALIDATION_FAILED=true
+    fi
+    
+    # Run all auth unit tests to ensure they pass
+    echo "   Running all auth unit tests..."
+    AUTH_TEST_OUTPUT=$(python3 -m pytest tests/test_auth_unit.py -v --tb=short 2>&1)
+    if echo "$AUTH_TEST_OUTPUT" | grep -q "failed\|ERROR\|FAILED"; then
+        print_status "Auth unit tests failing" "error"
+        echo "   💡 Check test mocking and endpoint availability"
+        echo "$AUTH_TEST_OUTPUT" | grep -E "(FAILED|ERROR|AttributeError)" | head -10
+        VALIDATION_FAILED=true
+    else
+        print_status "Auth unit tests: Passed" "success"
     fi
 fi
 
 # Run tests with exact CI/CD command and environment
 echo "   Running unit tests first (catch schema validation errors)..."
 if python3 -c "import pytest, coverage" 2>/dev/null; then
-    # Run unit tests first to catch validation issues
-    if python3 -m pytest tests/ -m "unit or not (e2e or integration or performance)" -v --tb=short 2>/dev/null; then
-        print_status "Unit tests: Passed" "success"
-    else
+    # Run unit tests first to catch validation issues - DON'T SILENCE ERRORS
+    UNIT_TEST_OUTPUT=$(python3 -m pytest tests/ -m "unit or not (e2e or integration or performance)" -v --tb=short 2>&1)
+    if echo "$UNIT_TEST_OUTPUT" | grep -q "failed\|ERROR\|FAILED"; then
         print_status "Unit tests failed - will cause CI/CD failure" "error"
-        echo "   ❌ Unit tests failing, checking specific auth tests..."
-        
-        # Test specific auth unit tests that were failing in CI/CD
-        if python3 -m pytest tests/test_auth_unit.py -v --tb=short 2>/dev/null; then
-            print_status "Auth unit tests: Passed" "success"
-        else
-            print_status "Auth unit tests failing - schema validation issue" "error"
-            echo "   💡 Check UserCreate model schema vs test data"
-            VALIDATION_FAILED=true
-        fi
+        echo "   ❌ Unit test failures detected:"
+        echo "$UNIT_TEST_OUTPUT" | grep -E "(FAILED|ERROR|AttributeError)" | head -10
+        VALIDATION_FAILED=true
+    else
+        print_status "Unit tests: Passed" "success"
     fi
 fi
 
 echo "   Running tests with coverage (exact CI/CD command)..."
 if python3 -c "import pytest, coverage" 2>/dev/null; then
-    # Use exact same command as CI/CD
-    if coverage run -m pytest tests/ -v --tb=short 2>/dev/null; then
+    # Use exact same command as CI/CD - DON'T SILENCE ERRORS
+    COVERAGE_TEST_OUTPUT=$(coverage run -m pytest tests/ -v --tb=short 2>&1)
+    if echo "$COVERAGE_TEST_OUTPUT" | grep -q "failed\|ERROR\|FAILED"; then
+        print_status "Test execution failed (same failure as CI/CD)" "error"
+        echo "   ❌ This matches the CI/CD failure pattern"
+        echo "   🔍 Error details:"
+        echo "$COVERAGE_TEST_OUTPUT" | grep -E "(FAILED|ERROR|AttributeError)" | head -15
+        echo "   🔧 Fix import errors and test mocking issues"
+        echo "   📝 Run: cd backend && ENVIRONMENT=testing coverage run -m pytest tests/ -v"
+        VALIDATION_FAILED=true
+    else
         print_status "Test execution: Passed" "success"
         
         # Generate coverage report (same as CI/CD)
@@ -769,11 +789,6 @@ if python3 -c "import pytest, coverage" 2>/dev/null; then
         else
             print_status "Coverage report generated" "success"
         fi
-    else
-        print_status "Test execution failed (same failure as CI/CD)" "error"
-        echo "   ❌ This matches the CI/CD failure pattern"
-        echo "   🔧 Fix import errors and environment setup"
-        echo "   📝 Run: cd backend && ENVIRONMENT=testing coverage run -m pytest tests/ -v"
     fi
 else
     print_status "Test framework not available" "error"

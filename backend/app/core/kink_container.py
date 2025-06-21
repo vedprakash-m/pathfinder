@@ -34,7 +34,8 @@ from app.core.repositories.trip_repository import TripRepository
 
 import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 from domain.family import FamilyDomainService
 from domain.messaging import MessagingDomainService
 from domain.reservation import ReservationDomainService
@@ -53,126 +54,119 @@ class KinkContainer:
         """Configure all service bindings."""
         if self._configured:
             return
-        
+
         # Clear existing bindings to avoid conflicts
         kink.clear()
-        
+
         # -------------------------------
-        # Infrastructure / external deps  
+        # Infrastructure / external deps
         # -------------------------------
-        
+
         # Database session factory - returns async session
-        kink.bind(
-            "db_session_factory",
-            lambda: SessionLocal()
-        )
-        
+        kink.bind("db_session_factory", lambda: SessionLocal())
+
         # -------------------------------
         # Repositories (using proper session management)
         # -------------------------------
-        
+
         def create_trip_repository():
             """Create a TripRepository with a new session."""
             session = SessionLocal()
             return TripRepository(session=session)
-        
-        kink.bind(
-            TripRepository,
-            create_trip_repository
-        )
-        
-        kink.bind(
-            TripCosmosRepository,
-            lambda: TripCosmosRepository()
-        )
-        
+
+        kink.bind(TripRepository, create_trip_repository)
+
+        kink.bind(TripCosmosRepository, lambda: TripCosmosRepository())
+
         # -------------------------------
         # Domain Services
         # -------------------------------
-        
+
         kink.bind(
             TripDomainService,
             lambda: TripDomainService(
                 legacy_service=None,
                 trip_repository=kink.get(TripRepository),
                 trip_cosmos_repository=kink.get(TripCosmosRepository),
-            )
+            ),
         )
-        
-        kink.bind(
-            FamilyDomainService,
-            lambda: FamilyDomainService()
-        )
-        
-        kink.bind(
-            ReservationDomainService, 
-            lambda: ReservationDomainService()
-        )
-        
-        kink.bind(
-            MessagingDomainService,
-            lambda: MessagingDomainService()
-        )
-        
+
+        kink.bind(FamilyDomainService, lambda: FamilyDomainService())
+
+        kink.bind(ReservationDomainService, lambda: ReservationDomainService())
+
+        kink.bind(MessagingDomainService, lambda: MessagingDomainService())
+
         # -------------------------------
         # Use-cases
         # -------------------------------
-        
+
         kink.bind(
             CreateTripUseCase,
-            lambda: CreateTripUseCase(trip_service=kink.get(TripDomainService))
+            lambda: CreateTripUseCase(
+                trip_service=kink.get(TripDomainService)),
         )
-        
+
         kink.bind(
             GetTripUseCase,
-            lambda: GetTripUseCase(trip_service=kink.get(TripDomainService))
+            lambda: GetTripUseCase(trip_service=kink.get(TripDomainService)),
         )
-        
+
         kink.bind(
             ListUserTripsUseCase,
-            lambda: ListUserTripsUseCase(trip_service=kink.get(TripDomainService))
+            lambda: ListUserTripsUseCase(
+                trip_service=kink.get(TripDomainService)),
         )
-        
+
         kink.bind(
             UpdateTripUseCase,
-            lambda: UpdateTripUseCase(trip_service=kink.get(TripDomainService))
+            lambda: UpdateTripUseCase(
+                trip_service=kink.get(TripDomainService)),
         )
-        
+
         kink.bind(
             DeleteTripUseCase,
-            lambda: DeleteTripUseCase(trip_service=kink.get(TripDomainService))
+            lambda: DeleteTripUseCase(
+                trip_service=kink.get(TripDomainService)),
         )
-        
+
         kink.bind(
             GetTripStatsUseCase,
-            lambda: GetTripStatsUseCase(trip_service=kink.get(TripDomainService))
+            lambda: GetTripStatsUseCase(
+                trip_service=kink.get(TripDomainService)),
         )
-        
+
         kink.bind(
             AddParticipantUseCase,
-            lambda: AddParticipantUseCase(trip_service=kink.get(TripDomainService))
+            lambda: AddParticipantUseCase(
+                trip_service=kink.get(TripDomainService)),
         )
-        
+
         kink.bind(
             GetParticipantsUseCase,
-            lambda: GetParticipantsUseCase(trip_service=kink.get(TripDomainService))
+            lambda: GetParticipantsUseCase(
+                trip_service=kink.get(TripDomainService)),
         )
-        
+
         kink.bind(
             UpdateParticipationUseCase,
-            lambda: UpdateParticipationUseCase(trip_service=kink.get(TripDomainService))
+            lambda: UpdateParticipationUseCase(
+                trip_service=kink.get(TripDomainService)
+            ),
         )
-        
+
         kink.bind(
             RemoveParticipantUseCase,
-            lambda: RemoveParticipantUseCase(trip_service=kink.get(TripDomainService))
+            lambda: RemoveParticipantUseCase(
+                trip_service=kink.get(TripDomainService)),
         )
-        
+
         kink.bind(
             SendInvitationUseCase,
-            lambda: SendInvitationUseCase(trip_service=kink.get(TripDomainService))
+            lambda: SendInvitationUseCase(
+                trip_service=kink.get(TripDomainService)),
         )
-        
+
         self._configured = True
 
     async def shutdown_resources(self):
@@ -194,6 +188,7 @@ def get_container() -> KinkContainer:
 
 
 # Helper functions for FastAPI Depends -----------------------------
+
 
 async def get_kink_container() -> AsyncGenerator[KinkContainer, None]:
     """Yield the DI container instance for the request lifespan."""

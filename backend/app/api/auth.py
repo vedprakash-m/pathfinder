@@ -17,7 +17,9 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED
+)
 async def register_user(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
     """Register a new user with automatic Family Admin role assignment."""
     auth_service = AuthService()
@@ -27,11 +29,13 @@ async def register_user(user_data: UserCreate, db: AsyncSession = Depends(get_db
         user = await auth_service.create_user(db, user_data)
 
         # Log successful registration with role assignment
-        logger.info(f"User registered as Family Admin with auto-family: {user.email}")
+        logger.info(
+            f"User registered as Family Admin with auto-family: {user.email}")
 
         return user
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.get("/me", response_model=UserProfile)
@@ -45,7 +49,9 @@ async def get_current_user_profile(
     user = auth_service.get_user_by_id(db, str(current_user.id))
 
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
 
     # Create UserProfile response with additional fields
     return UserProfile(
@@ -73,15 +79,19 @@ async def update_current_user(
     try:
         user = auth_service.update_user(db, str(current_user.id), user_update)
         if not user:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+            )
         return user
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.post("/logout")
 async def logout(
-    request: Request, current_user: User = Depends(require_permissions("user", "logout"))
+    request: Request,
+    current_user: User = Depends(require_permissions("user", "logout")),
 ):
     """Logout user (mainly for logging purposes)."""
     # In a real Auth0 implementation, you might want to revoke tokens
@@ -100,7 +110,8 @@ async def validate_token(
 # Onboarding endpoints
 @router.get("/user/onboarding-status")
 async def get_onboarding_status(
-    current_user: User = Depends(get_current_active_user), db: AsyncSession = Depends(get_db)
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
 ):
     """Get the current user's onboarding status."""
     return {
@@ -142,7 +153,9 @@ async def complete_onboarding(
         }
 
     except Exception as e:
-        logger.error(f"Failed to complete onboarding for user {current_user.email}: {str(e)}")
+        logger.error(
+            f"Failed to complete onboarding for user {current_user.email}: {str(e)}"
+        )
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

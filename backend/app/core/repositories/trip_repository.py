@@ -58,8 +58,11 @@ class TripRepository:
         query = (
             select(Trip)
             .options(
-                selectinload(Trip.participations).selectinload(TripParticipation.family),
-                selectinload(Trip.participations).selectinload(TripParticipation.user),
+                selectinload(Trip.participations).selectinload(
+                    TripParticipation.family
+                ),
+                selectinload(Trip.participations).selectinload(
+                    TripParticipation.user),
                 selectinload(Trip.creator),
             )
             .where(Trip.id == trip_id)
@@ -84,12 +87,16 @@ class TripRepository:
         await self._db.flush()
 
     async def list_trip_participations(self, trip_id: UUID) -> List[TripParticipation]:
-        stmt = select(TripParticipation).where(TripParticipation.trip_id == trip_id)
+        stmt = select(TripParticipation).where(
+            TripParticipation.trip_id == trip_id)
         res = await self._db.execute(stmt)
         return res.scalars().all()
 
-    async def get_participation_by_id(self, participation_id: UUID) -> Optional[TripParticipation]:
-        stmt = select(TripParticipation).where(TripParticipation.id == participation_id)
+    async def get_participation_by_id(
+        self, participation_id: UUID
+    ) -> Optional[TripParticipation]:
+        stmt = select(TripParticipation).where(
+            TripParticipation.id == participation_id)
         res = await self._db.execute(stmt)
         return res.scalar_one_or_none()
 

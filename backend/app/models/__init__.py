@@ -2,7 +2,13 @@
 Models package initialization.
 """
 
-from app.models.family import Family, FamilyCreate, FamilyMember, FamilyResponse, FamilyUpdate
+from app.models.family import (
+    Family,
+    FamilyCreate,
+    FamilyMember,
+    FamilyResponse,
+    FamilyUpdate,
+)
 from app.models.itinerary import Itinerary, ItineraryActivity, ItineraryDay
 from app.models.notification import Notification
 from app.models.reservation import Reservation, ReservationDocument

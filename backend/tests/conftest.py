@@ -48,7 +48,9 @@ async def test_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    TestingSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    TestingSessionLocal = sessionmaker(
+        engine, class_=AsyncSession, expire_on_commit=False
+    )
 
     async with TestingSessionLocal() as session:
         yield session
@@ -68,7 +70,9 @@ async def db_session():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    TestingSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    TestingSessionLocal = sessionmaker(
+        engine, class_=AsyncSession, expire_on_commit=False
+    )
 
     async with TestingSessionLocal() as session:
         yield session
@@ -85,7 +89,7 @@ async def test_user(db_session):
         role=UserRole.FAMILY_ADMIN,
         name="Test User",
         created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        updated_at=datetime.utcnow(),
     )
     db_session.add(user)
     await db_session.commit()
@@ -100,7 +104,7 @@ async def test_family(db_session, test_user):
         name="Test Family",
         description="A test family",
         created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        updated_at=datetime.utcnow(),
     )
     db_session.add(family)
     await db_session.commit()
@@ -119,7 +123,7 @@ async def test_trip(db_session, test_user):
         end_date=date.today(),
         creator_id=test_user.id,
         created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        updated_at=datetime.utcnow(),
     )
     db_session.add(trip)
     await db_session.commit()
@@ -139,7 +143,9 @@ def mock_openai_response():
     mock_response = MagicMock()
     mock_response.choices = [MagicMock()]
     mock_response.choices[0].message = MagicMock()
-    mock_response.choices[0].message.content = '''{
+    mock_response.choices[
+        0
+    ].message.content = """{
         "overview": {
             "destination": "Test Destination",
             "duration": "7 days",
@@ -156,7 +162,7 @@ def mock_openai_response():
             "total": 1000,
             "breakdown": {}
         }
-    }'''
+    }"""
     mock_response.usage = MagicMock()
     mock_response.usage.prompt_tokens = 100
     mock_response.usage.completion_tokens = 200
@@ -184,14 +190,22 @@ def mock_auth_dependency(mock_current_user):
         return mock_current_user
 
     # Override the authentication dependency - this is the key fix
-    app.dependency_overrides[require_permissions("trips", "create")] = get_mock_user
-    app.dependency_overrides[require_permissions("trips", "read")] = get_mock_user
-    app.dependency_overrides[require_permissions("trips", "update")] = get_mock_user
-    app.dependency_overrides[require_permissions("trips", "delete")] = get_mock_user
-    app.dependency_overrides[require_permissions("families", "create")] = get_mock_user
-    app.dependency_overrides[require_permissions("families", "read")] = get_mock_user
-    app.dependency_overrides[require_permissions("families", "update")] = get_mock_user
-    app.dependency_overrides[require_permissions("families", "delete")] = get_mock_user
+    app.dependency_overrides[require_permissions(
+        "trips", "create")] = get_mock_user
+    app.dependency_overrides[require_permissions(
+        "trips", "read")] = get_mock_user
+    app.dependency_overrides[require_permissions(
+        "trips", "update")] = get_mock_user
+    app.dependency_overrides[require_permissions(
+        "trips", "delete")] = get_mock_user
+    app.dependency_overrides[require_permissions(
+        "families", "create")] = get_mock_user
+    app.dependency_overrides[require_permissions(
+        "families", "read")] = get_mock_user
+    app.dependency_overrides[require_permissions(
+        "families", "update")] = get_mock_user
+    app.dependency_overrides[require_permissions(
+        "families", "delete")] = get_mock_user
 
     yield get_mock_user
 
@@ -235,27 +249,41 @@ def authenticated_client(mock_current_user):
     """Create an authenticated test client with mocked dependencies."""
     from app.core.security import User
     from app.core.zero_trust import require_permissions
-    
+
     # Create a mock user with all permissions
     test_user = User(
         id=str(mock_current_user.id),
         email=mock_current_user.email,
         roles=["user"],
         permissions=[
-            "read:trips", "create:trips", "update:trips", "delete:trips",
-            "read:families", "create:families", "update:families", "delete:families",
-            "read:itineraries", "create:itineraries", "update:itineraries", "delete:itineraries"
-        ]
+            "read:trips",
+            "create:trips",
+            "update:trips",
+            "delete:trips",
+            "read:families",
+            "create:families",
+            "update:families",
+            "delete:families",
+            "read:itineraries",
+            "create:itineraries",
+            "update:itineraries",
+            "delete:itineraries",
+        ],
     )
-    
+
     # Mock the require_permissions function to always return our test user
     def mock_require_permissions(resource_type: str, action: str):
         def mock_permission_checker(*args, **kwargs):
             return test_user
+
         return mock_permission_checker
-    
+
     # Patch the require_permissions function
-    with patch("app.core.zero_trust.require_permissions", side_effect=mock_require_permissions):
-        with patch("app.api.trips.require_permissions", side_effect=mock_require_permissions):
+    with patch(
+        "app.core.zero_trust.require_permissions", side_effect=mock_require_permissions
+    ):
+        with patch(
+            "app.api.trips.require_permissions", side_effect=mock_require_permissions
+        ):
             client = TestClient(app)
             yield client

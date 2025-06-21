@@ -82,7 +82,9 @@ async def submit_feedback(
         )
 
         if result["success"]:
-            logger.info(f"Feedback submitted for trip {trip_id} by user {current_user.id}")
+            logger.info(
+                f"Feedback submitted for trip {trip_id} by user {current_user.id}"
+            )
             return {
                 "success": True,
                 "feedback_id": result["feedback_id"],
@@ -99,7 +101,8 @@ async def submit_feedback(
         raise
     except Exception as e:
         logger.error(f"Error submitting feedback: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to submit feedback")
+        raise HTTPException(
+            status_code=500, detail="Failed to submit feedback")
 
 
 @router.get("/dashboard/{trip_id}")
@@ -143,7 +146,9 @@ async def get_feedback_dashboard(
 
     except Exception as e:
         logger.error(f"Error getting feedback dashboard data: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to get feedback dashboard data")
+        raise HTTPException(
+            status_code=500, detail="Failed to get feedback dashboard data"
+        )
 
 
 @router.get("/trip/{trip_id}")
@@ -168,7 +173,8 @@ async def get_trip_feedback(
             try:
                 status_filter = FeedbackStatus(status)
             except ValueError:
-                raise HTTPException(status_code=400, detail=f"Invalid status: {status}")
+                raise HTTPException(
+                    status_code=400, detail=f"Invalid status: {status}")
 
         feedback_list = await service.get_trip_feedback(trip_id, status_filter)
 
@@ -176,7 +182,9 @@ async def get_trip_feedback(
         if feedback_type:
             try:
                 FeedbackType(feedback_type)  # Validate feedback type
-                feedback_list = [f for f in feedback_list if f["feedback_type"] == feedback_type]
+                feedback_list = [
+                    f for f in feedback_list if f["feedback_type"] == feedback_type
+                ]
             except ValueError:
                 raise HTTPException(
                     status_code=400, detail=f"Invalid feedback type: {feedback_type}"
@@ -184,11 +192,15 @@ async def get_trip_feedback(
 
         # Add enhanced metadata
         for feedback in feedback_list:
-            feedback["time_since_submission"] = _calculate_time_since(feedback["created_at"])
-            feedback["needs_response"] = len(feedback.get("responses", [])) == 0
+            feedback["time_since_submission"] = _calculate_time_since(
+                feedback["created_at"]
+            )
+            feedback["needs_response"] = len(
+                feedback.get("responses", [])) == 0
             feedback["urgency_level"] = _calculate_urgency(feedback)
 
-        logger.info(f"Retrieved {len(feedback_list)} feedback items for trip {trip_id}")
+        logger.info(
+            f"Retrieved {len(feedback_list)} feedback items for trip {trip_id}")
         return {
             "trip_id": trip_id,
             "feedback_items": feedback_list,
@@ -200,7 +212,8 @@ async def get_trip_feedback(
         raise
     except Exception as e:
         logger.error(f"Error getting trip feedback: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to get trip feedback")
+        raise HTTPException(
+            status_code=500, detail="Failed to get trip feedback")
 
 
 @router.post("/respond/{feedback_id}")
@@ -230,13 +243,16 @@ async def respond_to_feedback(
                 response_data["new_status"] = response_request.new_status
             except ValueError:
                 raise HTTPException(
-                    status_code=400, detail=f"Invalid status: {response_request.new_status}"
+                    status_code=400,
+                    detail=f"Invalid status: {response_request.new_status}",
                 )
 
         success = await service.respond_to_feedback(feedback_id, response_data)
 
         if success:
-            logger.info(f"Response added to feedback {feedback_id} by user {current_user.id}")
+            logger.info(
+                f"Response added to feedback {feedback_id} by user {current_user.id}"
+            )
             return {
                 "success": True,
                 "message": "Response added successfully",
@@ -244,13 +260,15 @@ async def respond_to_feedback(
                 "response_data": response_data,
             }
         else:
-            raise HTTPException(status_code=404, detail="Feedback item not found")
+            raise HTTPException(
+                status_code=404, detail="Feedback item not found")
 
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error responding to feedback: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to respond to feedback")
+        raise HTTPException(
+            status_code=500, detail="Failed to respond to feedback")
 
 
 @router.post("/live-change/{trip_id}")
@@ -272,7 +290,9 @@ async def submit_live_change(
         session_id = await service.start_editing_session(trip_id, str(current_user.id))
 
         if not session_id:
-            raise HTTPException(status_code=400, detail="Failed to start editing session")
+            raise HTTPException(
+                status_code=400, detail="Failed to start editing session"
+            )
 
         # Submit the live change
         change_data = {
@@ -282,10 +302,14 @@ async def submit_live_change(
             "description": change_request.description,
         }
 
-        result = await service.submit_live_change(session_id, str(current_user.id), change_data)
+        result = await service.submit_live_change(
+            session_id, str(current_user.id), change_data
+        )
 
         if result["success"]:
-            logger.info(f"Live change submitted for trip {trip_id} by user {current_user.id}")
+            logger.info(
+                f"Live change submitted for trip {trip_id} by user {current_user.id}"
+            )
             return {
                 "success": True,
                 "change_id": result["change_id"],
@@ -296,14 +320,16 @@ async def submit_live_change(
             }
         else:
             raise HTTPException(
-                status_code=400, detail=result.get("error", "Failed to submit live change")
+                status_code=400,
+                detail=result.get("error", "Failed to submit live change"),
             )
 
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error submitting live change: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to submit live change")
+        raise HTTPException(
+            status_code=500, detail="Failed to submit live change")
 
 
 @router.get("/collaboration-status/{trip_id}")
@@ -352,7 +378,9 @@ async def get_collaboration_status(
 
     except Exception as e:
         logger.error(f"Error getting collaboration status: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to get collaboration status")
+        raise HTTPException(
+            status_code=500, detail="Failed to get collaboration status"
+        )
 
 
 # Helper functions
@@ -363,7 +391,8 @@ def _calculate_time_since(created_at_iso: str) -> str:
     from datetime import datetime, timezone
 
     try:
-        created_at = datetime.fromisoformat(created_at_iso.replace("Z", "+00:00"))
+        created_at = datetime.fromisoformat(
+            created_at_iso.replace("Z", "+00:00"))
         now = datetime.now(timezone.utc)
         diff = now - created_at
 

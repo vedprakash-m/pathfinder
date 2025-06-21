@@ -113,7 +113,8 @@ class MapsService:
                         name=address,
                     )
 
-                logger.warning(f"Geocoding failed for {address}: {data['status']}")
+                logger.warning(
+                    f"Geocoding failed for {address}: {data['status']}")
                 return None
 
         except Exception as e:
@@ -149,7 +150,9 @@ class MapsService:
                         place_id=result.get("place_id"),
                     )
 
-                logger.warning(f"Reverse geocoding failed for {lat},{lng}: {data['status']}")
+                logger.warning(
+                    f"Reverse geocoding failed for {lat},{lng}: {data['status']}"
+                )
                 return None
 
         except Exception as e:
@@ -233,7 +236,8 @@ class MapsService:
                 return None
 
         except Exception as e:
-            logger.error(f"Error getting route from {origin} to {destination}: {e}")
+            logger.error(
+                f"Error getting route from {origin} to {destination}: {e}")
             return None
 
     async def search_places(
@@ -349,7 +353,9 @@ class MapsService:
                         opening_hours = {
                             "open_now": result["opening_hours"].get("open_now"),
                             "periods": result["opening_hours"].get("periods", []),
-                            "weekday_text": result["opening_hours"].get("weekday_text", []),
+                            "weekday_text": result["opening_hours"].get(
+                                "weekday_text", []
+                            ),
                         }
 
                     return Place(
@@ -366,7 +372,9 @@ class MapsService:
                         website=result.get("website"),
                     )
 
-                logger.warning(f"Place details not found for {place_id}: {data['status']}")
+                logger.warning(
+                    f"Place details not found for {place_id}: {data['status']}"
+                )
                 return None
 
         except Exception as e:
@@ -415,7 +423,10 @@ class MapsService:
             return {}
 
     async def find_nearby_attractions(
-        self, location: Location, radius: int = 25000, place_types: Optional[List[str]] = None
+        self,
+        location: Location,
+        radius: int = 25000,
+        place_types: Optional[List[str]] = None,
     ) -> List[Place]:
         """
         Find tourist attractions near a location.
@@ -429,7 +440,13 @@ class MapsService:
             List of nearby attractions
         """
         if place_types is None:
-            place_types = ["tourist_attraction", "museum", "park", "amusement_park", "zoo"]
+            place_types = [
+                "tourist_attraction",
+                "museum",
+                "park",
+                "amusement_park",
+                "zoo",
+            ]
 
         all_places = []
 

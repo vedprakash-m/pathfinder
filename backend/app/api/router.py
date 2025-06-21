@@ -29,16 +29,27 @@ api_router = APIRouter()
 # Include all routers with their prefixes
 api_router.include_router(auth_router, prefix="/auth", tags=["Authentication"])
 api_router.include_router(trips_router, prefix="/trips", tags=["Trips"])
-api_router.include_router(families_router, prefix="/families", tags=["Families"])
-api_router.include_router(itineraries_router, prefix="/itineraries", tags=["Itineraries"])
-api_router.include_router(reservations_router, prefix="/reservations", tags=["Reservations"])
-api_router.include_router(notifications_router, prefix="/notifications", tags=["Notifications"])
+api_router.include_router(
+    families_router, prefix="/families", tags=["Families"])
+api_router.include_router(
+    itineraries_router, prefix="/itineraries", tags=["Itineraries"]
+)
+api_router.include_router(
+    reservations_router, prefix="/reservations", tags=["Reservations"]
+)
+api_router.include_router(
+    notifications_router, prefix="/notifications", tags=["Notifications"]
+)
 api_router.include_router(maps_router, prefix="/maps", tags=["Maps"])
 api_router.include_router(websocket_router, prefix="/ws", tags=["WebSocket"])
-api_router.include_router(trip_messages_router, prefix="/trip-messages", tags=["Trip Messages"])
+api_router.include_router(
+    trip_messages_router, prefix="/trip-messages", tags=["Trip Messages"]
+)
 api_router.include_router(health_router, prefix="/health", tags=["Health"])
-api_router.include_router(admin_router, prefix="/admin", tags=["Administration"])
-api_router.include_router(exports_router, prefix="/exports", tags=["Data Export"])
+api_router.include_router(
+    admin_router, prefix="/admin", tags=["Administration"])
+api_router.include_router(
+    exports_router, prefix="/exports", tags=["Data Export"])
 api_router.include_router(test_router, prefix="/test", tags=["Testing"])
 api_router.include_router(consensus_router, tags=["Family Consensus"])
 api_router.include_router(coordination_router, tags=["Smart Coordination"])

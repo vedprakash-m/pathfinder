@@ -58,7 +58,8 @@ class Trip(Base):
     budget_total = Column(Numeric(10, 2), nullable=True)
     creator_id = Column(GUID(), ForeignKey("users.id"), nullable=False)
     preferences = Column(Text, nullable=True)  # JSON string
-    itinerary_data = Column(Text, nullable=True)  # JSON string for Cosmos DB reference
+    # JSON string for Cosmos DB reference
+    itinerary_data = Column(Text, nullable=True)
     is_public = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -68,8 +69,12 @@ class Trip(Base):
     participations = relationship(
         "TripParticipation", back_populates="trip", cascade="all, delete-orphan"
     )
-    reservations = relationship("Reservation", back_populates="trip", cascade="all, delete-orphan")
-    itineraries = relationship("Itinerary", back_populates="trip", cascade="all, delete-orphan")
+    reservations = relationship(
+        "Reservation", back_populates="trip", cascade="all, delete-orphan"
+    )
+    itineraries = relationship(
+        "Itinerary", back_populates="trip", cascade="all, delete-orphan"
+    )
     notifications = relationship(
         "Notification", back_populates="trip", cascade="all, delete-orphan"
     )
@@ -84,7 +89,8 @@ class TripParticipation(Base):
     trip_id = Column(GUID(), ForeignKey("trips.id"), nullable=False)
     family_id = Column(GUID(), ForeignKey("families.id"), nullable=False)
     user_id = Column(GUID(), ForeignKey("users.id"), nullable=False)
-    status = Column(SQLEnum(ParticipationStatus), default=ParticipationStatus.INVITED)
+    status = Column(SQLEnum(ParticipationStatus),
+                    default=ParticipationStatus.INVITED)
     budget_allocation = Column(Numeric(10, 2), nullable=True)
     preferences = Column(Text, nullable=True)  # JSON string
     notes = Column(Text, nullable=True)

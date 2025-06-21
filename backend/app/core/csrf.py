@@ -85,7 +85,8 @@ class CSRFMiddleware(BaseHTTPMiddleware):
             valid = await self._validate_csrf_token(request, csrf_token)
             if not valid:
                 if self.strict_mode:
-                    logger.warning(f"CSRF validation failed for {request.url.path}")
+                    logger.warning(
+                        f"CSRF validation failed for {request.url.path}")
                     raise HTTPException(
                         status_code=status.HTTP_403_FORBIDDEN,
                         detail="CSRF token missing or invalid",
@@ -181,7 +182,8 @@ class CSRFMiddleware(BaseHTTPMiddleware):
         timestamp = str(int(time.time())).encode()
 
         # Combine with secret key for HMAC
-        h = hmac.new(self.secret_key.encode(), random_bytes + timestamp, hashlib.sha256)
+        h = hmac.new(self.secret_key.encode(),
+                     random_bytes + timestamp, hashlib.sha256)
 
         # Return URL-safe base64-encoded token
         return h.hexdigest()

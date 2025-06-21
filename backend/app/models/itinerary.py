@@ -80,14 +80,17 @@ class Itinerary(Base):
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow,
+                        onupdate=datetime.utcnow)
     approved_at = Column(DateTime, nullable=True)
     approved_by = Column(GUID(), ForeignKey("users.id"), nullable=True)
 
     # Relationships
     trip = relationship("Trip", back_populates="itineraries")
     approver = relationship("User", foreign_keys=[approved_by])
-    days = relationship("ItineraryDay", back_populates="itinerary", cascade="all, delete-orphan")
+    days = relationship(
+        "ItineraryDay", back_populates="itinerary", cascade="all, delete-orphan"
+    )
 
 
 class ItineraryDay(Base):
@@ -109,7 +112,8 @@ class ItineraryDay(Base):
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow,
+                        onupdate=datetime.utcnow)
 
     # Relationships
     itinerary = relationship("Itinerary", back_populates="days")
@@ -156,11 +160,13 @@ class ItineraryActivity(Base):
     website_url = Column(Text, nullable=True)
     image_url = Column(Text, nullable=True)
     is_optional = Column(Boolean, default=False)
-    is_customized = Column(Boolean, default=False)  # User modified from AI suggestion
+    # User modified from AI suggestion
+    is_customized = Column(Boolean, default=False)
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow,
+                        onupdate=datetime.utcnow)
 
     # Relationships
     day = relationship("ItineraryDay", back_populates="activities")

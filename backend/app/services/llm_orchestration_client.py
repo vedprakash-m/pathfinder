@@ -25,17 +25,26 @@ class LLMOrchestrationClient:
 
         # HTTP client with timeout and retry configuration
         self.client = httpx.AsyncClient(
-            timeout=httpx.Timeout(self.timeout), headers=self._get_headers(), follow_redirects=True
+            timeout=httpx.Timeout(self.timeout),
+            headers=self._get_headers(),
+            follow_redirects=True,
         )
 
         if self.enabled:
-            logger.info(f"LLM Orchestration client enabled, service URL: {self.base_url}")
+            logger.info(
+                f"LLM Orchestration client enabled, service URL: {self.base_url}"
+            )
         else:
-            logger.info("LLM Orchestration client disabled - using fallback OpenAI service")
+            logger.info(
+                "LLM Orchestration client disabled - using fallback OpenAI service"
+            )
 
     def _get_headers(self) -> Dict[str, str]:
         """Get headers for API requests."""
-        headers = {"Content-Type": "application/json", "User-Agent": "Pathfinder-Backend/1.0.0"}
+        headers = {
+            "Content-Type": "application/json",
+            "User-Agent": "Pathfinder-Backend/1.0.0",
+        }
 
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
@@ -127,18 +136,23 @@ class LLMOrchestrationClient:
             logger.error(f"Unexpected error in LLM Orchestration: {e}")
             raise
 
-    async def get_budget_status(self, tenant_id: str = "pathfinder-main") -> Dict[str, Any]:
+    async def get_budget_status(
+        self, tenant_id: str = "pathfinder-main"
+    ) -> Dict[str, Any]:
         """Get current budget status from the orchestration service."""
         if not self.enabled:
             return {"error": "LLM Orchestration service not enabled"}
 
         try:
-            response = await self.client.get(f"{self.base_url}/api/v1/budget/status/{tenant_id}")
+            response = await self.client.get(
+                f"{self.base_url}/api/v1/budget/status/{tenant_id}"
+            )
 
             if response.status_code == 200:
                 return response.json()
             else:
-                logger.warning(f"Failed to get budget status: {response.status_code}")
+                logger.warning(
+                    f"Failed to get budget status: {response.status_code}")
                 return {"error": f"HTTP {response.status_code}"}
 
         except Exception as e:
@@ -154,13 +168,15 @@ class LLMOrchestrationClient:
 
         try:
             response = await self.client.get(
-                f"{self.base_url}/api/v1/analytics/tenant/{tenant_id}", params={"hours": hours}
+                f"{self.base_url}/api/v1/analytics/tenant/{tenant_id}",
+                params={"hours": hours},
             )
 
             if response.status_code == 200:
                 return response.json()
             else:
-                logger.warning(f"Failed to get analytics: {response.status_code}")
+                logger.warning(
+                    f"Failed to get analytics: {response.status_code}")
                 return {"error": f"HTTP {response.status_code}"}
 
         except Exception as e:

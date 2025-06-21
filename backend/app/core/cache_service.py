@@ -7,7 +7,12 @@ import json
 from datetime import datetime
 from typing import Any, Dict, Optional
 
-from .cache_alternatives import cache_decorator, cache_manager, memory_cache, persistent_cache
+from .cache_alternatives import (
+    cache_decorator,
+    cache_manager,
+    memory_cache,
+    persistent_cache,
+)
 from .config import settings
 
 
@@ -60,7 +65,8 @@ class CacheService:
             ttl = ttl or self.ttl
 
             if self.use_redis:
-                serialized = json.dumps(value) if not isinstance(value, str) else value
+                serialized = json.dumps(value) if not isinstance(
+                    value, str) else value
                 await self.redis_client.setex(key, ttl, serialized)
                 return True
             else:
@@ -213,4 +219,10 @@ def cached_function(ttl: int = 3600, key_prefix: str = "func"):
 
 
 # Export for backward compatibility
-__all__ = ["CacheService", "AICacheService", "cache_service", "ai_cache_service", "cached_function"]
+__all__ = [
+    "CacheService",
+    "AICacheService",
+    "cache_service",
+    "ai_cache_service",
+    "cached_function",
+]

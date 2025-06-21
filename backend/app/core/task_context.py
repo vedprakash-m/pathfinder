@@ -4,7 +4,7 @@ import os
 
 from app.core.container import Container
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 from domain.trip import TripDomainService
 
 
