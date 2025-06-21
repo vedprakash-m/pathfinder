@@ -31,10 +31,13 @@ from app.core.repositories.trip_cosmos_repository import TripCosmosRepository
 from app.core.repositories.trip_repository import TripRepository
 from dependency_injector import containers, providers
 
-from backend.domain.family import FamilyDomainService
-from backend.domain.messaging import MessagingDomainService
-from backend.domain.reservation import ReservationDomainService
-from backend.domain.trip import TripDomainService  # new domain-level facade
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+from domain.family import FamilyDomainService
+from domain.messaging import MessagingDomainService
+from domain.reservation import ReservationDomainService
+from domain.trip import TripDomainService  # new domain-level facade
 
 
 class Container(containers.DeclarativeContainer):
@@ -51,6 +54,14 @@ class Container(containers.DeclarativeContainer):
     )
 
     # -------------------------------
+    # Repositories (must be defined before domain services that use them)
+    # -------------------------------
+
+    # Repositories
+    trip_repository = providers.Factory(TripRepository, session=db_session)
+    trip_cosmos_repository = providers.Factory(TripCosmosRepository)
+
+    # -------------------------------
     # Application services & use-cases
     # -------------------------------
 
@@ -61,10 +72,6 @@ class Container(containers.DeclarativeContainer):
         trip_repository=trip_repository,
         trip_cosmos_repository=trip_cosmos_repository,
     )
-
-    # Repositories
-    trip_repository = providers.Factory(TripRepository, session=db_session)
-    trip_cosmos_repository = providers.Factory(TripCosmosRepository)
 
     # Use-cases
     create_trip_use_case = providers.Factory(CreateTripUseCase, trip_service=trip_domain_service)

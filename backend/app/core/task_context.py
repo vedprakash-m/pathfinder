@@ -1,8 +1,11 @@
 from functools import lru_cache
+import sys
+import os
 
 from app.core.container import Container
 
-from backend.domain.trip import TripDomainService
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+from domain.trip import TripDomainService
 
 
 @lru_cache(maxsize=1)

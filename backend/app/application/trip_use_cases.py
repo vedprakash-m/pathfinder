@@ -17,9 +17,13 @@ from app.models.trip import (
     TripInvitation,
     TripResponse,
     TripStats,
+    TripUpdate,
 )
 
-from backend.domain.trip import TripDomainService as TripService
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+from domain.trip import TripDomainService as TripService
 
 
 class CreateTripUseCase:

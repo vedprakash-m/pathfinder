@@ -191,6 +191,110 @@ if ! python3 -c "import fastapi" 2>/dev/null; then
     fi
 fi
 
+# NEW: Python Import Validation (Critical for CI/CD)
+print_header "🐍 Python Import Validation"
+
+echo "   Testing critical module imports..."
+IMPORT_ERRORS=()
+
+# Test main application imports
+if ! python3 -c "from app.main import app" 2>/dev/null; then
+    IMPORT_ERRORS+=("app.main - Main application import failed")
+fi
+
+# Test container imports (common source of forward reference issues)
+if ! python3 -c "from app.core.container import Container" 2>/dev/null; then
+    IMPORT_ERRORS+=("app.core.container - Dependency injection container import failed")
+fi
+
+# Test API router imports
+if ! python3 -c "from app.api.router import api_router" 2>/dev/null; then
+    IMPORT_ERRORS+=("app.api.router - API router import failed")
+fi
+
+# Test database imports
+if ! python3 -c "from app.core.database import get_db" 2>/dev/null; then
+    IMPORT_ERRORS+=("app.core.database - Database connection import failed")
+fi
+
+# Test repository imports
+if ! python3 -c "from app.core.repositories.trip_repository import TripRepository" 2>/dev/null; then
+    IMPORT_ERRORS+=("app.core.repositories.trip_repository - Trip repository import failed")
+fi
+
+# Test domain service imports
+if ! python3 -c "from backend.domain.trip import TripDomainService" 2>/dev/null; then
+    IMPORT_ERRORS+=("backend.domain.trip - Domain service import failed")
+fi
+
+if [ ${#IMPORT_ERRORS[@]} -eq 0 ]; then
+    print_status "All critical imports: Passed" "success"
+else
+    print_status "Import failures detected (${#IMPORT_ERRORS[@]} modules)" "error"
+    for error in "${IMPORT_ERRORS[@]}"; do
+        echo "   ❌ $error"
+    done
+    echo "   💡 These import failures will cause CI/CD to fail immediately"
+fi
+
+# NEW: Forward Reference Detection
+echo "   Checking for forward reference issues..."
+FORWARD_REF_ISSUES=()
+
+# Check container.py for forward references (common issue)
+if [ -f "app/core/container.py" ]; then
+    # Look for variables used before definition in dependency injection
+    FORWARD_REFS=$(python3 -c "
+import ast
+import sys
+
+class ForwardRefChecker(ast.NodeVisitor):
+    def __init__(self):
+        self.defined_vars = set()
+        self.used_vars = []
+        self.issues = []
+    
+    def visit_Assign(self, node):
+        # Track variable definitions
+        for target in node.targets:
+            if isinstance(target, ast.Name):
+                self.defined_vars.add(target.id)
+        
+        # Check if assignment uses undefined variables
+        for name_node in ast.walk(node.value):
+            if isinstance(name_node, ast.Name) and isinstance(name_node.ctx, ast.Load):
+                if name_node.id not in self.defined_vars and name_node.id not in ['providers', 'containers']:
+                    self.issues.append(f'Line {name_node.lineno}: {name_node.id} used before definition')
+        
+        self.generic_visit(node)
+
+try:
+    with open('app/core/container.py') as f:
+        tree = ast.parse(f.read())
+    
+    checker = ForwardRefChecker()
+    checker.visit(tree)
+    
+    for issue in checker.issues:
+        print(issue)
+except Exception as e:
+    pass
+" 2>/dev/null)
+
+    if [ -n "$FORWARD_REFS" ]; then
+        FORWARD_REF_ISSUES+=("container.py: $FORWARD_REFS")
+    fi
+fi
+
+if [ ${#FORWARD_REF_ISSUES[@]} -eq 0 ]; then
+    print_status "Forward reference check: Passed" "success"
+else
+    print_status "Forward reference issues detected" "error"
+    for issue in "${FORWARD_REF_ISSUES[@]}"; do
+        echo "   ❌ $issue"
+    done
+fi
+
 # Code formatting with black (simplified and reliable)
 echo "   Checking code formatting..."
 if python3 -c "import black" 2>/dev/null; then
@@ -461,43 +565,76 @@ else
     print_status "On branch: $CURRENT_BRANCH" "info"
 fi
 
-# Test execution with same environment as CI/CD
-echo "   Running tests with coverage..."
-if python3 -c "import pytest" 2>/dev/null; then
-    # Set test environment variables (same as CI/CD)
-    export ENVIRONMENT=testing
-    export DATABASE_URL="sqlite+aiosqlite:///:memory:"
-    export AUTH0_DOMAIN="test-domain.auth0.com"
-    export AUTH0_AUDIENCE="test-audience"
-    export AUTH0_CLIENT_ID="test-client-id"
-    export AUTH0_CLIENT_SECRET="test-client-secret"
-    export OPENAI_API_KEY="sk-test-key-for-testing"
-    export GOOGLE_MAPS_API_KEY="test-maps-key-for-testing"
-    
-    # Install test dependencies if not available
-    if ! python3 -c "import coverage" 2>/dev/null; then
-        echo "   Installing test dependencies..."
-        python3 -m pip install pytest pytest-asyncio httpx pytest-mock coverage >/dev/null 2>&1 || true
+# NEW: Enhanced Test Execution (Exact CI/CD Match)
+print_header "🧪 Test Execution (CI/CD Environment Match)"
+
+echo "   Setting up test environment (matching CI/CD)..."
+# Set exact same environment variables as CI/CD
+export ENVIRONMENT=testing
+export DATABASE_URL="sqlite+aiosqlite:///:memory:"
+export AUTH0_DOMAIN="test-domain.auth0.com"
+export AUTH0_AUDIENCE="test-audience"
+export AUTH0_CLIENT_ID="test-client-id"
+export AUTH0_CLIENT_SECRET="test-client-secret"
+export OPENAI_API_KEY="sk-test-key-for-testing"
+export GOOGLE_MAPS_API_KEY="test-maps-key-for-testing"
+
+# Install test dependencies if missing
+echo "   Ensuring test dependencies are available..."
+MISSING_DEPS=()
+for dep in pytest pytest-asyncio httpx pytest-mock coverage; do
+    if ! python3 -c "import ${dep//-/_}" 2>/dev/null; then
+        MISSING_DEPS+=($dep)
     fi
-    
-    # Run tests with coverage (same as CI/CD)
-    if coverage run -m pytest tests/ -v --maxfail=3 -x --tb=short 2>/dev/null; then
-        print_status "Tests: Passed" "success"
+done
+
+if [ ${#MISSING_DEPS[@]} -gt 0 ]; then
+    if [ "$FIX_ISSUES" = true ]; then
+        echo "   🔧 Installing missing test dependencies: ${MISSING_DEPS[*]}"
+        python3 -m pip install "${MISSING_DEPS[@]}" >/dev/null 2>&1
+    else
+        print_status "Missing test dependencies: ${MISSING_DEPS[*]}" "error"
+        echo "   💡 Install: pip install ${MISSING_DEPS[*]}"
+    fi
+fi
+
+# Test conftest.py import (critical failure point)
+echo "   Testing conftest.py import (critical CI/CD failure point)..."
+if python3 -c "import sys; sys.path.append('tests'); import conftest" 2>/dev/null; then
+    print_status "conftest.py import: Passed" "success"
+else
+    print_status "conftest.py import failed - will cause CI/CD failure" "error"
+    echo "   ❌ This is the exact error causing CI/CD failure"
+    echo "   🔧 Fix imports in conftest.py and related modules"
+fi
+
+# Run tests with exact CI/CD command and environment
+echo "   Running tests with coverage (exact CI/CD command)..."
+if python3 -c "import pytest, coverage" 2>/dev/null; then
+    # Use exact same command as CI/CD
+    if coverage run -m pytest tests/ -v --tb=short 2>/dev/null; then
+        print_status "Test execution: Passed" "success"
         
-        # Generate coverage report
-        if coverage report --fail-under=70 >/dev/null 2>&1; then
-            print_status "Test coverage: Above 70%" "success"
+        # Generate coverage report (same as CI/CD)
+        COVERAGE_OUTPUT=$(coverage report 2>/dev/null)
+        if echo "$COVERAGE_OUTPUT" | grep -q "TOTAL.*[0-9][0-9]%"; then
+            COVERAGE_PERCENT=$(echo "$COVERAGE_OUTPUT" | grep "TOTAL" | awk '{print $4}' | sed 's/%//')
+            if [ "$COVERAGE_PERCENT" -ge 70 ]; then
+                print_status "Test coverage: ${COVERAGE_PERCENT}% (above 70% threshold)" "success"
+            else
+                print_status "Test coverage: ${COVERAGE_PERCENT}% (below 70% threshold)" "warning"
+            fi
         else
-            COVERAGE_PERCENT=$(coverage report | tail -1 | awk '{print $4}' | sed 's/%//')
-            print_status "Test coverage: ${COVERAGE_PERCENT}% (below 70% threshold)" "warning"
+            print_status "Coverage report generated" "success"
         fi
     else
-        print_status "Tests failed" "error"
-        echo "   ❌ Run: cd backend && ENVIRONMENT=testing coverage run -m pytest tests/ -v"
-        echo "   📝 Check test configuration and environment variables"
+        print_status "Test execution failed (same failure as CI/CD)" "error"
+        echo "   ❌ This matches the CI/CD failure pattern"
+        echo "   🔧 Fix import errors and environment setup"
+        echo "   📝 Run: cd backend && ENVIRONMENT=testing coverage run -m pytest tests/ -v"
     fi
 else
-    print_status "Pytest not available for testing" "warning"
+    print_status "Test framework not available" "error"
     echo "   💡 Install: pip install pytest pytest-asyncio coverage"
 fi
 

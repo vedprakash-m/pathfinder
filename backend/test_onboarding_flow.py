@@ -16,7 +16,6 @@ import aiohttp
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "backend"))
 
 
-
 class OnboardingFlowTester:
     def __init__(self, base_url: str = "http://localhost:8000"):
         self.base_url = base_url
