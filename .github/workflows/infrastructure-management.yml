@@ -1,0 +1,284 @@
+# Infrastructure Management - Pause/Resume Cost-Saving Model
+# Manages the two-layer architecture for 70% cost savings
+name: Infrastructure Management
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to perform'
+        required: true
+        default: 'status'
+        type: choice
+        options:
+          - status
+          - deploy-data-layer
+          - resume
+          - pause
+      
+      confirm_pause:
+        description: 'Type "CONFIRM" to pause environment (deletes compute layer)'
+        required: false
+        type: string
+
+env:
+  COMPUTE_RG: pathfinder-rg
+  DATA_RG: pathfinder-db-rg
+  AZURE_LOCATION: westus2
+  ACR_NAME: pathfinderdevregistry
+
+jobs:
+  infrastructure-manager:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Azure Login
+      uses: azure/login@v2
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Check Status
+      if: github.event.inputs.action == 'status'
+      run: |
+        echo "📊 Pathfinder Infrastructure Status"
+        echo "==================================="
+        
+        # Check data layer
+        echo ""
+        echo "🗄️ Data Layer ($DATA_RG):"
+        if az group show --name $DATA_RG &> /dev/null; then
+          DATA_RESOURCES=$(az resource list --resource-group $DATA_RG --query "length(@)" -o tsv)
+          echo "   ✅ EXISTS - $DATA_RESOURCES resources"
+          
+          # List key resources
+          SQL_SERVER=$(az sql server list --resource-group $DATA_RG --query "[0].name" -o tsv 2>/dev/null || echo "Not found")
+          COSMOS_ACCOUNT=$(az cosmosdb list --resource-group $DATA_RG --query "[0].name" -o tsv 2>/dev/null || echo "Not found")
+          STORAGE_ACCOUNT=$(az storage account list --resource-group $DATA_RG --query "[0].name" -o tsv 2>/dev/null || echo "Not found")
+          
+          echo "   📊 SQL Server: $SQL_SERVER"
+          echo "   🌐 Cosmos DB: $COSMOS_ACCOUNT"
+          echo "   💾 Storage: $STORAGE_ACCOUNT"
+        else
+          echo "   ❌ NOT FOUND - Deploy with 'deploy-data-layer' action"
+        fi
+        
+        # Check compute layer
+        echo ""
+        echo "⚡ Compute Layer ($COMPUTE_RG):"
+        if az group show --name $COMPUTE_RG &> /dev/null; then
+          COMPUTE_RESOURCES=$(az resource list --resource-group $COMPUTE_RG --query "length(@)" -o tsv)
+          echo "   ✅ ACTIVE - $COMPUTE_RESOURCES resources"
+          echo "   💰 Estimated cost: $50-75/month"
+          
+          # Get app URLs if available
+          BACKEND_URL=$(az containerapp show --name pathfinder-backend --resource-group $COMPUTE_RG --query "properties.configuration.ingress.fqdn" -o tsv 2>/dev/null || echo "Not deployed")
+          FRONTEND_URL=$(az containerapp show --name pathfinder-frontend --resource-group $COMPUTE_RG --query "properties.configuration.ingress.fqdn" -o tsv 2>/dev/null || echo "Not deployed")
+          
+          if [ "$BACKEND_URL" != "Not deployed" ]; then
+            echo "   🌐 Backend: https://$BACKEND_URL"
+            echo "   🌐 Frontend: https://$FRONTEND_URL"
+          fi
+        else
+          echo "   💤 PAUSED - Compute layer deleted"
+          echo "   💰 Estimated cost: $15-25/month (data only)"
+          echo "   📋 Resume with 'resume' action"
+        fi
+        
+        echo ""
+        echo "💡 Actions Available:"
+        echo "   • deploy-data-layer: Create persistent data resources"
+        echo "   • resume: Deploy compute layer (5-10 min)"
+        echo "   • pause: Delete compute layer to save costs"
+
+    - name: Deploy Data Layer
+      if: github.event.inputs.action == 'deploy-data-layer'
+      run: |
+        echo "🏗️ Deploying persistent data layer..."
+        
+        # Create resource group if it doesn't exist
+        if ! az group show --name $DATA_RG &> /dev/null; then
+          echo "📦 Creating data resource group..."
+          az group create --name $DATA_RG --location $AZURE_LOCATION --tags \
+            "app=pathfinder" \
+            "type=data-layer" \
+            "persistence=true" \
+            "autoDelete=never"
+        fi
+        
+        # Deploy data layer
+        DEPLOYMENT_NAME="data-layer-$(date +%Y%m%d-%H%M%S)"
+        
+        echo "🚀 Deploying Bicep template..."
+        az deployment group create \
+          --resource-group $DATA_RG \
+          --template-file infrastructure/bicep/persistent-data.bicep \
+          --parameters \
+            appName=pathfinder \
+            environment=prod \
+            sqlAdminLogin="${{ secrets.SQL_ADMIN_USERNAME }}" \
+            sqlAdminPassword="${{ secrets.SQL_ADMIN_PASSWORD }}" \
+            enablePrivateEndpoints=false \
+          --name $DEPLOYMENT_NAME
+        
+        echo "✅ Data layer deployed successfully!"
+        echo "💰 Estimated monthly cost: $15-25"
+        echo "📋 Next: Use 'resume' action to deploy compute layer"
+
+    - name: Resume Environment
+      if: github.event.inputs.action == 'resume'
+      run: |
+        echo "🚀 Resuming Pathfinder environment..."
+        
+        # Verify data layer exists
+        if ! az group show --name $DATA_RG &> /dev/null; then
+          echo "❌ Data layer not found!"
+          echo "📋 Deploy it first with 'deploy-data-layer' action"
+          exit 1
+        fi
+        
+        # Get data layer resources
+        echo "🔍 Discovering data layer resources..."
+        SQL_SERVER_NAME=$(az sql server list --resource-group $DATA_RG --query "[0].name" -o tsv)
+        COSMOS_ACCOUNT_NAME=$(az cosmosdb list --resource-group $DATA_RG --query "[0].name" -o tsv)
+        STORAGE_ACCOUNT_NAME=$(az storage account list --resource-group $DATA_RG --query "[0].name" -o tsv)
+        DATA_KEY_VAULT_NAME=$(az keyvault list --resource-group $DATA_RG --query "[0].name" -o tsv)
+        
+        echo "📊 Found data resources:"
+        echo "   SQL Server: $SQL_SERVER_NAME"
+        echo "   Cosmos DB: $COSMOS_ACCOUNT_NAME"
+        echo "   Storage: $STORAGE_ACCOUNT_NAME"
+        echo "   Key Vault: $DATA_KEY_VAULT_NAME"
+        
+        # Create compute resource group
+        if ! az group show --name $COMPUTE_RG &> /dev/null; then
+          echo "📦 Creating compute resource group..."
+          az group create --name $COMPUTE_RG --location $AZURE_LOCATION --tags \
+            "app=pathfinder" \
+            "type=compute-layer" \
+            "dataLayer=$DATA_RG" \
+            "resumedAt=$(date -u +"%Y-%m-%dT%H:%M:%S.%3NZ")"
+        fi
+        
+        # Ensure ACR exists
+        if ! az acr show --name $ACR_NAME --query "name" -o tsv >/dev/null 2>&1; then
+          echo "📦 Creating Container Registry..."
+          az acr create --name $ACR_NAME --resource-group $COMPUTE_RG --sku Basic --location $AZURE_LOCATION --admin-enabled true
+        fi
+        
+        # Deploy compute layer
+        DEPLOYMENT_NAME="compute-layer-$(date +%Y%m%d-%H%M%S)"
+        
+        echo "🚀 Deploying compute layer..."
+        az deployment group create \
+          --resource-group $COMPUTE_RG \
+          --template-file infrastructure/bicep/compute-layer.bicep \
+          --parameters \
+            appName=pathfinder \
+            dataResourceGroup=$DATA_RG \
+            sqlServerName=$SQL_SERVER_NAME \
+            cosmosAccountName=$COSMOS_ACCOUNT_NAME \
+            storageAccountName=$STORAGE_ACCOUNT_NAME \
+            dataKeyVaultName=$DATA_KEY_VAULT_NAME \
+            sqlAdminLogin="${{ secrets.SQL_ADMIN_USERNAME }}" \
+            sqlAdminPassword="${{ secrets.SQL_ADMIN_PASSWORD }}" \
+            openAIApiKey="${{ secrets.OPENAI_API_KEY }}" \
+            llmOrchestrationUrl="${{ secrets.LLM_ORCHESTRATION_URL }}" \
+            llmOrchestrationApiKey="${{ secrets.LLM_ORCHESTRATION_API_KEY }}" \
+          --name $DEPLOYMENT_NAME
+        
+        # Get application URLs
+        echo "🌐 Getting application URLs..."
+        BACKEND_URL=$(az deployment group show --resource-group $COMPUTE_RG --name $DEPLOYMENT_NAME --query "properties.outputs.backendAppUrl.value" -o tsv 2>/dev/null || echo "Deployment in progress")
+        FRONTEND_URL=$(az deployment group show --resource-group $COMPUTE_RG --name $DEPLOYMENT_NAME --query "properties.outputs.frontendAppUrl.value" -o tsv 2>/dev/null || echo "Deployment in progress")
+        
+        echo ""
+        echo "🎉 Environment resumed successfully!"
+        echo "📊 Backend URL: $BACKEND_URL"
+        echo "📊 Frontend URL: $FRONTEND_URL"
+        echo "💰 Estimated monthly cost: $50-75"
+        echo "⏱️ Applications will be ready in 5-10 minutes"
+        echo ""
+        echo "📋 Next steps:"
+        echo "   1. Wait 5-10 minutes for containers to start"
+        echo "   2. Run Main CI/CD Pipeline to deploy latest code"
+        echo "   3. Test application endpoints"
+
+    - name: Pause Environment
+      if: github.event.inputs.action == 'pause'
+      run: |
+        # Validation check
+        if [ "${{ github.event.inputs.confirm_pause }}" != "CONFIRM" ]; then
+          echo "❌ To pause the environment, you must type 'CONFIRM' in the confirm_pause field"
+          echo ""
+          echo "⚠️  WARNING: This action will DELETE the compute layer ($COMPUTE_RG)"
+          echo "💾 Data will be preserved in $DATA_RG"
+          echo "💰 This saves ~$35-50/month"
+          echo "📋 Environment can be resumed in 5-10 minutes"
+          exit 1
+        fi
+        
+        echo "🛑 Pausing Pathfinder environment..."
+        echo "📋 This will delete $COMPUTE_RG while preserving $DATA_RG"
+        
+        # Verify data layer exists
+        if ! az group show --name $DATA_RG &> /dev/null; then
+          echo "❌ Data layer not found!"
+          echo "⚠️ Cannot safely pause without data layer"
+          exit 1
+        fi
+        
+        # Get current endpoints before deletion
+        if az group show --name $COMPUTE_RG &> /dev/null; then
+          echo "📊 Current endpoints (will be deleted):"
+          BACKEND_URL=$(az containerapp show --name pathfinder-backend --resource-group $COMPUTE_RG --query "properties.configuration.ingress.fqdn" -o tsv 2>/dev/null || echo "not-found")
+          FRONTEND_URL=$(az containerapp show --name pathfinder-frontend --resource-group $COMPUTE_RG --query "properties.configuration.ingress.fqdn" -o tsv 2>/dev/null || echo "not-found")
+          
+          echo "   Backend: $BACKEND_URL"
+          echo "   Frontend: $FRONTEND_URL"
+          
+          # Delete compute resource group
+          echo ""
+          echo "🗑️ Deleting compute resource group: $COMPUTE_RG"
+          az group delete --name $COMPUTE_RG --yes --no-wait
+          
+          # Wait for deletion with progress
+          echo "⏳ Waiting for deletion to complete..."
+          WAIT_COUNT=0
+          while az group show --name $COMPUTE_RG &> /dev/null; do
+            echo -n "."
+            sleep 30
+            WAIT_COUNT=$((WAIT_COUNT + 1))
+            if [ $WAIT_COUNT -gt 20 ]; then
+              echo ""
+              echo "⚠️ Deletion taking longer than expected (background process continuing)"
+              break
+            fi
+          done
+          echo ""
+          
+          if ! az group show --name $COMPUTE_RG &> /dev/null; then
+            echo "✅ Compute layer deleted successfully!"
+          else
+            echo "⏳ Deletion in progress (background process)"
+          fi
+        else
+          echo "ℹ️ Compute resource group not found - may already be paused"
+        fi
+        
+        # Verify data layer integrity
+        DATA_RESOURCE_COUNT=$(az resource list --resource-group $DATA_RG --query "length(@)" -o tsv)
+        echo ""
+        echo "✅ Data layer preserved: $DATA_RESOURCE_COUNT resources in $DATA_RG"
+        echo ""
+        echo "🎉 Environment paused successfully!"
+        echo "💰 Estimated savings: $35-50/month"
+        echo "📊 Remaining cost: $15-25/month (data layer only)"
+        echo "📋 To resume: Run this workflow with 'resume' action"
+        echo ""
+        echo "💡 Cost-saving summary:"
+        echo "   • Compute layer: DELETED (saves $35-50/month)"
+        echo "   • Data layer: PRESERVED (maintains $15-25/month)"
+        echo "   • Resume time: 5-10 minutes when needed" 

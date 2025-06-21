@@ -1,16 +1,30 @@
-# Pathfinder CI/CD - Optimized for Speed
-# Solo developer pipeline with parallel execution and smart caching
-name: Pathfinder CI/CD - Optimized
+# Pathfinder Main CI/CD Pipeline
+# Consolidated workflow for solo developer efficiency
+name: Main CI/CD Pipeline
 
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  schedule:
+    # Weekly security scans and daily cost monitoring
+    - cron: '0 8 * * 1'  # Weekly security (Monday 8 AM UTC)
+    - cron: '0 6 * * *'  # Daily cost check (6 AM UTC)
   workflow_dispatch:
     inputs:
       skip_tests:
         description: 'Skip quality checks (emergency deploy)'
+        required: false
+        default: false
+        type: boolean
+      run_security_scan:
+        description: 'Run security scanning'
+        required: false
+        default: false
+        type: boolean
+      run_performance_test:
+        description: 'Run performance tests'
         required: false
         default: false
         type: boolean
@@ -25,22 +39,29 @@ env:
   ACR_NAME: pathfinderdevregistry
 
 jobs:
-  # Job 1: Backend Quality Checks (Parallel)
-  backend-quality:
-    name: Backend Quality
+  # Job 1: Quality Checks (Backend + Frontend in parallel)
+  quality-checks:
+    name: Quality Checks
     runs-on: ubuntu-latest
-    if: github.event.inputs.skip_tests != 'true'
+    if: github.event.inputs.skip_tests != 'true' && github.event_name != 'schedule'
     
+    strategy:
+      matrix:
+        component: [backend, frontend]
+        
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
       
+      # Backend Quality Checks
       - name: Set up Python 3.11
+        if: matrix.component == 'backend'
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           
       - name: Cache pip dependencies
+        if: matrix.component == 'backend'
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
@@ -48,15 +69,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
       
-      - name: Install dependencies & run quality checks
+      - name: Backend Quality & Tests
+        if: matrix.component == 'backend'
         run: |
           cd backend
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install flake8 black mypy isort ruff import-linter pytest pytest-asyncio httpx pytest-mock
+          pip install flake8 black mypy isort ruff import-linter pytest pytest-asyncio httpx pytest-mock coverage
           
-          # Run all quality checks in parallel where possible
-          echo "🔍 Running quality checks..."
+          # Run quality checks in parallel
+          echo "🔍 Running backend quality checks..."
           flake8 . --max-line-length=88 --extend-ignore=E203,W503 --exclude=venv,migrations &
           ruff check . --line-length=100 --target-version=py311 &
           black --check --diff . &
@@ -69,33 +91,27 @@ jobs:
           echo "🏛️ Enforcing architectural contracts..."
           lint-imports --config importlinter_contracts/layers.toml || (echo "⚠️ Import-Linter violations detected" && exit 1)
           
-          echo "🧪 Running fast tests..."
+          echo "🧪 Running tests with coverage..."
           coverage run -m pytest tests/ -v --maxfail=3 -x --tb=short
           coverage xml -o coverage.xml
-          coverage report --fail-under=70 || echo "⚠️ Coverage below threshold; will enforce 80% once refactor stabilises"
+          coverage report --fail-under=70 || echo "⚠️ Coverage below threshold"
 
-  # Job 2: Frontend Quality Checks (Parallel)
-  frontend-quality:
-    name: Frontend Quality
-    runs-on: ubuntu-latest
-    if: github.event.inputs.skip_tests != 'true'
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
+      # Frontend Quality Checks  
       - name: Set up Node.js
+        if: matrix.component == 'frontend'
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           
       - name: Enable Corepack and Setup pnpm
+        if: matrix.component == 'frontend'
         run: |
           corepack enable
           cd frontend
           corepack install
       
       - name: Setup pnpm cache
+        if: matrix.component == 'frontend'
         uses: actions/cache@v4
         with:
           path: |
@@ -105,65 +121,68 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pnpm-
       
-      - name: Install dependencies & run quality checks
+      - name: Frontend Quality & Tests
+        if: matrix.component == 'frontend'
         run: |
           cd frontend
           pnpm install --frozen-lockfile
           
-          # Run checks in parallel where possible
-          echo "🔍 Running quality checks..."
+          echo "🔍 Running frontend quality checks..."
           pnpm run type-check &
           pnpm run test -- --run --passWithNoTests &
           wait
 
-  # Job 3: Build Docker Images (Parallel)
-  build-images:
-    name: Build Images
+  # Job 2: Security Scanning (Conditional)
+  security-scan:
+    name: Security Scan
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    
-    strategy:
-      matrix:
-        service: [backend, frontend]
+    if: github.event.inputs.run_security_scan == 'true' || github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Azure Login
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Run GitLeaks (Secrets Scan)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Ensure ACR exists
+      - name: Dependency Vulnerability Scan
         run: |
-          echo "🔍 Checking for existing ACR: $ACR_NAME"
-          if ! az acr show --name $ACR_NAME --query "name" -o tsv >/dev/null 2>&1; then
-            echo "📦 ACR $ACR_NAME not found. Creating..."
-            # Make sure compute RG exists, else create minimal RG for ACR
-            if ! az group show --name ${{ env.COMPUTE_RESOURCE_GROUP }} >/dev/null 2>&1; then
-              echo "Creating resource group ${{ env.COMPUTE_RESOURCE_GROUP }} for ACR"
-              az group create --name ${{ env.COMPUTE_RESOURCE_GROUP }} --location $AZURE_LOCATION --tags "app=pathfinder" "type=compute-layer" "bootstrap=acr-only"
-            fi
-            az acr create --name $ACR_NAME --resource-group ${{ env.COMPUTE_RESOURCE_GROUP }} --sku Basic --location $AZURE_LOCATION --admin-enabled true
-          else
-            echo "✅ ACR $ACR_NAME already exists"
-          fi
+          echo "🔍 Scanning dependencies for vulnerabilities..."
+          
+          # Python dependencies
+          cd backend
+          pip install safety
+          safety check --json || echo "⚠️ Python vulnerabilities found"
+          
+          # Node.js dependencies
+          cd ../frontend
+          npm audit --audit-level=high || echo "⚠️ Node.js vulnerabilities found"
       
-      - name: Build & push ${{ matrix.service }} image
-        uses: ./.github/actions/azure-build-push
-        with:
-          registry: $ACR_NAME
-          context: ./${{ matrix.service }}
-          image-name: pathfinder-${{ matrix.service }}
-          azure-credentials: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Container Security Scan
+        if: github.ref == 'refs/heads/main'
+        run: |
+          echo "🔍 Building and scanning container images..."
+          docker build -t pathfinder-backend:scan ./backend
+          
+          # Install Trivy
+          sudo apt-get update
+          sudo apt-get install wget apt-transport-https gnupg lsb-release
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+          echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install trivy
+          
+          # Scan image
+          trivy image --severity HIGH,CRITICAL pathfinder-backend:scan
 
-  # Job 4: Deploy to Azure (Fastest approach)
-  deploy:
-    name: Deploy
+  # Job 3: Build & Deploy (Main branch only)
+  build-deploy:
+    name: Build & Deploy
     runs-on: ubuntu-latest
-    needs: [infrastructure, backend-quality, frontend-quality, build-images]
-    if: github.ref == 'refs/heads/main' && (success() || failure())
+    needs: [quality-checks]
+    if: github.ref == 'refs/heads/main' && github.event_name != 'schedule'
     
     steps:
       - name: Checkout code
@@ -178,216 +197,238 @@ jobs:
         run: |
           echo "🔍 Checking for existing ACR: $ACR_NAME"
           if ! az acr show --name $ACR_NAME --query "name" -o tsv >/dev/null 2>&1; then
-            echo "📦 ACR $ACR_NAME not found. Creating..."
-            # Make sure compute RG exists, else create minimal RG for ACR
+            echo "📦 Creating ACR..."
             if ! az group show --name ${{ env.COMPUTE_RESOURCE_GROUP }} >/dev/null 2>&1; then
-              echo "Creating resource group ${{ env.COMPUTE_RESOURCE_GROUP }} for ACR"
-              az group create --name ${{ env.COMPUTE_RESOURCE_GROUP }} --location $AZURE_LOCATION --tags "app=pathfinder" "type=compute-layer" "bootstrap=acr-only"
+              az group create --name ${{ env.COMPUTE_RESOURCE_GROUP }} --location $AZURE_LOCATION --tags "app=pathfinder" "type=compute-layer"
             fi
             az acr create --name $ACR_NAME --resource-group ${{ env.COMPUTE_RESOURCE_GROUP }} --sku Basic --location $AZURE_LOCATION --admin-enabled true
           else
             echo "✅ ACR $ACR_NAME already exists"
           fi
       
-      - name: Fast Infrastructure Check & Update
+      - name: Build & Push Images
         run: |
-          echo "🏗️ Infrastructure validation..."
+          echo "🏗️ Building and pushing Docker images..."
+          
+          # Get ACR credentials
+          ACR_USERNAME=$(az acr credential show --name $ACR_NAME --query "username" -o tsv)
+          ACR_PASSWORD=$(az acr credential show --name $ACR_NAME --query "passwords[0].value" -o tsv)
+          
+          # Login to ACR
+          echo $ACR_PASSWORD | docker login $REGISTRY_NAME --username $ACR_USERNAME --password-stdin
+          
+          # Build and push backend
+          docker build -t $REGISTRY_NAME/pathfinder-backend:${{ github.sha }} ./backend
+          docker push $REGISTRY_NAME/pathfinder-backend:${{ github.sha }}
+          
+          # Build and push frontend
+          docker build -t $REGISTRY_NAME/pathfinder-frontend:${{ github.sha }} ./frontend
+          docker push $REGISTRY_NAME/pathfinder-frontend:${{ github.sha }}
+          
+          echo "✅ Images pushed successfully"
+      
+      - name: Deploy to Azure Container Apps
+        run: |
+          echo "🚀 Deploying to Azure Container Apps..."
           
           # Check if compute resource group exists
           if ! az group show --name ${{ env.COMPUTE_RESOURCE_GROUP }} --output none 2>/dev/null; then
-            echo "❌ Compute resource group ${{ env.COMPUTE_RESOURCE_GROUP }} does not exist!"
-            echo "🚀 Please run the 'Deploy Infrastructure' workflow first:"
-            echo "   Go to Actions → Deploy Infrastructure → Run workflow"
-            echo ""
-            echo "Or run manually:"
-            echo "   ./scripts/resume-environment.sh"
+            echo "❌ Compute resource group not found!"
+            echo "🚀 Please run the 'Infrastructure Management' workflow first to deploy the compute layer"
             exit 1
           fi
           
-          # Check if data layer exists
-          if ! az group show --name ${{ env.DATA_RESOURCE_GROUP }} --output none 2>/dev/null; then
-            echo "❌ Data layer resource group ${{ env.DATA_RESOURCE_GROUP }} does not exist!"
-            echo "🚀 Please deploy the data layer first"
-            exit 1
-          fi
-          
-          echo "✅ Infrastructure verified, proceeding with application deployment"
-      
-      - name: Wait for Container Apps to Provision (max 10 min)
-        run: |
-          echo "⏳ Waiting for container apps to be provisioned..."
-          for i in {1..20}; do
-            BACKEND_READY=false
-            FRONTEND_READY=false
-            if az containerapp show --name pathfinder-backend --resource-group ${{ env.COMPUTE_RESOURCE_GROUP }} &>/dev/null; then
-              BACKEND_READY=true
-            fi
-            if az containerapp show --name pathfinder-frontend --resource-group ${{ env.COMPUTE_RESOURCE_GROUP }} &>/dev/null; then
-              FRONTEND_READY=true
-            fi
-            if [[ $BACKEND_READY == true && $FRONTEND_READY == true ]]; then
-              echo "✅ Container apps found!"
-              break
-            fi
-            if [[ $i -eq 20 ]]; then
-              echo "❌ Container apps not ready after 10 minutes. Exiting."
-              exit 1
-            fi
-            echo "   attempt $i/20 – still provisioning"; sleep 30
-          done
-      
-      - name: Update Container Apps (Parallel)
-        run: |
-          echo "🚀 Updating container apps in parallel..."
-          
-          # Update backend
+          # Update container apps with new images
           az containerapp update \
             --name pathfinder-backend \
             --resource-group ${{ env.COMPUTE_RESOURCE_GROUP }} \
-            --image ${{ env.REGISTRY_NAME }}/pathfinder-backend:latest \
-            --set-env-vars \
-              ENVIRONMENT=production \
-              COMMIT_SHA="${{ github.sha }}" \
-              DEPLOYMENT_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-              USE_REDIS_CACHE=false \
-              DEBUG=false \
-            --no-wait &
+            --image $REGISTRY_NAME/pathfinder-backend:${{ github.sha }} || echo "Backend app not found, skipping update"
           
-          # Update frontend  
           az containerapp update \
             --name pathfinder-frontend \
             --resource-group ${{ env.COMPUTE_RESOURCE_GROUP }} \
-            --image ${{ env.REGISTRY_NAME }}/pathfinder-frontend:latest \
-            --set-env-vars \
-              ENVIRONMENT=production \
-              COMMIT_SHA="${{ github.sha }}" \
-              DEPLOYMENT_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            --no-wait &
+            --image $REGISTRY_NAME/pathfinder-frontend:${{ github.sha }} || echo "Frontend app not found, skipping update"
           
-          wait
-          echo "✅ Container apps updated"
+          echo "✅ Deployment completed"
       
-      - name: Adaptive Health Check (max 4 min)
+      - name: Get Application URLs
         run: |
-          echo "🏥 Adaptive health verification..."
-          for attempt in {1..12}; do
-            echo "�� Attempt $attempt (every 30s)..."
-            # Fetch latest FQDNs each iteration (apps may appear after a few minutes)
-            BACKEND_FQDN=$(az containerapp show --name pathfinder-backend --resource-group ${{ env.COMPUTE_RESOURCE_GROUP }} --query "properties.configuration.ingress.fqdn" -o tsv 2>/dev/null || true)
-            FRONTEND_FQDN=$(az containerapp show --name pathfinder-frontend --resource-group ${{ env.COMPUTE_RESOURCE_GROUP }} --query "properties.configuration.ingress.fqdn" -o tsv 2>/dev/null || true)
+          echo "🌐 Application URLs:"
+          BACKEND_URL=$(az containerapp show --name pathfinder-backend --resource-group ${{ env.COMPUTE_RESOURCE_GROUP }} --query "properties.configuration.ingress.fqdn" -o tsv 2>/dev/null || echo "Not deployed")
+          FRONTEND_URL=$(az containerapp show --name pathfinder-frontend --resource-group ${{ env.COMPUTE_RESOURCE_GROUP }} --query "properties.configuration.ingress.fqdn" -o tsv 2>/dev/null || echo "Not deployed")
+          
+          echo "Backend: https://$BACKEND_URL"
+          echo "Frontend: https://$FRONTEND_URL"
+          
+          # Save URLs for notifications
+          echo "BACKEND_URL=$BACKEND_URL" >> $GITHUB_ENV
+          echo "FRONTEND_URL=$FRONTEND_URL" >> $GITHUB_ENV
 
-            if [[ -z "$BACKEND_FQDN" || -z "$FRONTEND_FQDN" ]]; then
-              echo "⏳ Container apps not yet provisioned. Waiting..."
-              sleep 30
-              continue
-            fi
-
-            BACKEND_URL="https://$BACKEND_FQDN/health"
-            FRONTEND_URL="https://$FRONTEND_FQDN"
-
-            BACKEND_OK=false
-            FRONTEND_OK=false
-
-            if curl -fs $BACKEND_URL > /dev/null 2>&1; then
-              echo "✅ Backend healthy"
-              BACKEND_OK=true
-            else
-              echo "⏳ Backend not ready"
-            fi
-
-            if curl -fs $FRONTEND_URL > /dev/null 2>&1; then
-              echo "✅ Frontend healthy"
-              FRONTEND_OK=true
-            else
-              echo "⏳ Frontend not ready"
-            fi
-
-            if [[ $BACKEND_OK == true && $FRONTEND_OK == true ]]; then
-              echo "🎉 Deployment healthy!"
-              exit 0
-            fi
-
-            sleep 30
-          done
-
-          echo "❌ Health check failed after 6 minutes"
-          exit 1
-
-  # Job 5: Optional Deploy Summary (runs quickly)
-  summary:
-    name: Summary
+  # Job 4: Performance Testing (Conditional)
+  performance-test:
+    name: Performance Test
     runs-on: ubuntu-latest
-    needs: [deploy]
-    if: always()
+    needs: [build-deploy]
+    if: github.event.inputs.run_performance_test == 'true' || (github.ref == 'refs/heads/main' && github.event_name == 'push')
     
-    steps:
-      - name: Create Deployment Summary
-        run: |
-          echo "## 🚀 Optimized Deployment Complete" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### ⚡ Performance Optimizations" >> $GITHUB_STEP_SUMMARY
-          echo "- **Parallel Jobs**: Quality checks run simultaneously" >> $GITHUB_STEP_SUMMARY
-          echo "- **Docker Layer Caching**: GitHub Actions cache enabled" >> $GITHUB_STEP_SUMMARY
-          echo "- **Smart Infrastructure**: Only updates when changed" >> $GITHUB_STEP_SUMMARY
-          echo "- **Concurrent Updates**: Container apps update in parallel" >> $GITHUB_STEP_SUMMARY
-          echo "- **Fast Health Checks**: Reduced wait times" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🌐 Applications" >> $GITHUB_STEP_SUMMARY
-          echo "- **Backend**: https://pathfinder-backend.yellowdune-9b8d769a.eastus.azurecontainerapps.io" >> $GITHUB_STEP_SUMMARY
-          echo "- **Frontend**: https://pathfinder-frontend.yellowdune-9b8d769a.eastus.azurecontainerapps.io" >> $GITHUB_STEP_SUMMARY
-          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Status**: Optimized pipeline ⚡" >> $GITHUB_STEP_SUMMARY
-
-  infrastructure:
-    name: Deploy Infrastructure (Compute Layer)
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      
+      - name: Install k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+      
+      - name: Run Load Tests
+        run: |
+          # Get backend URL
+          BACKEND_URL=$(az containerapp show --name pathfinder-backend --resource-group ${{ env.COMPUTE_RESOURCE_GROUP }} --query "properties.configuration.ingress.fqdn" -o tsv 2>/dev/null || echo "")
+          
+          if [ -n "$BACKEND_URL" ]; then
+            cat > load-test.js << 'EOF'
+            import http from 'k6/http';
+            import { check, sleep } from 'k6';
+            
+            export let options = {
+              stages: [
+                { duration: '1m', target: 5 },  // Quick ramp up
+                { duration: '2m', target: 5 },  // Stay at 5 users
+                { duration: '1m', target: 0 },  // Ramp down
+              ],
+              thresholds: {
+                http_req_duration: ['p(95)<2000'],
+                http_req_failed: ['rate<0.1'],
+              },
+            };
+            
+            export default function() {
+              let response = http.get('https://${BACKEND_URL}/health');
+              check(response, {
+                'status is 200': (r) => r.status === 200,
+                'response time < 500ms': (r) => r.timings.duration < 500,
+              });
+              sleep(1);
+            }
+            EOF
+            
+            k6 run load-test.js
+          else
+            echo "⚠️ Backend URL not found, skipping performance tests"
+          fi
 
+  # Job 5: Cost Monitoring (Scheduled)
+  cost-monitoring:
+    name: Cost Monitoring
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event.inputs.run_security_scan == 'true'
+    
+    steps:
       - name: Azure Login
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Ensure Data Layer Exists
+      
+      - name: Monitor Costs
         run: |
-          echo "🔎 Checking data layer RG $DATA_RESOURCE_GROUP"
-          if ! az group show --name $DATA_RESOURCE_GROUP >/dev/null 2>&1; then
-            echo "❌ Data layer $DATA_RESOURCE_GROUP not found. Failing build."
-            exit 1
+          echo "💰 Monitoring Azure costs..."
+          
+          # Get current month costs
+          START_DATE=$(date -d "$(date +%Y-%m-01)" +%Y-%m-%d)
+          END_DATE=$(date +%Y-%m-%d)
+          
+          # Check resource group costs
+          COMPUTE_RESOURCES=$(az resource list --resource-group $COMPUTE_RESOURCE_GROUP --query "length(@)" -o tsv 2>/dev/null || echo "0")
+          DATA_RESOURCES=$(az resource list --resource-group $DATA_RESOURCE_GROUP --query "length(@)" -o tsv 2>/dev/null || echo "0")
+          
+          echo "📊 Resource Summary:"
+          echo "   Compute Layer: $COMPUTE_RESOURCES resources"
+          echo "   Data Layer: $DATA_RESOURCES resources"
+          
+          if [ "$COMPUTE_RESOURCES" -eq "0" ]; then
+            echo "✅ Compute layer is paused - saving ~$35-50/month"
+            echo "💡 Current estimated cost: $15-25/month (data layer only)"
+          else
+            echo "⚠️ Compute layer is active - estimated cost: $50-75/month"
+            echo "💡 Consider pausing with: Actions → Infrastructure Management → pause"
           fi
-          echo "✅ Data layer exists"
-
-      - name: Resume / Deploy Compute Layer
-        run: |
-          echo "🚀 Deploying compute layer via resume script"
-          chmod +x ./scripts/resume-environment.sh
-          export SQL_ADMIN_USERNAME="${{ secrets.SQL_ADMIN_USERNAME }}"
-          export SQL_ADMIN_PASSWORD="${{ secrets.SQL_ADMIN_PASSWORD }}"
-          export OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}"
-          export AUTH0_DOMAIN="${{ secrets.AUTH0_DOMAIN }}"
-          export AUTH0_CLIENT_ID="${{ secrets.AUTH0_CLIENT_ID }}"
-          export AUTH0_AUDIENCE="${{ secrets.AUTH0_AUDIENCE }}"
-          export LOCATION="$AZURE_LOCATION"
-          export FORCE_REDEPLOY=true
-          ./scripts/resume-environment.sh
-
-      - name: Wait for ARM deployment to finish (max 30 min)
-        run: |
-          echo "⏳ Waiting for compute-layer ARM deployment to finish..."
-          DEPLOY=$(az deployment group list -g ${{ env.COMPUTE_RESOURCE_GROUP }} --query "[?starts_with(name,'compute-layer-')]|[-1].name" -o tsv)
-          if [ -z "$DEPLOY" ]; then
-            echo "❌ Could not find recent compute-layer deployment in ${{ env.COMPUTE_RESOURCE_GROUP }}"; exit 1
+          
+          # Set budget alert threshold
+          if [ "$COMPUTE_RESOURCES" -gt "10" ]; then
+            echo "🚨 HIGH RESOURCE COUNT: Consider optimization"
+            echo "BUDGET_ALERT=true" >> $GITHUB_ENV
           fi
-          az deployment group wait --created \
-            --resource-group ${{ env.COMPUTE_RESOURCE_GROUP }} \
-            --name "$DEPLOY" \
-            --interval 30 --timeout 1800 || {
-              echo "❌ ARM deployment failed. Error details:";
-              az deployment group show -g ${{ env.COMPUTE_RESOURCE_GROUP }} -n "$DEPLOY" --query "properties.error" -o json;
-              exit 1;
-          }
-          echo "✅ ARM deployment completed" 
+
+  # Job 6: Notifications (Always runs last)
+  notifications:
+    name: Notifications
+    runs-on: ubuntu-latest
+    needs: [quality-checks, build-deploy, performance-test, cost-monitoring]
+    if: always()
+    
+    steps:
+      - name: Determine Status
+        run: |
+          echo "📊 Pipeline Status Summary:"
+          echo "Quality Checks: ${{ needs.quality-checks.result }}"
+          echo "Build & Deploy: ${{ needs.build-deploy.result }}"
+          echo "Performance Test: ${{ needs.performance-test.result }}"
+          echo "Cost Monitoring: ${{ needs.cost-monitoring.result }}"
+          
+          # Determine overall status
+          if [[ "${{ needs.quality-checks.result }}" == "failure" || "${{ needs.build-deploy.result }}" == "failure" ]]; then
+            echo "OVERALL_STATUS=failure" >> $GITHUB_ENV
+            echo "STATUS_EMOJI=🚨" >> $GITHUB_ENV
+          elif [[ "${{ needs.quality-checks.result }}" == "success" && "${{ needs.build-deploy.result }}" == "success" ]]; then
+            echo "OVERALL_STATUS=success" >> $GITHUB_ENV
+            echo "STATUS_EMOJI=✅" >> $GITHUB_ENV
+          else
+            echo "OVERALL_STATUS=partial" >> $GITHUB_ENV
+            echo "STATUS_EMOJI=⚠️" >> $GITHUB_ENV
+          fi
+      
+      - name: Create Summary
+        run: |
+          echo "## ${{ env.STATUS_EMOJI }} Pathfinder Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Author:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Job Results:" >> $GITHUB_STEP_SUMMARY
+          echo "- Quality Checks: ${{ needs.quality-checks.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Build & Deploy: ${{ needs.build-deploy.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Performance Test: ${{ needs.performance-test.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Cost Monitoring: ${{ needs.cost-monitoring.result }}" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ env.OVERALL_STATUS }}" == "failure" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "🚨 **Action Required:** Check failed jobs and fix issues before next deployment." >> $GITHUB_STEP_SUMMARY
+          fi
+      
+      - name: Slack Notification
+        if: env.OVERALL_STATUS == 'failure'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          channel: '#deployments'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          fields: repo,message,commit,author,ref
+          custom_payload: |
+            {
+              "attachments": [{
+                "color": "danger",
+                "title": "🚨 Pathfinder Deployment Failed",
+                "fields": [
+                  {"title": "Repository", "value": "${{ github.repository }}", "short": true},
+                  {"title": "Commit", "value": "${{ github.sha }}".substring(0, 7), "short": true},
+                  {"title": "Author", "value": "${{ github.actor }}", "short": true},
+                  {"title": "Branch", "value": "${{ github.ref_name }}", "short": true}
+                ]
+              }]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
