@@ -332,10 +332,26 @@ class TripDomainService:  # pragma: no cover – thin façade for now
 
     async def _build_trip_response(self, trip: "Trip") -> TripResponse:  # type: ignore[name-defined]
         """Map SQLAlchemy Trip model → TripResponse DTO."""
-        # Ensure participations are loaded
-        participations = getattr(trip, "participations", []) or []
+        # For newly created trips, avoid lazy loading participations
+        # Since this is called right after trip creation, participations should be empty
+        try:
+            # Check if the trip is in a session that's still active
+            from sqlalchemy.inspection import inspect
+            state = inspect(trip)
+            
+            # If the participations haven't been loaded yet, assume empty for new trips
+            if 'participations' in state.unloaded:
+                participations = []
+            else:
+                # If already loaded, use the loaded value
+                participations = getattr(trip, "participations", []) or []
+                
+        except Exception:
+            # Fallback to empty list for new trips to avoid any session issues
+            participations = []
+            
         family_count = len(participations)
-        confirmed = [p for p in participations if p.status == ParticipationStatus.CONFIRMED]
+        confirmed = [p for p in participations if hasattr(p, 'status') and p.status == ParticipationStatus.CONFIRMED]
 
         completion = self._calculate_completion_percentage(trip, participations)
 

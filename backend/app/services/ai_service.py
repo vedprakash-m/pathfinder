@@ -10,7 +10,12 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 import openai
-import tiktoken
+try:
+    import tiktoken
+    HAS_TIKTOKEN = True
+except ImportError:
+    tiktoken = None
+    HAS_TIKTOKEN = False
 from app.core.cache_service import ai_cache_service
 from app.core.config import get_settings
 from app.core.logging_config import create_logger
@@ -376,12 +381,19 @@ class AIService:
     def __init__(self):
         self.cost_tracker = CostTracker()
         self.cache = ai_cache_service  # Use Redis-free cache service
-        self.encoding = tiktoken.get_encoding("cl100k_base")
+        if HAS_TIKTOKEN:
+            self.encoding = tiktoken.get_encoding("cl100k_base")
+        else:
+            self.encoding = None
         self.preference_engine = MultiFamilyPreferenceEngine()
 
     def count_tokens(self, text: str) -> int:
         """Count tokens in text."""
-        return len(self.encoding.encode(text))
+        if self.encoding:
+            return len(self.encoding.encode(text))
+        else:
+            # Fallback approximation: 1 token ≈ 4 characters
+            return len(text) // 4
 
     def _select_optimal_model(self, request_type: str, input_tokens: int) -> str:
         """Select optimal model based on request type and complexity."""

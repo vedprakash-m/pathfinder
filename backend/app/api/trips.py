@@ -49,18 +49,43 @@ router = APIRouter()
 
 
 @router.post("/", response_model=TripResponse)
-@inject
 async def create_trip(
     trip_data: TripCreate,
     current_user: User = Depends(require_permissions("trips", "create")),
-    use_case: CreateTripUseCase = Depends(Provide[Container.create_trip_use_case]),
 ):
     """Create a new trip (application layer)."""
-
-    try:
-        return await use_case(trip_data, current_user.id)
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    from app.core.repositories.trip_repository import TripRepository
+    from app.core.repositories.trip_cosmos_repository import TripCosmosRepository
+    from app.core.database import SessionLocal
+    from domain.trip import TripDomainService
+    from app.application.trip_use_cases import CreateTripUseCase
+    
+    # Use SessionLocal directly with async context manager
+    async with SessionLocal() as db_session:
+        try:
+            # Create repositories and services
+            trip_repository = TripRepository(session=db_session)
+            trip_cosmos_repository = TripCosmosRepository()
+            
+            # Create domain service
+            trip_domain_service = TripDomainService(
+                legacy_service=None,
+                trip_repository=trip_repository,
+                trip_cosmos_repository=trip_cosmos_repository,
+            )
+            
+            # Create use case
+            use_case = CreateTripUseCase(trip_service=trip_domain_service)
+            
+            # Execute the use case
+            result = await use_case(trip_data, current_user.id)
+            return result
+            
+        except ValueError as e:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        except Exception:
+            await db_session.rollback()
+            raise
 
 
 # --------------------------------------------------------------

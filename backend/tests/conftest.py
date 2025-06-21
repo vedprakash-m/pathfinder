@@ -4,16 +4,22 @@ Test configuration and fixtures for Pathfinder backend tests.
 
 import asyncio
 from unittest.mock import MagicMock, patch
+from uuid import uuid4
 
 import pytest
+import pytest_asyncio
 from app.core.database import Base, get_db
 from app.core.zero_trust import require_permissions
 from app.main import app
-from app.models.user import User
+from app.models.user import User, UserRole
+from app.models.trip import Trip
+from app.models.family import Family
+from app.core.repositories.trip_repository import TripRepository
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
+from datetime import datetime, date
 
 # Test database setup
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
@@ -27,7 +33,10 @@ def event_loop():
     loop.close()
 
 
-@pytest.fixture
+import pytest_asyncio
+
+
+@pytest_asyncio.fixture
 async def test_db():
     """Create a test database session."""
     engine = create_async_engine(
@@ -47,16 +56,120 @@ async def test_db():
     await engine.dispose()
 
 
+@pytest_asyncio.fixture
+async def db_session():
+    """Create a test database session - alias for test_db."""
+    engine = create_async_engine(
+        TEST_DATABASE_URL,
+        poolclass=StaticPool,
+        connect_args={"check_same_thread": False},
+    )
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    TestingSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+    async with TestingSessionLocal() as session:
+        yield session
+
+    await engine.dispose()
+
+
+@pytest_asyncio.fixture
+async def test_user(db_session):
+    """Create a test user in the database."""
+    user = User(
+        auth0_id="auth0|test123",
+        email="test@example.com",
+        role=UserRole.FAMILY_ADMIN,
+        name="Test User",
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow()
+    )
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
+    return user
+
+
+@pytest_asyncio.fixture
+async def test_family(db_session, test_user):
+    """Create a test family in the database."""
+    family = Family(
+        name="Test Family",
+        description="A test family",
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow()
+    )
+    db_session.add(family)
+    await db_session.commit()
+    await db_session.refresh(family)
+    return family
+
+
+@pytest_asyncio.fixture
+async def test_trip(db_session, test_user):
+    """Create a test trip in the database."""
+    trip = Trip(
+        name="Test Trip",
+        description="A test trip",
+        destination="Test Destination",
+        start_date=date.today(),
+        end_date=date.today(),
+        creator_id=test_user.id,
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow()
+    )
+    db_session.add(trip)
+    await db_session.commit()
+    await db_session.refresh(trip)
+    return trip
+
+
+@pytest.fixture
+def trip_service(db_session):
+    """Create a TripRepository instance for testing."""
+    return TripRepository(db_session)
+
+
+@pytest.fixture
+def mock_openai_response():
+    """Mock OpenAI API response for testing."""
+    mock_response = MagicMock()
+    mock_response.choices = [MagicMock()]
+    mock_response.choices[0].message = MagicMock()
+    mock_response.choices[0].message.content = '''{
+        "overview": "Test itinerary overview",
+        "daily_itinerary": [
+            {
+                "day": 1,
+                "date": "2024-01-01",
+                "activities": ["Test activity"]
+            }
+        ],
+        "budget_summary": {
+            "total": 1000,
+            "breakdown": {}
+        }
+    }'''
+    mock_response.usage = MagicMock()
+    mock_response.usage.prompt_tokens = 100
+    mock_response.usage.completion_tokens = 200
+    mock_response.usage.total_tokens = 300
+    return mock_response
+
+
 @pytest.fixture
 def mock_current_user():
     """Mock current user for authentication."""
-    return User(
-        id="test-user-123",
+    user = User(
         email="test@example.com",
         auth0_id="auth0|test123",
-        role="user",
-        family_id="test-family-456",
+        role=UserRole.FAMILY_ADMIN,
     )
+    user.id = uuid4()  # Set ID after creation
+    return user
 
 
 @pytest.fixture
@@ -66,11 +179,15 @@ def mock_auth_dependency(mock_current_user):
     def get_mock_user():
         return mock_current_user
 
-    # Override the authentication dependency
+    # Override the authentication dependency - this is the key fix
     app.dependency_overrides[require_permissions("trips", "create")] = get_mock_user
     app.dependency_overrides[require_permissions("trips", "read")] = get_mock_user
     app.dependency_overrides[require_permissions("trips", "update")] = get_mock_user
     app.dependency_overrides[require_permissions("trips", "delete")] = get_mock_user
+    app.dependency_overrides[require_permissions("families", "create")] = get_mock_user
+    app.dependency_overrides[require_permissions("families", "read")] = get_mock_user
+    app.dependency_overrides[require_permissions("families", "update")] = get_mock_user
+    app.dependency_overrides[require_permissions("families", "delete")] = get_mock_user
 
     yield get_mock_user
 
@@ -107,3 +224,34 @@ def no_redis_startup():
     with patch("app.main.initialize_celery") as mock_celery:
         mock_celery.return_value = MagicMock()
         yield mock_celery
+
+
+@pytest.fixture
+def authenticated_client(mock_current_user):
+    """Create an authenticated test client with mocked dependencies."""
+    from app.core.security import User
+    from app.core.zero_trust import require_permissions
+    
+    # Create a mock user with all permissions
+    test_user = User(
+        id=str(mock_current_user.id),
+        email=mock_current_user.email,
+        roles=["user"],
+        permissions=[
+            "read:trips", "create:trips", "update:trips", "delete:trips",
+            "read:families", "create:families", "update:families", "delete:families",
+            "read:itineraries", "create:itineraries", "update:itineraries", "delete:itineraries"
+        ]
+    )
+    
+    # Mock the require_permissions function to always return our test user
+    def mock_require_permissions(resource_type: str, action: str):
+        def mock_permission_checker(*args, **kwargs):
+            return test_user
+        return mock_permission_checker
+    
+    # Patch the require_permissions function
+    with patch("app.core.zero_trust.require_permissions", side_effect=mock_require_permissions):
+        with patch("app.api.trips.require_permissions", side_effect=mock_require_permissions):
+            client = TestClient(app)
+            yield client
