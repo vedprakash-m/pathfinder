@@ -69,14 +69,19 @@ _Optional (pause/resume):_ `AZURE_SUBSCRIPTION_ID`, `AZURE_TENANT_ID`, `AZURE_CL
 ```
 
 ---
-## 6  Open Tasks (as of June 14 2025)
+## 6  Open Tasks (as of June 15 2025)
 ### Completed (June 15 2025)
-✔ Implemented `/trips/sample` API endpoint to support Golden-Path onboarding.
+✔ Implemented `/trips/sample` API endpoint to support Golden-Path onboarding.  
+✔ **CRITICAL**: Fixed CSRF/CORS compatibility issues - production blocker resolved.  
+✔ **CRITICAL**: Resolved database migration conflicts and persistence issues.  
+✔ Enhanced sample trip generation with realistic data and decision scenarios.  
+✔ Added security permission guards to test endpoints.  
+✔ Enabled CSRF protection with CORS compatibility mode.  
 
 ### In-Progress
-1. Add Container Registry resource to `compute-layer.bicep` and update GitHub Actions build/push steps.  
-2. Harden security guards – auditing all new routes for missing `require_permissions`.  
-3. Restore Families navigation link & accessibility fixes (`aria-label`s).  
+1. ~~Add Container Registry resource to `compute-layer.bicep`~~ ✔ Already exists - verified in template.  
+2. Configure email service (SendGrid) for notifications and invitations.  
+3. Set up monitoring alerts and health check endpoints.  
 
 ### Planned
 4. Refactor CI/CD for efficiency:  
@@ -84,6 +89,7 @@ _Optional (pause/resume):_ `AZURE_SUBSCRIPTION_ID`, `AZURE_TENANT_ID`, `AZURE_CL
    • Matrix strategy for backend / frontend tests  
    • Cache dependencies to cut build time by >40 %  
 5. Final pipeline validation and SLA alerting integration.  
+6. Complete frontend navigation restoration and accessibility improvements.  
 
 ---
 ## 7  Contact / Handoff

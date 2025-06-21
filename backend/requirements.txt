@@ -86,4 +86,4 @@ dependency-injector==4.41.0
 
 # Static analysis and architecture governance
 ruff==0.4.4
-import-linter==2.3.0
+import-linter==2.3.0psutil==5.9.6
