@@ -12,7 +12,7 @@ from app.core.database import Base, get_db
 from app.core.zero_trust import require_permissions
 from app.main import app
 from app.models.user import User, UserRole
-from app.models.trip import Trip
+from app.models.trip import Trip, TripParticipation, ParticipationStatus
 from app.models.family import Family
 from app.core.repositories.trip_repository import TripRepository
 from fastapi.testclient import TestClient
@@ -103,6 +103,7 @@ async def test_family(db_session, test_user):
     family = Family(
         name="Test Family",
         description="A test family",
+        admin_user_id=test_user.id,  # Fix the NOT NULL constraint error
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow(),
     )
@@ -121,6 +122,7 @@ async def test_trip(db_session, test_user):
         destination="Test Destination",
         start_date=date.today(),
         end_date=date.today(),
+        budget_total=5000.00,  # Add budget for stats test
         creator_id=test_user.id,
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow(),
@@ -129,6 +131,21 @@ async def test_trip(db_session, test_user):
     await db_session.commit()
     await db_session.refresh(trip)
     return trip
+
+
+@pytest_asyncio.fixture
+async def test_trip_participation(db_session, test_trip, test_family, test_user):
+    """Create a test trip participation in the database."""
+    participation = TripParticipation(
+        trip_id=test_trip.id,
+        family_id=test_family.id,
+        user_id=test_user.id,
+        status=ParticipationStatus.CONFIRMED,
+    )
+    db_session.add(participation)
+    await db_session.commit()
+    await db_session.refresh(participation)
+    return participation
 
 
 @pytest.fixture

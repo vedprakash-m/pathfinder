@@ -32,33 +32,16 @@ async def test_create_trip(trip_service, test_user, test_family):
         is_public=False,
     )
 
-    # Create a proper mock for cosmos operations
-    mock_cosmos_ops = AsyncMock()
-    mock_cosmos_ops.save_trip_preferences_to_cosmos = AsyncMock(
-        return_value={"id": "mock-pref-id"}
-    )
-    mock_cosmos_ops.itinerary_service = AsyncMock()
-    mock_cosmos_ops.message_service = AsyncMock()
-    mock_cosmos_ops.preference_service = AsyncMock()
+    # Act - Create trip directly with repository
+    trip_response = await trip_service.create_trip(trip_data, user_id)
 
-    # Replace the real cosmos_ops with our mock
-    original_cosmos_ops = trip_service.cosmos_ops
-    trip_service.cosmos_ops = mock_cosmos_ops
-
-    try:
-        # Act
-        trip_response = await trip_service.create_trip(trip_data, user_id)
-
-        # Assert
-        assert trip_response is not None
-        assert trip_response.name == "New Trip"
-        assert trip_response.description == "A new test trip"
-        assert trip_response.destination == "New Destination"
-        assert trip_response.status == TripStatus.PLANNING
-        assert trip_response.creator_id == user_id
-    finally:
-        # Restore the original cosmos_ops
-        trip_service.cosmos_ops = original_cosmos_ops
+    # Assert
+    assert trip_response is not None
+    assert trip_response.name == "New Trip"
+    assert trip_response.description == "A new test trip"
+    assert trip_response.destination == "New Destination"
+    assert trip_response.status == TripStatus.PLANNING
+    assert str(trip_response.creator_id) == user_id
 
 
 @pytest.mark.asyncio
@@ -72,7 +55,7 @@ async def test_get_user_trips(trip_service, test_user, test_trip):
 
     # Assert
     assert len(trips) >= 1
-    assert any(trip.id == str(test_trip.id) for trip in trips)
+    assert any(str(trip.id) == str(test_trip.id) for trip in trips)
 
 
 @pytest.mark.asyncio
@@ -87,7 +70,7 @@ async def test_get_trip_by_id(trip_service, test_user, test_trip):
 
     # Assert
     assert trip_detail is not None
-    assert trip_detail.id == str(test_trip.id)
+    assert str(trip_detail.id) == str(test_trip.id)
     assert trip_detail.name == test_trip.name
     assert trip_detail.destination == test_trip.destination
 
@@ -172,8 +155,8 @@ async def test_add_family_to_trip(trip_service, test_user, test_trip, db_session
 
     # Assert
     assert participation is not None
-    assert participation.trip_id == str(trip_id)
-    assert participation.family_id == family_id
+    assert str(participation.trip_id) == str(trip_id)
+    assert str(participation.family_id) == family_id
     assert participation.budget_allocation == 1500.00
     assert participation.status == ParticipationStatus.CONFIRMED
 
