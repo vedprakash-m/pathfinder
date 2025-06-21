@@ -112,7 +112,7 @@ class AddParticipantUseCase:
     ) -> ParticipationResponse:  # noqa: D401
         # ensure path parameter ID overrides payload trip_id to avoid tampering
         data.trip_id = str(trip_id)
-        return await self._trip_service.add_participant(data, user_id)
+        return await self._trip_service.add_participant(trip_id, data, user_id)
 
 
 class GetParticipantsUseCase:
@@ -162,4 +162,4 @@ class SendInvitationUseCase:
         self, trip_id: UUID, data: TripInvitation, user_id: str
     ) -> None:  # noqa: D401
         data.trip_id = str(trip_id)
-        await self._trip_service.send_invitation(data, user_id)
+        await self._trip_service.send_invitation(trip_id, data, user_id)
