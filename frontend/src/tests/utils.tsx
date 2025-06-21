@@ -71,3 +71,4 @@ const createMockQueryResult = (data: any) => ({
 
 export * from '@testing-library/react';
 export { customRender as render, mockAuth0, createMockQueryResult };
+export { AllProviders as TestWrapper };
