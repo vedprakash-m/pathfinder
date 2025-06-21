@@ -4,7 +4,6 @@ Simplified family invitation verification test.
 Verifies that all components are ready for production.
 """
 
-import json
 import os
 import sqlite3
 import sys
@@ -271,7 +270,6 @@ def test_import_functionality():
 
         # Test database import
         try:
-            from app.core.database import Base
 
             print("✅ Database module imports successfully")
         except Exception as e:
@@ -280,7 +278,6 @@ def test_import_functionality():
 
         # Test models import
         try:
-            from app.models.family import Family, FamilyInvitationModel, FamilyMember
 
             print("✅ Family models import successfully")
         except Exception as e:
@@ -289,7 +286,6 @@ def test_import_functionality():
 
         # Test email service import
         try:
-            from app.services.email_service import EmailNotificationService
 
             print("✅ Email service imports successfully")
         except Exception as e:
@@ -298,7 +294,6 @@ def test_import_functionality():
 
         # Test API import
         try:
-            from app.api.families import router
 
             print("✅ Family API imports successfully")
         except Exception as e:

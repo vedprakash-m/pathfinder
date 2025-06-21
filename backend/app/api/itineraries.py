@@ -3,7 +3,6 @@ Itinerary management API endpoints.
 Handles AI-generated itinerary creation, customization, and management.
 """
 
-import json
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -25,7 +24,7 @@ from datetime import date, datetime
 from enum import Enum
 
 # Pydantic models for itinerary API
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 class ItineraryType(str, Enum):

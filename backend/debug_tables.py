@@ -18,12 +18,6 @@ dotenv.load_dotenv("/Users/vedprakashmishra/pathfinder/backend/.env.test")
 
 # Import ALL models to ensure they're registered with Base metadata
 from app.core.database import Base
-from app.models.family import Family
-from app.models.itinerary import Itinerary, ItineraryActivity, ItineraryDay
-from app.models.notification import Notification
-from app.models.reservation import Reservation
-from app.models.trip import ParticipationStatus, Trip, TripParticipation, TripStatus
-from app.models.user import User
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 

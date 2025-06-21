@@ -8,8 +8,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional
 
 from app.core.database import Base
-from sqlalchemy import JSON, Boolean, Column, DateTime, ForeignKey, Integer, String, Text
-from sqlalchemy.orm import relationship
+from sqlalchemy import JSON, Boolean, Column, DateTime, Integer, String, Text
 
 
 class ContextType(str, Enum):

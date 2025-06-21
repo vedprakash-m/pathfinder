@@ -4,7 +4,6 @@ Provides abstraction layer for all data persistence operations.
 Part of Phase 2: System Integration & Consistency improvements.
 """
 
-import json
 import logging
 import uuid
 from abc import ABC, abstractmethod
@@ -14,7 +13,7 @@ from typing import Any, Dict, Generic, List, Optional, Type, TypeVar, Union
 
 from azure.cosmos.aio import ContainerProxy
 from azure.cosmos.exceptions import CosmosResourceNotFoundError
-from sqlalchemy import and_, delete, or_, select, update
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -532,7 +531,7 @@ def with_performance_monitoring(operation_name: str):
                 duration = (time.time() - start_time) * 1000
 
                 logger.info(
-                    f"Repository operation completed",
+                    "Repository operation completed",
                     extra={
                         "operation": operation_name,
                         "method": repository_method.__name__,
@@ -545,7 +544,7 @@ def with_performance_monitoring(operation_name: str):
             except Exception as e:
                 duration = (time.time() - start_time) * 1000
                 logger.error(
-                    f"Repository operation failed",
+                    "Repository operation failed",
                     extra={
                         "operation": operation_name,
                         "method": repository_method.__name__,

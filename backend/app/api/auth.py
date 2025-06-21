@@ -6,7 +6,7 @@ import logging
 from datetime import datetime
 
 from app.core.database import get_db
-from app.core.security import get_current_active_user, get_current_user
+from app.core.security import get_current_active_user
 from app.core.zero_trust import require_permissions
 from app.models.user import User, UserCreate, UserProfile, UserResponse, UserUpdate
 from app.services.auth_service import AuthService

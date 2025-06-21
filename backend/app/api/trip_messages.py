@@ -2,12 +2,11 @@
 Trip messages API endpoints.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 from uuid import UUID
 
 from app.core.config import get_settings
 from app.core.database import get_db
-from app.core.security import get_current_active_user
 from app.core.zero_trust import require_permissions
 from app.models.cosmos.message import MessageType
 from app.models.user import User

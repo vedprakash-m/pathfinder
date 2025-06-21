@@ -516,7 +516,7 @@ class DataExportService:
             else:
                 result["file_data"] = base64.b64encode(csv_content.encode("utf-8")).decode("utf-8")
 
-            logger.info(f"Activity summary exported", trip_id=trip_id, activities=len(activities))
+            logger.info("Activity summary exported", trip_id=trip_id, activities=len(activities))
             return result
 
         except Exception as e:

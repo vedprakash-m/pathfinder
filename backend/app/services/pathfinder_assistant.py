@@ -2,14 +2,12 @@
 Pathfinder Assistant Service - AI-powered assistant with @mention functionality
 """
 
-import json
 import logging
 import re
 import time
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
-from app.core.database import get_db
 from app.models.ai_integration import (
     AIResponseCard,
     AssistantInteraction,

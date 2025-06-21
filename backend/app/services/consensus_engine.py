@@ -9,14 +9,12 @@ Features:
 - Simple voting mechanisms
 """
 
-import json
 import logging
-import math
 from collections import Counter
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -457,7 +455,7 @@ class FamilyConsensusEngine:
             else:
                 compromises[category] = {
                     "type": "majority_with_accommodation",
-                    "suggestion": f"Go with majority preference but accommodate minority needs",
+                    "suggestion": "Go with majority preference but accommodate minority needs",
                     "implementation": conflict.suggested_compromise,
                     "confidence": 0.7,
                 }

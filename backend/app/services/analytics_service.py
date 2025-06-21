@@ -3,9 +3,7 @@ Analytics Service for Pathfinder
 Provides comprehensive tracking of user behavior, feature adoption, and performance metrics
 """
 
-import asyncio
 import json
-import time
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 from enum import Enum

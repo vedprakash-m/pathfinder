@@ -3,12 +3,10 @@ PDF service for generating trip documents and itineraries.
 Creates formatted PDF documents for trip information, itineraries, and reports.
 """
 
-import base64
 import io
 import logging
-from datetime import date, datetime
-from pathlib import Path
-from typing import Any, BinaryIO, Dict, List, Optional
+from datetime import datetime
+from typing import Any, Dict, List
 
 try:
     from reportlab.lib import colors
@@ -42,10 +40,10 @@ except ImportError:
     letter = A4 = (612, 792)
     inch = 72
 
-from app.models.family import Family, FamilyMember
+from app.models.family import Family
 from app.models.itinerary import Itinerary, ItineraryActivity, ItineraryDay
 from app.models.reservation import Reservation
-from app.models.trip import Trip, TripDetail
+from app.models.trip import TripDetail
 
 logger = logging.getLogger(__name__)
 

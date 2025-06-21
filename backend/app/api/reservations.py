@@ -8,7 +8,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from sqlalchemy import and_, or_
+from sqlalchemy import and_
 from sqlalchemy.orm import Session
 
 from ..core.database import get_db
@@ -22,7 +22,7 @@ logger = get_logger(__name__)
 
 
 # Pydantic models for reservation API
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 class ReservationType(str, Enum):

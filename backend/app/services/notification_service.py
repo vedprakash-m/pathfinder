@@ -12,18 +12,14 @@ from app.models.notification import (
     BulkNotificationCreate,
     Notification,
     NotificationCreate,
-    NotificationFilters,
     NotificationPriority,
     NotificationResponse,
-    NotificationStats,
     NotificationType,
-    NotificationUpdate,
 )
 from app.services.email_service import email_service
 from app.services.websocket import ConnectionManager
 from sqlalchemy import and_, delete, desc, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 logger = get_logger(__name__)
 

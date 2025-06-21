@@ -3,10 +3,8 @@ LLM Orchestration Client Service
 Provides interface to the deployed LLM Orchestration Service for enhanced AI capabilities
 """
 
-import asyncio
-import json
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 import httpx
 from app.core.config import get_settings

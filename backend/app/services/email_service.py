@@ -3,7 +3,6 @@ Email notification service for sending external communications.
 """
 
 import base64
-import logging
 import smtplib
 from datetime import datetime
 from email import encoders

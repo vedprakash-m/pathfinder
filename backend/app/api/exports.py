@@ -2,7 +2,7 @@
 Export API endpoints for data export functionality.
 """
 
-from typing import List, Optional
+from typing import List
 from uuid import UUID
 
 from app.core.container import Container
@@ -13,7 +13,6 @@ from app.models.user import User
 from app.services.export_service import DataExportService
 from app.tasks.export_tasks import bulk_export_trips, export_trip_data
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, status
-from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 

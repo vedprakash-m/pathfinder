@@ -3,7 +3,7 @@ Test configuration and fixtures for Pathfinder backend tests.
 """
 
 import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from app.core.database import Base, get_db

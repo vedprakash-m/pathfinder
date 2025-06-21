@@ -21,14 +21,14 @@ This module handles:
 """
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 from urllib.parse import urlencode
 
 import httpx
 from app.core.config import settings
 from app.core.security import create_access_token
-from app.models.user import User, UserCreate, UserResponse, UserUpdate
+from app.models.user import User, UserCreate, UserUpdate
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy import select
@@ -355,7 +355,7 @@ class AuthService:
                 )
 
                 if token_response.status_code != 200:
-                    logger.error(f"Failed to get Auth0 management token")
+                    logger.error("Failed to get Auth0 management token")
                     return False
 
                 management_token = token_response.json()["access_token"]

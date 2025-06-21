@@ -6,7 +6,6 @@ Provides WebSocket connections for real-time trip collaboration.
 import json
 import logging
 from datetime import datetime, timezone
-from typing import Optional
 from uuid import UUID
 
 from app.core.container import Container

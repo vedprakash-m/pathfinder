@@ -7,14 +7,13 @@ Solves Pain Point #2: "Too much manual coordination required between families"
 import logging
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core.database import get_db
 from ..core.zero_trust import require_permissions
 from ..models.user import User
-from ..services.consensus_engine import analyze_trip_consensus
 from ..services.smart_notifications import (
     NotificationTrigger,
     SmartNotificationService,

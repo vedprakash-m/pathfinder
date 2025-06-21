@@ -5,12 +5,11 @@ Notification background tasks for batch processing and cleanup.
 from datetime import datetime, timezone
 from typing import Any, Dict, List
 
-from app.core.celery_app import celery_app
 from app.core.database import get_db
 from app.core.logging_config import get_logger
 from app.services.email_service import EmailNotificationService
 from app.services.notification_service import NotificationService
-from app.tasks.task_compat import conditional_task, run_async_task
+from app.tasks.task_compat import conditional_task
 from celery import current_task
 
 logger = get_logger(__name__)

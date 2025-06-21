@@ -3,7 +3,6 @@ End-to-end tests for the Pathfinder application.
 """
 
 import asyncio
-import json
 from datetime import date, datetime, timedelta
 
 import pytest

@@ -14,16 +14,13 @@ from sqlalchemy import (
     Column,
     Date,
     DateTime,
-)
-from sqlalchemy import Enum as SQLEnum
-from sqlalchemy import (
     ForeignKey,
-    Integer,
     Numeric,
     String,
     Text,
     func,
 )
+from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import relationship
 
 

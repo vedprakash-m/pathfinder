@@ -10,18 +10,16 @@ Eliminates manual coordination overhead through:
 
 import json
 import logging
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from ..models.family import Family
-from ..models.trip import Trip, TripParticipation, TripStatus
-from ..models.user import User
+from ..models.trip import Trip, TripParticipation
 from ..services.consensus_engine import FamilyConsensusEngine, analyze_trip_consensus
 from ..services.notifications import NotificationService
 

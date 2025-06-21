@@ -4,11 +4,10 @@ Enhanced with advanced cost optimization and multi-family preference handling.
 """
 
 import asyncio
-import hashlib
 import json
 from collections import Counter
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 import openai
 import tiktoken

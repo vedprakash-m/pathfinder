@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional
 
 from app.core.zero_trust import require_permissions
 from app.models.user import User
-from app.services.maps_service import Location, Place, Route, maps_service
+from app.services.maps_service import Location, Place, maps_service
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 

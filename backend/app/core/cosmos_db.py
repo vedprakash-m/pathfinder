@@ -2,15 +2,13 @@
 Azure Cosmos DB integration for document storage.
 """
 
-import json
 import logging
 import uuid
 from datetime import datetime
-from typing import Any, Dict, Generic, List, Optional, Type, TypeVar, Union
+from typing import Any, Dict, Generic, List, Optional, Type, TypeVar
 
 from app.core.config import get_settings
-from azure.cosmos import CosmosClient, PartitionKey, exceptions
-from azure.cosmos.container import ContainerProxy
+from azure.cosmos import CosmosClient, exceptions
 from pydantic import BaseModel
 
 settings = get_settings()

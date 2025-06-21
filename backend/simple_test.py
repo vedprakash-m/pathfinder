@@ -2,7 +2,6 @@
 """
 Simple test for family invitation models
 """
-import os
 import sys
 
 # Add the current directory to Python path
@@ -12,7 +11,7 @@ sys.path.insert(0, "/Users/vedprakashmishra/pathfinder/backend")
 def test_imports():
     """Test that we can import the required modules"""
     try:
-        from app.models.family import FamilyInvitationModel, InvitationStatus
+        from app.models.family import InvitationStatus
 
         print("✅ Successfully imported InvitationStatus and FamilyInvitationModel")
 

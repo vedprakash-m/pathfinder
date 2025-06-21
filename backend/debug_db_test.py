@@ -30,11 +30,6 @@ async def test_db_setup():
 
     print("Importing models...")
     # Ensure all models are imported before creating tables
-    from app.models.family import Family, FamilyMember
-    from app.models.itinerary import Itinerary, ItineraryActivity, ItineraryDay
-    from app.models.notification import Notification
-    from app.models.reservation import Reservation, ReservationDocument
-    from app.models.trip import Trip, TripParticipation
     from app.models.user import User
 
     print("Creating tables...")

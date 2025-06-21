@@ -14,7 +14,6 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Set
 
-from app.core.config import settings
 from app.models.cosmos.message import MessageStatus, MessageType
 from app.services.trip_cosmos import TripCosmosOperations
 from fastapi import WebSocket, WebSocketDisconnect

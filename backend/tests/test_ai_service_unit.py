@@ -3,7 +3,7 @@ Unit tests for AI service functionality.
 """
 
 import json
-from datetime import date, datetime
+from datetime import date
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest

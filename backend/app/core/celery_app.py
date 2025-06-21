@@ -4,7 +4,6 @@ Falls back to database-backed task queue when Redis is not available.
 """
 
 import asyncio
-import os
 from typing import Optional
 
 from app.core.config import get_settings

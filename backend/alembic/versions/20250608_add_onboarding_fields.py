@@ -8,7 +8,6 @@ Create Date: 2025-06-08 10:00:00.000000
 
 import sqlalchemy as sa
 from alembic import op
-from sqlalchemy.dialects import postgresql
 
 # revision identifiers
 revision = "a1b2c3d4e5f6"

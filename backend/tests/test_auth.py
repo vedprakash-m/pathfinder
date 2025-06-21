@@ -2,13 +2,12 @@
 Tests for authentication service and functionality.
 """
 
-import json
-from datetime import datetime, timedelta
+from datetime import timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from app.core.security import create_access_token, verify_token
-from app.models.user import User, UserCreate, UserResponse, UserUpdate
+from app.models.user import UserCreate, UserUpdate
 from app.services.auth_service import AuthService
 from fastapi import HTTPException
 from jose import jwt

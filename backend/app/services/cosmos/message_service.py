@@ -6,7 +6,6 @@ import logging
 import uuid
 from datetime import datetime
 from typing import Any, Dict, List, Optional
-from uuid import UUID
 
 from app.core.config import get_settings
 from app.core.cosmos_db import CosmosDBService

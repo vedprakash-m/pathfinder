@@ -11,15 +11,12 @@ Features:
 - Real-time conflict resolution during editing
 """
 
-import asyncio
-import json
 import logging
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional, Set
 
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)

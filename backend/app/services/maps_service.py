@@ -3,10 +3,8 @@ Maps service for location-based operations.
 Provides Google Maps API integration for geocoding, route planning, and place search.
 """
 
-import asyncio
 import logging
 from dataclasses import dataclass
-from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 import aiohttp

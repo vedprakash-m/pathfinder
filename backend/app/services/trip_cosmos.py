@@ -2,7 +2,6 @@
 Trip hybrid database integrations for the TripService.
 """
 
-import json
 import logging
 from datetime import datetime
 from typing import Any, Dict, Optional

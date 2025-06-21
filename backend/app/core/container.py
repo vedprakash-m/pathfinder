@@ -30,7 +30,6 @@ from app.core.database import get_db  # Existing dependency provider
 from app.core.repositories.trip_cosmos_repository import TripCosmosRepository
 from app.core.repositories.trip_repository import TripRepository
 from dependency_injector import containers, providers
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.domain.family import FamilyDomainService
 from backend.domain.messaging import MessagingDomainService

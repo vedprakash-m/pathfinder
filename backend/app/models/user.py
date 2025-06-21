@@ -9,9 +9,8 @@ from uuid import uuid4
 
 from app.core.database import GUID, Base
 from pydantic import BaseModel, EmailStr
-from sqlalchemy import Boolean, Column, DateTime
+from sqlalchemy import Boolean, Column, DateTime, String, Text, func
 from sqlalchemy import Enum as SQLEnum
-from sqlalchemy import String, Text, func
 from sqlalchemy.orm import relationship
 
 

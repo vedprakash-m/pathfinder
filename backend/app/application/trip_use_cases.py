@@ -73,7 +73,6 @@ class UpdateTripUseCase:
     async def __call__(
         self, trip_id: UUID, update: "TripUpdate", user_id: str
     ) -> TripResponse:  # noqa: D401
-        from app.models.trip import TripUpdate  # local import to avoid circular
 
         return await self._trip_service.update_trip(trip_id, update, user_id)
 

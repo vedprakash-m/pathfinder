@@ -2,7 +2,7 @@
 Notification management API endpoints.
 """
 
-from typing import List, Optional
+from typing import List
 from uuid import UUID
 
 from app.core.database import get_db
@@ -13,7 +13,6 @@ from app.services.notification_service import (
     NotificationCreate,
     NotificationResponse,
     NotificationService,
-    NotificationUpdate,
 )
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession

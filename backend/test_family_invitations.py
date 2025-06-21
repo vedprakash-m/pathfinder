@@ -10,9 +10,8 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "app"))
 
 from app.core.database import SessionLocal
-from app.models.family import Family, FamilyInvitationModel, InvitationStatus
-from app.models.user import UserModel
-from sqlalchemy import create_engine, text
+from app.models.family import FamilyInvitationModel, InvitationStatus
+from sqlalchemy import text
 
 
 async def test_family_invitation_models():

@@ -5,7 +5,7 @@ Provides decorators that work with or without Celery.
 
 import asyncio
 import functools
-from typing import Any, Callable, Dict, Optional
+from typing import Callable, Optional
 
 from app.core.celery_app import celery_app
 from app.core.logging_config import get_logger

@@ -4,7 +4,7 @@ Test endpoints for validating AI service functionality.
 
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from ..core.logging_config import get_logger

@@ -8,11 +8,10 @@ from typing import AsyncGenerator
 
 import azure.cosmos.aio as cosmos
 from app.core.config import get_settings
-from sqlalchemy import MetaData, String, TypeDecorator, create_engine
-from sqlalchemy.dialects import postgresql, sqlite
+from sqlalchemy import MetaData, String, TypeDecorator
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
 
 
 class GUID(TypeDecorator):

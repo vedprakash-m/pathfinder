@@ -3,13 +3,13 @@ API endpoints for Pathfinder Assistant functionality
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
 from app.services.pathfinder_assistant import assistant_service
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 

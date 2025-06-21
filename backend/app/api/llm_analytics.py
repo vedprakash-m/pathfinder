@@ -3,7 +3,7 @@ LLM Analytics API endpoints
 Provides monitoring and analytics for LLM usage and orchestration service
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from app.core.logging_config import create_logger
 from app.core.security import get_current_user

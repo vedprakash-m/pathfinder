@@ -4,7 +4,7 @@ Security configuration and authentication utilities.
 
 import logging
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Union
+from typing import Optional
 
 import jwt
 from app.core.config import get_settings

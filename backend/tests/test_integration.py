@@ -2,10 +2,7 @@
 Integration tests for the trip management system.
 """
 
-import asyncio
-import json
-from datetime import date, datetime, timedelta
-from unittest.mock import MagicMock, patch
+from datetime import date, timedelta
 
 import pytest
 from app.main import app

@@ -2,10 +2,9 @@
 File service for Azure Blob Storage integration.
 """
 
-import logging
 import os
 from datetime import datetime, timedelta
-from typing import BinaryIO, List, Optional
+from typing import List
 from uuid import uuid4
 
 from app.core.config import get_settings

@@ -13,7 +13,7 @@ import json
 import logging
 import uuid
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 import jwt
 from app.core.config import get_settings
@@ -173,11 +173,9 @@ class ZeroTrustSecurity:
 
         This verifies if the user owns or is a participant in the specific resource.
         """
-        from uuid import UUID
 
         from app.core.database import get_async_session
-        from sqlalchemy import select, text
-        from sqlalchemy.ext.asyncio import AsyncSession
+        from sqlalchemy import text
 
         async for db in get_async_session():
             try:

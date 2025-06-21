@@ -3,7 +3,6 @@
 Basic test for the family invitation API functionality
 """
 import asyncio
-import os
 import sys
 from pathlib import Path
 
@@ -18,9 +17,6 @@ def test_imports():
     try:
         # Test family models
         from app.models.family import (
-            Family,
-            FamilyInvitationModel,
-            FamilyMember,
             FamilyRole,
             InvitationStatus,
         )
@@ -28,12 +24,10 @@ def test_imports():
         print("✅ Family models imported successfully")
 
         # Test email service
-        from app.services.email_service import email_service
 
         print("✅ Email service imported successfully")
 
         # Test family API
-        from app.api.families import router, send_family_invitation_email
 
         print("✅ Family API imported successfully")
 

@@ -5,7 +5,7 @@ Health check endpoints for the Pathfinder API.
 import socket
 import time
 from datetime import datetime, timezone
-from typing import Dict, Optional
+from typing import Dict
 
 import psutil
 from app.core.config import get_settings

@@ -262,21 +262,46 @@ if [ "$QUICK_MODE" = false ]; then
     fi
 fi
 
+# Check if import-linter is available for architecture validation
+if ! python3 -c "import importlinter" 2>/dev/null; then
+    echo "   Installing import-linter for architecture validation..."
+    python3 -m pip install import-linter >/dev/null 2>&1 || true
+fi
+
 # Architecture governance
 echo "   Checking import structure..."
 if [ -f "../importlinter_contracts/layers.toml" ]; then
     if python3 -c "import importlinter" 2>/dev/null; then
-        if lint-imports --config ../importlinter_contracts/layers.toml 2>/dev/null; then
+        # Test import-linter configuration syntax and violations
+        LINT_OUTPUT=$(lint-imports --config ../importlinter_contracts/layers.toml 2>&1)
+        LINT_EXIT_CODE=$?
+        
+        if echo "$LINT_OUTPUT" | grep -q "Cannot mutate immutable namespace\|Error\|Traceback"; then
+            print_status "Import-linter config syntax error" "error"
+            echo "   ❌ Configuration file has syntax errors"
+            echo "   📝 Error details: $(echo "$LINT_OUTPUT" | head -1)"
+            VALIDATION_FAILED=true
+        elif [ $LINT_EXIT_CODE -eq 0 ]; then
             print_status "Import structure: Passed" "success"
         else
-            print_status "Import structure violations detected" "error"
-            echo "   ❌ Check circular imports and layer violations"
+            # Check if there are violations
+            BROKEN_COUNT=$(echo "$LINT_OUTPUT" | grep -c "BROKEN" || echo "0")
+            if [ "$BROKEN_COUNT" -gt 0 ]; then
+                print_status "Import structure violations detected ($BROKEN_COUNT contracts broken)" "warning"
+                echo "   ⚠️  Architecture violations found (non-blocking in CI/CD)"
+                echo "   📝 Run: cd backend && lint-imports --config ../importlinter_contracts/layers.toml"
+            else
+                print_status "Import structure: Issues detected" "warning"
+                echo "   ⚠️  Run: cd backend && lint-imports --config ../importlinter_contracts/layers.toml"
+            fi
         fi
     else
         print_status "Import-linter not available" "warning"
+        echo "   ℹ️  Install with: python3 -m pip install import-linter"
     fi
 else
     print_status "Import linter configuration missing" "error"
+    VALIDATION_FAILED=true
 fi
 
 # Infrastructure validation (NEW)

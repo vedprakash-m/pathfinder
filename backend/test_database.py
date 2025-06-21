@@ -3,7 +3,6 @@
 Direct database test for family invitations
 """
 import sqlite3
-import sys
 from pathlib import Path
 
 # Path to the database

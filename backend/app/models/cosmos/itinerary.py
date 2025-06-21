@@ -4,12 +4,10 @@ Itinerary document models for Cosmos DB.
 
 from datetime import datetime
 from decimal import Decimal
-from enum import Enum
 from typing import Any, Dict, List, Optional
-from uuid import UUID
 
 from app.models.itinerary import ActivityType, DifficultyLevel, ItineraryStatus
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 class ItineraryActivityDocument(BaseModel):

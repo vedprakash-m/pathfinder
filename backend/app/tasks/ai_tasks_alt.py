@@ -5,9 +5,8 @@ Redis-free version using SQLite task queue.
 
 import asyncio
 import json
-import logging
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 from app.core.cache_alternatives import task_queue
 from app.core.config import get_settings

@@ -5,9 +5,8 @@ Preference document models for Cosmos DB.
 from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional
-from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 class PreferenceType(str, Enum):

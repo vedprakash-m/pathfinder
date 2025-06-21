@@ -5,20 +5,16 @@ Tests the complete onboarding journey from API endpoints to frontend integration
 """
 
 import asyncio
-import json
 import os
 import sys
 import time
-from typing import Any, Dict
+from typing import Dict
 
 import aiohttp
 
 # Add the backend directory to Python path
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "backend"))
 
-from app.core.database import get_db
-from app.models.user import User
-from app.services.analytics_service import EventType
 
 
 class OnboardingFlowTester:

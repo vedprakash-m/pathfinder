@@ -2,26 +2,18 @@
 Tests for trip service functionality.
 """
 
-import json
 from datetime import date, datetime, timedelta
-from unittest.mock import AsyncMock, patch
-from uuid import UUID
+from unittest.mock import AsyncMock
 
 import pytest
 from app.models.family import Family
 from app.models.trip import (
     ParticipationStatus,
-    Trip,
     TripCreate,
-    TripDetail,
-    TripParticipation,
-    TripResponse,
     TripStatus,
     TripUpdate,
 )
 from app.models.user import User
-
-from backend.domain.trip import TripDomainService as TripService
 
 
 @pytest.mark.asyncio

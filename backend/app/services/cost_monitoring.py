@@ -2,11 +2,9 @@
 Cost monitoring service for tracking AI and infrastructure usage.
 """
 
-import asyncio
-import json
 import os
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 from app.core.logging_config import get_logger

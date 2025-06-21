@@ -4,7 +4,7 @@ Tests for the AI service functionality.
 
 import json
 from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from app.services.ai_service import AIService, CostTracker, ItineraryPrompts, client

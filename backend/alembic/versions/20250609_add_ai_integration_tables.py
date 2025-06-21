@@ -8,7 +8,6 @@ Create Date: 2025-06-09 12:00:00.000000
 
 import sqlalchemy as sa
 from alembic import op
-from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "20250609_add_ai_integration_tables"

@@ -2,16 +2,12 @@
 Magic Polls Service - AI-powered group decision making with intelligent preference aggregation
 """
 
-import json
 import logging
-import time
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 import requests
-from app.core.database import get_db
 from app.models.ai_integration import MagicPoll, PollStatus, PollType, create_magic_poll
-from sqlalchemy import and_
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
