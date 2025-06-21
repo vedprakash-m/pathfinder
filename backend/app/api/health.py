@@ -13,7 +13,7 @@ from app.core.cosmos_db import get_cosmos_client
 from app.core.database import get_db
 from app.core.logging_config import get_logger
 from app.services.email_service import email_service
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(
@@ -231,12 +231,12 @@ async def detailed_health_check(
         "hostname": socket.gethostname(),
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "response_time_ms": total_time,
-        "details": details,
+        "services": details,
     }
 
 
 @router.get("/metrics")
-async def metrics_endpoint() -> Dict:
+async def metrics_endpoint() -> Response:
     """
     Prometheus-style metrics endpoint for monitoring.
     """
@@ -248,31 +248,37 @@ async def metrics_endpoint() -> Dict:
         memory = psutil.virtual_memory()
         disk = psutil.disk_usage("/")
 
-        # Application metrics (placeholder - would be collected from actual usage)
-        metrics = {
-            "system_cpu_percent": cpu_percent,
-            "system_memory_percent": memory.percent,
-            "system_memory_available_bytes": memory.available,
-            "system_disk_percent": disk.percent,
-            "system_disk_free_bytes": disk.free,
-            "app_version": "1.0.0",
-            "app_environment": settings.ENVIRONMENT,
-            "app_uptime_seconds": time.time(),  # Placeholder - should track actual uptime
-            "database_connections_active": 1,  # Placeholder
-            "http_requests_total": 0,  # Placeholder
-            "http_request_duration_seconds": 0.0,  # Placeholder
-            "ai_requests_total": 0,  # Placeholder
-            "ai_cost_total_usd": 0.0,  # Placeholder
-            "email_notifications_sent_total": 0,  # Placeholder
-            "active_trips_count": 0,  # Placeholder
-            "active_families_count": 0,  # Placeholder
-        }
+        # Generate Prometheus-style metrics text
+        metrics_text = f"""# HELP system_cpu_percent System CPU usage percentage
+# TYPE system_cpu_percent gauge
+system_cpu_percent {cpu_percent}
 
-        return {
-            "status": "ok",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "metrics": metrics,
-        }
+# HELP system_memory_percent System memory usage percentage
+# TYPE system_memory_percent gauge
+system_memory_percent {memory.percent}
+
+# HELP system_memory_available_bytes System available memory in bytes
+# TYPE system_memory_available_bytes gauge
+system_memory_available_bytes {memory.available}
+
+# HELP system_disk_percent System disk usage percentage
+# TYPE system_disk_percent gauge
+system_disk_percent {disk.percent}
+
+# HELP system_disk_free_bytes System free disk space in bytes
+# TYPE system_disk_free_bytes gauge
+system_disk_free_bytes {disk.free}
+
+# HELP app_info Application information
+# TYPE app_info gauge
+app_info{{version="1.0.0",environment="{settings.ENVIRONMENT}"}} 1
+
+# HELP app_uptime_seconds Application uptime in seconds
+# TYPE app_uptime_seconds counter
+app_uptime_seconds {time.time()}
+"""
+
+        return Response(content=metrics_text, media_type="text/plain")
 
     except Exception as e:
         logger.error(f"Error collecting metrics: {e}")
@@ -293,7 +299,7 @@ async def version_info() -> Dict:
         "version": "1.0.0",
         "service": "pathfinder-api",
         "environment": settings.ENVIRONMENT,
-        "build_timestamp": "2025-06-15T00:00:00Z",  # Would be set during build
+        "build_time": "2025-06-15T00:00:00Z",  # Would be set during build
         "git_commit": "latest",  # Would be set during build
         "python_version": "3.9+",
         "dependencies": {

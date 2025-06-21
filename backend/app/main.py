@@ -5,6 +5,7 @@ Updated to fix dashboard loading route conflicts.
 
 import logging
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from typing import AsyncGenerator
 
 import uvicorn
@@ -297,6 +298,7 @@ async def health_check():
         "status": "healthy",
         "environment": settings.ENVIRONMENT,
         "version": "1.0.0",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "services": {
             "database": db_status,
             "cache": cache_status,
