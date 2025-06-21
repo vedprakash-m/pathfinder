@@ -16,6 +16,7 @@ from app.core.database import Base, GUID
 
 class UserRole(str, Enum):
     """User roles aligned with UX specification."""
+
     SUPER_ADMIN = "super_admin"
     FAMILY_ADMIN = "family_admin"  # Default for all new users
     TRIP_ORGANIZER = "trip_organizer"  # Can be combined with family_admin
@@ -24,31 +25,37 @@ class UserRole(str, Enum):
 
 class User(Base):
     """User model for SQLAlchemy."""
-    
+
     __tablename__ = "users"
-    
+
     id = Column(GUID(), primary_key=True, default=uuid4)
     auth0_id = Column(String(255), unique=True, index=True, nullable=False)
     email = Column(String(255), unique=True, index=True, nullable=False)
     name = Column(String(255), nullable=True)
-    role = Column(SQLEnum(UserRole), nullable=False, default=UserRole.FAMILY_ADMIN)  # 🔑 DEFAULT ROLE
+    role = Column(
+        SQLEnum(UserRole), nullable=False, default=UserRole.FAMILY_ADMIN
+    )  # 🔑 DEFAULT ROLE
     picture = Column(Text, nullable=True)
     phone = Column(String(50), nullable=True)
     preferences = Column(Text, nullable=True)  # JSON string
     is_active = Column(Boolean, default=True)
     is_verified = Column(Boolean, default=False)
-    
+
     # Onboarding fields
     onboarding_completed = Column(Boolean, default=False)
     onboarding_completed_at = Column(DateTime(timezone=True), nullable=True)
-    onboarding_trip_type = Column(String(50), nullable=True)  # weekend-getaway, family-vacation, adventure-trip
-    
+    onboarding_trip_type = Column(
+        String(50), nullable=True
+    )  # weekend-getaway, family-vacation, adventure-trip
+
     last_login = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    
+
     # Relationships
-    administered_families = relationship("Family", foreign_keys="Family.admin_user_id", back_populates="admin")
+    administered_families = relationship(
+        "Family", foreign_keys="Family.admin_user_id", back_populates="admin"
+    )
     family_memberships = relationship("FamilyMember", back_populates="user")
     trip_participations = relationship("TripParticipation", back_populates="user")
     created_trips = relationship("Trip", back_populates="creator")
@@ -57,8 +64,10 @@ class User(Base):
 
 # Pydantic models for API
 
+
 class UserBase(BaseModel):
     """Base user model."""
+
     email: EmailStr
     name: Optional[str] = None
     role: Optional[UserRole] = UserRole.FAMILY_ADMIN  # 🔑 DEFAULT ROLE
@@ -68,11 +77,13 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     """User creation model."""
+
     auth0_id: str
 
 
 class UserUpdate(BaseModel):
     """User update model."""
+
     name: Optional[str] = None
     phone: Optional[str] = None
     preferences: Optional[dict] = None
@@ -80,6 +91,7 @@ class UserUpdate(BaseModel):
 
 class UserResponse(UserBase):
     """User response model."""
+
     id: str
     auth0_id: str
     role: UserRole  # 🔑 INCLUDE ROLE IN RESPONSE
@@ -89,13 +101,14 @@ class UserResponse(UserBase):
     last_login: Optional[datetime] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
-    
+
     class Config:
         from_attributes = True
 
 
 class UserProfile(BaseModel):
     """Extended user profile model."""
+
     id: str
     email: str
     name: Optional[str] = None
@@ -106,13 +119,14 @@ class UserProfile(BaseModel):
     family_count: int = 0
     trip_count: int = 0
     is_family_admin: bool = False  # 🔑 CONVENIENCE FIELD
-    
+
     class Config:
         from_attributes = True
 
 
 class UserPreferences(BaseModel):
     """User preferences model."""
+
     dietary_restrictions: List[str] = []
     accessibility_needs: List[str] = []
     preferred_activities: List[str] = []
@@ -126,6 +140,6 @@ class UserPreferences(BaseModel):
         "trip_updates": True,
         "family_updates": True,
     }
-    
+
     class Config:
         from_attributes = True

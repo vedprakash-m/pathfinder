@@ -49,6 +49,7 @@ api_router.include_router(analytics_router, tags=["Analytics"])
 api_router.include_router(assistant_router, tags=["AI Assistant"])
 api_router.include_router(polls_router, tags=["Magic Polls"])
 
+
 # Simple root endpoint
 @api_router.get("/")
 async def root():

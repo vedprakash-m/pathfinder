@@ -39,9 +39,12 @@ class TripDomainService:  # pragma: no cover – thin façade for now
     the existing *TripService* to avoid a flag-day rewrite.
     """
 
-    def __init__(self, legacy_service: Any | None = None,
-                 trip_repository=None,
-                 trip_cosmos_repository=None,):
+    def __init__(
+        self,
+        legacy_service: Any | None = None,
+        trip_repository=None,
+        trip_cosmos_repository=None,
+    ):
         self._svc = legacy_service
         self._trip_repo = trip_repository
         self._trip_cosmos_repo = trip_cosmos_repository
@@ -162,8 +165,12 @@ class TripDomainService:  # pragma: no cover – thin façade for now
 
         participations = trip.participations or []
         total_families = len(participations)
-        confirmed_families = len([p for p in participations if p.status == ParticipationStatus.CONFIRMED])
-        pending_families = len([p for p in participations if p.status == ParticipationStatus.PENDING])
+        confirmed_families = len(
+            [p for p in participations if p.status == ParticipationStatus.CONFIRMED]
+        )
+        pending_families = len(
+            [p for p in participations if p.status == ParticipationStatus.PENDING]
+        )
 
         total_participants = total_families  # placeholder – individual members not tracked yet
 
@@ -289,8 +296,12 @@ class TripDomainService:  # pragma: no cover – thin façade for now
             family_id=str(participation.family_id),
             user_id=str(participation.user_id),
             status=participation.status,
-            budget_allocation=float(participation.budget_allocation) if participation.budget_allocation else None,
-            preferences=json.loads(participation.preferences) if participation.preferences else None,
+            budget_allocation=float(participation.budget_allocation)
+            if participation.budget_allocation
+            else None,
+            preferences=json.loads(participation.preferences)
+            if participation.preferences
+            else None,
             notes=participation.notes,
             joined_at=participation.joined_at,
             updated_at=participation.updated_at,
@@ -312,19 +323,17 @@ class TripDomainService:  # pragma: no cover – thin façade for now
         await self._trip_repo.delete_participation(participation)
         await self._trip_repo.commit()
 
-    async def send_invitation(
-        self, trip_id: UUID, data: TripInvitation, user_id: str
-    ) -> None:
+    async def send_invitation(self, trip_id: UUID, data: TripInvitation, user_id: str) -> None:
         await self._svc.send_invitation(data, user_id)
 
     # ---------------------------------------------------------------------
     # Helpers (temporary – to be moved to separate mapper)
     # ---------------------------------------------------------------------
 
-    async def _build_trip_response(self, trip: 'Trip') -> TripResponse:  # type: ignore[name-defined]
+    async def _build_trip_response(self, trip: "Trip") -> TripResponse:  # type: ignore[name-defined]
         """Map SQLAlchemy Trip model → TripResponse DTO."""
         # Ensure participations are loaded
-        participations = getattr(trip, 'participations', []) or []
+        participations = getattr(trip, "participations", []) or []
         family_count = len(participations)
         confirmed = [p for p in participations if p.status == ParticipationStatus.CONFIRMED]
 
@@ -347,7 +356,7 @@ class TripDomainService:  # pragma: no cover – thin façade for now
         )
 
     @staticmethod
-    def _calculate_completion_percentage(trip: 'Trip', participations) -> float:  # type: ignore[name-defined]
+    def _calculate_completion_percentage(trip: "Trip", participations) -> float:  # type: ignore[name-defined]
         if not participations:
             participations = []
 
@@ -406,7 +415,9 @@ class TripDomainService:  # pragma: no cover – thin façade for now
         )
 
     # Helper to fetch participation by trip and family
-    async def _get_participation(self, trip_id: UUID, family_id: UUID) -> Optional[TripParticipation]:
+    async def _get_participation(
+        self, trip_id: UUID, family_id: UUID
+    ) -> Optional[TripParticipation]:
         if not self._trip_repo:
             return None
         participations = await self._trip_repo.list_trip_participations(trip_id)
@@ -435,4 +446,4 @@ class TripDomainService:  # pragma: no cover – thin façade for now
             raise PermissionError("Only trip creator can update status")
 
         trip.status = status  # type: ignore[assignment]
-        await self._trip_repo.commit() 
+        await self._trip_repo.commit()

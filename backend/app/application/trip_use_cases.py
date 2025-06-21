@@ -69,9 +69,7 @@ class UpdateTripUseCase:
     def __init__(self, trip_service: TripService):
         self._trip_service = trip_service
 
-    async def __call__(
-        self, trip_id: UUID, update: "TripUpdate", user_id: str
-    ) -> TripResponse:  # noqa: D401
+    async def __call__(self, trip_id: UUID, update: "TripUpdate", user_id: str) -> TripResponse:  # noqa: D401
         from app.models.trip import TripUpdate  # local import to avoid circular
 
         return await self._trip_service.update_trip(trip_id, update, user_id)
@@ -152,8 +150,6 @@ class SendInvitationUseCase:
     def __init__(self, trip_service: TripService):
         self._trip_service = trip_service
 
-    async def __call__(
-        self, trip_id: UUID, data: TripInvitation, user_id: str
-    ) -> None:  # noqa: D401
+    async def __call__(self, trip_id: UUID, data: TripInvitation, user_id: str) -> None:  # noqa: D401
         data.trip_id = str(trip_id)
-        await self._trip_service.send_invitation(data, user_id) 
+        await self._trip_service.send_invitation(data, user_id)

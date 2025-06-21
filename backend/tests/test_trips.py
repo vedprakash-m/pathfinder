@@ -8,8 +8,14 @@ from uuid import UUID
 from unittest.mock import AsyncMock, patch
 
 from app.models.trip import (
-    Trip, TripParticipation, TripStatus, ParticipationStatus,
-    TripCreate, TripUpdate, TripResponse, TripDetail
+    Trip,
+    TripParticipation,
+    TripStatus,
+    ParticipationStatus,
+    TripCreate,
+    TripUpdate,
+    TripResponse,
+    TripDetail,
 )
 from app.models.family import Family
 from app.models.user import User
@@ -29,24 +35,24 @@ async def test_create_trip(trip_service, test_user, test_family):
         end_date=date.today() + timedelta(days=37),
         budget_total=5000.00,
         family_ids=[str(test_family.id)],
-        is_public=False
+        is_public=False,
     )
-    
+
     # Create a proper mock for cosmos operations
     mock_cosmos_ops = AsyncMock()
     mock_cosmos_ops.save_trip_preferences_to_cosmos = AsyncMock(return_value={"id": "mock-pref-id"})
     mock_cosmos_ops.itinerary_service = AsyncMock()
     mock_cosmos_ops.message_service = AsyncMock()
     mock_cosmos_ops.preference_service = AsyncMock()
-    
+
     # Replace the real cosmos_ops with our mock
     original_cosmos_ops = trip_service.cosmos_ops
     trip_service.cosmos_ops = mock_cosmos_ops
-    
+
     try:
         # Act
         trip_response = await trip_service.create_trip(trip_data, user_id)
-        
+
         # Assert
         assert trip_response is not None
         assert trip_response.name == "New Trip"
@@ -64,10 +70,10 @@ async def test_get_user_trips(trip_service, test_user, test_trip):
     """Test retrieving trips for a user."""
     # Arrange
     user_id = str(test_user.id)
-    
+
     # Act
     trips = await trip_service.get_user_trips(user_id)
-    
+
     # Assert
     assert len(trips) >= 1
     assert any(trip.id == str(test_trip.id) for trip in trips)
@@ -79,10 +85,10 @@ async def test_get_trip_by_id(trip_service, test_user, test_trip):
     # Arrange
     user_id = str(test_user.id)
     trip_id = test_trip.id
-    
+
     # Act
     trip_detail = await trip_service.get_trip_by_id(trip_id, user_id)
-    
+
     # Assert
     assert trip_detail is not None
     assert trip_detail.id == str(test_trip.id)
@@ -96,14 +102,11 @@ async def test_update_trip(trip_service, test_user, test_trip):
     # Arrange
     user_id = str(test_user.id)
     trip_id = test_trip.id
-    trip_update = TripUpdate(
-        name="Updated Trip Name",
-        description="Updated description"
-    )
-    
+    trip_update = TripUpdate(name="Updated Trip Name", description="Updated description")
+
     # Act
     updated_trip = await trip_service.update_trip(trip_id, trip_update, user_id)
-    
+
     # Assert
     assert updated_trip is not None
     assert updated_trip.name == "Updated Trip Name"
@@ -116,10 +119,10 @@ async def test_delete_trip(trip_service, test_user, test_trip):
     # Arrange
     user_id = str(test_user.id)
     trip_id = test_trip.id
-    
+
     # Act
     await trip_service.delete_trip(trip_id, user_id)
-    
+
     # Assert - trip should no longer be retrievable
     deleted_trip = await trip_service.get_trip_by_id(trip_id, user_id)
     assert deleted_trip is None
@@ -131,10 +134,10 @@ async def test_get_trip_stats(trip_service, test_user, test_trip, test_trip_part
     # Arrange
     user_id = str(test_user.id)
     trip_id = test_trip.id
-    
+
     # Act
     trip_stats = await trip_service.get_trip_stats(trip_id, user_id)
-    
+
     # Assert
     assert trip_stats is not None
     assert trip_stats.total_families >= 1
@@ -149,27 +152,24 @@ async def test_add_family_to_trip(trip_service, test_user, test_trip, db_session
     # Arrange
     user_id = str(test_user.id)
     trip_id = test_trip.id
-    
+
     # Create a new family
     new_family = Family(
         name="New Test Family",
         admin_user_id=test_user.id,
         created_at=datetime.now(),
-        updated_at=datetime.now()
+        updated_at=datetime.now(),
     )
     db_session.add(new_family)
     await db_session.commit()
-    
+
     family_id = str(new_family.id)
-    
+
     # Act
     participation = await trip_service.add_family_to_trip(
-        trip_id, 
-        family_id, 
-        user_id,
-        budget_allocation=1500.00
+        trip_id, family_id, user_id, budget_allocation=1500.00
     )
-    
+
     # Assert
     assert participation is not None
     assert participation.trip_id == str(trip_id)
@@ -189,17 +189,15 @@ async def test_cannot_update_trip_without_permission(trip_service, test_trip, db
         name="Other User",
         created_at=datetime.now(),
         updated_at=datetime.now(),
-        is_active=True
+        is_active=True,
     )
     db_session.add(other_user)
     await db_session.commit()
-    
+
     user_id = str(other_user.id)
     trip_id = test_trip.id
-    trip_update = TripUpdate(
-        name="Unauthorized Update"
-    )
-    
+    trip_update = TripUpdate(name="Unauthorized Update")
+
     # Act & Assert
     with pytest.raises(PermissionError):
         await trip_service.update_trip(trip_id, trip_update, user_id)
@@ -216,14 +214,14 @@ async def test_cannot_delete_trip_without_permission(trip_service, test_trip, db
         name="Other User",
         created_at=datetime.now(),
         updated_at=datetime.now(),
-        is_active=True
+        is_active=True,
     )
     db_session.add(other_user)
     await db_session.commit()
-    
+
     user_id = str(other_user.id)
     trip_id = test_trip.id
-    
+
     # Act & Assert
     with pytest.raises(PermissionError):
         await trip_service.delete_trip(trip_id, user_id)

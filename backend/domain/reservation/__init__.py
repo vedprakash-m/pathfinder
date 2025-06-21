@@ -7,4 +7,4 @@ from dataclasses import dataclass
 
 @dataclass
 class ReservationDomainService:  # pragma: no cover – stub
-    pass 
+    pass

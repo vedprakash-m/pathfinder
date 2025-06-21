@@ -9,7 +9,17 @@ from typing import Optional
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
-from sqlalchemy import Boolean, Column, DateTime, Enum as SQLEnum, ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Enum as SQLEnum,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    Text,
+)
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base, GUID
@@ -17,6 +27,7 @@ from app.core.database import Base, GUID
 
 class ReservationType(str, Enum):
     """Reservation types."""
+
     ACCOMMODATION = "accommodation"
     RESTAURANT = "restaurant"
     ACTIVITY = "activity"
@@ -31,6 +42,7 @@ class ReservationType(str, Enum):
 
 class ReservationStatus(str, Enum):
     """Reservation status types."""
+
     PENDING = "pending"
     CONFIRMED = "confirmed"
     CANCELLED = "cancelled"
@@ -41,6 +53,7 @@ class ReservationStatus(str, Enum):
 
 class PaymentStatus(str, Enum):
     """Payment status types."""
+
     UNPAID = "unpaid"
     PARTIALLY_PAID = "partially_paid"
     PAID = "paid"
@@ -50,6 +63,7 @@ class PaymentStatus(str, Enum):
 
 class CancellationPolicy(str, Enum):
     """Cancellation policy types."""
+
     FREE_CANCELLATION = "free_cancellation"
     MODERATE = "moderate"
     STRICT = "strict"
@@ -58,75 +72,76 @@ class CancellationPolicy(str, Enum):
 
 class Reservation(Base):
     """Reservation model."""
+
     __tablename__ = "reservations"
 
     id = Column(GUID(), primary_key=True, default=uuid4)
     trip_id = Column(GUID(), ForeignKey("trips.id"), nullable=False)
     family_id = Column(GUID(), ForeignKey("families.id"), nullable=False)
     created_by = Column(GUID(), ForeignKey("users.id"), nullable=False)
-    
+
     # Reservation details
     type = Column(SQLEnum(ReservationType), nullable=False)
     status = Column(SQLEnum(ReservationStatus), default=ReservationStatus.PENDING)
     payment_status = Column(SQLEnum(PaymentStatus), default=PaymentStatus.UNPAID)
-    
+
     # Basic information
     name = Column(String(200), nullable=False)
     description = Column(Text, nullable=True)
     provider_name = Column(String(200), nullable=True)  # Hotel name, restaurant name, etc.
-    
+
     # Location information
     location_name = Column(String(200), nullable=True)
     address = Column(Text, nullable=True)
     latitude = Column(Numeric(10, 8), nullable=True)
     longitude = Column(Numeric(11, 8), nullable=True)
     google_place_id = Column(String(100), nullable=True)
-    
+
     # Timing
     check_in = Column(DateTime, nullable=True)
     check_out = Column(DateTime, nullable=True)
     duration_hours = Column(Numeric(5, 2), nullable=True)
-    
+
     # Capacity and pricing
     number_of_guests = Column(Integer, nullable=False, default=1)
     number_of_rooms = Column(Integer, nullable=True)  # For accommodations
     cost_per_person = Column(Numeric(10, 2), nullable=True)
     total_cost = Column(Numeric(10, 2), nullable=False)
     currency = Column(String(3), default="USD")
-    
+
     # Booking information
     confirmation_number = Column(String(100), nullable=True)
     booking_reference = Column(String(100), nullable=True)
     booking_url = Column(Text, nullable=True)
     booking_email = Column(String(200), nullable=True)
     booking_phone = Column(String(20), nullable=True)
-    
+
     # Policy and terms
     cancellation_policy = Column(SQLEnum(CancellationPolicy), nullable=True)
     cancellation_deadline = Column(DateTime, nullable=True)
     terms_and_conditions = Column(Text, nullable=True)
-    
+
     # Payment information
     deposit_amount = Column(Numeric(10, 2), nullable=True)
     deposit_paid_at = Column(DateTime, nullable=True)
     full_payment_due = Column(DateTime, nullable=True)
     payment_method = Column(String(50), nullable=True)
-    
+
     # Additional details
     special_requests = Column(Text, nullable=True)
     notes = Column(Text, nullable=True)
     confirmation_email_sent = Column(Boolean, default=False)
     reminder_sent = Column(Boolean, default=False)
-    
+
     # External integration
     external_booking_id = Column(String(100), nullable=True)
     external_provider = Column(String(50), nullable=True)  # booking.com, expedia, etc.
-    
+
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     cancelled_at = Column(DateTime, nullable=True)
-    
+
     # Relationships
     trip = relationship("Trip", back_populates="reservations")
     family = relationship("Family", back_populates="reservations")
@@ -135,11 +150,12 @@ class Reservation(Base):
 
 class ReservationDocument(Base):
     """Reservation document model for storing tickets, confirmations, etc."""
+
     __tablename__ = "reservation_documents"
 
     id = Column(GUID(), primary_key=True, default=uuid4)
     reservation_id = Column(GUID(), ForeignKey("reservations.id"), nullable=False)
-    
+
     # Document details
     name = Column(String(200), nullable=False)
     document_type = Column(String(50), nullable=False)  # confirmation, ticket, receipt, etc.
@@ -147,23 +163,26 @@ class ReservationDocument(Base):
     file_url = Column(Text, nullable=True)
     file_size = Column(Integer, nullable=True)
     mime_type = Column(String(100), nullable=True)
-    
+
     # Metadata
     uploaded_by = Column(GUID(), ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
-    
+
     # Relationships
     reservation = relationship("Reservation", back_populates="documents")
     uploader = relationship("User", foreign_keys=[uploaded_by])
 
 
 # Add relationship to Reservation model
-Reservation.documents = relationship("ReservationDocument", back_populates="reservation", cascade="all, delete-orphan")
+Reservation.documents = relationship(
+    "ReservationDocument", back_populates="reservation", cascade="all, delete-orphan"
+)
 
 
 # Pydantic models for API serialization
 class ReservationDocumentBase(BaseModel):
     """Base reservation document model."""
+
     name: str = Field(..., max_length=200)
     document_type: str = Field(..., max_length=50)
     file_url: Optional[str] = None
@@ -171,24 +190,27 @@ class ReservationDocumentBase(BaseModel):
 
 class ReservationDocumentCreate(ReservationDocumentBase):
     """Reservation document creation model."""
+
     pass
 
 
 class ReservationDocumentResponse(ReservationDocumentBase):
     """Reservation document response model."""
+
     id: UUID
     reservation_id: UUID
     file_size: Optional[int] = None
     mime_type: Optional[str] = None
     uploaded_by: UUID
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
 
 class ReservationBase(BaseModel):
     """Base reservation model."""
+
     type: ReservationType
     name: str = Field(..., max_length=200)
     description: Optional[str] = None
@@ -225,12 +247,14 @@ class ReservationBase(BaseModel):
 
 class ReservationCreate(ReservationBase):
     """Reservation creation model."""
+
     trip_id: UUID
     family_id: UUID
 
 
 class ReservationUpdate(BaseModel):
     """Reservation update model."""
+
     status: Optional[ReservationStatus] = None
     payment_status: Optional[PaymentStatus] = None
     name: Optional[str] = Field(None, max_length=200)
@@ -269,6 +293,7 @@ class ReservationUpdate(BaseModel):
 
 class ReservationResponse(ReservationBase):
     """Reservation response model."""
+
     id: UUID
     trip_id: UUID
     family_id: UUID
@@ -282,13 +307,14 @@ class ReservationResponse(ReservationBase):
     created_at: datetime
     updated_at: datetime
     cancelled_at: Optional[datetime] = None
-    
+
     class Config:
         from_attributes = True
 
 
 class ReservationListResponse(BaseModel):
     """Paginated reservation list response."""
+
     reservations: list[ReservationResponse]
     total: int
     page: int
@@ -299,6 +325,7 @@ class ReservationListResponse(BaseModel):
 
 class ReservationSummary(BaseModel):
     """Reservation summary for trip overview."""
+
     total_reservations: int
     by_type: dict[str, int]
     by_status: dict[str, int]
@@ -309,6 +336,7 @@ class ReservationSummary(BaseModel):
 
 class ReservationFilters(BaseModel):
     """Reservation filtering options."""
+
     type: Optional[ReservationType] = None
     status: Optional[ReservationStatus] = None
     payment_status: Optional[PaymentStatus] = None

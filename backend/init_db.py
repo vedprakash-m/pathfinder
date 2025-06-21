@@ -13,6 +13,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from app.core.database import engine, Base
 from app.models import *  # Import all models
 
+
 async def create_database():
     """Create all database tables"""
     try:
@@ -23,6 +24,7 @@ async def create_database():
         print(f"❌ Error creating database tables: {e}")
         return False
     return True
+
 
 if __name__ == "__main__":
     success = asyncio.run(create_database())

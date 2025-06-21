@@ -4,6 +4,7 @@ Trip management API endpoints.
 
 from typing import List, Optional
 from uuid import UUID
+from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 # from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,10 +14,17 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from app.core.zero_trust import require_permissions
 from app.models.user import User
 from app.models.trip import (
-    TripCreate, TripUpdate, TripResponse, TripDetail, TripStats,
-    ParticipationCreate, ParticipationUpdate, ParticipationResponse,
-    TripInvitation
+    TripCreate,
+    TripUpdate,
+    TripResponse,
+    TripDetail,
+    TripStats,
+    ParticipationCreate,
+    ParticipationUpdate,
+    ParticipationResponse,
+    TripInvitation,
 )
+
 # from app.services.trip_service import TripService  # TODO: will be removed after repository migration
 from app.services.trip_cosmos import TripCosmosOperations
 from dependency_injector.wiring import Provide, inject
@@ -50,10 +58,7 @@ async def create_trip(
     try:
         return await use_case(trip_data, current_user.id)
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 # --------------------------------------------------------------
@@ -80,25 +85,84 @@ async def create_sample_trip(
     The trip is **private** (`is_public=False`) and linked to the creator’s family only.
     """
 
-    # Basic defaults per template
+    # Enhanced template data with realistic details and decision scenarios
     template_map = {
         "weekend_getaway": {
-            "name": "Sample Weekend Getaway",
-            "description": "2-3 day nearby escape to showcase Pathfinder features.",
-            "destination": "Sample City",
-            "duration": 2,
+            "name": "Napa Valley Family Weekend",
+            "description": "A relaxing weekend exploring California wine country with family-friendly activities, scenic hot air balloon rides, and farm-to-table dining experiences.",
+            "destination": "Napa Valley, California",
+            "duration": 3,
+            "budget": 1200.0,
+            "activities": [
+                "Family-friendly wineries with kids' activities",
+                "Hot air balloon ride over vineyards",
+                "Oxbow Public Market food tour",
+                "Castello di Amorosa castle tour"
+            ],
+            "decision_scenarios": [
+                {
+                    "title": "Balloon Ride Timing",
+                    "options": ["Early morning (6 AM)", "Late afternoon (4 PM)"],
+                    "context": "Weather is best in morning, but kids prefer afternoon"
+                },
+                {
+                    "title": "Dining Choice",
+                    "options": ["Fancy restaurant ($80/person)", "Casual family place ($35/person)"],
+                    "context": "Budget vs experience decision"
+                }
+            ]
         },
         "family_vacation": {
-            "name": "Sample Family Vacation",
-            "description": "Kid-friendly 1-week vacation demo.",
-            "destination": "Sample Beach Resort",
-            "duration": 6,
+            "name": "Yellowstone National Park Adventure",
+            "description": "A week-long exploration of America's first national park with wildlife viewing, geothermal wonders, and Junior Ranger programs for kids.",
+            "destination": "Yellowstone National Park, Wyoming",
+            "duration": 7,
+            "budget": 3200.0,
+            "activities": [
+                "Old Faithful geyser viewing",
+                "Wildlife safari in Lamar Valley",
+                "Junior Ranger program participation",
+                "Grand Prismatic Spring boardwalk",
+                "Yellowstone Lake boat tour"
+            ],
+            "decision_scenarios": [
+                {
+                    "title": "Accommodation Type",
+                    "options": ["Park lodge ($200/night)", "Camping ($30/night)", "Outside hotel ($120/night)"],
+                    "context": "Comfort vs budget vs park experience"
+                },
+                {
+                    "title": "Activity Level",
+                    "options": ["Easy trails only", "Mix of easy and moderate", "Include challenging hikes"],
+                    "context": "Family fitness levels vary"
+                }
+            ]
         },
         "adventure_trip": {
-            "name": "Sample Adventure Trip",
-            "description": "Outdoor adventure template.",
-            "destination": "Sample National Park",
-            "duration": 4,
+            "name": "Costa Rica Eco-Adventure",
+            "description": "Multi-family adventure featuring zip-lining, wildlife spotting, volcano hikes, and beach relaxation in Costa Rica's diverse landscapes.",
+            "destination": "Costa Rica (Manuel Antonio & Arenal)",
+            "duration": 5,
+            "budget": 2800.0,
+            "activities": [
+                "Zip-lining through cloud forest canopy",
+                "Arenal Volcano hiking and hot springs",
+                "Manuel Antonio beach and wildlife",
+                "Coffee plantation tour",
+                "White water rafting (family-friendly)"
+            ],
+            "decision_scenarios": [
+                {
+                    "title": "Adventure Intensity",
+                    "options": ["High adventure (zip-line, rafting)", "Moderate (hiking, wildlife)", "Relaxed (beaches, culture)"],
+                    "context": "Different comfort levels with adventure activities"
+                },
+                {
+                    "title": "Transportation",
+                    "options": ["Rental car (flexible)", "Private shuttle (convenient)", "Public transport (budget)"],
+                    "context": "Independence vs convenience vs cost"
+                }
+            ]
         },
     }
 
@@ -111,8 +175,14 @@ async def create_sample_trip(
         destination=cfg["destination"],
         start_date=today + timedelta(days=14),
         end_date=today + timedelta(days=14 + cfg["duration"]),
-        budget_total=0.0,
-        preferences=None,
+        budget_total=cfg["budget"],
+        preferences={
+            "trip_type": template.replace("_", " ").title(),
+            "activities": cfg["activities"],
+            "decision_scenarios": cfg["decision_scenarios"],
+            "sample_trip": True,
+            "template_used": template
+        },
         is_public=False,
         family_ids=[],  # The CreateTripUseCase will auto-attach creator’s family
     )
@@ -216,6 +286,7 @@ async def get_trip_stats(
 
 # Participation endpoints
 
+
 @router.post("/{trip_id}/participants", response_model=ParticipationResponse)
 @inject
 async def add_participant(
@@ -251,7 +322,9 @@ async def update_participation(
     participation_id: UUID,
     participation_update: ParticipationUpdate,
     current_user: User = Depends(require_permissions("trips", "update")),
-    use_case: UpdateParticipationUseCase = Depends(Provide[Container.update_participation_use_case]),
+    use_case: UpdateParticipationUseCase = Depends(
+        Provide[Container.update_participation_use_case]
+    ),
 ):
     """Update family participation status (application layer)."""
 
@@ -290,6 +363,7 @@ async def remove_participant(
 
 # Invitation endpoints
 
+
 @router.post("/{trip_id}/invitations")
 @inject
 async def send_invitation(
@@ -315,12 +389,9 @@ async def get_trip_messages(
 ):
     """Get trip messages."""
     cosmos_service = TripCosmosOperations()
-    
+
     messages = await cosmos_service.get_trip_messages(str(trip_id))
     if messages is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Trip messages not found"
-        )
-    
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip messages not found")
+
     return messages

@@ -22,9 +22,9 @@ if env_test_file.exists():
     with open(env_test_file) as f:
         for line in f:
             line = line.strip()
-            if line and not line.startswith('#'):
-                if '=' in line:
-                    key, value = line.split('=', 1)
+            if line and not line.startswith("#"):
+                if "=" in line:
+                    key, value = line.split("=", 1)
                     os.environ[key] = value
 
 # Add the backend directory to the Python path
@@ -32,4 +32,5 @@ sys.path.insert(0, str(backend_dir))
 
 if __name__ == "__main__":
     import pytest
+
     sys.exit(pytest.main(sys.argv[1:]))

@@ -3,27 +3,20 @@ Cosmos DB document models package initialization.
 """
 
 from app.models.cosmos.itinerary import (
-    ItineraryDocument, 
-    ItineraryDayDocument, 
-    ItineraryActivityDocument
+    ItineraryDocument,
+    ItineraryDayDocument,
+    ItineraryActivityDocument,
 )
-from app.models.cosmos.message import (
-    MessageDocument, 
-    MessageType, 
-    MessageStatus
-)
-from app.models.cosmos.preference import (
-    PreferenceDocument, 
-    PreferenceType
-)
+from app.models.cosmos.message import MessageDocument, MessageType, MessageStatus
+from app.models.cosmos.preference import PreferenceDocument, PreferenceType
 
 __all__ = [
-    "ItineraryDocument", 
-    "ItineraryDayDocument", 
+    "ItineraryDocument",
+    "ItineraryDayDocument",
     "ItineraryActivityDocument",
-    "MessageDocument", 
-    "MessageType", 
+    "MessageDocument",
+    "MessageType",
     "MessageStatus",
-    "PreferenceDocument", 
-    "PreferenceType"
+    "PreferenceDocument",
+    "PreferenceType",
 ]

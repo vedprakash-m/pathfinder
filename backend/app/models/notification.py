@@ -16,6 +16,7 @@ from app.core.database import Base, GUID
 
 class NotificationType(str, Enum):
     """Notification types."""
+
     TRIP_INVITATION = "trip_invitation"
     TRIP_UPDATE = "trip_update"
     ITINERARY_READY = "itinerary_ready"
@@ -29,6 +30,7 @@ class NotificationType(str, Enum):
 
 class NotificationPriority(str, Enum):
     """Notification priority levels."""
+
     LOW = "low"
     NORMAL = "normal"
     HIGH = "high"
@@ -37,6 +39,7 @@ class NotificationPriority(str, Enum):
 
 class Notification(Base):
     """Notification model."""
+
     __tablename__ = "notifications"
 
     id = Column(GUID(), primary_key=True, default=uuid4)
@@ -45,20 +48,20 @@ class Notification(Base):
     priority = Column(SQLEnum(NotificationPriority), default=NotificationPriority.NORMAL)
     title = Column(String(200), nullable=False)
     message = Column(Text, nullable=False)
-    
+
     # Reference to related entities
     trip_id = Column(GUID(), ForeignKey("trips.id"), nullable=True)
     family_id = Column(GUID(), ForeignKey("families.id"), nullable=True)
-    
+
     # Status and timestamps
     is_read = Column(Boolean, default=False)
     read_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     expires_at = Column(DateTime, nullable=True)
-    
+
     # Additional data as JSON string
     data = Column(Text, nullable=True)  # JSON string for additional notification data
-    
+
     # Relationships
     user = relationship("User", back_populates="notifications")
     trip = relationship("Trip", back_populates="notifications")
@@ -68,6 +71,7 @@ class Notification(Base):
 # Pydantic models for API serialization
 class NotificationBase(BaseModel):
     """Base notification model."""
+
     type: NotificationType
     priority: NotificationPriority = NotificationPriority.NORMAL
     title: str = Field(..., max_length=200)
@@ -80,29 +84,33 @@ class NotificationBase(BaseModel):
 
 class NotificationCreate(NotificationBase):
     """Notification creation model."""
+
     user_id: UUID
 
 
 class NotificationUpdate(BaseModel):
     """Notification update model."""
+
     is_read: Optional[bool] = None
     read_at: Optional[datetime] = None
 
 
 class NotificationResponse(NotificationBase):
     """Notification response model."""
+
     id: UUID
     user_id: UUID
     is_read: bool
     read_at: Optional[datetime] = None
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
 
 class NotificationListResponse(BaseModel):
     """Paginated notification list response."""
+
     notifications: list[NotificationResponse]
     total: int
     page: int
@@ -113,6 +121,7 @@ class NotificationListResponse(BaseModel):
 
 class NotificationStats(BaseModel):
     """Notification statistics."""
+
     total: int
     unread: int
     by_type: dict[str, int]
@@ -121,6 +130,7 @@ class NotificationStats(BaseModel):
 
 class BulkNotificationCreate(BaseModel):
     """Bulk notification creation model."""
+
     user_ids: list[UUID]
     type: NotificationType
     priority: NotificationPriority = NotificationPriority.NORMAL
@@ -134,6 +144,7 @@ class BulkNotificationCreate(BaseModel):
 
 class NotificationFilters(BaseModel):
     """Notification filtering options."""
+
     type: Optional[NotificationType] = None
     priority: Optional[NotificationPriority] = None
     is_read: Optional[bool] = None
@@ -145,11 +156,13 @@ class NotificationFilters(BaseModel):
 
 class NotificationMarkRead(BaseModel):
     """Mark notifications as read."""
+
     notification_ids: list[UUID]
 
 
 class NotificationSettings(BaseModel):
     """User notification preferences."""
+
     email_notifications: bool = True
     push_notifications: bool = True
     trip_invitations: bool = True

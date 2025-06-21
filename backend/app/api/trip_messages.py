@@ -29,11 +29,11 @@ async def get_trip_messages(
     room_id: Optional[str] = None,
     limit: int = Query(50, gt=0, le=100),
     current_user: User = Depends(require_permissions("trips", "read")),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Get messages for a trip from Cosmos DB.
-    
+
     Parameters:
     - trip_id: The trip ID
     - room_id: Optional room ID to filter messages by
@@ -41,17 +41,15 @@ async def get_trip_messages(
     """
     try:
         messages = await cosmos_service.get_trip_messages(
-            trip_id=str(trip_id),
-            room_id=room_id,
-            limit=limit
+            trip_id=str(trip_id), room_id=room_id, limit=limit
         )
-        
+
         # Convert Cosmos DB documents to dictionary responses
         return [message.dict(exclude={"_resource_id", "_etag", "_ts"}) for message in messages]
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve messages: {str(e)}"
+            detail=f"Failed to retrieve messages: {str(e)}",
         )
 
 
@@ -61,11 +59,11 @@ async def send_trip_message(
     message: Dict[str, Any],
     room_id: Optional[str] = None,
     current_user: User = Depends(require_permissions("trips", "write")),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Send a new message in the trip chat.
-    
+
     Parameters:
     - trip_id: The trip ID
     - message: Message content (text required)
@@ -73,12 +71,11 @@ async def send_trip_message(
     """
     if "text" not in message:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Message must contain 'text'"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Message must contain 'text'"
         )
-    
+
     message_type = MessageType(message.get("type", "chat"))
-    
+
     try:
         result = await cosmos_service.send_trip_message(
             trip_id=str(trip_id),
@@ -86,18 +83,17 @@ async def send_trip_message(
             sender_name=current_user.name or current_user.email,
             text=message["text"],
             message_type=message_type,
-            room_id=room_id
+            room_id=room_id,
         )
-        
+
         if result:
             return result.dict(exclude={"_resource_id", "_etag", "_ts"})
         else:
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to send message"
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to send message"
             )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to send message: {str(e)}"
+            detail=f"Failed to send message: {str(e)}",
         )

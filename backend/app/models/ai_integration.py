@@ -12,6 +12,7 @@ import uuid
 
 class ContextType(str, Enum):
     """Context types for AI assistant interactions"""
+
     TRIP_PLANNING = "trip_planning"
     ITINERARY_REVIEW = "itinerary_review"
     FAMILY_COORDINATION = "family_coordination"
@@ -23,6 +24,7 @@ class ContextType(str, Enum):
 
 class PollType(str, Enum):
     """Types of Magic Polls"""
+
     DESTINATION_CHOICE = "destination_choice"
     ACTIVITY_PREFERENCE = "activity_preference"
     BUDGET_RANGE = "budget_range"
@@ -35,6 +37,7 @@ class PollType(str, Enum):
 
 class PollStatus(str, Enum):
     """Magic Poll status"""
+
     ACTIVE = "active"
     COMPLETED = "completed"
     EXPIRED = "expired"
@@ -43,6 +46,7 @@ class PollStatus(str, Enum):
 
 class SuggestionType(str, Enum):
     """AI suggestion types"""
+
     TRIP_IMPROVEMENT = "trip_improvement"
     COST_OPTIMIZATION = "cost_optimization"
     SCHEDULING_CONFLICT = "scheduling_conflict"
@@ -53,6 +57,7 @@ class SuggestionType(str, Enum):
 
 class ResponseCardType(str, Enum):
     """Types of AI response cards"""
+
     DESTINATION_INFO = "destination_info"
     ACTIVITY_SUGGESTION = "activity_suggestion"
     BUDGET_BREAKDOWN = "budget_breakdown"
@@ -63,6 +68,7 @@ class ResponseCardType(str, Enum):
 
 class AssistantInteraction(Base):
     """Model for Pathfinder Assistant interactions"""
+
     __tablename__ = "assistant_interactions"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -101,6 +107,7 @@ class AssistantInteraction(Base):
 
 class MagicPoll(Base):
     """Model for Magic Polls with AI-powered decision making"""
+
     __tablename__ = "magic_polls"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -151,6 +158,7 @@ class MagicPoll(Base):
 
 class AIResponseCard(Base):
     """Model for rich AI response cards"""
+
     __tablename__ = "ai_response_cards"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -181,6 +189,7 @@ class AIResponseCard(Base):
 
 class AISuggestion(Base):
     """Model for contextual AI suggestions"""
+
     __tablename__ = "ai_suggestions"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -227,12 +236,13 @@ class AISuggestion(Base):
 
 # Helper functions for creating common AI interactions
 
+
 def create_assistant_interaction(
     user_id: str,
     message: str,
     context_type: ContextType,
     trip_id: Optional[str] = None,
-    family_id: Optional[str] = None
+    family_id: Optional[str] = None,
 ) -> AssistantInteraction:
     """Create a new assistant interaction"""
     return AssistantInteraction(
@@ -240,7 +250,7 @@ def create_assistant_interaction(
         trip_id=trip_id,
         family_id=family_id,
         message=message,
-        context_type=context_type.value
+        context_type=context_type.value,
     )
 
 
@@ -251,11 +261,11 @@ def create_magic_poll(
     poll_type: PollType,
     options: List[Dict[str, Any]],
     description: Optional[str] = None,
-    expires_hours: int = 72
+    expires_hours: int = 72,
 ) -> MagicPoll:
     """Create a new Magic Poll"""
     expires_at = datetime.utcnow() + timedelta(hours=expires_hours)
-    
+
     return MagicPoll(
         trip_id=trip_id,
         creator_id=creator_id,
@@ -264,7 +274,7 @@ def create_magic_poll(
         poll_type=poll_type.value,
         options=options,
         responses={"user_responses": []},
-        expires_at=expires_at
+        expires_at=expires_at,
     )
 
 
@@ -277,13 +287,13 @@ def create_ai_suggestion(
     trip_id: Optional[str] = None,
     action_data: Optional[Dict[str, Any]] = None,
     priority: int = 5,
-    expires_hours: Optional[int] = None
+    expires_hours: Optional[int] = None,
 ) -> AISuggestion:
     """Create a new AI suggestion"""
     expires_at = None
     if expires_hours:
         expires_at = datetime.utcnow() + timedelta(hours=expires_hours)
-    
+
     return AISuggestion(
         user_id=user_id,
         trip_id=trip_id,
@@ -293,5 +303,5 @@ def create_ai_suggestion(
         description=description,
         action_data=action_data,
         priority=priority,
-        expires_at=expires_at
+        expires_at=expires_at,
     )

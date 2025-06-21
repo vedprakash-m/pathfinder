@@ -11,7 +11,7 @@ from .maps_service import maps_service
 
 __all__ = [
     "ai_service",  # Re-enabled after fixing import issues
-    "auth_service", 
+    "auth_service",
     "websocket_manager",
-    "maps_service"
+    "maps_service",
 ]

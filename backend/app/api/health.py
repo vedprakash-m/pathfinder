@@ -34,8 +34,7 @@ async def health_check() -> Dict:
 
 @router.get("/ready")
 async def readiness_check(
-    db: AsyncSession = Depends(get_db),
-    cosmos_client = Depends(get_cosmos_client)
+    db: AsyncSession = Depends(get_db), cosmos_client=Depends(get_cosmos_client)
 ) -> Dict:
     """
     Readiness check that verifies database connections.
@@ -43,7 +42,7 @@ async def readiness_check(
     """
     status = "ok"
     details = {}
-    
+
     # Check SQL database connection
     try:
         result = await db.execute("SELECT 1")
@@ -52,7 +51,7 @@ async def readiness_check(
         status = "error"
         details["database"] = f"error: {str(e)}"
         logger.error(f"Database connection error: {e}")
-    
+
     # Check Cosmos DB connection
     try:
         cosmos_databases = list(cosmos_client.list_databases())
@@ -61,14 +60,10 @@ async def readiness_check(
         status = "error"
         details["cosmos_db"] = f"error: {str(e)}"
         logger.error(f"Cosmos DB connection error: {e}")
-    
+
     # Add other checks as needed (Redis, AI service, etc.)
-    
-    return {
-        "status": status,
-        "service": "pathfinder-api",
-        "details": details
-    }
+
+    return {"status": status, "service": "pathfinder-api", "details": details}
 
 
 @router.get("/live")
@@ -85,8 +80,8 @@ async def liveness_check() -> Dict:
 
 @router.get("/detailed")
 async def detailed_health_check(
-    db: AsyncSession = Depends(get_db),
-    cosmos_client = Depends(get_cosmos_client)
+    db: AsyncSession = Depends(get_db), 
+    cosmos_client=Depends(get_cosmos_client)
 ) -> Dict:
     """
     Detailed health check endpoint that provides comprehensive system status.
@@ -96,9 +91,9 @@ async def detailed_health_check(
         "database": {"status": "unknown"},
         "cosmos_db": {"status": "unknown"},
         "cache": {"status": "unknown"},
-        "ai_service": {"status": "unknown"}
+        "ai_service": {"status": "unknown"},
     }
-    
+
     # Check SQL database connection
     try:
         result = await db.execute("SELECT 1")
@@ -107,7 +102,7 @@ async def detailed_health_check(
         status = "degraded"
         details["database"] = {"status": "error", "error": str(e)}
         logger.error(f"Database connection error: {e}")
-    
+
     # Check Cosmos DB connection
     try:
         cosmos_databases = list(cosmos_client.list_databases())
@@ -116,24 +111,24 @@ async def detailed_health_check(
         status = "degraded"
         details["cosmos_db"] = {"status": "error", "error": str(e)}
         logger.error(f"Cosmos DB connection error: {e}")
-    
+
     # Check Redis cache
     try:
         # For now, just mark as unknown since Redis is optional in tests
         details["cache"] = {"status": "unknown", "type": "redis"}
     except Exception as e:
         details["cache"] = {"status": "error", "error": str(e)}
-    
+
     # Check AI service availability
     try:
         # For now, just mark as available
         details["ai_service"] = {"status": "available", "type": "llm_orchestration"}
     except Exception as e:
         details["ai_service"] = {"status": "error", "error": str(e)}
-    
+
     return {
         "status": status,
         "service": "pathfinder-api",
         "timestamp": "2025-01-01T00:00:00Z",  # TODO: Use actual timestamp
-        "details": details
+        "details": details,
     }

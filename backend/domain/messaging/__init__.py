@@ -7,4 +7,4 @@ from dataclasses import dataclass
 
 @dataclass
 class MessagingDomainService:  # pragma: no cover – stub
-    pass 
+    pass

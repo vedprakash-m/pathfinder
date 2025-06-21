@@ -18,6 +18,7 @@ from app.models.user import User
 # Test database setup
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
+
 @pytest.fixture(scope="session")
 def event_loop():
     """Create an instance of the default event loop for the test session."""
@@ -34,17 +35,15 @@ async def test_db():
         poolclass=StaticPool,
         connect_args={"check_same_thread": False},
     )
-    
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    
-    TestingSessionLocal = sessionmaker(
-        engine, class_=AsyncSession, expire_on_commit=False
-    )
-    
+
+    TestingSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
     async with TestingSessionLocal() as session:
         yield session
-    
+
     await engine.dispose()
 
 
@@ -56,24 +55,25 @@ def mock_current_user():
         email="test@example.com",
         auth0_id="auth0|test123",
         role="user",
-        family_id="test-family-456"
+        family_id="test-family-456",
     )
 
 
 @pytest.fixture
 def mock_auth_dependency(mock_current_user):
     """Mock authentication dependency."""
+
     def get_mock_user():
         return mock_current_user
-    
+
     # Override the authentication dependency
     app.dependency_overrides[require_permissions("trips", "create")] = get_mock_user
     app.dependency_overrides[require_permissions("trips", "read")] = get_mock_user
     app.dependency_overrides[require_permissions("trips", "update")] = get_mock_user
     app.dependency_overrides[require_permissions("trips", "delete")] = get_mock_user
-    
+
     yield get_mock_user
-    
+
     # Clean up overrides
     app.dependency_overrides.clear()
 
@@ -81,22 +81,22 @@ def mock_auth_dependency(mock_current_user):
 @pytest.fixture
 def test_client(mock_auth_dependency, test_db):
     """Create a test client with mocked dependencies."""
-    
+
     def get_test_db():
         return test_db
-    
+
     app.dependency_overrides[get_db] = get_test_db
-    
+
     client = TestClient(app)
     yield client
-    
+
     app.dependency_overrides.clear()
 
 
 @pytest.fixture
 def mock_celery():
     """Mock Celery for tests that don't need Redis."""
-    with patch('app.main.app.state.celery') as mock:
+    with patch("app.main.app.state.celery") as mock:
         mock.control.shutdown = MagicMock()
         yield mock
 
@@ -104,6 +104,6 @@ def mock_celery():
 @pytest.fixture
 def no_redis_startup():
     """Fixture to disable Redis/Celery during app startup for tests."""
-    with patch('app.main.initialize_celery') as mock_celery:
+    with patch("app.main.initialize_celery") as mock_celery:
         mock_celery.return_value = MagicMock()
         yield mock_celery

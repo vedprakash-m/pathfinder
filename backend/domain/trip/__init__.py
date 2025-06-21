@@ -1,3 +1,3 @@
-"""Trip domain models and services.""" 
+"""Trip domain models and services."""
 
-from .domain_service import TripDomainService  # noqa: F401 
+from .domain_service import TripDomainService  # noqa: F401

@@ -41,9 +41,11 @@ from backend.domain.messaging import MessagingDomainService
 class Container(containers.DeclarativeContainer):
     """Global application service container."""
 
-    wiring_config = containers.WiringConfiguration(packages=(
-        "app.api",  # wire all API routers
-    ))
+    wiring_config = containers.WiringConfiguration(
+        packages=(
+            "app.api",  # wire all API routers
+        )
+    )
 
     # -------------------------------
     # Infrastructure / external deps
@@ -72,17 +74,31 @@ class Container(containers.DeclarativeContainer):
     # Use-cases
     create_trip_use_case = providers.Factory(CreateTripUseCase, trip_service=trip_domain_service)
     get_trip_use_case = providers.Factory(GetTripUseCase, trip_service=trip_domain_service)
-    list_user_trips_use_case = providers.Factory(ListUserTripsUseCase, trip_service=trip_domain_service)
+    list_user_trips_use_case = providers.Factory(
+        ListUserTripsUseCase, trip_service=trip_domain_service
+    )
     update_trip_use_case = providers.Factory(UpdateTripUseCase, trip_service=trip_domain_service)
     delete_trip_use_case = providers.Factory(DeleteTripUseCase, trip_service=trip_domain_service)
 
     # Stats & participant management
-    get_trip_stats_use_case = providers.Factory(GetTripStatsUseCase, trip_service=trip_domain_service)
-    add_participant_use_case = providers.Factory(AddParticipantUseCase, trip_service=trip_domain_service)
-    get_participants_use_case = providers.Factory(GetParticipantsUseCase, trip_service=trip_domain_service)
-    update_participation_use_case = providers.Factory(UpdateParticipationUseCase, trip_service=trip_domain_service)
-    remove_participant_use_case = providers.Factory(RemoveParticipantUseCase, trip_service=trip_domain_service)
-    send_invitation_use_case = providers.Factory(SendInvitationUseCase, trip_service=trip_domain_service)
+    get_trip_stats_use_case = providers.Factory(
+        GetTripStatsUseCase, trip_service=trip_domain_service
+    )
+    add_participant_use_case = providers.Factory(
+        AddParticipantUseCase, trip_service=trip_domain_service
+    )
+    get_participants_use_case = providers.Factory(
+        GetParticipantsUseCase, trip_service=trip_domain_service
+    )
+    update_participation_use_case = providers.Factory(
+        UpdateParticipationUseCase, trip_service=trip_domain_service
+    )
+    remove_participant_use_case = providers.Factory(
+        RemoveParticipantUseCase, trip_service=trip_domain_service
+    )
+    send_invitation_use_case = providers.Factory(
+        SendInvitationUseCase, trip_service=trip_domain_service
+    )
 
     # Other domain services (currently stubs – to be implemented)
     family_domain_service = providers.Factory(FamilyDomainService)
@@ -92,6 +108,7 @@ class Container(containers.DeclarativeContainer):
 
 # Helper function for FastAPI Depends -----------------------------
 
+
 async def get_container() -> AsyncGenerator[Container, None]:  # pragma: no cover
     """Yield a singleton DI container instance for the request lifespan."""
 
@@ -99,4 +116,4 @@ async def get_container() -> AsyncGenerator[Container, None]:  # pragma: no cove
     try:
         yield container
     finally:
-        await container.shutdown_resources() 
+        await container.shutdown_resources()

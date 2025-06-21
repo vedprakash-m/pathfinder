@@ -42,6 +42,10 @@ ignore = [
 python_version = "3.11"
 strict = true
 plugins = []
+explicit_package_bases = true
+namespace_packages = true
+# Fix the module path conflicts by setting the backend directory as the root
+files = ["backend/app"]
 
 [tool.importlinter]
 contract_files = ["importlinter_contracts/*.toml"] 

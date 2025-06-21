@@ -80,38 +80,38 @@ async def generate_itinerary(
     request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permissions("itineraries", "create")),
-    ai_service: AIService = Depends(lambda: AIService())
+    ai_service: AIService = Depends(lambda: AIService()),
 ):
     """Generate an AI-powered itinerary for a trip."""
     try:
         # Verify trip exists and user has access
         trip = db.query(Trip).filter(Trip.id == trip_id).first()
         if not trip:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Trip not found"
-            )
-        
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
+
         # Check if user is a participant
-        participation = db.query(TripParticipation).filter(
-            and_(
-                TripParticipation.trip_id == trip_id,
-                TripParticipation.user_id == current_user.id
+        participation = (
+            db.query(TripParticipation)
+            .filter(
+                and_(
+                    TripParticipation.trip_id == trip_id,
+                    TripParticipation.user_id == current_user.id,
+                )
             )
-        ).first()
-        
+            .first()
+        )
+
         if not participation:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not authorized to access this trip"
+                status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to access this trip"
             )
-        
+
         # Calculate trip duration
         if trip.start_date and trip.end_date:
             duration_days = (trip.end_date - trip.start_date).days + 1
         else:
             duration_days = 3
-        
+
         # Prepare families data for AI service
         families_data = []
         for p in trip.participations:
@@ -119,31 +119,40 @@ async def generate_itinerary(
                 family_data = {
                     "user_id": str(p.user.id),
                     "family_size": 1,  # Could be enhanced to include actual family size
-                    "preferences": p.user.preferences if hasattr(p.user, 'preferences') and p.user.preferences else {},
-                    "budget_share": float(trip.budget_total or 0) / len(trip.participations) if trip.budget_total else None
+                    "preferences": p.user.preferences
+                    if hasattr(p.user, "preferences") and p.user.preferences
+                    else {},
+                    "budget_share": float(trip.budget_total or 0) / len(trip.participations)
+                    if trip.budget_total
+                    else None,
                 }
                 families_data.append(family_data)
-        
+
         # Merge request preferences with trip preferences
         preferences = {}
-        if hasattr(trip, 'preferences') and trip.preferences:
+        if hasattr(trip, "preferences") and trip.preferences:
             try:
                 import json
-                preferences.update(json.loads(trip.preferences) if isinstance(trip.preferences, str) else trip.preferences)
+
+                preferences.update(
+                    json.loads(trip.preferences)
+                    if isinstance(trip.preferences, str)
+                    else trip.preferences
+                )
             except (json.JSONDecodeError, TypeError):
                 pass
-        
+
         if request_data.preferences:
             preferences.update(request_data.preferences)
-        
+
         # Add default preferences if none exist
         if not preferences:
             preferences = {
                 "trip_type": "family road trip",
                 "activity_level": "moderate",
-                "accommodation_type": "hotel"
+                "accommodation_type": "hotel",
             }
-        
+
         # Generate itinerary using AI service with correct parameters
         logger.info(f"Generating itinerary for trip {trip_id} by user {current_user.id}")
         itinerary_data = await ai_service.generate_itinerary(
@@ -152,9 +161,9 @@ async def generate_itinerary(
             families_data=families_data,
             preferences=preferences,
             budget_total=float(trip.budget_total) if trip.budget_total else None,
-            user_id=str(current_user.id)
+            user_id=str(current_user.id),
         )
-        
+
         # Create itinerary response
         itinerary = GeneratedItinerary(
             trip_id=trip_id,
@@ -165,31 +174,30 @@ async def generate_itinerary(
                     date=datetime.fromisoformat(day["date"]).date(),
                     activities=day["activities"],
                     estimated_cost=day.get("estimated_cost"),
-                    transportation=day.get("transportation")
+                    transportation=day.get("transportation"),
                 )
                 for day in itinerary_data.get("days", [])
             ],
             total_estimated_cost=itinerary_data.get("total_estimated_cost"),
             generated_at=datetime.utcnow(),
-            ai_confidence_score=itinerary_data.get("confidence_score")
+            ai_confidence_score=itinerary_data.get("confidence_score"),
         )
-        
+
         response = ItineraryResponse(
             itinerary=itinerary,
             alternatives=itinerary_data.get("alternatives"),
-            optimization_suggestions=itinerary_data.get("optimization_suggestions")
+            optimization_suggestions=itinerary_data.get("optimization_suggestions"),
         )
-        
+
         logger.info(f"Itinerary generated successfully for trip {trip_id}")
         return response
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error generating itinerary for trip {trip_id}: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to generate itinerary"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to generate itinerary"
         )
 
 
@@ -201,43 +209,43 @@ async def customize_itinerary(
     base_itinerary: Optional[Dict[str, Any]] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permissions("itineraries", "update")),
-    ai_service: AIService = Depends(lambda: AIService())
+    ai_service: AIService = Depends(lambda: AIService()),
 ):
     """Customize an existing itinerary based on user preferences."""
     try:
         # Verify trip access
         trip = db.query(Trip).filter(Trip.id == trip_id).first()
         if not trip:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Trip not found"
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
+
+        participation = (
+            db.query(TripParticipation)
+            .filter(
+                and_(
+                    TripParticipation.trip_id == trip_id,
+                    TripParticipation.user_id == current_user.id,
+                )
             )
-        
-        participation = db.query(TripParticipation).filter(
-            and_(
-                TripParticipation.trip_id == trip_id,
-                TripParticipation.user_id == current_user.id
-            )
-        ).first()
-        
+            .first()
+        )
+
         if not participation:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not authorized to access this trip"
+                status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to access this trip"
             )
-        
+
         # Prepare customization context
         customization_context = {
             "trip_id": trip_id,
             "destination": trip.destination,
             "customizations": customization.dict(exclude_none=True),
-            "base_itinerary": base_itinerary
+            "base_itinerary": base_itinerary,
         }
-        
+
         # Generate customized itinerary
         logger.info(f"Customizing itinerary for trip {trip_id} by user {current_user.id}")
         itinerary_data = await ai_service.customize_itinerary(customization_context)
-        
+
         # Create response
         itinerary = GeneratedItinerary(
             trip_id=trip_id,
@@ -248,32 +256,32 @@ async def customize_itinerary(
                     date=datetime.fromisoformat(day["date"]).date(),
                     activities=day["activities"],
                     estimated_cost=day.get("estimated_cost"),
-                    transportation=day.get("transportation")
+                    transportation=day.get("transportation"),
                 )
                 for day in itinerary_data.get("days", [])
             ],
             total_estimated_cost=itinerary_data.get("total_estimated_cost"),
             generated_at=datetime.utcnow(),
             customizations=customization,
-            ai_confidence_score=itinerary_data.get("confidence_score")
+            ai_confidence_score=itinerary_data.get("confidence_score"),
         )
-        
+
         response = ItineraryResponse(
             itinerary=itinerary,
             alternatives=itinerary_data.get("alternatives"),
-            optimization_suggestions=itinerary_data.get("optimization_suggestions")
+            optimization_suggestions=itinerary_data.get("optimization_suggestions"),
         )
-        
+
         logger.info(f"Itinerary customized successfully for trip {trip_id}")
         return response
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error customizing itinerary for trip {trip_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to customize itinerary"
+            detail="Failed to customize itinerary",
         )
 
 
@@ -286,57 +294,57 @@ async def get_activity_suggestions(
     budget_range: Optional[str] = Query(None, description="Budget range (low, medium, high)"),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permissions("itineraries", "read")),
-    ai_service: AIService = Depends(lambda: AIService())
+    ai_service: AIService = Depends(lambda: AIService()),
 ):
     """Get AI-powered activity suggestions for a trip."""
     try:
         # Verify trip access
         trip = db.query(Trip).filter(Trip.id == trip_id).first()
         if not trip:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Trip not found"
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
+
+        participation = (
+            db.query(TripParticipation)
+            .filter(
+                and_(
+                    TripParticipation.trip_id == trip_id,
+                    TripParticipation.user_id == current_user.id,
+                )
             )
-        
-        participation = db.query(TripParticipation).filter(
-            and_(
-                TripParticipation.trip_id == trip_id,
-                TripParticipation.user_id == current_user.id
-            )
-        ).first()
-        
+            .first()
+        )
+
         if not participation:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not authorized to access this trip"
+                status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to access this trip"
             )
-        
+
         # Prepare suggestion context
         suggestion_context = {
             "destination": trip.destination,
             "activity_type": activity_type,
             "location": location,
             "budget_range": budget_range,
-            "participant_count": len(trip.participations)
+            "participant_count": len(trip.participations),
         }
-        
+
         # Get activity suggestions
         logger.info(f"Getting activity suggestions for trip {trip_id}")
         suggestions = await ai_service.get_activity_suggestions(suggestion_context)
-        
+
         return {
             "trip_id": trip_id,
             "suggestions": suggestions,
-            "generated_at": datetime.utcnow().isoformat()
+            "generated_at": datetime.utcnow().isoformat(),
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error getting activity suggestions for trip {trip_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to get activity suggestions"
+            detail="Failed to get activity suggestions",
         )
 
 
@@ -348,44 +356,44 @@ async def optimize_itinerary(
     optimization_criteria: Optional[List[str]] = Query(None, description="Optimization criteria"),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permissions("itineraries", "update")),
-    ai_service: AIService = Depends(lambda: AIService())
+    ai_service: AIService = Depends(lambda: AIService()),
 ):
     """Optimize an existing itinerary for better efficiency, cost, or experience."""
     try:
         # Verify trip access
         trip = db.query(Trip).filter(Trip.id == trip_id).first()
         if not trip:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Trip not found"
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
+
+        participation = (
+            db.query(TripParticipation)
+            .filter(
+                and_(
+                    TripParticipation.trip_id == trip_id,
+                    TripParticipation.user_id == current_user.id,
+                )
             )
-        
-        participation = db.query(TripParticipation).filter(
-            and_(
-                TripParticipation.trip_id == trip_id,
-                TripParticipation.user_id == current_user.id
-            )
-        ).first()
-        
+            .first()
+        )
+
         if not participation:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not authorized to access this trip"
+                status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to access this trip"
             )
-        
+
         # Prepare optimization context
         optimization_context = {
             "trip_id": trip_id,
             "destination": trip.destination,
             "budget": trip.budget,
             "itinerary": itinerary,
-            "optimization_criteria": optimization_criteria or ["cost", "time", "experience"]
+            "optimization_criteria": optimization_criteria or ["cost", "time", "experience"],
         }
-        
+
         # Optimize itinerary
         logger.info(f"Optimizing itinerary for trip {trip_id} by user {current_user.id}")
         optimized_data = await ai_service.optimize_itinerary(optimization_context)
-        
+
         # Create response
         optimized_itinerary = GeneratedItinerary(
             trip_id=trip_id,
@@ -396,30 +404,29 @@ async def optimize_itinerary(
                     date=datetime.fromisoformat(day["date"]).date(),
                     activities=day["activities"],
                     estimated_cost=day.get("estimated_cost"),
-                    transportation=day.get("transportation")
+                    transportation=day.get("transportation"),
                 )
                 for day in optimized_data.get("days", [])
             ],
             total_estimated_cost=optimized_data.get("total_estimated_cost"),
             generated_at=datetime.utcnow(),
-            ai_confidence_score=optimized_data.get("confidence_score")
+            ai_confidence_score=optimized_data.get("confidence_score"),
         )
-        
+
         return {
             "original_itinerary": itinerary,
             "optimized_itinerary": optimized_itinerary,
             "optimization_summary": optimized_data.get("optimization_summary"),
             "improvements": optimized_data.get("improvements"),
-            "generated_at": datetime.utcnow().isoformat()
+            "generated_at": datetime.utcnow().isoformat(),
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error optimizing itinerary for trip {trip_id}: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to optimize itinerary"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to optimize itinerary"
         )
 
 
@@ -428,47 +435,49 @@ async def get_itinerary_alternatives(
     trip_id: int,
     request: Request,
     current_itinerary: Optional[Dict[str, Any]] = None,
-    variation_type: Optional[str] = Query("budget", description="Type of variation (budget, activity, timeline)"),
+    variation_type: Optional[str] = Query(
+        "budget", description="Type of variation (budget, activity, timeline)"
+    ),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permissions("itineraries", "read")),
-    ai_service: AIService = Depends(lambda: AIService())
+    ai_service: AIService = Depends(lambda: AIService()),
 ):
     """Get alternative itinerary options for a trip."""
     try:
         # Verify trip access
         trip = db.query(Trip).filter(Trip.id == trip_id).first()
         if not trip:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Trip not found"
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
+
+        participation = (
+            db.query(TripParticipation)
+            .filter(
+                and_(
+                    TripParticipation.trip_id == trip_id,
+                    TripParticipation.user_id == current_user.id,
+                )
             )
-        
-        participation = db.query(TripParticipation).filter(
-            and_(
-                TripParticipation.trip_id == trip_id,
-                TripParticipation.user_id == current_user.id
-            )
-        ).first()
-        
+            .first()
+        )
+
         if not participation:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not authorized to access this trip"
+                status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to access this trip"
             )
-        
+
         # Prepare context for alternatives
         alternatives_context = {
             "trip_id": trip_id,
             "destination": trip.destination,
             "budget": trip.budget,
             "current_itinerary": current_itinerary,
-            "variation_type": variation_type
+            "variation_type": variation_type,
         }
-        
+
         # Generate alternatives
         logger.info(f"Getting itinerary alternatives for trip {trip_id}")
         alternatives_data = await ai_service.generate_alternatives(alternatives_context)
-        
+
         alternatives = []
         for alt in alternatives_data.get("alternatives", []):
             alternative = GeneratedItinerary(
@@ -480,29 +489,29 @@ async def get_itinerary_alternatives(
                         date=datetime.fromisoformat(day["date"]).date(),
                         activities=day["activities"],
                         estimated_cost=day.get("estimated_cost"),
-                        transportation=day.get("transportation")
+                        transportation=day.get("transportation"),
                     )
                     for day in alt.get("days", [])
                 ],
                 total_estimated_cost=alt.get("total_estimated_cost"),
                 generated_at=datetime.utcnow(),
-                ai_confidence_score=alt.get("confidence_score")
+                ai_confidence_score=alt.get("confidence_score"),
             )
             alternatives.append(alternative)
-        
+
         return {
             "trip_id": trip_id,
             "variation_type": variation_type,
             "alternatives": alternatives,
             "comparison_summary": alternatives_data.get("comparison_summary"),
-            "generated_at": datetime.utcnow().isoformat()
+            "generated_at": datetime.utcnow().isoformat(),
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error getting itinerary alternatives for trip {trip_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to get itinerary alternatives"
+            detail="Failed to get itinerary alternatives",
         )

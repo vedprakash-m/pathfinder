@@ -70,10 +70,8 @@ class TripRepository:
         query = (
             select(Trip)
             .options(
-                selectinload(Trip.participations)
-                .selectinload(TripParticipation.family),
-                selectinload(Trip.participations)
-                .selectinload(TripParticipation.user),
+                selectinload(Trip.participations).selectinload(TripParticipation.family),
+                selectinload(Trip.participations).selectinload(TripParticipation.user),
                 selectinload(Trip.creator),
             )
             .where(Trip.id == trip_id)
@@ -148,4 +146,4 @@ class TripRepository:
             stmt = stmt.where(Trip.status == status_filter)
 
         res = await self._db.execute(stmt)
-        return res.scalars().all() 
+        return res.scalars().all()

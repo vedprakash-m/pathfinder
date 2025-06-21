@@ -31,20 +31,22 @@ settings = get_settings()
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan management."""
     logger.info("Starting Pathfinder application...")
-    
+
     # Initialize database
     await init_db()
-    
+
     # Initialize WebSocket manager
     await websocket_manager.startup()
 
-    # Initialize cache 
+    # Initialize cache
     from app.core.cache import cache
+
     app.state.cache = cache
     logger.info("Cache service initialized")
-    
+
     # Setup performance monitoring
     from app.core.performance import get_performance_metrics
+
     app.state.get_performance_metrics = get_performance_metrics
     logger.info("Performance monitoring initialized")
 
@@ -54,47 +56,43 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         # Create CosmosDB containers if they don't exist
         from azure.cosmos.aio import CosmosClient
         from azure.cosmos.exceptions import CosmosResourceExistsError
-        
+
         try:
             # Connect to Azure Cosmos DB
             cosmos_client = CosmosClient(
-                url=settings.COSMOS_DB_URL,
-                credential=settings.COSMOS_DB_KEY
+                url=settings.COSMOS_DB_URL, credential=settings.COSMOS_DB_KEY
             )
-            
+
             # Get or create database
             database = cosmos_client.get_database_client(settings.COSMOS_DB_DATABASE)
-            
+
             # Initialize or confirm containers
             try:
                 await database.create_container(
-                    id=settings.COSMOS_DB_CONTAINER_ITINERARIES,
-                    partition_key="/trip_id"
+                    id=settings.COSMOS_DB_CONTAINER_ITINERARIES, partition_key="/trip_id"
                 )
                 logger.info(f"Created container: {settings.COSMOS_DB_CONTAINER_ITINERARIES}")
             except CosmosResourceExistsError:
                 logger.info(f"Container already exists: {settings.COSMOS_DB_CONTAINER_ITINERARIES}")
-                
+
             try:
                 await database.create_container(
-                    id=settings.COSMOS_DB_CONTAINER_MESSAGES,
-                    partition_key="/trip_id"
+                    id=settings.COSMOS_DB_CONTAINER_MESSAGES, partition_key="/trip_id"
                 )
                 logger.info(f"Created container: {settings.COSMOS_DB_CONTAINER_MESSAGES}")
             except CosmosResourceExistsError:
                 logger.info(f"Container already exists: {settings.COSMOS_DB_CONTAINER_MESSAGES}")
-                
+
             try:
                 await database.create_container(
-                    id=settings.COSMOS_DB_CONTAINER_PREFERENCES,
-                    partition_key="/entity_id"
+                    id=settings.COSMOS_DB_CONTAINER_PREFERENCES, partition_key="/entity_id"
                 )
                 logger.info(f"Created container: {settings.COSMOS_DB_CONTAINER_PREFERENCES}")
             except CosmosResourceExistsError:
                 logger.info(f"Container already exists: {settings.COSMOS_DB_CONTAINER_PREFERENCES}")
-                
+
             logger.info("Cosmos DB initialization complete")
-            
+
         except Exception as e:
             logger.error(f"Failed to initialize Cosmos DB: {str(e)}")
             if settings.ENVIRONMENT != "production":
@@ -102,34 +100,36 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             else:
                 raise
     logger.info("Application startup complete")
-    
+
     # Initialize cache service (Redis-free alternatives)
     try:
         from app.core.cache_service import cache_service
+
         app.state.cache_service = cache_service
         logger.info("Cache service initialized (Redis-free for cost optimization)")
     except Exception as e:
         logger.error(f"Failed to initialize cache service: {e}")
         if settings.ENVIRONMENT == "production":
             raise
-    
+
     # Initialize dependency-injector container
     from app.core.container import Container
+
     container = Container()
     container.init_resources()
     container.wire(packages=("app.api",))
     app.state.container = container
-    
+
     yield
-    
+
     # Cleanup
     logger.info("Shutting down application...")
     await websocket_manager.shutdown()
-    
+
     # Close cache service connections
     if hasattr(app.state, "cache_service") and app.state.cache_service:
         await app.state.cache_service.close()
-    
+
     logger.info("Application shutdown complete")
 
 
@@ -171,36 +171,56 @@ app.add_middleware(
         "GET:/api/v1/auth/me": 1000,  # Allow frequent auth checks (increased)
         "GET:/api/v1/auth/user/onboarding-status": 500,  # Allow onboarding status checks (temporarily increased)
         "GET:/api/v1/trips/": 500,  # Allow frequent trips checks (temporarily increased)
-    }
+    },
 )
 
-# CSRF protection middleware (disabled for CORS preflight requests)
-# Note: CSRF middleware can interfere with CORS OPTIONS requests
-# We'll skip CSRF for now and rely on other security measures
-# TODO: Implement CSRF that properly handles CORS preflight
-# if settings.ENVIRONMENT == "production":
-#     app.add_middleware(
-#         CSRFMiddleware,
-#         secret_key=settings.SECRET_KEY,
-#         cookie_secure=True
-#     )
-# elif settings.ENVIRONMENT != "testing":
-#     # In development, we still use CSRF but with less strict settings
-#     app.add_middleware(
-#         CSRFMiddleware,
-#         secret_key=settings.SECRET_KEY,
-#         cookie_secure=False  # Allow HTTP in development
-#     )
-# Skip CSRF temporarily to resolve CORS issues
+# CSRF protection middleware with CORS compatibility
+if settings.ENVIRONMENT == "production":
+    app.add_middleware(
+        CSRFMiddleware,
+        secret_key=settings.SECRET_KEY,
+        cookie_secure=True,
+        exempt_urls=[
+            "/health",
+            "/health/ready", 
+            "/health/live",
+            "/health/detailed",
+            "/docs",
+            "/redoc",
+            "/openapi.json",
+            "/api/v1/test/health",
+        ],
+        cors_enabled=True,  # Enable CORS compatibility mode
+    )
+elif settings.ENVIRONMENT != "testing":
+    # In development, we still use CSRF but with less strict settings
+    app.add_middleware(
+        CSRFMiddleware,
+        secret_key=settings.SECRET_KEY,
+        cookie_secure=False,  # Allow HTTP in development
+        exempt_urls=[
+            "/health",
+            "/health/ready",
+            "/health/live", 
+            "/health/detailed",
+            "/docs",
+            "/redoc",
+            "/openapi.json",
+            "/api/v1/test/health",
+            "/api/v1/test/ai",
+        ],
+        cors_enabled=True,  # Enable CORS compatibility mode
+        strict_mode=False,  # Less strict in development
+    )
 
-# CORS middleware
+# CORS middleware - must be added after CSRF for proper interaction
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["*", "Authorization", "Content-Type", "X-CSRF-Token"],
-    expose_headers=["*"]
+    expose_headers=["X-CSRF-Token"],  # Expose CSRF token to frontend
 )
 
 
@@ -208,16 +228,16 @@ app.add_middleware(
 async def add_security_headers(request: Request, call_next):
     """Add security headers to all responses."""
     response = await call_next(request)
-    
+
     # Security headers
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-    
+
     if settings.ENVIRONMENT == "production":
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-    
+
     return response
 
 
@@ -225,10 +245,10 @@ async def add_security_headers(request: Request, call_next):
 async def global_exception_handler(request: Request, exc: Exception):
     """Global exception handler for unhandled exceptions."""
     logger.error(f"Unhandled exception: {exc}", exc_info=True)
-    
+
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"detail": "An unexpected error occurred. Please try again later."}
+        content={"detail": "An unexpected error occurred. Please try again later."},
     )
 
 
@@ -238,7 +258,7 @@ async def health_check():
     """Health check endpoint for monitoring."""
     # Check cache service
     cache_status = "connected" if hasattr(app.state, "cache_service") else "not_initialized"
-    
+
     # Check database
     db_status = "connected"
     try:
@@ -246,7 +266,7 @@ async def health_check():
         pass
     except Exception:
         db_status = "error"
-    
+
     return {
         "status": "healthy",
         "environment": settings.ENVIRONMENT,
@@ -254,8 +274,8 @@ async def health_check():
         "services": {
             "database": db_status,
             "cache": cache_status,
-            "cosmos_db": "enabled" if settings.COSMOS_DB_ENABLED else "disabled"
-        }
+            "cosmos_db": "enabled" if settings.COSMOS_DB_ENABLED else "disabled",
+        },
     }
 
 
@@ -264,6 +284,7 @@ app.include_router(api_router, prefix="/api/v1")
 
 # Include health routes (in addition to the basic /health endpoint above)
 from app.api.health import router as health_router
+
 app.include_router(health_router)
 
 

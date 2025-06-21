@@ -13,4 +13,5 @@ from dataclasses import dataclass
 @dataclass
 class FamilyDomainService:  # pragma: no cover – stub
     """Placeholder for family domain logic to be implemented in upcoming sprints."""
-    pass 
+
+    pass

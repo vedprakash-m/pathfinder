@@ -52,4 +52,4 @@ class TripCosmosRepository:  # pragma: no cover – infra wrapper
         await self._ops.message_service.save_message(trip_id, message)  # type: ignore[arg-type]
 
     async def get_messages(self, trip_id: str, limit: int = 50) -> List[Dict[str, Any]]:
-        return await self._ops.message_service.get_messages(trip_id, limit) 
+        return await self._ops.message_service.get_messages(trip_id, limit)

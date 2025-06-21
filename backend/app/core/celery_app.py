@@ -16,7 +16,7 @@ celery_app: Optional[object] = None
 if settings.USE_REDIS_CACHE and settings.REDIS_URL:
     try:
         from celery import Celery
-        
+
         # Create Celery instance only when Redis is available
         celery_app = Celery(
             "pathfinder",
@@ -24,10 +24,10 @@ if settings.USE_REDIS_CACHE and settings.REDIS_URL:
             backend=settings.REDIS_URL,
             include=[
                 "app.tasks.ai_tasks",
-                "app.tasks.pdf_tasks", 
+                "app.tasks.pdf_tasks",
                 "app.tasks.notification_tasks",
-                "app.tasks.export_tasks"
-            ]
+                "app.tasks.export_tasks",
+            ],
         )
     except ImportError:
         print("Celery not available - using SQLite task queue for cost optimization")
@@ -50,15 +50,13 @@ if celery_app:
         worker_prefetch_multiplier=1,
         worker_max_tasks_per_child=1000,
         result_expires=3600,  # 1 hour
-        
         # Task routing
         task_routes={
             "app.tasks.ai_tasks.*": {"queue": "ai_tasks"},
             "app.tasks.pdf_tasks.*": {"queue": "pdf_tasks"},
             "app.tasks.notification_tasks.*": {"queue": "notifications"},
-            "app.tasks.export_tasks.*": {"queue": "exports"}
+            "app.tasks.export_tasks.*": {"queue": "exports"},
         },
-        
         # Beat schedule for periodic tasks
         beat_schedule={
             "cleanup-expired-notifications": {
@@ -69,8 +67,9 @@ if celery_app:
                 "task": "app.tasks.ai_tasks.generate_daily_cost_report",
                 "schedule": 86400.0,  # Daily
             },
-        }
+        },
     )
+
 
 # Helper function to run async functions in Celery tasks
 def run_async(coro):
@@ -80,5 +79,5 @@ def run_async(coro):
     except RuntimeError:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-    
+
     return loop.run_until_complete(coro)

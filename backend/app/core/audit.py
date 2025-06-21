@@ -21,7 +21,7 @@ logger = logging.getLogger("security.audit")
 
 class AuditLog:
     """Audit log record containing security event details."""
-    
+
     def __init__(
         self,
         event_type: str,
@@ -31,7 +31,7 @@ class AuditLog:
         action: Optional[str] = None,
         status: str = "success",
         details: Optional[Dict[str, Any]] = None,
-        request: Optional[Request] = None
+        request: Optional[Request] = None,
     ):
         """Initialize a new audit log entry."""
         self.event_id = str(uuid.uuid4())
@@ -43,7 +43,7 @@ class AuditLog:
         self.action = action
         self.status = status
         self.details = details or {}
-        
+
         # Extract request metadata if provided
         if request:
             self.ip_address = request.client.host if request.client else "unknown"
@@ -55,7 +55,7 @@ class AuditLog:
             self.user_agent = "unknown"
             self.path = None
             self.method = None
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert audit log to dictionary."""
         return {
@@ -72,9 +72,9 @@ class AuditLog:
             "user_agent": self.user_agent,
             "path": self.path,
             "method": self.method,
-            "environment": settings.ENVIRONMENT
+            "environment": settings.ENVIRONMENT,
         }
-    
+
     def to_json(self) -> str:
         """Convert audit log to JSON string."""
         return json.dumps(self.to_dict())
@@ -82,16 +82,16 @@ class AuditLog:
 
 class AuditLogger:
     """Service for logging security audit events."""
-    
+
     def __init__(self):
         """Initialize the audit logger."""
         self.enable_console = True
         self.enable_db = False  # Will be implemented in future
-        
+
         # Configure local logging
         if settings.ENVIRONMENT == "production":
             self.enable_db = True
-    
+
     async def log_event(
         self,
         event_type: str,
@@ -101,7 +101,7 @@ class AuditLogger:
         action: Optional[str] = None,
         status: str = "success",
         details: Optional[Dict[str, Any]] = None,
-        request: Optional[Request] = None
+        request: Optional[Request] = None,
     ) -> str:
         """Log a security audit event."""
         audit_log = AuditLog(
@@ -112,9 +112,9 @@ class AuditLogger:
             action=action,
             status=status,
             details=details,
-            request=request
+            request=request,
         )
-        
+
         # Log to console
         if self.enable_console:
             log_message = f"SECURITY_AUDIT: {audit_log.to_json()}"
@@ -122,22 +122,22 @@ class AuditLogger:
                 logger.warning(log_message)
             else:
                 logger.info(log_message)
-        
+
         # Store in database (future implementation)
         if self.enable_db:
             # This would store the audit log in a database
             # await self._store_in_db(audit_log)
             pass
-        
+
         return audit_log.event_id
-    
+
     async def log_auth_event(
         self,
         event: str,
         user_id: Optional[str],
         status: str = "success",
         details: Optional[Dict[str, Any]] = None,
-        request: Optional[Request] = None
+        request: Optional[Request] = None,
     ) -> str:
         """Log an authentication event."""
         return await self.log_event(
@@ -146,9 +146,9 @@ class AuditLogger:
             action=event,
             status=status,
             details=details,
-            request=request
+            request=request,
         )
-    
+
     async def log_access_event(
         self,
         user_id: str,
@@ -157,7 +157,7 @@ class AuditLogger:
         action: str,
         status: str = "success",
         details: Optional[Dict[str, Any]] = None,
-        request: Optional[Request] = None
+        request: Optional[Request] = None,
     ) -> str:
         """Log a resource access event."""
         return await self.log_event(
@@ -168,9 +168,9 @@ class AuditLogger:
             action=action,
             status=status,
             details=details,
-            request=request
+            request=request,
         )
-    
+
     async def log_data_change(
         self,
         user_id: str,
@@ -179,7 +179,7 @@ class AuditLogger:
         action: str,
         before: Optional[Dict[str, Any]] = None,
         after: Optional[Dict[str, Any]] = None,
-        request: Optional[Request] = None
+        request: Optional[Request] = None,
     ) -> str:
         """Log a data change event."""
         return await self.log_event(
@@ -188,20 +188,17 @@ class AuditLogger:
             resource_type=resource_type,
             resource_id=resource_id,
             action=action,
-            details={
-                "before": before,
-                "after": after
-            },
-            request=request
+            details={"before": before, "after": after},
+            request=request,
         )
-    
+
     async def log_security_event(
         self,
         event: str,
         user_id: Optional[str] = None,
         details: Optional[Dict[str, Any]] = None,
         status: str = "success",
-        request: Optional[Request] = None
+        request: Optional[Request] = None,
     ) -> str:
         """Log a general security event."""
         return await self.log_event(
@@ -210,7 +207,7 @@ class AuditLogger:
             action=event,
             status=status,
             details=details,
-            request=request
+            request=request,
         )
 
 

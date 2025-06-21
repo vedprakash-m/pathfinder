@@ -68,12 +68,12 @@ def run_migrations_online() -> None:
 
     """
     settings = get_settings()
-    
+
     # Override the sqlalchemy.url in the configuration
     configuration = config.get_section(config.config_ini_section, {})
     # Convert async URL to sync URL for Alembic
-    configuration['sqlalchemy.url'] = settings.DATABASE_URL.replace("+aiosqlite", "")
-    
+    configuration["sqlalchemy.url"] = settings.DATABASE_URL.replace("+aiosqlite", "")
+
     connectable = engine_from_config(
         configuration,
         prefix="sqlalchemy.",
@@ -81,9 +81,7 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()

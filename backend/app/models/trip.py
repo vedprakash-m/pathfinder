@@ -7,7 +7,19 @@ from enum import Enum
 from typing import List, Optional, Dict, Any
 from uuid import uuid4
 
-from sqlalchemy import Boolean, Column, DateTime, Date, Enum as SQLEnum, ForeignKey, Integer, String, Text, Numeric, func
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Date,
+    Enum as SQLEnum,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    Numeric,
+    func,
+)
 from sqlalchemy.orm import relationship
 from pydantic import BaseModel, validator
 
@@ -16,6 +28,7 @@ from app.core.database import Base, GUID
 
 class TripStatus(str, Enum):
     """Trip status enumeration."""
+
     PLANNING = "planning"
     CONFIRMED = "confirmed"
     IN_PROGRESS = "in_progress"
@@ -25,6 +38,7 @@ class TripStatus(str, Enum):
 
 class ParticipationStatus(str, Enum):
     """Family participation status."""
+
     INVITED = "invited"
     CONFIRMED = "confirmed"
     DECLINED = "declined"
@@ -33,9 +47,9 @@ class ParticipationStatus(str, Enum):
 
 class Trip(Base):
     """Trip model for SQLAlchemy."""
-    
+
     __tablename__ = "trips"
-    
+
     id = Column(GUID(), primary_key=True, default=uuid4)
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
@@ -50,20 +64,24 @@ class Trip(Base):
     is_public = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    
+
     # Relationships
     creator = relationship("User", back_populates="created_trips")
-    participations = relationship("TripParticipation", back_populates="trip", cascade="all, delete-orphan")
+    participations = relationship(
+        "TripParticipation", back_populates="trip", cascade="all, delete-orphan"
+    )
     reservations = relationship("Reservation", back_populates="trip", cascade="all, delete-orphan")
     itineraries = relationship("Itinerary", back_populates="trip", cascade="all, delete-orphan")
-    notifications = relationship("Notification", back_populates="trip", cascade="all, delete-orphan")
+    notifications = relationship(
+        "Notification", back_populates="trip", cascade="all, delete-orphan"
+    )
 
 
 class TripParticipation(Base):
     """Trip participation model for families."""
-    
+
     __tablename__ = "trip_participations"
-    
+
     id = Column(GUID(), primary_key=True, default=uuid4)
     trip_id = Column(GUID(), ForeignKey("trips.id"), nullable=False)
     family_id = Column(GUID(), ForeignKey("families.id"), nullable=False)
@@ -74,7 +92,7 @@ class TripParticipation(Base):
     notes = Column(Text, nullable=True)
     joined_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    
+
     # Relationships
     trip = relationship("Trip", back_populates="participations")
     family = relationship("Family", back_populates="trip_participations")
@@ -83,8 +101,10 @@ class TripParticipation(Base):
 
 # Pydantic models for API
 
+
 class TripPreferences(BaseModel):
     """Trip preferences model."""
+
     accommodation_type: List[str] = []
     transportation_mode: List[str] = []
     activity_types: List[str] = []
@@ -96,6 +116,7 @@ class TripPreferences(BaseModel):
 
 class TripBase(BaseModel):
     """Base trip model."""
+
     name: str
     description: Optional[str] = None
     destination: str
@@ -104,21 +125,23 @@ class TripBase(BaseModel):
     budget_total: Optional[float] = None
     preferences: Optional[TripPreferences] = None
     is_public: bool = False
-    
-    @validator('end_date')
+
+    @validator("end_date")
     def end_date_after_start_date(cls, v, values):
-        if 'start_date' in values and v <= values['start_date']:
-            raise ValueError('End date must be after start date')
+        if "start_date" in values and v <= values["start_date"]:
+            raise ValueError("End date must be after start date")
         return v
 
 
 class TripCreate(TripBase):
     """Trip creation model."""
+
     family_ids: List[str] = []
 
 
 class TripUpdate(BaseModel):
     """Trip update model."""
+
     name: Optional[str] = None
     description: Optional[str] = None
     destination: Optional[str] = None
@@ -132,6 +155,7 @@ class TripUpdate(BaseModel):
 
 class TripResponse(TripBase):
     """Trip response model."""
+
     id: str
     status: TripStatus
     creator_id: str
@@ -139,13 +163,14 @@ class TripResponse(TripBase):
     updated_at: Optional[datetime] = None
     family_count: int = 0
     confirmed_families: int = 0
-    
+
     class Config:
         from_attributes = True
 
 
 class ParticipationBase(BaseModel):
     """Base participation model."""
+
     status: ParticipationStatus
     budget_allocation: Optional[float] = None
     preferences: Optional[Dict[str, Any]] = None
@@ -154,12 +179,14 @@ class ParticipationBase(BaseModel):
 
 class ParticipationCreate(ParticipationBase):
     """Participation creation model."""
+
     trip_id: str
     family_id: str
 
 
 class ParticipationUpdate(BaseModel):
     """Participation update model."""
+
     status: Optional[ParticipationStatus] = None
     budget_allocation: Optional[float] = None
     preferences: Optional[Dict[str, Any]] = None
@@ -168,28 +195,31 @@ class ParticipationUpdate(BaseModel):
 
 class ParticipationResponse(ParticipationBase):
     """Participation response model."""
+
     id: str
     trip_id: str
     family_id: str
     user_id: str
     joined_at: datetime
     updated_at: Optional[datetime] = None
-    
+
     class Config:
         from_attributes = True
 
 
 class TripDetail(TripResponse):
     """Detailed trip model with participations."""
+
     participations: List[ParticipationResponse] = []
     has_itinerary: bool = False
-    
+
     class Config:
         from_attributes = True
 
 
 class TripInvitation(BaseModel):
     """Trip invitation model."""
+
     trip_id: str
     family_id: str
     message: Optional[str] = None
@@ -198,6 +228,7 @@ class TripInvitation(BaseModel):
 
 class TripStats(BaseModel):
     """Trip statistics model."""
+
     total_families: int
     confirmed_families: int
     pending_families: int

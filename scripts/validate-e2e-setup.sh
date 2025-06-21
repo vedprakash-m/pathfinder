@@ -257,9 +257,99 @@ else
     print_status "Missing pyproject.toml" "warning"
 fi
 
+# 2.5. Backend Code Quality Validation (NEW)
+echo ""
+echo "🎯 Backend Code Quality Validation:"
+
+# Check if we're in backend directory or project root
+if [ -d "backend" ]; then
+    BACKEND_DIR="backend"
+elif [ -f "requirements.txt" ]; then
+    BACKEND_DIR="."
+else
+    print_status "Backend directory not found" "warning"
+    BACKEND_DIR=""
+fi
+
+if [ -n "$BACKEND_DIR" ]; then
+    # Check code formatting with black/ruff
+    echo "   Checking code formatting..."
+    cd "$BACKEND_DIR"
+    
+    # Check if ruff is available
+    if command -v ruff &> /dev/null || python3 -c "import ruff" 2>/dev/null; then
+        if ruff check . --diff --quiet 2>/dev/null; then
+            print_status "Code formatting (ruff): Passed" "success"
+        else
+            print_status "Code formatting issues detected - will fail CI/CD" "error"
+            echo "   ❌ Run 'ruff format .' to fix formatting issues"
+        fi
+    elif command -v black &> /dev/null || python3 -c "import black" 2>/dev/null; then
+        if black --check --diff . 2>/dev/null | head -5 | grep -q "would reformat\|reformatted"; then
+            print_status "Code formatting issues detected - will fail CI/CD" "error"
+            echo "   ❌ Run 'black .' to fix formatting issues"
+        else
+            print_status "Code formatting (black): Passed" "success"
+        fi
+    else
+        print_status "No code formatter available (install ruff or black)" "warning"
+    fi
+    
+    # Check type annotations with mypy
+    echo "   Checking type annotations..."
+    if command -v mypy &> /dev/null || python3 -c "import mypy" 2>/dev/null; then
+        # Test a simple mypy check to catch common issues
+        if mypy --version >/dev/null 2>&1; then
+            if mypy app/ --no-error-summary --no-pretty 2>/dev/null | grep -q "error:"; then
+                print_status "Type checking issues detected - will fail CI/CD" "error"
+                echo "   ❌ Run 'mypy .' to see detailed type checking errors"
+            else
+                print_status "Type checking (mypy): Passed" "success"
+            fi
+        else
+            print_status "MyPy available but configuration issues detected" "warning"
+        fi
+    else
+        print_status "MyPy not available for type checking" "warning"
+    fi
+    
+    # Check import linting
+    echo "   Checking import structure..."
+    if [ -f "../importlinter_contracts/layers.toml" ]; then
+        print_status "Import linter configuration found" "success"
+        
+        if command -v import-linter &> /dev/null || python3 -c "import importlinter" 2>/dev/null; then
+            if import-linter --config ../importlinter_contracts/layers.toml 2>/dev/null; then
+                print_status "Import structure validation: Passed" "success"
+            else
+                print_status "Import structure issues - will fail CI/CD" "error"
+                echo "   ❌ Check import dependencies and circular imports"
+            fi
+        else
+            print_status "Import-linter not available" "warning"
+        fi
+    else
+        print_status "Import linter configuration missing - will fail CI/CD" "error"
+        echo "   ❌ Missing importlinter_contracts/layers.toml"
+    fi
+    
+    # Check for common Python path issues
+    echo "   Checking Python module structure..."
+    if find . -name "*.py" -path "*/app/*" | head -1 | xargs -I {} python3 -c "import sys; sys.path.insert(0, '.'); import {}" 2>&1 | grep -q "Source file found twice"; then
+        print_status "Python module path conflicts detected - will fail CI/CD" "error"
+        echo "   ❌ Duplicate module paths detected (common in MyPy errors)"
+    else
+        print_status "Python module structure: OK" "success"
+    fi
+    
+    cd - >/dev/null
+else
+    print_status "Backend validation skipped (backend directory not found)" "warning"
+fi
+
 # 3. Infrastructure Prerequisites Check
 echo ""
-echo "�️  Infrastructure Prerequisites:"
+echo "🏗️  Infrastructure Prerequisites:"
 
 # Check for Azure CLI (if available)
 if command -v az &> /dev/null; then
@@ -279,16 +369,19 @@ if command -v az &> /dev/null; then
             # Check for SQL server
             SQL_SERVER_COUNT=$(az sql server list --resource-group "$DATA_RG" --query "length([])" -o tsv 2>/dev/null || echo "0")
             if [ "$SQL_SERVER_COUNT" -gt 0 ]; then
-                print_status "SQL server found in data layer" "success"
+                SQL_SERVER_NAME=$(az sql server list --resource-group "$DATA_RG" --query "[0].name" -o tsv 2>/dev/null || echo "")
+                print_status "SQL server found in data layer: $SQL_SERVER_NAME" "success"
             else
                 print_status "SQL server missing in data layer - deployment will fail" "error"
                 echo "   ❌ Run './scripts/deploy-data-layer.sh' first"
+                echo "   ❌ This is the root cause of 'Could not find SQL server in data layer' error"
             fi
             
             # Check for Cosmos DB
             COSMOS_COUNT=$(az cosmosdb list --resource-group "$DATA_RG" --query "length([])" -o tsv 2>/dev/null || echo "0")
             if [ "$COSMOS_COUNT" -gt 0 ]; then
-                print_status "Cosmos DB found in data layer" "success"
+                COSMOS_NAME=$(az cosmosdb list --resource-group "$DATA_RG" --query "[0].name" -o tsv 2>/dev/null || echo "")
+                print_status "Cosmos DB found in data layer: $COSMOS_NAME" "success"
             else
                 print_status "Cosmos DB missing in data layer - deployment will fail" "error"
                 echo "   ❌ Run './scripts/deploy-data-layer.sh' first"
@@ -297,9 +390,20 @@ if command -v az &> /dev/null; then
             # Check for Storage account
             STORAGE_COUNT=$(az storage account list --resource-group "$DATA_RG" --query "length([])" -o tsv 2>/dev/null || echo "0")
             if [ "$STORAGE_COUNT" -gt 0 ]; then
-                print_status "Storage account found in data layer" "success"
+                STORAGE_NAME=$(az storage account list --resource-group "$DATA_RG" --query "[0].name" -o tsv 2>/dev/null || echo "")
+                print_status "Storage account found in data layer: $STORAGE_NAME" "success"
             else
                 print_status "Storage account missing in data layer - deployment will fail" "error"
+                echo "   ❌ Run './scripts/deploy-data-layer.sh' first"
+            fi
+            
+            # Check for Key Vault
+            KV_COUNT=$(az keyvault list --resource-group "$DATA_RG" --query "length([])" -o tsv 2>/dev/null || echo "0")
+            if [ "$KV_COUNT" -gt 0 ]; then
+                KV_NAME=$(az keyvault list --resource-group "$DATA_RG" --query "[0].name" -o tsv 2>/dev/null || echo "")
+                print_status "Key Vault found in data layer: $KV_NAME" "success"
+            else
+                print_status "Key Vault missing in data layer - deployment will fail" "error"
                 echo "   ❌ Run './scripts/deploy-data-layer.sh' first"
             fi
         else

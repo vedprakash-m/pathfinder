@@ -18,6 +18,7 @@ settings = get_settings()
 
 class PerformanceMetricsResponse(BaseModel):
     """Performance metrics response model."""
+
     timestamp: str
     endpoint_average_times: dict
     query_average_times: dict
@@ -28,52 +29,45 @@ class PerformanceMetricsResponse(BaseModel):
 
 
 @router.get("/performance", response_model=PerformanceMetricsResponse)
-async def get_app_performance(
-    current_user=Depends(require_role("admin"))
-):
+async def get_app_performance(current_user=Depends(require_role("admin"))):
     """
     Get application performance metrics.
-    
+
     Available only to administrators.
     """
     metrics = await get_performance_metrics()
     if not metrics:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Performance metrics not available"
+            detail="Performance metrics not available",
         )
-        
+
     return metrics
 
 
 @router.post("/clear-cache")
-async def clear_cache(
-    current_user=Depends(require_role("admin"))
-):
+async def clear_cache(current_user=Depends(require_role("admin"))):
     """
     Clear all cache entries.
-    
+
     Available only to administrators.
     """
     from app.core.cache import cache
-    
+
     success = await cache.clear()
     if not success:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to clear cache"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to clear cache"
         )
-        
+
     return {"message": "Cache cleared successfully"}
 
 
 @router.get("/config")
-async def get_app_config(
-    current_user=Depends(require_role("admin"))
-):
+async def get_app_config(current_user=Depends(require_role("admin"))):
     """
     Get selected application configuration.
-    
+
     Available only to administrators. Contains only safe configuration values.
     """
     # Return only safe config values, not sensitive ones like API keys
@@ -90,8 +84,8 @@ async def get_app_config(
             "slow_request_threshold": settings.SLOW_REQUEST_THRESHOLD,
             "slow_query_threshold": settings.SLOW_QUERY_THRESHOLD,
             "slow_function_threshold": settings.SLOW_FUNCTION_THRESHOLD,
-            "metrics_rollup_interval": settings.METRICS_ROLLUP_INTERVAL
-        }
+            "metrics_rollup_interval": settings.METRICS_ROLLUP_INTERVAL,
+        },
     }
-    
+
     return safe_config
