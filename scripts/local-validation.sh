@@ -731,6 +731,26 @@ if python3 -c "import pytest" 2>/dev/null; then
 fi
 
 # Run tests with exact CI/CD command and environment
+echo "   Running unit tests first (catch schema validation errors)..."
+if python3 -c "import pytest, coverage" 2>/dev/null; then
+    # Run unit tests first to catch validation issues
+    if python3 -m pytest tests/ -m "unit or not (e2e or integration or performance)" -v --tb=short 2>/dev/null; then
+        print_status "Unit tests: Passed" "success"
+    else
+        print_status "Unit tests failed - will cause CI/CD failure" "error"
+        echo "   ❌ Unit tests failing, checking specific auth tests..."
+        
+        # Test specific auth unit tests that were failing in CI/CD
+        if python3 -m pytest tests/test_auth_unit.py -v --tb=short 2>/dev/null; then
+            print_status "Auth unit tests: Passed" "success"
+        else
+            print_status "Auth unit tests failing - schema validation issue" "error"
+            echo "   💡 Check UserCreate model schema vs test data"
+            VALIDATION_FAILED=true
+        fi
+    fi
+fi
+
 echo "   Running tests with coverage (exact CI/CD command)..."
 if python3 -c "import pytest, coverage" 2>/dev/null; then
     # Use exact same command as CI/CD

@@ -14,28 +14,34 @@ client = TestClient(app)
 class TestAuthEndpoints:
     """Test authentication endpoints."""
 
-    @patch("app.services.auth_service.AuthService")
+    @patch("app.api.auth.AuthService")
     def test_register_user_success(self, mock_auth_service_class):
         """Test successful user registration."""
+        # Create a mock user object that behaves like the User model
+        from app.models.user import User
+        from datetime import datetime
+        
+        mock_user = User(
+            id="test-user-id",  # String instead of UUID
+            email="test@example.com",
+            name="Test User",
+            auth0_id="auth0|test123",
+            role="family_admin",
+            is_active=True,
+            is_verified=True,  # Add this required field
+            created_at=datetime.utcnow(),
+        )
+        
         # Mock the auth service instance
         mock_auth_service = AsyncMock()
-        mock_auth_service.create_user = AsyncMock(
-            return_value={
-                "id": "test-user-id",
-                "email": "test@example.com",
-                "first_name": "Test",
-                "last_name": "User",
-                "is_active": True,
-            }
-        )
+        mock_auth_service.create_user = AsyncMock(return_value=mock_user)
         mock_auth_service_class.return_value = mock_auth_service
 
-        # Test data
+        # Test data - match UserCreate model schema
         user_data = {
             "email": "test@example.com",
-            "password": "securepassword123",
-            "first_name": "Test",
-            "last_name": "User",
+            "name": "Test User",
+            "auth0_id": "auth0|test123",
         }
 
         # Make request
@@ -45,22 +51,24 @@ class TestAuthEndpoints:
         assert response.status_code == status.HTTP_201_CREATED
         data = response.json()
         assert data["email"] == "test@example.com"
-        assert data["first_name"] == "Test"
+        assert data["name"] == "Test User"
+        assert data["auth0_id"] == "auth0|test123"
         assert "password" not in data  # Ensure password is not returned
 
-    @patch("app.services.auth_service.AuthService")
+    @patch("app.api.auth.AuthService")
     def test_register_user_duplicate_email(self, mock_auth_service_class):
         """Test registration with duplicate email."""
         # Mock the auth service to raise an exception
-        mock_auth_service.register_user = AsyncMock(
+        mock_auth_service = AsyncMock()
+        mock_auth_service.create_user = AsyncMock(
             side_effect=ValueError("Email already registered")
         )
+        mock_auth_service_class.return_value = mock_auth_service
 
         user_data = {
             "email": "duplicate@example.com",
-            "password": "securepassword123",
-            "first_name": "Test",
-            "last_name": "User",
+            "name": "Test User",
+            "auth0_id": "auth0|duplicate123",
         }
 
         response = client.post("/api/v1/auth/register", json=user_data)
@@ -72,7 +80,7 @@ class TestAuthEndpoints:
         # Missing required fields
         invalid_data = {
             "email": "test@example.com"
-            # Missing password, first_name, last_name
+            # Missing auth0_id (required field)
         }
 
         response = client.post("/api/v1/auth/register", json=invalid_data)
