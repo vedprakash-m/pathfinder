@@ -1,123 +1,245 @@
 # Pathfinder – AI-Powered Group Trip Planner
 
-[![CI / CD](https://github.com/vedprakash-m/pathfinder/actions/workflows/ci-cd-pipeline.yml/badge.svg)](https://github.com/vedprakash-m/pathfinder/actions)
-[![Pause / Resume](https://github.com/vedprakash-m/pathfinder/actions/workflows/pause-resume.yml/badge.svg)](https://github.com/vedprakash-m/pathfinder/actions)
+[![CI/CD Pipeline](https://github.com/vedprakash-m/pathfinder/actions/workflows/ci-cd-pipeline.yml/badge.svg)](https://github.com/vedprakash-m/pathfinder/actions)
+[![Infrastructure Management](https://github.com/vedprakash-m/pathfinder/actions/workflows/infrastructure-management.yml/badge.svg)](https://github.com/vedprakash-m/pathfinder/actions)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
 
-Pathfinder eliminates the chaos of planning **multi-family group trips** by centralising communication, preference gathering and AI-generated itineraries – all secured by Auth0 and deployed cost-efficiently on Azure.
+**Pathfinder** is a production-ready, AI-powered platform that transforms the chaotic process of planning multi-family group trips into a streamlined, collaborative experience. By centralizing communication, gathering preferences intelligently, and generating AI-powered itineraries, Pathfinder eliminates the typical frustrations of group travel planning.
 
 ---
-## Table of Contents
-1. Key Features  
-2. Architecture Overview  
-3. Quick Start (Local)  
-4. Cloud Deployment (Azure)  
-5. Development Workflow  
-6. Testing  
-7. Cost Optimisation & Pause/Resume  
-8. License
+## 🎯 Table of Contents
+1. [Why Pathfinder?](#-why-pathfinder)
+2. [Key Features](#-key-features)  
+3. [Architecture Overview](#-architecture-overview)  
+4. [Quick Start (Local)](#-quick-start-local-development)  
+5. [Cloud Deployment (Azure)](#-cloud-deployment-azure)  
+6. [Development Workflow](#-development-workflow)  
+7. [Testing](#-testing)  
+8. [Cost Optimization](#-cost-optimization)  
+9. [License](#-license)
 
 ---
-## 1. Key Features
-• **AI Itinerary Generation** – Multi-provider LLM orchestration (OpenAI / Gemini / Claude).  
-• **Real-Time Collaboration** – Socket.IO chat, live presence and smart polls.  
-• **Budget & Expense Tracking** – Shared cost breakdowns and settlement suggestions.  
-• **Enterprise-grade Security** – Auth0 zero-trust model and Key Vault- backed secrets.  
-• **Hybrid Storage** – Azure SQL (relational) + Cosmos DB (documents) + Storage Account (files).  
-• **Cost-Aware Architecture** – Two-layer pause/resume model provides ± 70 % savings when idle.
+## 🚀 Why Pathfinder?
+
+**For Families & Groups:**
+- **Eliminate Decision Paralysis:** AI-powered itinerary generation with multiple options
+- **Streamline Communication:** Real-time chat, polls, and collaborative planning
+- **Budget Transparency:** Shared expense tracking with automatic settlement suggestions
+- **Mobile-First Experience:** Progressive Web App works seamlessly across all devices
+
+**For Developers & Organizations:**
+- **Production-Ready:** Enterprise-grade security with Auth0 and comprehensive monitoring
+- **Cost-Optimized:** Innovative pause/resume architecture saves 70% on idle infrastructure
+- **Modern Stack:** React 18, FastAPI, Azure Container Apps with Bicep IaC
+- **Comprehensive Testing:** Full E2E test suite with Playwright and automated CI/CD
 
 ---
-## 2. Architecture Overview
-A full description lives in [`docs/metadata.md`](docs/metadata.md) (single source of truth).  
-High-level summary:
+## ✨ Key Features
+### 🤖 AI-Powered Planning
+- **Multi-Provider LLM Orchestration:** OpenAI, Gemini, and Claude integration with intelligent fallbacks
+- **Context-Aware Recommendations:** AI understands group preferences, budgets, and constraints
+- **Cost-Controlled AI:** Budget limits and usage tracking prevent runaway costs
+
+### 🏠 Multi-Family Coordination  
+- **Role-Based Access Control:** Family Admin, Trip Organizer, and Member roles
+- **Smart Invitation System:** Email-based family invitation workflow with permissions
+- **Consensus Building:** Interactive polls and decision-making tools
+
+### 💬 Real-Time Collaboration
+- **Live Chat & Presence:** Socket.IO-powered real-time communication
+- **Smart Polls:** Gather preferences and make group decisions efficiently
+- **Activity Feeds:** Stay updated on trip planning progress
+
+### 💰 Financial Management
+- **Shared Budget Tracking:** Transparent expense management across families
+- **Settlement Suggestions:** Automated calculations for cost splitting
+- **Spending Analytics:** Track expenses by category and family
+
+### 🔐 Enterprise Security
+- **Zero-Trust Architecture:** Auth0 integration with comprehensive RBAC
+- **Data Protection:** CSRF/CORS protection, input validation, audit logging
+- **Secrets Management:** Azure Key Vault integration with automatic rotation
+
+---
+## 🏗️ Architecture Overview
+
+Pathfinder employs a cost-optimized two-layer architecture designed for scalability and efficiency. Complete technical documentation is available in [`docs/metadata.md`](docs/metadata.md).
+
+### 🔄 Two-Layer Azure Infrastructure
 
 ```
-Persistent Layer (pathfinder-db-rg)   Ephemeral Layer (pathfinder-rg)
-┌──────────────────────────────┐     ┌──────────────────────────────┐
-│  • Azure SQL & Cosmos DB     │     │  • Azure Container Apps      │
-│  • Storage Account (files)   │◄───►│  • Backend & Frontend        │
-│  • Key Vault (secrets)       │     │  • Container Registry        │
-└──────────────────────────────┘     │  • Application Insights      │
-                                     └──────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                    PERSISTENT DATA LAYER                        │
+│                      (pathfinder-db-rg)                        │
+│  💾 Azure SQL Database     🗄️  Cosmos DB (Serverless)          │
+│  📁 Storage Account        🔐 Key Vault (Secrets)              │
+│  ├─ Never deleted for data preservation                        │
+│  └─ $15-25/month baseline cost                                 │
+└─────────────────────────────────────────────────────────────────┘
+                                    ⬆️
+                             Data persistence
+                                    ⬇️
+┌─────────────────────────────────────────────────────────────────┐
+│                   EPHEMERAL COMPUTE LAYER                      │
+│                       (pathfinder-rg)                          │
+│  🚀 Container Apps Env     📦 Container Registry               │
+│  🖥️  Backend API Service   🌐 Frontend Web App                │
+│  📊 Application Insights   ⚖️  Auto-scaling (0-N instances)   │
+│  ├─ Safe to delete for 70% cost reduction                      │
+│  └─ $35-50/month when active, $0 when paused                  │
+└─────────────────────────────────────────────────────────────────┘
 ```
-Resume in 5-10 minutes; delete compute layer anytime for immediate savings.
+
+### ⚡ Cost Optimization Benefits
+- **Active State:** Full functionality, $50-75/month
+- **Paused State:** Data preserved, compute deleted, $15-25/month  
+- **Resume Time:** 5-10 minutes via automated CI/CD
+- **Savings:** Up to 70% cost reduction during idle periods
+
+### 🛠️ Technology Stack
+- **Frontend:** React 18 + TypeScript + Vite + Tailwind CSS + Fluent UI v9 + PWA
+- **Backend:** FastAPI + Python 3.11 + Pydantic v2 + SQLAlchemy + Alembic
+- **Real-time:** Socket.IO for chat and live presence
+- **AI Services:** Custom LLM orchestration with cost tracking and fallbacks
+- **Data:** Azure SQL (relational) + Cosmos DB (documents) + Storage Account (files)
+- **Infrastructure:** Docker + Bicep IaC + Azure Container Apps + Azure Key Vault
+- **CI/CD:** GitHub Actions with optimized workflows (71% reduction in complexity)
+- **Authentication:** Auth0 with zero-trust security model
+- **Testing:** Playwright E2E + Pytest with comprehensive coverage
 
 ---
-## 3. Quick Start (Local Development)
-Prerequisites: **Node 18+**, **Python 3.12+**, **Docker**
+## 🚀 Quick Start (Local Development)
+
+### Prerequisites
+- **Node.js 18+** and **Python 3.11+** 
+- **Docker** and **Docker Compose**
+- At least **4GB RAM** available
+
+### Setup & Launch
 ```bash
-# Clone & prepare
+# Clone the repository
 git clone https://github.com/vedprakashmishra/pathfinder.git
 cd pathfinder
 
-# Back-end
+# Configure backend environment
 cp backend/.env.example backend/.env
 
-# Front-end
+# Configure frontend environment  
 cp frontend/.env.example frontend/.env.local
 
-# Launch full stack
+# Launch the full stack
 docker compose up -d
-open http://localhost:3000        # React PWA
-open http://localhost:8000/docs   # FastAPI docs
+
+# Access the applications
+open http://localhost:3000        # React PWA (Frontend)
+open http://localhost:8000/docs   # FastAPI Documentation (Backend)
 ```
 
----
-## 4. Cloud Deployment (Azure)
-Infrastructure is defined with **Bicep** in `infrastructure/bicep/` and automated by GitHub Actions.
-
-1. **Secrets** – Add `AZURE_CREDENTIALS`, `SQL_ADMIN_USERNAME`, `SQL_ADMIN_PASSWORD`, (optional) `OPENAI_API_KEY` to your repository.  
-2. **Deploy Data Layer (one-time)**
-   ```bash
-   ./scripts/deploy-data-layer.sh   # or run the "Deploy Infrastructure" workflow
-   ```
-3. **Resume / Deploy Compute Layer**
-   ```bash
-   ./scripts/resume-environment.sh  # or commit/push to trigger CI/CD
-   ```
-4. **Pause to Save Cost**  
-   ```bash
-   ./scripts/pause-environment.sh
-   ```
-
-For advanced options, see the **Pause / Resume** workflow or the scripts in `scripts/`.
-
----
-## 5. Development Workflow
-
-### Local Validation System
-
-Before pushing changes to CI/CD, run our comprehensive local validation:
-
+### Local Development with Validation
 ```bash
-# Quick validation (recommended before every commit)
+# Quick validation before commits (recommended)
 ./scripts/local-validation.sh --quick
 
 # Full validation with auto-fix
 ./scripts/local-validation.sh --fix
 
-# Full validation (check-only mode)
+# Run comprehensive E2E tests
+./scripts/run-e2e-tests.sh
+```
+
+**What's Included:**
+- ✅ **Backend API** with FastAPI and auto-generated documentation
+- ✅ **Frontend PWA** with hot-reload and modern development tools  
+- ✅ **Database** with SQLite for local development
+- ✅ **Real-time features** via Socket.IO
+- ✅ **AI integration** with mock services for local testing
+
+---
+## ☁️ Cloud Deployment (Azure)
+
+Pathfinder uses **Bicep Infrastructure as Code** for reliable, repeatable deployments to Azure. The platform is designed for Azure-first deployment with cost optimization built-in.
+
+### 🔐 Prerequisites
+1. **Azure Subscription** with appropriate permissions
+2. **GitHub Repository Secrets** configured:
+   - `AZURE_CREDENTIALS` (Service Principal JSON)
+   - `SQL_ADMIN_USERNAME` (Database admin username)  
+   - `SQL_ADMIN_PASSWORD` (Database admin password)
+   - `OPENAI_API_KEY` (Optional - for AI features)
+
+### 🏗️ Deployment Process
+
+#### 1. One-Time Data Layer Setup
+```bash
+# Deploy persistent data layer (SQL, Cosmos DB, Storage, Key Vault)
+./scripts/deploy-data-layer.sh
+
+# Or use GitHub Actions workflow: "Deploy Infrastructure"
+```
+
+#### 2. Deploy/Resume Compute Layer  
+```bash
+# Deploy or resume the complete application
+./scripts/resume-environment.sh
+
+# Or simply push to main branch - CI/CD will auto-deploy
+git push origin main
+```
+
+#### 3. Cost Optimization (Pause)
+```bash
+# Pause compute layer to save 70% on costs
+./scripts/pause-environment.sh
+
+# Data layer remains active for immediate resume
+```
+
+### 🔄 Automated CI/CD Pipeline
+Our optimized CI/CD system provides:
+- ✅ **Quality Gates:** Code formatting, linting, security scanning
+- ✅ **Comprehensive Testing:** Unit tests, integration tests, E2E validation  
+- ✅ **Performance Monitoring:** Load testing and response time tracking
+- ✅ **Security Scanning:** Dependency vulnerabilities and container scanning
+- ✅ **Cost Monitoring:** Azure resource usage alerts and optimization
+- ✅ **Zero-Downtime Deployment:** Container-based rolling updates
+
+**Recent Optimizations:**
+- **71% reduction** in workflow complexity (7 → 2 workflows)
+- **40-60% faster** execution via parallel jobs and intelligent caching
+- **Enhanced error reporting** with actionable guidance
+
+---
+## 🛠️ Development Workflow
+
+### Local Validation System
+Before pushing changes to CI/CD, use our comprehensive local validation system:
+
+```bash
+# Quick validation (recommended before every commit)
+./scripts/local-validation.sh --quick
+
+# Full validation with auto-fix capabilities
+./scripts/local-validation.sh --fix
+
+# Check-only mode (no modifications)
 ./scripts/local-validation.sh
 ```
 
-**What it validates:**
-- ✅ Requirements.txt syntax and package conflicts
-- ✅ Frontend package.json and dependencies
-- ✅ Backend code quality (formatting, linting, imports)
-- ✅ Docker build compatibility
-- ✅ Git status and branch awareness
+### What Gets Validated
+- ✅ **Dependencies:** Requirements.txt syntax and package conflicts
+- ✅ **Code Quality:** Formatting, linting, type checking, imports
+- ✅ **Build Compatibility:** Docker build validation
+- ✅ **Git Status:** Branch awareness and uncommitted changes
+- ✅ **Infrastructure:** GitHub Actions and Azure prerequisites
 
-**Benefits:**
+### Benefits
 - 🚀 **40-60% faster feedback** than waiting for CI/CD
-- 🔧 **Auto-fix mode** resolves common issues automatically
+- 🔧 **Auto-fix mode** resolves common issues automatically  
 - 🛡️ **Prevents CI/CD failures** by catching issues locally
 - 📊 **Comprehensive reporting** with actionable guidance
-- 🔍 **GitHub Actions validation** catches missing action references
-- 🏗️ **Infrastructure prerequisite checking** prevents deployment failures
 
-### CI/CD Pipeline Status
-
-Our streamlined CI/CD system runs the same validations plus deployment:
+### CI/CD Pipeline
+Our streamlined pipeline includes:
 
 1. **Quality Checks** - Code formatting, linting, type checking
 2. **Security Scanning** - Dependency vulnerabilities and container scanning  
@@ -126,54 +248,137 @@ Our streamlined CI/CD system runs the same validations plus deployment:
 5. **Cost Monitoring** - Azure resource usage and optimization alerts
 6. **Deployment** - Automated deployment with rollback capabilities
 
-**Recent Optimizations:**
-- ✅ Consolidated 7 workflows → 2 efficient workflows (71% reduction)
-- ✅ 40-60% faster execution via parallel jobs
-- ✅ Smart caching reduces build times by 40%
-- ✅ Enhanced error reporting and debugging
-
-Continuous integration executes the full test suite and, on main, builds & deploys containers to Azure Container Apps.
+**Key Optimizations:**
+- ✅ **Consolidated workflows** - 71% reduction (7 → 2 workflows)
+- ✅ **Parallel execution** - 40-60% faster builds
+- ✅ **Smart caching** - 40% reduction in build times
+- ✅ **Enhanced debugging** - Comprehensive error reporting
 
 ---
-## 6. Testing
+## 🧪 Testing
 
-### Unit and Integration Tests
+Pathfinder includes a comprehensive testing strategy covering unit tests, integration tests, and end-to-end validation.
+
+### Unit & Integration Tests
 ```bash
-# Back-end tests
-cd backend && pytest -v
+# Backend tests with coverage reporting
+cd backend && pytest -v --cov
 
-# Front-end tests  
+# Frontend tests with component validation  
 cd frontend && npm test
 ```
 
-### End-to-End Testing
-Pathfinder includes a comprehensive E2E testing suite using Docker Compose and Playwright for complete workflow validation:
+### End-to-End Testing Suite
+**Comprehensive E2E validation** using Docker Compose + Playwright:
 
 ```bash
-# Run full E2E test suite
+# Run complete E2E test suite (single command)
 ./scripts/run-e2e-tests.sh
+
+# Validate E2E setup and prerequisites
+./scripts/validate-e2e-setup.sh
 ```
 
-The E2E suite tests:
-- User authentication flows
-- Trip management (CRUD operations)
-- Family management and invitations
-- API integration and error handling
-- Complete user workflows across multiple features
+### E2E Testing Features
+- **Multi-Browser Testing:** Chrome, Firefox, Safari, Mobile simulation
+- **Complete Isolation:** Dedicated MongoDB + Redis for each test run  
+- **Comprehensive Coverage:** Authentication, CRUD operations, API integration, user workflows
+- **Mock Services:** Authentication and external service mocking
+- **Automated Orchestration:** Single command execution with cleanup
+- **Performance Testing:** Load testing and response time validation
 
-For detailed E2E testing documentation, setup instructions, and debugging guides, see [`E2E_TESTING.md`](E2E_TESTING.md).
+### Test Categories
+1. **Authentication Flows** - Login, logout, session management
+2. **Core CRUD Operations** - Trip and family management  
+3. **API Integration** - Complete backend endpoint validation
+4. **User Workflows** - End-to-end journey testing
+5. **Error Scenarios** - Error handling and edge cases
+6. **Performance Testing** - Load and response time testing
 
----
-## 7. Cost Optimisation
-• **Active**: ≈ $50–75 / month  
-• **Paused (compute deleted)**: ≈ $15–25 / month  
-Save ≈ 70 % with one command:
+### Debugging & Development
 ```bash
-./scripts/pause-environment.sh   # Pause
-./scripts/resume-environment.sh  # Resume
+# Run tests with visible browser (debugging)
+cd tests/e2e && npx playwright test --debug
+
+# Run specific test suites
+npx playwright test auth          # Authentication tests
+npx playwright test trips         # Trip management tests  
+npx playwright test api           # API integration tests
 ```
 
+**Test Reports:** Generated in HTML format with screenshots, videos, and comprehensive debugging information.
+
 ---
-## 8. License
-This project is licensed under the **GNU Affero General Public License v3.0** – see [`LICENSE`](LICENSE).  
-Commercial or closed-source usage is available via dual-licensing; contact the maintainer for details.
+## 💰 Cost Optimization
+
+Pathfinder's innovative two-layer architecture provides significant cost savings without compromising functionality.
+
+### 💡 Smart Cost Management
+- **Active State:** Full functionality - $50-75/month
+- **Paused State:** Data preserved, compute deleted - $15-25/month  
+- **Savings:** Up to **70% cost reduction** during idle periods
+- **Resume Time:** **5-10 minutes** via automated CI/CD
+
+### 🔄 Pause/Resume Operations
+```bash
+# Pause compute layer (immediate cost savings)
+./scripts/pause-environment.sh   
+
+# Resume full functionality (5-10 minutes)
+./scripts/resume-environment.sh  
+
+# Check current infrastructure status
+az resource list --resource-group pathfinder-rg --output table
+```
+
+### 📊 Cost Breakdown
+| Component | Persistent Data Layer | Ephemeral Compute Layer | 
+|-----------|----------------------|-------------------------|
+| **Always Active** | Azure SQL, Cosmos DB, Storage, Key Vault | - |
+| **When Active** | - | Container Apps, Registry, App Insights |
+| **Monthly Cost (Active)** | $15-25 | $35-50 |
+| **Monthly Cost (Paused)** | $15-25 | $0 |
+
+### ⚡ Automation Features
+- **GitHub Actions Integration:** Pause/resume via repository workflows
+- **Scheduled Pausing:** Optional automated pausing during off-hours
+- **Cost Monitoring:** Azure alerts for budget thresholds
+- **Resource Optimization:** Auto-scaling with scale-to-zero capabilities
+
+This architecture is ideal for:
+- **Development teams** with intermittent usage patterns
+- **Small organizations** requiring enterprise features on a budget  
+- **Demo environments** that need occasional full functionality
+- **Cost-conscious deployments** requiring production-grade capabilities
+
+---
+## 📄 License
+
+This project is licensed under the **GNU Affero General Public License v3.0 (AGPLv3)** – see the [`LICENSE`](LICENSE) file for complete terms.
+
+### 🔑 Key Licensing Points
+- ✅ **Free Use:** Use, modify, and distribute freely
+- ✅ **Commercial Use:** Permitted under AGPLv3 terms  
+- ✅ **Network Services:** Source code must be available to users interacting over a network
+- ✅ **Derivative Works:** Must be licensed under AGPLv3
+
+### 💼 Commercial Licensing
+For commercial use without AGPLv3 obligations, **dual licensing** options are available. Contact the maintainer for:
+- Closed-source commercial deployments
+- SaaS offerings without source code disclosure requirements
+- Custom licensing terms for enterprise customers
+
+### 📞 Contact & Support
+- **Maintainer:** Vedprakash Mishra
+- **Repository:** [github.com/vedprakashmishra/pathfinder](https://github.com/vedprakashmishra/pathfinder)
+- **Issues:** Report bugs and feature requests via GitHub Issues
+- **Security:** Follow responsible disclosure guidelines in [`docs/metadata.md`](docs/metadata.md)
+
+### 🤝 Contributing
+We welcome contributions! Please see:
+- [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md) for contribution guidelines
+- [`docs/User_Experience.md`](docs/User_Experience.md) for UX principles  
+- [`docs/metadata.md`](docs/metadata.md) for comprehensive technical documentation
+
+---
+**© Pathfinder 2025** – Empowering seamless group travel planning with AI-powered intelligence and cost-optimized cloud architecture.

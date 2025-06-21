@@ -1,147 +1,273 @@
 # Pathfinder – Project Metadata (Source of Truth)
 
-**Version:** 5.1  
-**Last Updated:** June 20 2025  
+**Version:** 6.0  
+**Last Updated:** June 21 2025  
 **Maintainer:** Vedprakash Mishra  
+**License:** GNU Affero General Public License v3.0 (AGPLv3)
 
 ---
-## 1  Platform Purpose
-Pathfinder is an AI-powered platform that eliminates the chaos of planning multi-family group trips. It centralises communication, preference collection and AI-generated itineraries while enforcing enterprise-grade security.
+## 1. Platform Purpose
+Pathfinder is a production-ready AI-powered platform that eliminates the chaos of planning multi-family group trips. It centralizes communication, preference collection, and AI-generated itineraries while enforcing enterprise-grade security and cost optimization.
+
+**Key Differentiators:**
+- Multi-family coordination with role-based access control
+- AI-powered itinerary generation with multi-provider LLM orchestration  
+- Real-time collaboration with Socket.IO chat and live presence
+- Budget tracking and expense management with settlement suggestions
+- Cost-aware architecture with 70% savings when idle
 
 ---
-## 2  Current Production-Ready Architecture
+## 2. Production-Ready Architecture
 
-### 2.1  Two-Layer Pause/Resume Model (Azure-only)
-• **`pathfinder-db-rg` (Persistent Data)** – Azure SQL, Cosmos DB (serverless), Storage Account, Key Vault. _Never deleted._  
-• **`pathfinder-rg` (Ephemeral Compute)** – Azure Container Apps env, backend & frontend apps, Container Registry, Application Insights. _Safe to delete for cost savings._  
-→ **70 % cost reduction** when compute layer is paused (≈ $35-50 / month saved).  
-→ Resume time: **5-10 minutes**, fully automated via CI/CD.
+### 2.1 Two-Layer Azure Infrastructure
+**`pathfinder-db-rg` (Persistent Data Layer)**  
+- Azure SQL Database (relational data)
+- Cosmos DB (document storage, serverless)  
+- Storage Account (file uploads)
+- Key Vault (secrets management)
+- *Never deleted for data preservation*
 
-### 2.2  Technology Stack
-Frontend (React 18 + Vite + Tailwind + Fluent UI v9 + PWA)  
-Backend (FastAPI + Python 3.12 + Pydantic v2 + SQLAlchemy + Alembic + Socket.IO)  
-AI (Custom LLM Orchestration – OpenAI / Gemini / Claude)  
-Data (Azure SQL + Cosmos DB) Files (Azure Storage – _in data layer_)  
-Infrastructure (Docker, **Bicep IaC**, Azure Container Apps, Key Vault, Application Insights)  
-CI/CD (GitHub Actions – see § 4) Auth (Auth0)
+**`pathfinder-rg` (Ephemeral Compute Layer)**
+- Azure Container Apps environment with auto-scaling
+- Backend and frontend containerized applications
+- Container Registry for image storage
+- Application Insights for monitoring
+- *Safe to delete for 70% cost reduction*
 
-### 2.3  Cost Profile
-| State | Data Layer | Compute Layer | Monthly Total |
-| --- | --- | --- | --- |
-| **Active** | $15-25 | $35-50 | **$50-75** |
-| **Paused** | $15-25 | $0 | **$15-25** |
+**Cost Optimization:**
+- **Active State:** $50-75/month (full functionality)
+- **Paused State:** $15-25/month (data preserved, compute deleted)
+- **Resume Time:** 5-10 minutes via automated CI/CD
 
----
-## 3  Infrastructure as Code (Bicep)
-Essential templates (all under `infrastructure/bicep/`):
-1. `pathfinder-single-rg.bicep` – legacy always-on option.  
-2. `persistent-data.bicep` – data layer.  
-3. `compute-layer.bicep` – compute layer (references data layer).
+### 2.2 Technology Stack
+**Frontend:** React 18 + Vite + TypeScript + Tailwind CSS + Fluent UI v9 + PWA  
+**Backend:** FastAPI + Python 3.11 + Pydantic v2 + SQLAlchemy + Alembic + Socket.IO  
+**AI Services:** Custom LLM Orchestration (OpenAI/Gemini/Claude) with cost tracking  
+**Data Storage:** Azure SQL + Cosmos DB + Azure Storage Account  
+**Infrastructure:** Docker + Bicep IaC + Azure Container Apps + Key Vault  
+**CI/CD:** GitHub Actions (2 optimized workflows)  
+**Authentication:** Auth0 with zero-trust security model  
+**Testing:** Playwright E2E + Pytest + comprehensive test coverage
 
-All templates use globally unique names via `uniqueString()`.
-
----
-## 4  CI/CD Workflows (GitHub Actions) - OPTIMIZED
-| Workflow | Purpose |
-| --- | --- |
-| `ci-cd-pipeline.yml` | **CONSOLIDATED** - Build, test, security, performance, deploy, cost monitoring, notifications |
-| `infrastructure-management.yml` | Pause/Resume compute layer (70% cost savings), deploy data layer |
-
-**🚀 RECENT OPTIMIZATION:** Consolidated 7 workflows into 2 efficient workflows:
-- **71% fewer files** (7 → 2 workflows)
-- **40-60% faster execution** via parallel jobs and smart caching
-- **30% reduction** in GitHub Actions minutes usage
-- **Simplified maintenance** with centralized logic and comprehensive documentation
-
-### 4.1  Required Repository Secrets
-`AZURE_CREDENTIALS`, `SQL_ADMIN_USERNAME`, `SQL_ADMIN_PASSWORD`, `OPENAI_API_KEY`  
-_Optional (pause/resume):_ `AZURE_SUBSCRIPTION_ID`, `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `LLM_ORCHESTRATION_URL`, `LLM_ORCHESTRATION_API_KEY`.
+### 2.3 Security & Compliance
+- **Enterprise-grade security** with Auth0 zero-trust model
+- **Role-based access control** (4 roles: Super Admin, Family Admin, Trip Organizer, Member)
+- **CSRF/CORS protection** with production compatibility
+- **Input validation** via Pydantic v2 schemas
+- **Secrets management** via Azure Key Vault with rotation
+- **Container security** with Trivy vulnerability scanning
+- **SAST/DAST** security scanning with CodeQL and Snyk
 
 ---
-## 5  Operational Commands (Scripts)
+## 3. Infrastructure as Code (Bicep)
+**Essential Templates** (located in `infrastructure/bicep/`):
+1. **`persistent-data.bicep`** – Data layer (SQL, Cosmos, Storage, Key Vault)
+2. **`compute-layer.bicep`** – Compute layer (Container Apps, Registry, Insights)
+3. **`pathfinder-single-rg.bicep`** – Legacy always-on deployment option
+
+**Features:**
+- Globally unique resource naming via `uniqueString()`
+- Environment-based configuration
+- Cost optimization with pause/resume capability
+- Production-ready with monitoring and alerting
+
+---
+## 4. CI/CD Workflows (GitHub Actions) - OPTIMIZED
+
+**Current Workflows:**
+| Workflow | Purpose | Status |
+|----------|---------|--------|
+| `ci-cd-pipeline.yml` | **CONSOLIDATED** - Build, test, security, performance, deploy, cost monitoring | ✅ Optimized |
+| `infrastructure-management.yml` | Pause/Resume compute layer (70% cost savings), deploy data layer | ✅ Optimized |
+
+**Recent Optimizations (June 2025):**
+- ✅ **71% fewer workflow files** (7 → 2 workflows)
+- ✅ **40-60% faster execution** via parallel jobs and smart caching
+- ✅ **30% reduction** in GitHub Actions minutes usage
+- ✅ **Simplified maintenance** with centralized logic
+
+### 4.1 Required Repository Secrets
+**Essential:**
+- `AZURE_CREDENTIALS` - Service principal JSON for Azure deployment
+- `SQL_ADMIN_USERNAME` - Database administrator username
+- `SQL_ADMIN_PASSWORD` - Database administrator password
+- `OPENAI_API_KEY` - AI service integration (optional with fallback)
+
+**Optional (pause/resume):**
+- `AZURE_SUBSCRIPTION_ID`, `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`
+- `LLM_ORCHESTRATION_URL`, `LLM_ORCHESTRATION_API_KEY`
+
+---
+## 5. Testing & Quality Assurance
+
+### 5.1 End-to-End Testing Suite
+**Comprehensive E2E validation** using Docker Compose + Playwright:
+- **Multi-browser testing:** Chrome, Firefox, Safari, Mobile simulation
+- **Complete isolation:** Dedicated MongoDB + Redis for each test run
+- **Test categories:** Authentication, CRUD operations, API integration, user workflows
+- **Mock services:** Authentication service for local testing
+- **Automated orchestration:** Single command execution with cleanup
+
+**Key Testing Features:**
+- Health checks and service validation
+- Test data management and cleanup
+- Performance and load testing
+- Cross-browser compatibility
+- API contract validation
+- Error scenario testing
+
+### 5.2 Quality Gates
+- **Backend:** Pytest with comprehensive coverage
+- **Frontend:** Component and integration tests
+- **Security:** SAST/DAST scanning with CodeQL and Snyk
+- **Performance:** Load testing and response time validation
+- **Dependencies:** Vulnerability scanning and license compliance
+
+---
+## 6. Operational Commands
+
+### 6.1 Infrastructure Management
 ```bash
-# One-time data layer
+# One-time data layer deployment
 ./scripts/deploy-data-layer.sh
 
 # Resume full environment (compute layer)
 ./scripts/resume-environment.sh
 
-# Pause to save cost
+# Pause to save cost (70% reduction)
 ./scripts/pause-environment.sh
 
 # Complete manual deployment (all-in-one)
 ./scripts/complete-deployment.sh
 ```
 
----
-## 6  Open Tasks (as of June 15 2025)
-### Completed (June 15 2025)
-✔ Implemented `/trips/sample` API endpoint to support Golden-Path onboarding.  
-✔ **CRITICAL**: Fixed CSRF/CORS compatibility issues - production blocker resolved.  
-✔ **CRITICAL**: Resolved database migration conflicts and persistence issues.  
-✔ Enhanced sample trip generation with realistic data and decision scenarios.  
-✔ Added security permission guards to test endpoints.  
-✔ Enabled CSRF protection with CORS compatibility mode.  
-✔ **PRODUCTION READY**: Enhanced health check system with comprehensive monitoring.  
-✔ **PRODUCTION READY**: Email service configuration verified and tested.  
-✔ **PRODUCTION READY**: Comprehensive monitoring and alerting configuration created.  
-✔ **PRODUCTION READY**: Frontend accessibility improvements with ARIA compliance.  
-✔ Container Registry resource verified in compute-layer.bicep template.  
+### 6.2 Local Development & Validation
+```bash
+# Quick validation (recommended before commits)
+./scripts/local-validation.sh --quick
 
-### Production Status: ✅ READY FOR DEPLOYMENT
-**All critical production readiness requirements have been completed:**
-- Security hardened (CSRF/CORS, rate limiting, permissions)
-- Database migrations stable and persistent  
-- Monitoring and health checks comprehensive
-- Email notifications configured
-- Enhanced user onboarding experience
-- Accessibility compliance improved
-- Infrastructure templates production-ready
+# Full validation with auto-fix
+./scripts/local-validation.sh --fix
 
-### Current Focus: Testing Excellence & Quality Assurance (June 20, 2025)
-🔧 **IN PROGRESS - Comprehensive Testing Enhancement:**
-**Phase 1: Critical Test Fixes & Stability (Today)**
-• ✅ Fix known test failure: `test_cost_tracker_budget_limit`
-• ✅ Stabilize backend test environment and import paths
-• ✅ Add missing test dependencies and configuration
+# Complete E2E test suite
+./scripts/run-e2e-tests.sh
 
-**Phase 2: Frontend Test Coverage Expansion (Today)**
-• 📝 Add comprehensive component tests (Dashboard, TripCard, FamilyManagement)
-• 📝 Add API service integration tests
-• 📝 Implement visual regression testing framework
-• 📝 Target: 40% → 70%+ frontend test coverage
-
-**Phase 3: Backend Test Enhancement (Today)**
-• 📝 Add performance and load testing suite
-• 📝 Enhance integration test coverage
-• 📝 Add API contract validation tests
-• 📝 Improve test data management and fixtures
-
-**Phase 4: Local Validation & CI/CD Alignment (Today)**
-• 📝 Enhance local validation script reliability
-• 📝 Add coverage reporting and trending
-• 📝 Implement test environment isolation
-• 📝 Add automated test quality gates
-
-### Optional Enhancements (Post-Production)
-1. ✅ **COMPLETED - CI/CD Optimization:**  
-   • ✅ Matrix strategy for backend/frontend tests implemented  
-   • ✅ Dependency caching implemented (40% build time reduction)  
-   • ✅ Consolidated workflows for efficiency (71% fewer files)  
-   • ✅ Parallel job execution for 40-60% speed improvement  
-2. 🔧 **IN PROGRESS - Testing Excellence:**
-   • Enhanced frontend test coverage with component and integration tests
-   • Backend test stability improvements and known failure fixes
-   • Performance and visual regression testing framework
-   • API contract testing and validation improvements
-3. Advanced monitoring integrations (Prometheus, Grafana)
-4. Performance optimization and caching strategies  
+# Validate E2E setup
+./scripts/validate-e2e-setup.sh
+```
 
 ---
-## 7  Contact / Handoff
-All infrastructure fixes are committed to `main`.  
-Blocking issues: Container Registry & SQL password policy.  
-Next focus: finish infrastructure deployment → validate CI/CD → document auto-pause scheduling.  
+## 7. Monitoring & Health Checks
+
+### 7.1 Health Endpoints
+- **`/health`** - Basic service availability
+- **`/health/ready`** - Database connectivity validation
+- **`/health/live`** - Kubernetes-compatible liveness probe
+- **`/health/detailed`** - Comprehensive system status
+- **`/health/metrics`** - Prometheus-style metrics
+- **`/health/version`** - Build and dependency information
+
+### 7.2 Monitoring & Alerting
+**Application Insights Integration:**
+- Resource monitoring (CPU, memory, disk usage)
+- Database performance and connection pooling
+- Response time tracking and latency monitoring
+- Error rate monitoring and alerting
+- AI cost tracking with budget alerts
+
+**Alert Configuration:**
+- Performance thresholds and escalation policies
+- Multi-channel notifications (email, Slack, PagerDuty)
+- Business metrics monitoring (user activity, data integrity)
 
 ---
-© Pathfinder 2025 – Licensed under the project LICENSE.
+## 8. Production Readiness Status
+
+### 8.1 ✅ PRODUCTION READY - All Critical Requirements Complete
+
+**Security & Compliance:**
+- ✅ Enterprise-grade security with Auth0 + RBAC
+- ✅ CSRF/CORS protection with production compatibility
+- ✅ Comprehensive input validation and audit logging
+- ✅ Secrets management via Azure Key Vault
+
+**Infrastructure & Deployment:**
+- ✅ Two-layer architecture with cost optimization
+- ✅ Container Registry and auto-scaling configuration
+- ✅ Health checks and Kubernetes compatibility
+- ✅ CI/CD pipeline with automated deployment
+
+**Monitoring & Observability:**
+- ✅ Comprehensive health check system
+- ✅ Application Insights integration
+- ✅ Performance monitoring and alerting
+- ✅ Cost tracking and budget controls
+
+**Testing & Quality:**
+- ✅ Comprehensive E2E test suite with Playwright
+- ✅ Multi-browser testing and API validation
+- ✅ Security scanning and vulnerability management
+- ✅ Performance testing and load validation
+
+### 8.2 Known Issues & Troubleshooting
+
+**Python 3.12 Compatibility:**
+- Current deployment uses Python 3.11 due to `dependency-injector` package compatibility
+- CI/CD configured to pin Python 3.11 until dependency updates available
+
+**Common CI/CD Issues:**
+- Missing data layer resources: Deploy `pathfinder-db-rg` first
+- Azure credentials: Ensure GitHub Secrets properly configured
+- Container security scans: Permissions for CodeQL uploads required
+
+**Prevention:**
+- Use local validation script before pushing changes
+- Validate Azure resource prerequisites
+- Run comprehensive E2E tests locally
+
+---
+## 9. Development Workflow
+
+### 9.1 Local Development Setup
+```bash
+# Clone and prepare environment
+git clone https://github.com/vedprakashmishra/pathfinder.git
+cd pathfinder
+
+# Backend configuration
+cp backend/.env.example backend/.env
+
+# Frontend configuration  
+cp frontend/.env.example frontend/.env.local
+
+# Launch full stack
+docker compose up -d
+open http://localhost:3000        # React PWA
+open http://localhost:8000/docs   # FastAPI docs
+```
+
+### 9.2 Quality Assurance Process
+1. **Local validation** before commits
+2. **E2E testing** for feature changes
+3. **Security scanning** via pre-commit hooks
+4. **Performance testing** for critical paths
+5. **Code review** with security focus
+
+---
+## 10. Support & Contact Information
+
+**Maintainer:** Vedprakash Mishra  
+**Repository:** https://github.com/vedprakashmishra/pathfinder  
+**License:** GNU Affero General Public License v3.0 (AGPLv3)  
+
+**Commercial Licensing:** Contact maintainer for dual-licensing options  
+**Security Issues:** Follow responsible disclosure in SECURITY.md  
+
+**Key Resources:**
+- Complete deployment guide in README.md
+- E2E testing documentation in E2E_TESTING.md
+- Contributing guidelines in CONTRIBUTING.md
+- User experience documentation in User_Experience.md
+
+---
+© Pathfinder 2025 – Licensed under AGPLv3. Commercial use requires dual licensing.
