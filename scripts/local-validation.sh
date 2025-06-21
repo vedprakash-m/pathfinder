@@ -227,14 +227,34 @@ if ! python3 -c "from backend.domain.trip import TripDomainService" 2>/dev/null;
     IMPORT_ERRORS+=("backend.domain.trip - Domain service import failed")
 fi
 
+# NEW: Test Data Structure Validation (prevents test failures in CI/CD)
+echo "   Testing service data structures..."
+if ! python3 -c "
+from app.services.ai_service import CostTracker
+tracker = CostTracker()
+# Test that track_usage creates proper structure
+cost = tracker.track_usage('gpt-4o-mini', 100, 50, 'general')
+today = list(tracker.daily_usage.keys())[0]
+# Verify expected keys exist
+assert 'cost' in tracker.daily_usage[today]
+assert 'requests' in tracker.daily_usage[today] 
+assert 'models' in tracker.daily_usage[today]
+assert 'request_types' in tracker.daily_usage[today]
+# Test check_budget_limit works with proper structure
+result = tracker.check_budget_limit()
+print('✅ AI service data structures validated')
+" 2>/dev/null; then
+    IMPORT_ERRORS+=("app.services.ai_service - Data structure validation failed")
+fi
+
 if [ ${#IMPORT_ERRORS[@]} -eq 0 ]; then
-    print_status "All critical imports: Passed" "success"
+    print_status "All critical imports and data structures: Passed" "success"
 else
-    print_status "Import failures detected (${#IMPORT_ERRORS[@]} modules)" "error"
+    print_status "Import/structure failures detected (${#IMPORT_ERRORS[@]} modules)" "error"
     for error in "${IMPORT_ERRORS[@]}"; do
         echo "   ❌ $error"
     done
-    echo "   💡 These import failures will cause CI/CD to fail immediately"
+    echo "   💡 These failures will cause CI/CD to fail immediately"
 fi
 
 # NEW: Forward Reference Detection
@@ -606,6 +626,19 @@ else
     print_status "conftest.py import failed - will cause CI/CD failure" "error"
     echo "   ❌ This is the exact error causing CI/CD failure"
     echo "   🔧 Fix imports in conftest.py and related modules"
+fi
+
+# First test the specific failing test from CI/CD
+echo "   Testing specific CI/CD failure case..."
+if python3 -c "import pytest" 2>/dev/null; then
+    if python3 -m pytest tests/test_ai_service.py::test_cost_tracker_budget_limit -v 2>/dev/null; then
+        print_status "Previously failing test: Passed" "success"
+    else
+        print_status "CI/CD failure test still failing" "error"
+        echo "   ❌ Test: tests/test_ai_service.py::test_cost_tracker_budget_limit"
+        echo "   💡 This exact test is blocking CI/CD - must fix first"
+        VALIDATION_FAILED=true
+    fi
 fi
 
 # Run tests with exact CI/CD command and environment

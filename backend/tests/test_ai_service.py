@@ -51,8 +51,13 @@ async def test_cost_tracker_budget_limit():
     tracker = CostTracker()
     today = datetime.now().date().isoformat()
 
-    # Act - track a high usage that would exceed typical daily budget
-    tracker.daily_usage[today] = {"cost": 10.0, "requests": 10}
+    # Act - Use proper track_usage method to create correct data structure
+    # Track high usage that would exceed typical daily budget (50.0 default)
+    for _ in range(10):
+        tracker.track_usage("gpt-4o", 1000, 1000, "general")  # Each call costs ~$0.06, total ~$0.60
+    
+    # Manually set cost to exceed budget limit for testing
+    tracker.daily_usage[today]["cost"] = 60.0  # Exceeds default $50 limit
 
     # Assert
     assert tracker.check_budget_limit() is False
