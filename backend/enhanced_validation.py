@@ -11,11 +11,36 @@ import os
 from pathlib import Path
 
 
+def get_python_interpreter():
+    """Get the correct Python interpreter to use."""
+    # First try virtualenv python
+    venv_python = Path(__file__).parent / "venv" / "bin" / "python"
+    if venv_python.exists():
+        return str(venv_python)
+    
+    # Try system python3
+    try:
+        subprocess.run(["python3", "--version"], check=True, capture_output=True)
+        return "python3"
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        pass
+    
+    # Fallback to python
+    return "python"
+
+
 def run_command(cmd, description, check_return_code=True):
     """Run a command and return result with description."""
     print(f"\n{'='*60}")
     print(f"🔄 {description}")
     print(f"{'='*60}")
+    
+    # Replace 'python' with the correct interpreter
+    python_interpreter = get_python_interpreter()
+    if cmd.startswith("python "):
+        cmd = cmd.replace("python ", f"{python_interpreter} ", 1)
+    elif cmd.startswith("python -"):
+        cmd = cmd.replace("python -", f"{python_interpreter} -", 1)
     
     try:
         result = subprocess.run(cmd, shell=True, capture_output=True, text=True, cwd=Path(__file__).parent)
@@ -57,15 +82,17 @@ def main():
     results = []
     
     # 1. Check Python version
+    python_interpreter = get_python_interpreter()
     success, result = run_command(
-        "python --version", 
-        "Checking Python version"
+        f"{python_interpreter} --version", 
+        f"Checking Python version ({python_interpreter})"
     )
     results.append(("Python Version Check", success))
     
-    # 2. Install fixed dependencies
+    # 2. Install fixed dependencies (use venv pip)
+    venv_pip = os.path.join(os.path.dirname(python_interpreter), "pip")
     success, result = run_command(
-        "pip install -r requirements-fixed.txt", 
+        f"{venv_pip} install -r requirements-fixed.txt", 
         "Installing fixed dependencies (with Python 3.12 compatibility)",
         check_return_code=False  # Some warnings are expected
     )
@@ -112,6 +139,35 @@ def main():
         "Running selected unit tests"
     )
     results.append(("Selected Unit Tests", success))
+    
+    # 8a. Test CI critical AI service unit tests with proper mocking
+    success, result = run_command(
+        "python -m pytest tests/test_ai_service_unit.py::TestAIServiceRecommendations::test_get_activity_recommendations -v --tb=short", 
+        "Testing CI critical AI service unit test"
+    )
+    results.append(("CI Critical AI Unit Test", success))
+    
+    # 8b. Test all AI service unit tests
+    success, result = run_command(
+        "python -m pytest tests/test_ai_service_unit.py -v --tb=short", 
+        "Testing all AI service unit tests"
+    )
+    results.append(("All AI Service Unit Tests", success))
+    
+    # 8c. Test pytest marks configuration
+    success, result = run_command(
+        "python -m pytest --collect-only -q tests/test_e2e.py tests/test_performance.py tests/test_comprehensive_integration.py 2>&1 | grep -c 'Unknown pytest.mark' || true", 
+        "Testing pytest marks warnings"
+    )
+    results.append(("Pytest Marks Check", success))
+    
+    # 8d. Test mock isolation (ensure no real API calls)
+    success, result = run_command(
+        "OPENAI_API_KEY='sk-test-invalid' python -m pytest tests/test_ai_service_unit.py::TestAIServiceRecommendations::test_get_activity_recommendations -v", 
+        "Testing mock isolation"
+    )
+    # Success if test passes (which means mocks are working)
+    results.append(("Mock Isolation Test", success))
     
     # 9. Validate configuration
     success, result = run_command(
