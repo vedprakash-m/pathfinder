@@ -2,14 +2,14 @@
 Unit tests for trip management functionality.
 """
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
-from fastapi.testclient import TestClient
-from fastapi import status
-from datetime import datetime, date, timedelta
 import json
+from datetime import date, datetime, timedelta
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from app.main import app
+from fastapi import status
+from fastapi.testclient import TestClient
 
 client = TestClient(app)
 

@@ -6,11 +6,12 @@ Tests the complete onboarding journey from API endpoints to frontend integration
 
 import asyncio
 import json
-import time
-from typing import Dict, Any
-import aiohttp
-import sys
 import os
+import sys
+import time
+from typing import Any, Dict
+
+import aiohttp
 
 # Add the backend directory to Python path
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "backend"))

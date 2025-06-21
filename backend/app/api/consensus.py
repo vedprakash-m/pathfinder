@@ -4,22 +4,23 @@ API endpoints for Family Consensus Engine.
 Solves the #1 pain point: "Lack of mechanism to achieve consensus on optimal plans across families"
 """
 
+import json
+import logging
+from dataclasses import asdict
+from typing import Any, Dict, List, Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Request
+from pydantic import BaseModel
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from sqlalchemy import select
-from typing import List, Dict, Any, Optional
-from pydantic import BaseModel
-from dataclasses import asdict
-import logging
-import json
 
 from ..core.database import get_db
-from ..models.trip import Trip, TripParticipation
-from ..models.family import Family
 from ..core.zero_trust import require_permissions
+from ..models.family import Family
+from ..models.trip import Trip, TripParticipation
 from ..models.user import User
-from ..services.consensus_engine import analyze_trip_consensus, FamilyConsensusEngine
+from ..services.consensus_engine import FamilyConsensusEngine, analyze_trip_consensus
 
 logger = logging.getLogger(__name__)
 

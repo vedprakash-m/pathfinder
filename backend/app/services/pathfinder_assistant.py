@@ -2,22 +2,23 @@
 Pathfinder Assistant Service - AI-powered assistant with @mention functionality
 """
 
-import re
 import json
+import logging
+import re
 import time
-from typing import Dict, List, Optional, Any, Tuple
 from datetime import datetime
-from sqlalchemy.orm import Session
+from typing import Any, Dict, List, Optional, Tuple
+
+from app.core.database import get_db
 from app.models.ai_integration import (
-    AssistantInteraction,
     AIResponseCard,
+    AssistantInteraction,
     ContextType,
     ResponseCardType,
     create_assistant_interaction,
 )
-from app.core.database import get_db
 from app.services.llm_orchestration_client import llm_orchestration_client
-import logging
+from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 

@@ -2,11 +2,11 @@
 Unit tests for AI service functionality.
 """
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 import json
-from datetime import datetime, date
+from datetime import date, datetime
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from app.services.ai_service import AIService
 
 

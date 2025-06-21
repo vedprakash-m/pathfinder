@@ -2,9 +2,9 @@
 """
 Basic test for the family invitation API functionality
 """
-import sys
-import os
 import asyncio
+import os
+import sys
 from pathlib import Path
 
 # Add the current directory to Python path
@@ -18,11 +18,11 @@ def test_imports():
     try:
         # Test family models
         from app.models.family import (
-            InvitationStatus,
-            FamilyInvitationModel,
             Family,
+            FamilyInvitationModel,
             FamilyMember,
             FamilyRole,
+            InvitationStatus,
         )
 
         print("✅ Family models imported successfully")

@@ -2,9 +2,9 @@
 """
 Simple test for family invitation system
 """
+import os
 import sqlite3
 import sys
-import os
 
 
 def test_database_structure():

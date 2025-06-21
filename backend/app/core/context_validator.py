@@ -8,16 +8,15 @@ This module provides context-based validation for the zero-trust security model:
 - Behavioral analytics
 """
 
+import ipaddress
+import json
 import logging
 from datetime import datetime, timezone
 from typing import Dict, Optional
 
+from app.core.config import get_settings
 from fastapi import Request
 from pydantic import BaseModel
-import ipaddress
-import json
-
-from app.core.config import get_settings
 
 settings = get_settings()
 logger = logging.getLogger(__name__)

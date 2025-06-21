@@ -11,28 +11,25 @@ from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import UUID
 
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.models.trip import (
-    Trip,
-    TripParticipation,
-    TripStatus,
-    TripDetail,
-    TripResponse,
-    ParticipationStatus,
-    TripStats,
-)
-from app.models.trip import (
-    TripCreate,
-    TripUpdate,
-    ParticipationCreate,
-    ParticipationUpdate,
-    ParticipationResponse,
-    TripInvitation,
-)
 from app.core.logging_config import get_logger
+from app.models.trip import (
+    ParticipationCreate,
+    ParticipationResponse,
+    ParticipationStatus,
+    ParticipationUpdate,
+    Trip,
+    TripCreate,
+    TripDetail,
+    TripInvitation,
+    TripParticipation,
+    TripResponse,
+    TripStats,
+    TripStatus,
+    TripUpdate,
+)
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 logger = get_logger(__name__)
 

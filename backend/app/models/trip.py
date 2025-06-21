@@ -2,28 +2,29 @@
 Trip model for managing group trips and coordination.
 """
 
-from datetime import datetime, date
+from datetime import date, datetime
 from enum import Enum
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
+from app.core.database import GUID, Base
+from pydantic import BaseModel, validator
 from sqlalchemy import (
     Boolean,
     Column,
-    DateTime,
     Date,
-    Enum as SQLEnum,
+    DateTime,
+)
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy import (
     ForeignKey,
     Integer,
+    Numeric,
     String,
     Text,
-    Numeric,
     func,
 )
 from sqlalchemy.orm import relationship
-from pydantic import BaseModel, validator
-
-from app.core.database import Base, GUID
 
 
 class TripStatus(str, Enum):

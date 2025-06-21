@@ -11,13 +11,13 @@ This module handles WebSocket connections for real-time features like:
 
 import json
 import logging
-from typing import Dict, List, Set, Optional, Any
 from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional, Set
 
-from fastapi import WebSocket, WebSocketDisconnect
 from app.core.config import settings
+from app.models.cosmos.message import MessageStatus, MessageType
 from app.services.trip_cosmos import TripCosmosOperations
-from app.models.cosmos.message import MessageType, MessageStatus
+from fastapi import WebSocket, WebSocketDisconnect
 
 logger = logging.getLogger(__name__)
 

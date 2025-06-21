@@ -5,19 +5,18 @@ Notification management API endpoints.
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.core.database import get_db
 from app.core.zero_trust import require_permissions
 from app.models.user import User
 from app.services.notification_service import (
-    NotificationService,
+    BulkNotificationCreate,
     NotificationCreate,
     NotificationResponse,
+    NotificationService,
     NotificationUpdate,
-    BulkNotificationCreate,
 )
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 

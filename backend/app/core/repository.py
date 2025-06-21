@@ -4,18 +4,19 @@ Provides abstraction layer for all data persistence operations.
 Part of Phase 2: System Integration & Consistency improvements.
 """
 
-from abc import ABC, abstractmethod
-from typing import TypeVar, Generic, Optional, List, Dict, Any, Type, Union
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
-from sqlalchemy import select, update, delete, and_, or_
-from azure.cosmos.aio import ContainerProxy
-from azure.cosmos.exceptions import CosmosResourceNotFoundError
+import json
 import logging
+import uuid
+from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
 from datetime import datetime
-import json
-import uuid
+from typing import Any, Dict, Generic, List, Optional, Type, TypeVar, Union
+
+from azure.cosmos.aio import ContainerProxy
+from azure.cosmos.exceptions import CosmosResourceNotFoundError
+from sqlalchemy import and_, delete, or_, select, update
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 logger = logging.getLogger(__name__)
 

@@ -3,20 +3,20 @@ Enhanced AI service for itinerary generation using OpenAI models.
 Enhanced with advanced cost optimization and multi-family preference handling.
 """
 
-import json
-import hashlib
-from datetime import datetime
-from typing import Dict, List, Optional, Any, Union
 import asyncio
+import hashlib
+import json
 from collections import Counter
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Union
 
 import openai
-from openai import OpenAI
 import tiktoken
+from app.core.cache_service import ai_cache_service
 from app.core.config import get_settings
 from app.core.logging_config import create_logger
-from app.core.cache_service import ai_cache_service
 from app.services.llm_orchestration_client import llm_orchestration_client
+from openai import OpenAI
 
 settings = get_settings()
 logger = create_logger(__name__)

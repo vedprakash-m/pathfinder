@@ -9,20 +9,19 @@ This module implements a comprehensive zero-trust security model:
 - Audit logging for all security events
 """
 
+import json
 import logging
+import uuid
 from datetime import datetime
 from typing import Dict, List, Optional
-import json
-import uuid
 
+import jwt
+from app.core.config import get_settings
+from app.core.context_validator import context_validator
+from app.core.security import User, verify_token
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-import jwt
 from jwt.exceptions import PyJWTError
-
-from app.core.config import get_settings
-from app.core.security import User, verify_token
-from app.core.context_validator import context_validator
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
@@ -174,10 +173,11 @@ class ZeroTrustSecurity:
 
         This verifies if the user owns or is a participant in the specific resource.
         """
-        from app.core.database import get_async_session
-        from sqlalchemy.ext.asyncio import AsyncSession
-        from sqlalchemy import select, text
         from uuid import UUID
+
+        from app.core.database import get_async_session
+        from sqlalchemy import select, text
+        from sqlalchemy.ext.asyncio import AsyncSession
 
         async for db in get_async_session():
             try:

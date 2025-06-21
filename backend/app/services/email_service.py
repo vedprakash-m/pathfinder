@@ -2,23 +2,22 @@
 Email notification service for sending external communications.
 """
 
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from email.mime.base import MIMEBase
-from email import encoders
-from typing import Dict, Any, List, Optional
-from datetime import datetime
-import logging
 import base64
-
-from jinja2 import Environment, DictLoader
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail, Attachment, FileContent, FileName, FileType, Disposition
+import logging
+import smtplib
+from datetime import datetime
+from email import encoders
+from email.mime.base import MIMEBase
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from typing import Any, Dict, List, Optional
 
 from app.core.config import get_settings
 from app.core.logging_config import get_logger
 from app.core.telemetry import monitoring
+from jinja2 import DictLoader, Environment
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Attachment, Disposition, FileContent, FileName, FileType, Mail
 
 settings = get_settings()
 logger = get_logger(__name__)

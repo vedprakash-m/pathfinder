@@ -4,21 +4,22 @@ API endpoints for Real-Time Feedback Integration.
 Solves Pain Point #3: "No effective way to gather and incorporate changes/feedback during planning process"
 """
 
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List, Dict, Any, Optional
-from pydantic import BaseModel
 import logging
+from typing import Any, Dict, List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core.database import get_db
 from ..core.zero_trust import require_permissions
 from ..models.user import User
 from ..services.real_time_feedback import (
-    submit_trip_feedback,
-    get_feedback_dashboard_data,
-    RealTimeFeedbackService,
-    FeedbackType,
     FeedbackStatus,
+    FeedbackType,
+    RealTimeFeedbackService,
+    get_feedback_dashboard_data,
+    submit_trip_feedback,
 )
 
 logger = logging.getLogger(__name__)

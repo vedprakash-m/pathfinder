@@ -3,15 +3,15 @@ Authentication API endpoints.
 """
 
 import logging
-from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
 
 from app.core.database import get_db
-from app.core.security import get_current_user, get_current_active_user
+from app.core.security import get_current_active_user, get_current_user
 from app.core.zero_trust import require_permissions
-from app.models.user import User, UserCreate, UserUpdate, UserResponse, UserProfile
+from app.models.user import User, UserCreate, UserProfile, UserResponse, UserUpdate
 from app.services.auth_service import AuthService
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

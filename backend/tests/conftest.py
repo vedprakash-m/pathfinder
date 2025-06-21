@@ -2,19 +2,18 @@
 Test configuration and fixtures for Pathfinder backend tests.
 """
 
-import pytest
 import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+from app.core.database import Base, get_db
+from app.core.zero_trust import require_permissions
+from app.main import app
+from app.models.user import User
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
-
-from app.main import app
-from app.core.database import get_db, Base
-from app.core.zero_trust import require_permissions
-from app.models.user import User
-
 
 # Test database setup
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"

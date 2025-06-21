@@ -9,22 +9,21 @@ This module provides:
 - CPU usage monitoring
 """
 
-import time
-import logging
-import functools
 import asyncio
+import functools
+import logging
 import os
-import psutil
-from typing import Callable, Dict, List, Optional, Any, Union
-from datetime import datetime, timedelta
+import time
 from contextlib import contextmanager
+from datetime import datetime, timedelta
+from typing import Any, Callable, Dict, List, Optional, Union
 
-from fastapi import Request, Response
-from starlette.middleware.base import BaseHTTPMiddleware
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.core.config import get_settings
+import psutil
 from app.core.cache import cache
+from app.core.config import get_settings
+from fastapi import Request, Response
+from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.middleware.base import BaseHTTPMiddleware
 
 settings = get_settings()
 logger = logging.getLogger(__name__)

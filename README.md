@@ -112,6 +112,8 @@ Before pushing changes to CI/CD, run our comprehensive local validation:
 - 🔧 **Auto-fix mode** resolves common issues automatically
 - 🛡️ **Prevents CI/CD failures** by catching issues locally
 - 📊 **Comprehensive reporting** with actionable guidance
+- 🔍 **GitHub Actions validation** catches missing action references
+- 🏗️ **Infrastructure prerequisite checking** prevents deployment failures
 
 ### CI/CD Pipeline Status
 

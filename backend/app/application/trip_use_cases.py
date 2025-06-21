@@ -8,17 +8,18 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from backend.domain.trip import TripDomainService as TripService
 from app.models.trip import (
-    TripCreate,
-    TripResponse,
-    TripDetail,
-    TripStats,
     ParticipationCreate,
-    ParticipationUpdate,
     ParticipationResponse,
+    ParticipationUpdate,
+    TripCreate,
+    TripDetail,
     TripInvitation,
+    TripResponse,
+    TripStats,
 )
+
+from backend.domain.trip import TripDomainService as TripService
 
 
 class CreateTripUseCase:

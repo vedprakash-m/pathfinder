@@ -5,11 +5,11 @@ Preference document service for Cosmos DB operations.
 import logging
 import uuid
 from datetime import datetime
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from app.core.cosmos_db import CosmosDBService
 from app.core.config import get_settings
+from app.core.cosmos_db import CosmosDBService
 from app.models.cosmos.preference import PreferenceDocument, PreferenceType
 
 settings = get_settings()

@@ -2,15 +2,15 @@
 Integration tests for the trip management system.
 """
 
-import pytest
-from httpx import AsyncClient
-from fastapi import status
-from datetime import datetime, date, timedelta
-import json
-from unittest.mock import patch, MagicMock
 import asyncio
+import json
+from datetime import date, datetime, timedelta
+from unittest.mock import MagicMock, patch
 
+import pytest
 from app.main import app
+from fastapi import status
+from httpx import AsyncClient
 
 
 class TestTripIntegration:

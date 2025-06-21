@@ -2,24 +2,25 @@
 Tests for trip service functionality.
 """
 
-import pytest
 import json
 from datetime import date, datetime, timedelta
-from uuid import UUID
 from unittest.mock import AsyncMock, patch
+from uuid import UUID
 
-from app.models.trip import (
-    Trip,
-    TripParticipation,
-    TripStatus,
-    ParticipationStatus,
-    TripCreate,
-    TripUpdate,
-    TripResponse,
-    TripDetail,
-)
+import pytest
 from app.models.family import Family
+from app.models.trip import (
+    ParticipationStatus,
+    Trip,
+    TripCreate,
+    TripDetail,
+    TripParticipation,
+    TripResponse,
+    TripStatus,
+    TripUpdate,
+)
 from app.models.user import User
+
 from backend.domain.trip import TripDomainService as TripService
 
 

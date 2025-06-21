@@ -4,12 +4,12 @@ Smart Notifications Service - Automated family coordination notifications.
 Handles intelligent, context-aware notifications to reduce manual coordination overhead.
 """
 
-from typing import Dict, List, Any, Optional
-from enum import Enum
-from datetime import datetime, timezone, timedelta
 import json
 import logging
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
+from enum import Enum
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 

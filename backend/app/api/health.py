@@ -2,19 +2,19 @@
 Health check endpoints for the Pathfinder API.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Dict, Optional
 import socket
 import time
-import psutil
 from datetime import datetime, timezone
+from typing import Dict, Optional
 
-from app.core.database import get_db
-from app.core.cosmos_db import get_cosmos_client
-from app.core.logging_config import get_logger
+import psutil
 from app.core.config import get_settings
+from app.core.cosmos_db import get_cosmos_client
+from app.core.database import get_db
+from app.core.logging_config import get_logger
 from app.services.email_service import email_service
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(
     prefix="/health",

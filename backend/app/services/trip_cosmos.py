@@ -5,15 +5,15 @@ Trip hybrid database integrations for the TripService.
 import json
 import logging
 from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 from uuid import UUID
 
+from app.models.cosmos.itinerary import ItineraryDocument
+from app.models.cosmos.message import MessageDocument, MessageStatus, MessageType
+from app.models.cosmos.preference import PreferenceType
 from app.services.cosmos.itinerary_service import ItineraryDocumentService
 from app.services.cosmos.message_service import MessageDocumentService
 from app.services.cosmos.preference_service import PreferenceDocumentService
-from app.models.cosmos.preference import PreferenceType
-from app.models.cosmos.message import MessageDocument, MessageType, MessageStatus
-from app.models.cosmos.itinerary import ItineraryDocument
 
 logger = logging.getLogger(__name__)
 

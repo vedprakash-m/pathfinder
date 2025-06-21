@@ -6,14 +6,13 @@ import logging
 import uuid
 from typing import AsyncGenerator
 
-from sqlalchemy import create_engine, MetaData, TypeDecorator, String
+import azure.cosmos.aio as cosmos
+from app.core.config import get_settings
+from sqlalchemy import MetaData, String, TypeDecorator, create_engine
+from sqlalchemy.dialects import postgresql, sqlite
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.dialects import postgresql, sqlite
-import azure.cosmos.aio as cosmos
-
-from app.core.config import get_settings
 
 
 class GUID(TypeDecorator):

@@ -4,13 +4,13 @@ Provides endpoints for geocoding, route planning, and place search.
 """
 
 import logging
-from typing import List, Optional, Dict, Any
-from fastapi import APIRouter, HTTPException, Depends, Query, Request
-from pydantic import BaseModel, Field
+from typing import Any, Dict, List, Optional
 
 from app.core.zero_trust import require_permissions
 from app.models.user import User
-from app.services.maps_service import maps_service, Location, Place, Route
+from app.services.maps_service import Location, Place, Route, maps_service
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 

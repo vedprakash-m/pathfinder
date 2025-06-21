@@ -7,14 +7,13 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Union
 
 import jwt
-from jwt.exceptions import PyJWTError
-from fastapi import Depends, HTTPException, Request, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from passlib.context import CryptContext
-from pydantic import BaseModel
-
 from app.core.config import get_settings
 from app.models.user import User as UserModel
+from fastapi import Depends, HTTPException, Request, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jwt.exceptions import PyJWTError
+from passlib.context import CryptContext
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 settings = get_settings()

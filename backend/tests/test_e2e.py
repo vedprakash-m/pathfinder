@@ -2,14 +2,14 @@
 End-to-end tests for the Pathfinder application.
 """
 
-import pytest
-from httpx import AsyncClient
-from fastapi import status
-from datetime import datetime, date, timedelta
-import json
 import asyncio
+import json
+from datetime import date, datetime, timedelta
 
+import pytest
 from app.main import app
+from fastapi import status
+from httpx import AsyncClient
 
 
 @pytest.mark.e2e

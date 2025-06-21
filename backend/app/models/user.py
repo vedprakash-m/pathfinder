@@ -7,11 +7,12 @@ from enum import Enum
 from typing import List, Optional
 from uuid import uuid4
 
-from sqlalchemy import Boolean, Column, DateTime, String, Text, func, Enum as SQLEnum
-from sqlalchemy.orm import relationship
+from app.core.database import GUID, Base
 from pydantic import BaseModel, EmailStr
-
-from app.core.database import Base, GUID
+from sqlalchemy import Boolean, Column, DateTime
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy import String, Text, func
+from sqlalchemy.orm import relationship
 
 
 class UserRole(str, Enum):

@@ -7,7 +7,7 @@ import logging
 import logging.config
 import sys
 from datetime import datetime, timezone
-from typing import Dict, Any
+from typing import Any, Dict
 
 from app.core.config import get_settings
 

@@ -3,17 +3,17 @@ Analytics Service for Pathfinder
 Provides comprehensive tracking of user behavior, feature adoption, and performance metrics
 """
 
+import asyncio
 import json
 import time
+from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any
-from dataclasses import dataclass, asdict
 from enum import Enum
-import asyncio
+from typing import Any, Dict, List, Optional
 
+from app.core.cache_service import cache_service
 from app.core.config import get_settings
 from app.core.logging_config import create_logger
-from app.core.cache_service import cache_service
 
 settings = get_settings()
 logger = create_logger(__name__)

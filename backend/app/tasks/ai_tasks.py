@@ -5,20 +5,20 @@ AI-related background tasks for itinerary generation and processing.
 import asyncio
 import json
 import logging
-from celery import current_task
 from datetime import datetime, timezone
-from typing import Dict, Any, Optional, List
+from typing import Any, Dict, List, Optional
 
 from app.core.celery_app import celery_app
-from app.core.logging_config import get_logger
-from app.core.database import get_db
-from app.services.notification_service import NotificationService
 from app.core.config import get_settings
-from app.tasks.task_compat import conditional_task, run_async_task
+from app.core.database import get_db
+from app.core.logging_config import get_logger
+from app.core.task_context import get_trip_service
 
 # Domain service helper
 from app.services.ai_service import AIService
-from app.core.task_context import get_trip_service
+from app.services.notification_service import NotificationService
+from app.tasks.task_compat import conditional_task, run_async_task
+from celery import current_task
 
 logger = get_logger(__name__)
 settings = get_settings()

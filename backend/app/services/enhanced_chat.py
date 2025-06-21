@@ -5,19 +5,18 @@ Enhanced real-time chat service for collaborative trip planning.
 import asyncio
 import json
 import logging
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Set, Any
-from dataclasses import dataclass, asdict
-from enum import Enum
 import uuid
-
-from fastapi import WebSocket, WebSocketDisconnect
-from sqlalchemy.ext.asyncio import AsyncSession
+from dataclasses import asdict, dataclass
+from datetime import datetime, timedelta
+from enum import Enum
+from typing import Any, Dict, List, Optional, Set
 
 from app.core.logging_config import get_logger
 from app.core.telemetry import monitoring
-from app.models.trip import Trip
 from app.models.family import Family
+from app.models.trip import Trip
+from fastapi import WebSocket, WebSocketDisconnect
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = get_logger(__name__)
 

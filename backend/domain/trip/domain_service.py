@@ -11,24 +11,24 @@ monolith.  The methods implemented are the subset required by the existing
 *trip_use_cases*.
 """
 
-from uuid import UUID
-from typing import List, Optional, Any
 import json
 from datetime import datetime
+from typing import Any, List, Optional
+from uuid import UUID
 
 from app.models.trip import (
-    TripCreate,
-    TripUpdate,
-    TripResponse,
-    TripDetail,
-    TripStats,
     ParticipationCreate,
-    ParticipationUpdate,
     ParticipationResponse,
-    TripInvitation,
-    Trip,
-    TripParticipation,
     ParticipationStatus,
+    ParticipationUpdate,
+    Trip,
+    TripCreate,
+    TripDetail,
+    TripInvitation,
+    TripParticipation,
+    TripResponse,
+    TripStats,
+    TripUpdate,
 )
 
 

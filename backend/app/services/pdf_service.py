@@ -3,22 +3,22 @@ PDF service for generating trip documents and itineraries.
 Creates formatted PDF documents for trip information, itineraries, and reports.
 """
 
-import logging
-from typing import Dict, List, Optional, Any, BinaryIO
-from datetime import datetime, date
-import io
 import base64
+import io
+import logging
+from datetime import date, datetime
 from pathlib import Path
+from typing import Any, BinaryIO, Dict, List, Optional
 
 try:
-    from reportlab.pdfgen import canvas
-    from reportlab.lib.pagesizes import letter, A4
-    from reportlab.lib.units import inch
     from reportlab.lib import colors
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
-    from reportlab.platypus.tableofcontents import TableOfContents
     from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+    from reportlab.lib.pagesizes import A4, letter
+    from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+    from reportlab.lib.units import inch
+    from reportlab.pdfgen import canvas
+    from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+    from reportlab.platypus.tableofcontents import TableOfContents
 except ImportError:
     logger = logging.getLogger(__name__)
     logger.error("ReportLab not installed. PDF generation will not work.")
@@ -42,10 +42,10 @@ except ImportError:
     letter = A4 = (612, 792)
     inch = 72
 
-from app.models.trip import Trip, TripDetail
-from app.models.itinerary import Itinerary, ItineraryDay, ItineraryActivity
-from app.models.reservation import Reservation
 from app.models.family import Family, FamilyMember
+from app.models.itinerary import Itinerary, ItineraryActivity, ItineraryDay
+from app.models.reservation import Reservation
+from app.models.trip import Trip, TripDetail
 
 logger = logging.getLogger(__name__)
 

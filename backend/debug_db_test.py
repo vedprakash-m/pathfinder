@@ -11,11 +11,11 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 async def test_db_setup():
     """Test database setup similar to how pytest fixtures work."""
-    from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-    from sqlalchemy.pool import NullPool
-    from sqlalchemy.orm import sessionmaker
     from app.core.database import Base
     from sqlalchemy import text
+    from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+    from sqlalchemy.orm import sessionmaker
+    from sqlalchemy.pool import NullPool
 
     # Same config as test conftest.py
     TEST_DB_URL = "sqlite+aiosqlite:///:memory:"
@@ -30,12 +30,12 @@ async def test_db_setup():
 
     print("Importing models...")
     # Ensure all models are imported before creating tables
-    from app.models.user import User
     from app.models.family import Family, FamilyMember
-    from app.models.trip import Trip, TripParticipation
+    from app.models.itinerary import Itinerary, ItineraryActivity, ItineraryDay
     from app.models.notification import Notification
     from app.models.reservation import Reservation, ReservationDocument
-    from app.models.itinerary import Itinerary, ItineraryDay, ItineraryActivity
+    from app.models.trip import Trip, TripParticipation
+    from app.models.user import User
 
     print("Creating tables...")
     # Create all tables

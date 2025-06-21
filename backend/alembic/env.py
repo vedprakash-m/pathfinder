@@ -2,17 +2,15 @@ import os
 import sys
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
-
 from alembic import context
+from sqlalchemy import engine_from_config, pool
 
 # Add the backend directory to Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import our models and database configuration
 from app.core.config import get_settings
-from app.core.database import Base, GUID
+from app.core.database import GUID, Base
 from app.models import *  # Import all models to ensure they are registered
 
 # this is the Alembic Config object, which provides

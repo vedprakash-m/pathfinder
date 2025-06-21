@@ -3,22 +3,22 @@ FastAPI application entry point for Pathfinder AI-Powered Trip Planner.
 Updated to fix dashboard loading route conflicts.
 """
 
-from contextlib import asynccontextmanager
 import logging
+from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
-from fastapi import FastAPI, Request, status
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from fastapi.responses import JSONResponse
 import uvicorn
-
 from app.api.router import api_router
 from app.core.config import get_settings
 from app.core.database import init_db
 from app.core.logging_config import setup_logging
+
 # from app.core.telemetry import setup_opentelemetry  # Commented out - not used yet
 from app.services.websocket import websocket_manager
+from fastapi import FastAPI, Request, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.responses import JSONResponse
 
 # Setup logging
 setup_logging()
@@ -69,44 +69,32 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             # Initialize or confirm containers
             try:
                 await database.create_container(
-                    id=settings.COSMOS_DB_CONTAINER_ITINERARIES,
-                    partition_key="/trip_id"
+                    id=settings.COSMOS_DB_CONTAINER_ITINERARIES, partition_key="/trip_id"
                 )
-                logger.info(
-                    f"Created container: {settings.COSMOS_DB_CONTAINER_ITINERARIES}"
-                )
+                logger.info(f"Created container: {settings.COSMOS_DB_CONTAINER_ITINERARIES}")
             except CosmosResourceExistsError:
                 logger.info(
-                    f"Container already exists: "
-                    f"{settings.COSMOS_DB_CONTAINER_ITINERARIES}"
+                    f"Container already exists: " f"{settings.COSMOS_DB_CONTAINER_ITINERARIES}"
                 )
 
             try:
                 await database.create_container(
-                    id=settings.COSMOS_DB_CONTAINER_MESSAGES,
-                    partition_key="/trip_id"
+                    id=settings.COSMOS_DB_CONTAINER_MESSAGES, partition_key="/trip_id"
                 )
-                logger.info(
-                    f"Created container: {settings.COSMOS_DB_CONTAINER_MESSAGES}"
-                )
+                logger.info(f"Created container: {settings.COSMOS_DB_CONTAINER_MESSAGES}")
             except CosmosResourceExistsError:
                 logger.info(
-                    f"Container already exists: "
-                    f"{settings.COSMOS_DB_CONTAINER_MESSAGES}"
+                    f"Container already exists: " f"{settings.COSMOS_DB_CONTAINER_MESSAGES}"
                 )
 
             try:
                 await database.create_container(
-                    id=settings.COSMOS_DB_CONTAINER_PREFERENCES,
-                    partition_key="/entity_id"
+                    id=settings.COSMOS_DB_CONTAINER_PREFERENCES, partition_key="/entity_id"
                 )
-                logger.info(
-                    f"Created container: {settings.COSMOS_DB_CONTAINER_PREFERENCES}"
-                )
+                logger.info(f"Created container: {settings.COSMOS_DB_CONTAINER_PREFERENCES}")
             except CosmosResourceExistsError:
                 logger.info(
-                    f"Container already exists: "
-                    f"{settings.COSMOS_DB_CONTAINER_PREFERENCES}"
+                    f"Container already exists: " f"{settings.COSMOS_DB_CONTAINER_PREFERENCES}"
                 )
 
             logger.info("Cosmos DB initialization complete")
@@ -168,10 +156,11 @@ if settings.ENVIRONMENT == "production":
         allowed_hosts=settings.allowed_hosts_list,
     )
 
-# Import security middleware
-from app.core.rate_limiting import RateLimiter
 from app.core.csrf import CSRFMiddleware
 from app.core.performance import PerformanceMonitoringMiddleware
+
+# Import security middleware
+from app.core.rate_limiting import RateLimiter
 
 # Performance monitoring middleware
 app.add_middleware(PerformanceMonitoringMiddleware)
@@ -237,9 +226,7 @@ app.add_middleware(
     allow_origins=settings.cors_origins_list,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allow_headers=[
-        "*", "Authorization", "Content-Type", "X-CSRF-Token"
-    ],
+    allow_headers=["*", "Authorization", "Content-Type", "X-CSRF-Token"],
     expose_headers=["X-CSRF-Token"],  # Expose CSRF token to frontend
 )
 

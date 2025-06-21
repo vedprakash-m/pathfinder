@@ -2,11 +2,11 @@
 Tests for the AI service functionality.
 """
 
-import pytest
 import json
-from unittest.mock import patch, MagicMock, AsyncMock
 from datetime import datetime
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from app.services.ai_service import AIService, CostTracker, ItineraryPrompts, client
 
 

@@ -2,13 +2,13 @@
 Unit tests for authentication endpoints.
 """
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
-from fastapi.testclient import TestClient
-from fastapi import status
 import json
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from app.main import app
+from fastapi import status
+from fastapi.testclient import TestClient
 
 client = TestClient(app)
 

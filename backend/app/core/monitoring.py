@@ -3,20 +3,21 @@ Unified Performance Monitoring and Observability System
 Implements comprehensive monitoring patterns from Phase 3 of tech debt remediation plan.
 """
 
-import structlog
-import time
 import asyncio
 import functools
+import json
 import logging
+import time
+import uuid
 from contextlib import asynccontextmanager
 from contextvars import ContextVar
-from typing import Optional, Dict, Any, List, Callable, AsyncGenerator
-from datetime import datetime, timedelta
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta
 from enum import Enum
-import json
-import uuid
 from pathlib import Path
+from typing import Any, AsyncGenerator, Callable, Dict, List, Optional
+
+import structlog
 
 # Context variables for correlation tracking
 correlation_id: ContextVar[Optional[str]] = ContextVar("correlation_id", default=None)

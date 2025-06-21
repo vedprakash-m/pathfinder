@@ -3,19 +3,19 @@ WebSocket API endpoints for real-time communication.
 Provides WebSocket connections for real-time trip collaboration.
 """
 
+import json
 import logging
+from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
-from datetime import datetime, timezone
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException, Query
-from sqlalchemy.ext.asyncio import AsyncSession
-import json
 
-from app.core.security import get_current_user_websocket, get_current_user
-from app.core.database import get_db
-from app.models.user import User
-from app.services.websocket import websocket_manager, handle_websocket_message
 from app.core.container import Container
+from app.core.database import get_db
+from app.core.security import get_current_user, get_current_user_websocket
+from app.models.user import User
+from app.services.websocket import handle_websocket_message, websocket_manager
+from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 

@@ -4,26 +4,28 @@ Handles AI-generated itinerary creation, customization, and management.
 """
 
 import json
-from typing import List, Optional, Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
-from sqlalchemy.orm import Session
+from typing import Any, Dict, List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import and_
+from sqlalchemy.orm import Session
 
 from ..core.database import get_db
-from ..core.zero_trust import require_permissions
-from ..models.user import User
-from ..models.trip import Trip, TripParticipation
-from ..services.ai_service import AIService
 from ..core.logging_config import get_logger
+from ..core.zero_trust import require_permissions
+from ..models.trip import Trip, TripParticipation
+from ..models.user import User
+from ..services.ai_service import AIService
 
 router = APIRouter(tags=["itineraries"])
 logger = get_logger(__name__)
 
 
+from datetime import date, datetime
+from enum import Enum
+
 # Pydantic models for itinerary API
 from pydantic import BaseModel, Field
-from datetime import datetime, date
-from enum import Enum
 
 
 class ItineraryType(str, Enum):

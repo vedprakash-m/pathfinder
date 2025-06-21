@@ -2,11 +2,12 @@
 Analytics API endpoints for monitoring user behavior and feature adoption
 """
 
-from typing import Dict, Any, Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Request
-from app.core.security import get_current_user
+from typing import Any, Dict, Optional
+
 from app.core.logging_config import create_logger
-from app.services.analytics_service import analytics_service, EventType
+from app.core.security import get_current_user
+from app.services.analytics_service import EventType, analytics_service
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 logger = create_logger(__name__)
 router = APIRouter(prefix="/api/v1/analytics", tags=["Analytics"])

@@ -2,28 +2,27 @@
 Main API router that includes all endpoint routers.
 """
 
-from fastapi import APIRouter
-
-from app.api.auth import router as auth_router
-from app.api.trips import router as trips_router
-from app.api.families import router as families_router
-from app.api.itineraries import router as itineraries_router
-from app.api.reservations import router as reservations_router
-from app.api.notifications import router as notifications_router
-from app.api.maps import router as maps_router
-from app.api.websocket import router as websocket_router
-from app.api.trip_messages import router as trip_messages_router
-from app.api.health import router as health_router
 from app.api.admin import router as admin_router
-from app.api.exports import router as exports_router
-from app.api.test import router as test_router
-from app.api.consensus import router as consensus_router
-from app.api.coordination import router as coordination_router
-from app.api.feedback import router as feedback_router
-from app.api.llm_analytics import router as llm_analytics_router
 from app.api.analytics import router as analytics_router
 from app.api.assistant import router as assistant_router
+from app.api.auth import router as auth_router
+from app.api.consensus import router as consensus_router
+from app.api.coordination import router as coordination_router
+from app.api.exports import router as exports_router
+from app.api.families import router as families_router
+from app.api.feedback import router as feedback_router
+from app.api.health import router as health_router
+from app.api.itineraries import router as itineraries_router
+from app.api.llm_analytics import router as llm_analytics_router
+from app.api.maps import router as maps_router
+from app.api.notifications import router as notifications_router
 from app.api.polls import router as polls_router
+from app.api.reservations import router as reservations_router
+from app.api.test import router as test_router
+from app.api.trip_messages import router as trip_messages_router
+from app.api.trips import router as trips_router
+from app.api.websocket import router as websocket_router
+from fastapi import APIRouter
 
 api_router = APIRouter()
 

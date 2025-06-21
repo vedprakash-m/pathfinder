@@ -3,6 +3,7 @@ OpenTelemetry instrumentation for monitoring and observability.
 """
 
 import os
+
 from fastapi import FastAPI
 
 # Check if we're in test mode or if telemetry is disabled
@@ -11,15 +12,15 @@ TESTING = os.getenv("TESTING", "false").lower() == "true"
 
 if TELEMETRY_ENABLED and not TESTING:
     try:
-        from opentelemetry import trace, metrics
-        from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-        from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
-        from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
+        from azure.monitor.opentelemetry import configure_azure_monitor
+        from opentelemetry import metrics, trace
         from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+        from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+        from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
+        from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
         from opentelemetry.sdk.resources import SERVICE_NAME, Resource
         from opentelemetry.sdk.trace import TracerProvider
         from opentelemetry.sdk.trace.export import BatchSpanProcessor
-        from azure.monitor.opentelemetry import configure_azure_monitor
 
         TELEMETRY_AVAILABLE = True
     except ImportError as e:
@@ -58,9 +59,9 @@ else:
     SQLAlchemyInstrumentor = None
     HTTPXClientInstrumentor = None
 
-import time
 import logging
-from typing import Dict, Any
+import time
+from typing import Any, Dict
 
 from app.core.logging_config import get_logger
 

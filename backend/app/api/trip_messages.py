@@ -2,19 +2,18 @@
 Trip messages API endpoints.
 """
 
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.core.database import get_db
 from app.core.config import get_settings
+from app.core.database import get_db
 from app.core.security import get_current_active_user
 from app.core.zero_trust import require_permissions
-from app.models.user import User
 from app.models.cosmos.message import MessageType
+from app.models.user import User
 from app.services.trip_cosmos import TripCosmosOperations
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 settings = get_settings()
 router = APIRouter()

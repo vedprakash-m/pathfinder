@@ -7,11 +7,15 @@ from enum import Enum
 from typing import List, Optional
 from uuid import uuid4
 
+from app.core.database import GUID, Base
+from pydantic import BaseModel
 from sqlalchemy import (
     Boolean,
     Column,
     DateTime,
-    Enum as SQLEnum,
+)
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
@@ -19,9 +23,6 @@ from sqlalchemy import (
     func,
 )
 from sqlalchemy.orm import relationship
-from pydantic import BaseModel
-
-from app.core.database import Base, GUID
 
 
 class FamilyRole(str, Enum):

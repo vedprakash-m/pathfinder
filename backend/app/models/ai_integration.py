@@ -2,13 +2,14 @@
 Data models for AI integration features including Pathfinder Assistant and Magic Polls
 """
 
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any
-from enum import Enum
-from sqlalchemy import Column, String, Text, DateTime, Integer, Boolean, JSON, ForeignKey
-from sqlalchemy.orm import relationship
-from app.core.database import Base
 import uuid
+from datetime import datetime, timedelta
+from enum import Enum
+from typing import Any, Dict, List, Optional
+
+from app.core.database import Base
+from sqlalchemy import JSON, Boolean, Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy.orm import relationship
 
 
 class ContextType(str, Enum):

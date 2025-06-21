@@ -4,13 +4,11 @@ Admin endpoints for managing the application.
 These endpoints are accessible only to users with administrative privileges.
 """
 
+from app.core.config import get_settings
+from app.core.performance import get_performance_metrics
+from app.core.security import require_role
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-
-from app.core.security import require_role
-from app.core.performance import get_performance_metrics
-from app.core.config import get_settings
-
 
 router = APIRouter()
 settings = get_settings()

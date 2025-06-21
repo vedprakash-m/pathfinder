@@ -4,22 +4,23 @@ API endpoints for Smart Coordination Automation.
 Solves Pain Point #2: "Too much manual coordination required between families"
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List, Dict, Any, Optional
-from pydantic import BaseModel
 import logging
+from typing import Any, Dict, List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Request
+from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core.database import get_db
 from ..core.zero_trust import require_permissions
 from ..models.user import User
+from ..services.consensus_engine import analyze_trip_consensus
 from ..services.smart_notifications import (
-    notify_family_joined,
-    notify_consensus_update,
     NotificationTrigger,
     SmartNotificationService,
+    notify_consensus_update,
+    notify_family_joined,
 )
-from ..services.consensus_engine import analyze_trip_consensus
 
 logger = logging.getLogger(__name__)
 
@@ -231,7 +232,7 @@ async def suggest_coordination_meeting(
         # Simulate smart scheduling
         # In production, this would analyze family time zones and availability
 
-        from datetime import datetime, timezone, timedelta
+        from datetime import datetime, timedelta, timezone
 
         suggested_time = datetime.now(timezone.utc) + timedelta(days=2)
         suggested_time = suggested_time.replace(hour=19, minute=0, second=0, microsecond=0)

@@ -4,27 +4,26 @@ Notification service for managing real-time notifications and messaging.
 
 import json
 from datetime import datetime, timezone
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 from uuid import UUID
-
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
-from sqlalchemy import select, update, delete, and_, or_, desc, func
 
 from app.core.logging_config import get_logger
 from app.models.notification import (
-    Notification,
-    NotificationType,
-    NotificationPriority,
-    NotificationCreate,
-    NotificationResponse,
-    NotificationUpdate,
     BulkNotificationCreate,
+    Notification,
+    NotificationCreate,
     NotificationFilters,
+    NotificationPriority,
+    NotificationResponse,
     NotificationStats,
+    NotificationType,
+    NotificationUpdate,
 )
-from app.services.websocket import ConnectionManager
 from app.services.email_service import email_service
+from app.services.websocket import ConnectionManager
+from sqlalchemy import and_, delete, desc, func, or_, select, update
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 logger = get_logger(__name__)
 

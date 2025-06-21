@@ -13,29 +13,29 @@ from __future__ import annotations
 
 from typing import AsyncGenerator
 
+from app.application.trip_use_cases import (
+    AddParticipantUseCase,
+    CreateTripUseCase,
+    DeleteTripUseCase,
+    GetParticipantsUseCase,
+    GetTripStatsUseCase,
+    GetTripUseCase,
+    ListUserTripsUseCase,
+    RemoveParticipantUseCase,
+    SendInvitationUseCase,
+    UpdateParticipationUseCase,
+    UpdateTripUseCase,
+)
+from app.core.database import get_db  # Existing dependency provider
+from app.core.repositories.trip_cosmos_repository import TripCosmosRepository
+from app.core.repositories.trip_repository import TripRepository
 from dependency_injector import containers, providers
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db  # Existing dependency provider
-from app.core.repositories.trip_repository import TripRepository
-from app.core.repositories.trip_cosmos_repository import TripCosmosRepository
-from app.application.trip_use_cases import (
-    CreateTripUseCase,
-    DeleteTripUseCase,
-    GetTripUseCase,
-    ListUserTripsUseCase,
-    UpdateTripUseCase,
-    GetTripStatsUseCase,
-    AddParticipantUseCase,
-    GetParticipantsUseCase,
-    UpdateParticipationUseCase,
-    RemoveParticipantUseCase,
-    SendInvitationUseCase,
-)
-from backend.domain.trip import TripDomainService  # new domain-level facade
 from backend.domain.family import FamilyDomainService
-from backend.domain.reservation import ReservationDomainService
 from backend.domain.messaging import MessagingDomainService
+from backend.domain.reservation import ReservationDomainService
+from backend.domain.trip import TripDomainService  # new domain-level facade
 
 
 class Container(containers.DeclarativeContainer):

@@ -8,21 +8,22 @@ Eliminates manual coordination overhead through:
 - Intelligent family onboarding workflows
 """
 
-from typing import Dict, List, Any, Optional, Tuple
-from dataclasses import dataclass, asdict
-from enum import Enum
-from datetime import datetime, timezone, timedelta
 import json
 import logging
-from sqlalchemy.ext.asyncio import AsyncSession
+from dataclasses import asdict, dataclass
+from datetime import datetime, timedelta, timezone
+from enum import Enum
+from typing import Any, Dict, List, Optional, Tuple
+
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from ..models.trip import Trip, TripParticipation, TripStatus
 from ..models.family import Family
+from ..models.trip import Trip, TripParticipation, TripStatus
 from ..models.user import User
-from ..services.notifications import NotificationService
 from ..services.consensus_engine import FamilyConsensusEngine, analyze_trip_consensus
+from ..services.notifications import NotificationService
 
 logger = logging.getLogger(__name__)
 

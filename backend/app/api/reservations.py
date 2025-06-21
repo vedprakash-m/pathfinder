@@ -3,18 +3,19 @@ Reservation management API endpoints.
 Handles accommodation and activity reservations for trips.
 """
 
-from typing import List, Optional, Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_
-from datetime import datetime, date
+from datetime import date, datetime
 from enum import Enum
+from typing import Any, Dict, List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from sqlalchemy import and_, or_
+from sqlalchemy.orm import Session
 
 from ..core.database import get_db
-from ..core.zero_trust import require_permissions
-from ..models.user import User
-from ..models.trip import Trip, TripParticipation
 from ..core.logging_config import get_logger
+from ..core.zero_trust import require_permissions
+from ..models.trip import Trip, TripParticipation
+from ..models.user import User
 
 router = APIRouter(tags=["reservations"])
 logger = get_logger(__name__)

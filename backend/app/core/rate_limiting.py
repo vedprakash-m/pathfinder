@@ -4,10 +4,11 @@ Rate limiting middleware for FastAPI.
 This module provides middleware for API rate limiting to prevent abuse.
 """
 
-import time
-from typing import Dict, Optional, Tuple, Callable
 import logging
-from fastapi import Request, Response, HTTPException, status
+import time
+from typing import Callable, Dict, Optional, Tuple
+
+from fastapi import HTTPException, Request, Response, status
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 

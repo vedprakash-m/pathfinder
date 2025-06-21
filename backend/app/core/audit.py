@@ -9,11 +9,10 @@ import json
 import logging
 import uuid
 from datetime import datetime
-from typing import Dict, Optional, Any, List
-
-from fastapi import Request
+from typing import Any, Dict, List, Optional
 
 from app.core.config import get_settings
+from fastapi import Request
 
 settings = get_settings()
 logger = logging.getLogger("security.audit")

@@ -2,15 +2,16 @@
 API endpoints for Pathfinder Assistant functionality
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlalchemy.orm import Session
-from typing import Dict, List, Optional, Any
-from pydantic import BaseModel, Field
+import logging
+from typing import Any, Dict, List, Optional
+
 from app.core.database import get_db
-from app.services.pathfinder_assistant import assistant_service
 from app.core.security import get_current_user
 from app.models.user import User
-import logging
+from app.services.pathfinder_assistant import assistant_service
+from fastapi import APIRouter, Depends, HTTPException, Request
+from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
@@ -189,7 +190,7 @@ async def get_interaction_details(
 ):
     """Get details of a specific assistant interaction"""
     try:
-        from app.models.ai_integration import AssistantInteraction, AIResponseCard
+        from app.models.ai_integration import AIResponseCard, AssistantInteraction
 
         interaction = (
             db.query(AssistantInteraction)

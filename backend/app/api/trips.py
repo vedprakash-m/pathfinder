@@ -2,47 +2,49 @@
 Trip management API endpoints.
 """
 
+from datetime import date, timedelta
 from typing import List, Optional
 from uuid import UUID
-from datetime import date, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-
-# from sqlalchemy.ext.asyncio import AsyncSession
+from app.application.trip_use_cases import (
+    AddParticipantUseCase,
+    CreateTripUseCase,
+    DeleteTripUseCase,
+    GetParticipantsUseCase,
+    GetTripStatsUseCase,
+    GetTripUseCase,
+    ListUserTripsUseCase,
+    RemoveParticipantUseCase,
+    SendInvitationUseCase,
+    UpdateParticipationUseCase,
+    UpdateTripUseCase,
+)
+from app.core.container import Container
 
 # from app.core.database import get_db
 # from app.core.security import get_current_active_user  # No longer needed
 from app.core.zero_trust import require_permissions
-from app.models.user import User
 from app.models.trip import (
-    TripCreate,
-    TripUpdate,
-    TripResponse,
-    TripDetail,
-    TripStats,
     ParticipationCreate,
-    ParticipationUpdate,
     ParticipationResponse,
+    ParticipationUpdate,
+    TripCreate,
+    TripDetail,
     TripInvitation,
+    TripResponse,
+    TripStats,
+    TripUpdate,
 )
+from app.models.user import User
 
 # from app.services.trip_service import TripService  # TODO: will be removed after repository migration
 from app.services.trip_cosmos import TripCosmosOperations
 from dependency_injector.wiring import Provide, inject
-from app.core.container import Container
-from app.application.trip_use_cases import (
-    CreateTripUseCase,
-    DeleteTripUseCase,
-    GetTripUseCase,
-    ListUserTripsUseCase,
-    UpdateTripUseCase,
-    GetTripStatsUseCase,
-    AddParticipantUseCase,
-    GetParticipantsUseCase,
-    UpdateParticipationUseCase,
-    RemoveParticipantUseCase,
-    SendInvitationUseCase,
-)
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+
+# from sqlalchemy.ext.asyncio import AsyncSession
+
+
 
 router = APIRouter()
 

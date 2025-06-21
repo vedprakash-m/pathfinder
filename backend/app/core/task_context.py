@@ -1,6 +1,7 @@
 from functools import lru_cache
 
 from app.core.container import Container
+
 from backend.domain.trip import TripDomainService
 
 

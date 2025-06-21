@@ -4,13 +4,13 @@ Database initialization script
 Creates the database and all tables based on SQLAlchemy models
 """
 import asyncio
-import sys
 import os
+import sys
 
 # Add the backend directory to Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from app.core.database import engine, Base
+from app.core.database import Base, engine
 from app.models import *  # Import all models
 
 

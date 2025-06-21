@@ -2,14 +2,15 @@
 Test endpoints for validating AI service functionality.
 """
 
-from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
-from ..services.ai_service import AIService
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+
 from ..core.logging_config import get_logger
 from ..core.zero_trust import require_permissions
 from ..models.user import User
+from ..services.ai_service import AIService
 
 router = APIRouter(prefix="/test", tags=["testing"])
 logger = get_logger(__name__)

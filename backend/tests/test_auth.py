@@ -2,17 +2,16 @@
 Tests for authentication service and functionality.
 """
 
-import pytest
 import json
-from unittest.mock import patch, MagicMock, AsyncMock
 from datetime import datetime, timedelta
+from unittest.mock import AsyncMock, MagicMock, patch
 
-from fastapi import HTTPException
-from jose import jwt
-
-from app.services.auth_service import AuthService
+import pytest
 from app.core.security import create_access_token, verify_token
 from app.models.user import User, UserCreate, UserResponse, UserUpdate
+from app.services.auth_service import AuthService
+from fastapi import HTTPException
+from jose import jwt
 
 
 @pytest.mark.asyncio

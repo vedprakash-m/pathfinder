@@ -10,9 +10,9 @@ import logging
 import pickle
 import threading
 import time
-from typing import Any, Optional, Dict, List, TypeVar, Generic, Type, Union, Callable
 from datetime import datetime, timedelta
 from functools import wraps
+from typing import Any, Callable, Dict, Generic, List, Optional, Type, TypeVar, Union
 
 try:
     import redis.asyncio as redis
@@ -21,9 +21,8 @@ try:
 except ImportError:
     REDIS_AVAILABLE = False
 
-from pydantic import BaseModel
-
 from app.core.config import get_settings
+from pydantic import BaseModel
 
 settings = get_settings()
 logger = logging.getLogger(__name__)

@@ -7,16 +7,16 @@ import asyncio
 import json
 import logging
 from datetime import datetime, timezone
-from typing import Dict, Any, Optional, List
+from typing import Any, Dict, List, Optional
 
+from app.core.cache_alternatives import task_queue
 from app.core.config import get_settings
 from app.core.database import get_db
 from app.core.logging_config import get_logger
-from app.core.cache_alternatives import task_queue
+from app.core.task_context import get_trip_service
 
 # Domain helper
 from app.services.ai_service import AIService
-from app.core.task_context import get_trip_service
 
 logger = get_logger(__name__)
 settings = get_settings()

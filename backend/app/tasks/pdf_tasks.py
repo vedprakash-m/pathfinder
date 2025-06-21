@@ -2,17 +2,17 @@
 PDF generation background tasks.
 """
 
-from celery import current_task
 from datetime import datetime, timezone
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 from app.core.celery_app import celery_app
-from app.tasks.task_compat import conditional_task, run_async_task
-from app.core.logging_config import get_logger
 from app.core.database import get_db
-from app.services.pdf_service import PDFService
+from app.core.logging_config import get_logger
 from app.core.task_context import get_trip_service
 from app.services.notification_service import NotificationService
+from app.services.pdf_service import PDFService
+from app.tasks.task_compat import conditional_task, run_async_task
+from celery import current_task
 
 logger = get_logger(__name__)
 

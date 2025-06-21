@@ -4,10 +4,10 @@ Simplified family invitation verification test.
 Verifies that all components are ready for production.
 """
 
+import json
+import os
 import sqlite3
 import sys
-import os
-import json
 
 
 def test_database_tables():
@@ -280,7 +280,7 @@ def test_import_functionality():
 
         # Test models import
         try:
-            from app.models.family import Family, FamilyMember, FamilyInvitationModel
+            from app.models.family import Family, FamilyInvitationModel, FamilyMember
 
             print("✅ Family models import successfully")
         except Exception as e:

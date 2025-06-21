@@ -21,20 +21,19 @@ This module handles:
 """
 
 import logging
-from typing import Optional, Dict, Any, List
 from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
 from urllib.parse import urlencode
 
 import httpx
-from jose import jwt, JWTError
+from app.core.config import settings
+from app.core.security import create_access_token
+from app.models.user import User, UserCreate, UserResponse, UserUpdate
+from jose import JWTError, jwt
 from passlib.context import CryptContext
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
-from sqlalchemy import select
-
-from app.core.config import settings
-from app.models.user import User, UserCreate, UserUpdate, UserResponse
-from app.core.security import create_access_token
 
 logger = logging.getLogger(__name__)
 
@@ -123,8 +122,9 @@ class AuthService:
             await db.flush()  # Get user ID without committing
 
             # 🔑 AUTO-CREATE FAMILY for new Family Admin users
-            from app.models.family import Family, FamilyMember, FamilyRole
             from uuid import uuid4
+
+            from app.models.family import Family, FamilyMember, FamilyRole
 
             family = Family(
                 id=uuid4(),

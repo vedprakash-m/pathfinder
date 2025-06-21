@@ -191,25 +191,13 @@ if ! python3 -c "import fastapi" 2>/dev/null; then
     fi
 fi
 
-# Code formatting with ruff/black
+# Code formatting with black (simplified and reliable)
 echo "   Checking code formatting..."
-if command -v ruff &> /dev/null; then
-    if ruff check . --diff --quiet 2>/dev/null; then
-        print_status "Code formatting (ruff): Passed" "success"
+if python3 -c "import black" 2>/dev/null; then
+    # Simple black check with timeout
+    if timeout 30s python3 -m black --check . >/dev/null 2>&1; then
+        print_status "Code formatting (black): Passed" "success"
     else
-        print_status "Code formatting issues detected" "error"
-        if [ "$FIX_ISSUES" = true ]; then
-            echo "   🔧 Auto-fixing with ruff..."
-            ruff format . >/dev/null 2>&1
-            ruff check . --fix >/dev/null 2>&1
-            print_status "Code formatted with ruff" "success"
-        else
-            echo "   ❌ Run: cd backend && ruff format . && ruff check . --fix"
-        fi
-    fi
-elif python3 -c "import black" 2>/dev/null; then
-    BLACK_CHECK=$(python3 -m black --check --diff . 2>&1)
-    if echo "$BLACK_CHECK" | grep -q "would reformat"; then
         print_status "Code formatting issues detected" "error"
         if [ "$FIX_ISSUES" = true ]; then
             echo "   🔧 Auto-fixing with black..."
@@ -217,14 +205,10 @@ elif python3 -c "import black" 2>/dev/null; then
             print_status "Code formatted with black" "success"
         else
             echo "   ❌ Run: cd backend && python3 -m black ."
-            echo "   📝 Files that need formatting:"
-            echo "$BLACK_CHECK" | grep "would reformat" | head -5
         fi
-    else
-        print_status "Code formatting (black): Passed" "success"
     fi
 else
-    print_status "No code formatter available (install ruff or black)" "warning"
+    print_status "Black not available for code formatting" "warning"
 fi
 
 # Import sorting
@@ -280,9 +264,9 @@ fi
 
 # Architecture governance
 echo "   Checking import structure..."
-if [ -f "importlinter_contracts/layers.toml" ]; then
+if [ -f "../importlinter_contracts/layers.toml" ]; then
     if python3 -c "import importlinter" 2>/dev/null; then
-        if lint-imports --config importlinter_contracts/layers.toml 2>/dev/null; then
+        if lint-imports --config ../importlinter_contracts/layers.toml 2>/dev/null; then
             print_status "Import structure: Passed" "success"
         else
             print_status "Import structure violations detected" "error"
