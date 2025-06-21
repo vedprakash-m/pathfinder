@@ -247,6 +247,54 @@ print('✅ AI service data structures validated')
     IMPORT_ERRORS+=("app.services.ai_service - Data structure validation failed")
 fi
 
+# NEW: API Contract Validation (prevents test expectation mismatches)
+echo "   Testing API contract expectations..."
+if ! python3 -c "
+from app.services.ai_service import ItineraryPrompts
+
+# Test the exact scenario from failing test
+families_data = [
+    {
+        'name': 'Smith',
+        'members': [
+            {'age': 35, 'dietary_restrictions': ['vegetarian'], 'accessibility_needs': []},
+            {'age': 33, 'dietary_restrictions': [], 'accessibility_needs': []},
+            {'age': 8, 'dietary_restrictions': ['nut-free'], 'accessibility_needs': []},
+        ],
+    },
+    {
+        'name': 'Johnson',
+        'members': [
+            {'age': 40, 'dietary_restrictions': [], 'accessibility_needs': ['wheelchair']},
+            {'age': 12, 'dietary_restrictions': [], 'accessibility_needs': []},
+        ],
+    },
+]
+preferences = {
+    'accommodation_type': ['hotel'],
+    'transportation_mode': ['public_transit'],
+    'activity_types': ['museums', 'sightseeing'],
+    'dining_preferences': ['local cuisine'],
+    'pace': 'moderate',
+}
+
+prompt = ItineraryPrompts.create_itinerary_prompt('Paris', 7, families_data, preferences, 10000.0)
+
+# Test all the assertions from the failing test
+assert 'Paris' in prompt, 'Paris not found in prompt'
+assert '7-day itinerary' in prompt, '7-day itinerary not found in prompt'
+assert 'Smith' in prompt, 'Smith not found in prompt'
+assert 'Johnson' in prompt, 'Johnson not found in prompt'
+assert 'vegetarian' in prompt, 'vegetarian not found in prompt'
+assert 'wheelchair' in prompt, 'wheelchair not found in prompt'
+assert 'museums' in prompt, 'museums not found in prompt (API contract issue)'
+assert 'budget' in prompt.lower(), 'budget not found in prompt'
+
+print('✅ API contract validation passed')
+" 2>/dev/null; then
+    IMPORT_ERRORS+=("app.services.ai_service - API contract validation failed")
+fi
+
 if [ ${#IMPORT_ERRORS[@]} -eq 0 ]; then
     print_status "All critical imports and data structures: Passed" "success"
 else

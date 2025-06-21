@@ -324,6 +324,7 @@ class ItineraryPrompts:
         ORIGINAL PREFERENCES:
         - Accommodation type: {preferences.get('accommodation_type', ['family-friendly hotels'])}
         - Transportation: {preferences.get('transportation_mode', ['rental cars'])}
+        - Activity types: {preferences.get('activity_types', [])}
         - Dining preferences: {preferences.get('dining_preferences', ['family restaurants'])}
         - Special requirements: {preferences.get('special_requirements', [])}
         
