@@ -19,7 +19,19 @@ from app.application.trip_use_cases import (
     UpdateParticipationUseCase,
     UpdateTripUseCase,
 )
-from app.core.container import Container
+from app.core.dependencies import (
+    get_create_trip_use_case,
+    get_get_trip_use_case,
+    get_list_user_trips_use_case,
+    get_update_trip_use_case,
+    get_delete_trip_use_case,
+    get_get_trip_stats_use_case,
+    get_add_participant_use_case,
+    get_get_participants_use_case,
+    get_update_participation_use_case,
+    get_remove_participant_use_case,
+    get_send_invitation_use_case,
+)
 
 # from app.core.database import get_db
 # from app.core.security import get_current_active_user  # No longer needed
@@ -39,7 +51,6 @@ from app.models.user import User
 
 # from app.services.trip_service import TripService  # TODO: will be removed after repository migration
 from app.services.trip_cosmos import TripCosmosOperations
-from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 # from sqlalchemy.ext.asyncio import AsyncSession
@@ -52,40 +63,17 @@ router = APIRouter()
 async def create_trip(
     trip_data: TripCreate,
     current_user: User = Depends(require_permissions("trips", "create")),
+    use_case: CreateTripUseCase = Depends(get_create_trip_use_case),
 ):
     """Create a new trip (application layer)."""
-    from app.core.repositories.trip_repository import TripRepository
-    from app.core.repositories.trip_cosmos_repository import TripCosmosRepository
-    from app.core.database import SessionLocal
-    from domain.trip import TripDomainService
-    from app.application.trip_use_cases import CreateTripUseCase
-    
-    # Use SessionLocal directly with async context manager
-    async with SessionLocal() as db_session:
-        try:
-            # Create repositories and services
-            trip_repository = TripRepository(session=db_session)
-            trip_cosmos_repository = TripCosmosRepository()
-            
-            # Create domain service
-            trip_domain_service = TripDomainService(
-                legacy_service=None,
-                trip_repository=trip_repository,
-                trip_cosmos_repository=trip_cosmos_repository,
-            )
-            
-            # Create use case
-            use_case = CreateTripUseCase(trip_service=trip_domain_service)
-            
-            # Execute the use case
-            result = await use_case(trip_data, current_user.id)
-            return result
-            
-        except ValueError as e:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-        except Exception:
-            await db_session.rollback()
-            raise
+    try:
+        # Execute the use case
+        result = await use_case(trip_data, current_user.id)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 # --------------------------------------------------------------
@@ -97,7 +85,6 @@ from datetime import date, timedelta  # NEW import (keep grouped at top if sorte
 
 
 @router.post("/sample", response_model=TripResponse, status_code=status.HTTP_201_CREATED)
-@inject
 async def create_sample_trip(
     template: str = Query(
         "weekend_getaway",
@@ -105,7 +92,7 @@ async def create_sample_trip(
         description="Sample trip template to use",
     ),
     current_user: User = Depends(require_permissions("trips", "create")),
-    use_case: CreateTripUseCase = Depends(Provide[Container.create_trip_use_case]),
+    use_case: CreateTripUseCase = Depends(get_create_trip_use_case),
 ):
     """Create a pre-populated *sample* trip used by the Golden Path onboarding flow.
 
@@ -237,13 +224,12 @@ async def create_sample_trip(
 
 
 @router.get("/", response_model=List[TripResponse])
-@inject
 async def get_trips(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     status_filter: Optional[str] = Query(None),
     current_user: User = Depends(require_permissions("trips", "read")),
-    use_case: ListUserTripsUseCase = Depends(Provide[Container.list_user_trips_use_case]),
+    use_case: ListUserTripsUseCase = Depends(get_list_user_trips_use_case),
 ):
     """Get user's trips with optional filtering (application layer)."""
 
@@ -256,11 +242,10 @@ async def get_trips(
 
 
 @router.get("/{trip_id}", response_model=TripDetail)
-@inject
 async def get_trip(
     trip_id: UUID,
     current_user: User = Depends(require_permissions("trips", "read")),
-    use_case: GetTripUseCase = Depends(Provide[Container.get_trip_use_case]),
+    use_case: GetTripUseCase = Depends(get_get_trip_use_case),
 ):
     """Get trip details by ID (application layer)."""
 
@@ -274,12 +259,11 @@ async def get_trip(
 
 
 @router.put("/{trip_id}", response_model=TripResponse)
-@inject
 async def update_trip(
     trip_id: UUID,
     trip_update: TripUpdate,
     current_user: User = Depends(require_permissions("trips", "update")),
-    use_case: UpdateTripUseCase = Depends(Provide[Container.update_trip_use_case]),
+    use_case: UpdateTripUseCase = Depends(get_update_trip_use_case),
 ):
     """Update trip details (application layer)."""
 
@@ -295,11 +279,10 @@ async def update_trip(
 
 
 @router.delete("/{trip_id}")
-@inject
 async def delete_trip(
     trip_id: UUID,
     current_user: User = Depends(require_permissions("trips", "delete")),
-    use_case: DeleteTripUseCase = Depends(Provide[Container.delete_trip_use_case]),
+    use_case: DeleteTripUseCase = Depends(get_delete_trip_use_case),
 ):
     """Delete a trip (application layer)."""
 
@@ -316,11 +299,10 @@ async def delete_trip(
 
 
 @router.get("/{trip_id}/stats", response_model=TripStats)
-@inject
 async def get_trip_stats(
     trip_id: UUID,
     current_user: User = Depends(require_permissions("trips", "read")),
-    use_case: GetTripStatsUseCase = Depends(Provide[Container.get_trip_stats_use_case]),
+    use_case: GetTripStatsUseCase = Depends(get_get_trip_stats_use_case),
 ):
     """Get trip statistics (application layer)."""
 
@@ -334,12 +316,11 @@ async def get_trip_stats(
 
 
 @router.post("/{trip_id}/participants", response_model=ParticipationResponse)
-@inject
 async def add_participant(
     trip_id: UUID,
     participation_data: ParticipationCreate,
     current_user: User = Depends(require_permissions("trips", "update")),
-    use_case: AddParticipantUseCase = Depends(Provide[Container.add_participant_use_case]),
+    use_case: AddParticipantUseCase = Depends(get_add_participant_use_case),
 ):
     """Add a family to the trip (application layer)."""
 
@@ -350,11 +331,10 @@ async def add_participant(
 
 
 @router.get("/{trip_id}/participants", response_model=List[ParticipationResponse])
-@inject
 async def get_participants(
     trip_id: UUID,
     current_user: User = Depends(require_permissions("trips", "read")),
-    use_case: GetParticipantsUseCase = Depends(Provide[Container.get_participants_use_case]),
+    use_case: GetParticipantsUseCase = Depends(get_get_participants_use_case),
 ):
     """Get trip participants (application layer)."""
 
@@ -362,14 +342,13 @@ async def get_participants(
 
 
 @router.put("/{trip_id}/participants/{participation_id}", response_model=ParticipationResponse)
-@inject
 async def update_participation(
     trip_id: UUID,
     participation_id: UUID,
     participation_update: ParticipationUpdate,
     current_user: User = Depends(require_permissions("trips", "update")),
     use_case: UpdateParticipationUseCase = Depends(
-        Provide[Container.update_participation_use_case]
+        get_update_participation_use_case
     ),
 ):
     """Update family participation status (application layer)."""
@@ -386,12 +365,11 @@ async def update_participation(
 
 
 @router.delete("/{trip_id}/participants/{participation_id}")
-@inject
 async def remove_participant(
     trip_id: UUID,
     participation_id: UUID,
     current_user: User = Depends(require_permissions("trips", "delete")),
-    use_case: RemoveParticipantUseCase = Depends(Provide[Container.remove_participant_use_case]),
+    use_case: RemoveParticipantUseCase = Depends(get_remove_participant_use_case),
 ):
     """Remove a family from the trip (application layer)."""
 
@@ -411,12 +389,11 @@ async def remove_participant(
 
 
 @router.post("/{trip_id}/invitations")
-@inject
 async def send_invitation(
     trip_id: UUID,
     invitation_data: TripInvitation,
     current_user: User = Depends(require_permissions("trips", "update")),
-    use_case: SendInvitationUseCase = Depends(Provide[Container.send_invitation_use_case]),
+    use_case: SendInvitationUseCase = Depends(get_send_invitation_use_case),
 ):
     """Send trip invitation to a family (application layer)."""
 

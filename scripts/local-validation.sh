@@ -2,7 +2,8 @@
 
 # Pathfinder Local Validation Script
 # Comprehensive pre-commit validation to catch issues before CI/CD
-# Usage: ./scripts/local-validation.sh [--fix] [--quick]
+# Enhanced to align with CI/CD pipeline and provide detailed coverage reporting
+# Usage: ./scripts/local-validation.sh [--fix] [--quick] [--coverage]
 
 set -e
 
@@ -11,12 +12,23 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
 NC='\033[0m' # No Color
 
 # Flags
 FIX_ISSUES=false
 QUICK_MODE=false
+COVERAGE_MODE=false
 VALIDATION_FAILED=false
+
+# Test isolation
+TEST_ISOLATION=true
+CLEANUP_ON_EXIT=true
+
+# Coverage thresholds
+BACKEND_COVERAGE_THRESHOLD=75
+FRONTEND_COVERAGE_THRESHOLD=60
+E2E_COVERAGE_THRESHOLD=80
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -29,14 +41,43 @@ while [[ $# -gt 0 ]]; do
             QUICK_MODE=true
             shift
             ;;
+        --coverage)
+            COVERAGE_MODE=true
+            shift
+            ;;
+        --no-isolation)
+            TEST_ISOLATION=false
+            shift
+            ;;
         *)
-            echo "Usage: $0 [--fix] [--quick]"
-            echo "  --fix   : Automatically fix issues where possible"
-            echo "  --quick : Skip time-consuming checks"
+            echo "Usage: $0 [--fix] [--quick] [--coverage] [--no-isolation]"
+            echo "  --fix          : Automatically fix issues where possible"
+            echo "  --quick        : Skip time-consuming checks"
+            echo "  --coverage     : Generate detailed coverage reports"
+            echo "  --no-isolation : Skip test environment isolation"
             exit 1
             ;;
     esac
 done
+
+# Cleanup function
+cleanup() {
+    if [ "$CLEANUP_ON_EXIT" = true ]; then
+        echo -e "\n${YELLOW}🧹 Cleaning up test environments...${NC}"
+        
+        # Clean up any test databases
+        find . -name "test_*.db" -delete 2>/dev/null || true
+        find . -name "*.tmp" -delete 2>/dev/null || true
+        
+        # Stop any test servers
+        pkill -f "test.*server" 2>/dev/null || true
+        
+        # Clean up node modules test artifacts
+        find frontend -name ".nyc_output" -type d -exec rm -rf {} + 2>/dev/null || true
+    fi
+}
+
+trap cleanup EXIT
 
 print_status() {
     local message="$1"
@@ -719,11 +760,311 @@ else
     echo "   💡 Install: pip install pytest pytest-asyncio coverage"
 fi
 
+# 8. Frontend Testing & Coverage (ENHANCED)
+print_header "🧪 Frontend Testing & Coverage"
+
+if [ -d "frontend" ] && [ -f "frontend/package.json" ]; then
+    cd frontend
+    
+    # Check if dependencies are installed
+    if [ ! -d "node_modules" ]; then
+        echo "   Installing frontend dependencies..."
+        if command -v pnpm &> /dev/null; then
+            pnpm install
+        elif command -v npm &> /dev/null; then
+            npm install
+        else
+            print_status "No package manager found (npm/pnpm)" "error"
+            VALIDATION_FAILED=true
+            cd ..
+            return
+        fi
+    fi
+    
+    # Enhanced test environment isolation
+    if [ "$TEST_ISOLATION" = true ]; then
+        echo "   Setting up isolated test environment..."
+        
+        # Create test-specific config
+        cp vitest.config.ts vitest.config.test.ts 2>/dev/null || true
+        
+        # Set test environment variables
+        export NODE_ENV=test
+        export VITE_API_URL=http://localhost:3001/api
+        export CI=true
+    fi
+    
+    # Run frontend tests with coverage
+    echo "   Running frontend tests with coverage..."
+    
+    if [ "$COVERAGE_MODE" = true ]; then
+        echo "   📊 Generating detailed coverage report..."
+        TEST_RESULT=0
+        
+        if command -v pnpm &> /dev/null; then
+            pnpm run test:coverage || TEST_RESULT=$?
+        else
+            npm run test:coverage || TEST_RESULT=$?
+        fi
+        
+        # Parse coverage results
+        if [ -f "coverage/coverage-summary.json" ]; then
+            FRONTEND_COVERAGE=$(node -e "
+                try {
+                    const fs = require('fs');
+                    const coverage = JSON.parse(fs.readFileSync('coverage/coverage-summary.json', 'utf8'));
+                    const pct = coverage.total.lines.pct;
+                    console.log(Math.round(pct));
+                } catch(e) {
+                    console.log('0');
+                }
+            ")
+            
+            if [ "$FRONTEND_COVERAGE" -ge "$FRONTEND_COVERAGE_THRESHOLD" ]; then
+                print_status "Frontend coverage: ${FRONTEND_COVERAGE}% (≥${FRONTEND_COVERAGE_THRESHOLD}%)" "success"
+            else
+                print_status "Frontend coverage: ${FRONTEND_COVERAGE}% (<${FRONTEND_COVERAGE_THRESHOLD}%)" "warning"
+            fi
+            
+            # Detailed coverage report
+            echo -e "\n   ${PURPLE}📈 Detailed Coverage Report:${NC}"
+            node -e "
+                try {
+                    const fs = require('fs');
+                    const coverage = JSON.parse(fs.readFileSync('coverage/coverage-summary.json', 'utf8'));
+                    console.log('   Lines:      ' + coverage.total.lines.pct + '%');
+                    console.log('   Functions:  ' + coverage.total.functions.pct + '%');
+                    console.log('   Branches:   ' + coverage.total.branches.pct + '%');
+                    console.log('   Statements: ' + coverage.total.statements.pct + '%');
+                } catch(e) {
+                    console.log('   Unable to parse coverage data');
+                }
+            "
+        fi
+        
+        # Generate HTML coverage report
+        if [ -d "coverage/lcov-report" ]; then
+            echo "   📄 HTML coverage report: frontend/coverage/lcov-report/index.html"
+        fi
+        
+    else
+        # Standard test run
+        TEST_RESULT=0
+        if command -v pnpm &> /dev/null; then
+            pnpm run test || TEST_RESULT=$?
+        else
+            npm run test || TEST_RESULT=$?
+        fi
+    fi
+    
+    if [ $TEST_RESULT -eq 0 ]; then
+        print_status "Frontend tests: Passed" "success"
+    else
+        print_status "Frontend tests: Failed" "error"
+        VALIDATION_FAILED=true
+        echo "   💡 Run manually: cd frontend && npm run test"
+    fi
+    
+    # Type checking
+    echo "   Running TypeScript type checking..."
+    TYPE_CHECK_RESULT=0
+    if command -v pnpm &> /dev/null; then
+        pnpm run type-check || TYPE_CHECK_RESULT=$?
+    else
+        npm run type-check || TYPE_CHECK_RESULT=$?
+    fi
+    
+    if [ $TYPE_CHECK_RESULT -eq 0 ]; then
+        print_status "TypeScript types: Valid" "success"
+    else
+        print_status "TypeScript type errors found" "error"
+        VALIDATION_FAILED=true
+    fi
+    
+    # Component testing validation
+    echo "   Validating component test coverage..."
+    COMPONENT_TESTS=$(find src/tests -name "*.test.tsx" -o -name "*.test.ts" | wc -l)
+    COMPONENTS=$(find src/components src/pages -name "*.tsx" | wc -l)
+    
+    if [ $COMPONENTS -gt 0 ]; then
+        COMPONENT_TEST_RATIO=$((COMPONENT_TESTS * 100 / COMPONENTS))
+        if [ $COMPONENT_TEST_RATIO -ge 40 ]; then
+            print_status "Component test coverage: ${COMPONENT_TEST_RATIO}% (≥40%)" "success"
+        else
+            print_status "Component test coverage: ${COMPONENT_TEST_RATIO}% (<40%)" "warning"
+            echo "   💡 Consider adding more component tests"
+        fi
+    fi
+    
+    # Cleanup test environment
+    if [ "$TEST_ISOLATION" = true ]; then
+        rm -f vitest.config.test.ts 2>/dev/null || true
+        unset NODE_ENV VITE_API_URL CI
+    fi
+    
+    cd ..
+else
+    print_status "Frontend directory not found" "error"
+    VALIDATION_FAILED=true
+fi
+
+# 9. E2E Testing Validation (ENHANCED)
+if [ "$QUICK_MODE" = false ]; then
+    print_header "🎭 E2E Testing Validation"
+    
+    if [ -f "frontend/playwright.config.ts" ]; then
+        cd frontend
+        
+        # Check if Playwright is installed
+        if [ ! -d "node_modules/@playwright" ]; then
+            echo "   Installing Playwright browsers..."
+            if command -v pnpm &> /dev/null; then
+                pnpm exec playwright install chromium
+            else
+                npx playwright install chromium
+            fi
+        fi
+        
+        # Validate E2E test structure
+        E2E_TESTS=$(find playwright -name "*.spec.ts" -o -name "*.test.ts" 2>/dev/null | wc -l)
+        if [ $E2E_TESTS -gt 0 ]; then
+            print_status "E2E tests found: ${E2E_TESTS} test files" "success"
+            
+            # Run E2E tests in headless mode
+            echo "   Running E2E tests (headless)..."
+            E2E_RESULT=0
+            
+            if command -v pnpm &> /dev/null; then
+                pnpm run test:e2e || E2E_RESULT=$?
+            else
+                npm run test:e2e || E2E_RESULT=$?
+            fi
+            
+            if [ $E2E_RESULT -eq 0 ]; then
+                print_status "E2E tests: Passed" "success"
+            else
+                print_status "E2E tests: Failed" "warning"
+                echo "   💡 E2E tests may require running services"
+            fi
+        else
+            print_status "No E2E tests found" "warning"
+            echo "   💡 Consider adding E2E tests in playwright/ directory"
+        fi
+        
+        cd ..
+    else
+        print_status "Playwright not configured" "warning"
+        echo "   💡 Consider setting up E2E testing with Playwright"
+    fi
+fi
+
+# 10. Test Environment Stability Check
+print_header "🔧 Test Environment Stability"
+
+echo "   Checking for test environment consistency..."
+
+# Check for test database cleanup
+TEST_DBS=$(find . -name "test*.db" -o -name "*.test.db" | wc -l)
+if [ $TEST_DBS -gt 0 ]; then
+    print_status "Found ${TEST_DBS} test database files - cleaning up" "warning"
+    find . -name "test*.db" -o -name "*.test.db" -delete
+fi
+
+# Check for port conflicts
+echo "   Checking for common port conflicts..."
+PORTS_IN_USE=()
+for port in 3000 3001 8000 8080 5432; do
+    if lsof -i :$port >/dev/null 2>&1; then
+        PORTS_IN_USE+=($port)
+    fi
+done
+
+if [ ${#PORTS_IN_USE[@]} -gt 0 ]; then
+    print_status "Ports in use: ${PORTS_IN_USE[*]}" "warning"
+    echo "   💡 These ports may conflict with test environments"
+else
+    print_status "No port conflicts detected" "success"
+fi
+
+# Check test isolation capabilities
+if [ "$TEST_ISOLATION" = true ]; then
+    echo "   Validating test isolation setup..."
+    
+    # Check if we can create isolated test environments
+    TEST_ENV_DIR=$(mktemp -d)
+    if [ -d "$TEST_ENV_DIR" ]; then
+        print_status "Test environment isolation: Available" "success"
+        rm -rf "$TEST_ENV_DIR"
+    else
+        print_status "Test environment isolation: Limited" "warning"
+    fi
+fi
+
 # Summary
 print_header "📊 Validation Summary"
 
+# Enhanced summary with coverage metrics
+if [ "$COVERAGE_MODE" = true ]; then
+    echo -e "\n${PURPLE}📈 Coverage Summary:${NC}"
+    
+    # Backend coverage
+    if [ -f "backend/.coverage" ]; then
+        cd backend
+        BACKEND_COV=$(python3 -c "
+import coverage
+import sys
+try:
+    cov = coverage.Coverage()
+    cov.load()
+    report = cov.report(show_missing=False, skip_covered=False, file=open('/dev/null', 'w'))
+    percent = cov.report(show_missing=False, skip_covered=False, file=sys.stdout)
+except:
+    print('Unable to generate backend coverage')
+" 2>/dev/null | tail -1 | grep -o '[0-9]\+%' | head -1 | tr -d '%')
+        echo "   Backend:  ${BACKEND_COV:-N/A}%"
+        cd ..
+    fi
+    
+    # Frontend coverage
+    if [ -f "frontend/coverage/coverage-summary.json" ]; then
+        FRONTEND_COV=$(node -pe "
+try {
+    JSON.parse(require('fs').readFileSync('frontend/coverage/coverage-summary.json')).total.lines.pct
+} catch(e) { 'N/A' }
+" 2>/dev/null)
+        echo "   Frontend: ${FRONTEND_COV:-N/A}%"
+    fi
+    
+    echo ""
+fi
+
+# Test execution summary
+echo -e "${BLUE}🧪 Test Execution Summary:${NC}"
+TOTAL_ISSUES=0
+
+# Count different types of issues
 if [ "$VALIDATION_FAILED" = true ]; then
-    echo -e "${RED}❌ VALIDATION FAILED${NC}"
+    TOTAL_ISSUES=$((TOTAL_ISSUES + 1))
+fi
+
+if [ $TOTAL_ISSUES -eq 0 ]; then
+    echo "   ✅ All test suites passed"
+    echo "   ✅ Code quality checks passed"  
+    echo "   ✅ Environment stability verified"
+    
+    if [ "$COVERAGE_MODE" = true ]; then
+        echo "   📊 Coverage reports generated"
+        echo ""
+        echo "   📄 Reports available at:"
+        echo "     - Backend: backend/htmlcov/index.html"
+        echo "     - Frontend: frontend/coverage/lcov-report/index.html"
+    fi
+else
+    echo "   ❌ ${TOTAL_ISSUES} issue(s) detected"
+fi
+
+if [ "$VALIDATION_FAILED" = true ]; then
+    echo -e "\n${RED}❌ VALIDATION FAILED${NC}"
     echo "Some issues were detected that will cause CI/CD failures."
     if [ "$FIX_ISSUES" = true ]; then
         echo "Auto-fixes were attempted. Please review changes and run validation again."
@@ -731,18 +1072,26 @@ if [ "$VALIDATION_FAILED" = true ]; then
         echo "Run with --fix to automatically fix issues where possible."
     fi
     echo ""
-    echo "To run individual checks:"
+    echo "🔧 Manual fix commands:"
     echo "  Backend quality: cd backend && ruff format . && ruff check . && mypy app/"
     echo "  Frontend quality: cd frontend && pnpm run type-check && pnpm run lint"
     echo "  Docker builds: docker build -t test ./backend && docker build -t test ./frontend"
+    echo ""
+    echo "📊 Coverage commands:"
+    echo "  Backend: cd backend && coverage run -m pytest && coverage html"
+    echo "  Frontend: cd frontend && npm run test:coverage"
     exit 1
 else
-    echo -e "${GREEN}✅ ALL VALIDATIONS PASSED${NC}"
+    echo -e "\n${GREEN}✅ ALL VALIDATIONS PASSED${NC}"
     echo "Your code is ready for CI/CD pipeline!"
     echo ""
-    echo "Next steps:"
+    echo "🚀 Next steps:"
     echo "  1. Commit your changes: git add . && git commit -m 'Your message'"
-    echo "  2. Push to trigger CI/CD: git push origin $CURRENT_BRANCH"
+    echo "  2. Push to trigger CI/CD: git push origin main"
     echo ""
+    if [ "$COVERAGE_MODE" = true ]; then
+        echo "📊 Coverage reports have been generated and are ready for review."
+        echo ""
+    fi
     echo "The CI/CD pipeline will run the same checks and deploy if successful."
 fi 

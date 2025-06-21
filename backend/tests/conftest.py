@@ -140,7 +140,11 @@ def mock_openai_response():
     mock_response.choices = [MagicMock()]
     mock_response.choices[0].message = MagicMock()
     mock_response.choices[0].message.content = '''{
-        "overview": "Test itinerary overview",
+        "overview": {
+            "destination": "Test Destination",
+            "duration": "7 days",
+            "description": "Test itinerary overview"
+        },
         "daily_itinerary": [
             {
                 "day": 1,

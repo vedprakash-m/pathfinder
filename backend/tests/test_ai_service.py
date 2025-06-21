@@ -175,8 +175,24 @@ async def test_ai_service_with_cost_tracking(mock_openai_response):
     # Arrange
     ai_service = AIService()
 
-    # Prepare test data for a simple prompt
-    prompt = "Create a one day itinerary for Paris"
+    # Prepare test data
+    destination = "Paris"
+    duration_days = 1
+    families_data = [
+        {
+            "name": "Test Family",
+            "members": [
+                {"age": 35, "dietary_restrictions": [], "accessibility_needs": []},
+            ],
+        }
+    ]
+    preferences = {
+        "accommodation_type": ["hotel"],
+        "transportation_mode": ["public_transit"],
+        "activity_types": ["museums", "sightseeing"],
+        "dining_preferences": ["local cuisine"],
+        "pace": "moderate",
+    }
 
     # Mock OpenAI client call
     with patch.object(client.chat.completions, "create") as mock_create:
@@ -184,7 +200,9 @@ async def test_ai_service_with_cost_tracking(mock_openai_response):
 
         # Act
         before_count = len(ai_service.cost_tracker.daily_usage)
-        result = await ai_service.generate_with_cost_tracking(prompt, "gpt-4o-mini")
+        result = await ai_service.generate_itinerary(
+            destination, duration_days, families_data, preferences
+        )
         after_count = len(ai_service.cost_tracker.daily_usage)
 
         # Assert
@@ -250,8 +268,29 @@ async def test_ai_service_budget_exceeded():
     # Mock cost tracker to always report budget exceeded
     ai_service.cost_tracker.check_budget_limit = MagicMock(return_value=False)
 
+    # Prepare test data
+    destination = "Paris"
+    duration_days = 1
+    families_data = [
+        {
+            "name": "Test Family",
+            "members": [
+                {"age": 35, "dietary_restrictions": [], "accessibility_needs": []},
+            ],
+        }
+    ]
+    preferences = {
+        "accommodation_type": ["hotel"],
+        "transportation_mode": ["public_transit"],
+        "activity_types": ["museums", "sightseeing"],
+        "dining_preferences": ["local cuisine"],
+        "pace": "moderate",
+    }
+
     # Act & Assert
     with pytest.raises(Exception) as excinfo:
-        await ai_service.generate_with_cost_tracking("Test prompt", "gpt-4o")
+        await ai_service.generate_itinerary(
+            destination, duration_days, families_data, preferences
+        )
 
     assert "budget" in str(excinfo.value).lower()

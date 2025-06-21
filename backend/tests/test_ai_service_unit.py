@@ -126,6 +126,7 @@ class TestAIServiceItineraryGeneration:
             mock_to_thread.assert_called_once()
 
     @patch("app.services.ai_service.openai")
+    @pytest.mark.asyncio
     async def test_generate_itinerary_api_error(
         self, mock_openai, ai_service, sample_trip_data, sample_preferences
     ):
@@ -133,11 +134,17 @@ class TestAIServiceItineraryGeneration:
         # Mock OpenAI to raise an exception
         mock_openai.chat.completions.create = AsyncMock(side_effect=Exception("API Error"))
 
+        # Extract parameters from trip data
+        destination = sample_trip_data["destinations"][0]  # Use first destination
+        duration_days = (sample_trip_data["end_date"] - sample_trip_data["start_date"]).days
+        families_data = sample_trip_data["participants"]
+
         # Should handle the error gracefully
         with pytest.raises(Exception):
-            await ai_service.generate_itinerary(sample_trip_data, sample_preferences)
+            await ai_service.generate_itinerary(destination, duration_days, families_data, sample_preferences)
 
     @patch("app.services.ai_service.openai")
+    @pytest.mark.asyncio
     async def test_generate_itinerary_invalid_response(
         self, mock_openai, ai_service, sample_trip_data, sample_preferences
     ):
@@ -149,9 +156,14 @@ class TestAIServiceItineraryGeneration:
 
         mock_openai.chat.completions.create = AsyncMock(return_value=mock_response)
 
+        # Extract parameters from trip data
+        destination = sample_trip_data["destinations"][0]  # Use first destination
+        duration_days = (sample_trip_data["end_date"] - sample_trip_data["start_date"]).days
+        families_data = sample_trip_data["participants"]
+
         # Should handle invalid response
         with pytest.raises((json.JSONDecodeError, KeyError, ValueError)):
-            await ai_service.generate_itinerary(sample_trip_data, sample_preferences)
+            await ai_service.generate_itinerary(destination, duration_days, families_data, sample_preferences)
 
 
 class TestAIServiceRecommendations:
@@ -162,6 +174,7 @@ class TestAIServiceRecommendations:
         return AIService()
 
     @patch("app.services.ai_service.openai")
+    @pytest.mark.asyncio
     async def test_get_activity_recommendations(self, mock_openai, ai_service):
         """Test activity recommendations generation."""
         # Mock OpenAI response
@@ -210,6 +223,7 @@ class TestAIServiceRecommendations:
         assert all("cost_estimate" in rec for rec in result["recommendations"])
 
     @patch("app.services.ai_service.openai")
+    @pytest.mark.asyncio
     async def test_get_restaurant_recommendations(self, mock_openai, ai_service):
         """Test restaurant recommendations generation."""
         mock_response = MagicMock()
@@ -264,6 +278,7 @@ class TestAIServiceOptimization:
         return AIService()
 
     @patch("app.services.ai_service.openai")
+    @pytest.mark.asyncio
     async def test_optimize_route(self, mock_openai, ai_service):
         """Test route optimization."""
         mock_response = MagicMock()
@@ -317,6 +332,7 @@ class TestAIServiceOptimization:
             assert "ev_charging_stops" in segment
 
     @patch("app.services.ai_service.openai")
+    @pytest.mark.asyncio
     async def test_optimize_budget_allocation(self, mock_openai, ai_service):
         """Test budget optimization."""
         mock_response = MagicMock()
@@ -393,6 +409,7 @@ class TestAIServiceErrorHandling:
     def ai_service(self):
         return AIService()
 
+    @pytest.mark.asyncio
     async def test_invalid_input_handling(self, ai_service):
         """Test handling of invalid input parameters."""
         # Test with None parameters
@@ -404,6 +421,7 @@ class TestAIServiceErrorHandling:
             await ai_service.generate_itinerary({}, {})
 
     @patch("app.services.ai_service.openai")
+    @pytest.mark.asyncio
     async def test_api_timeout_handling(self, mock_openai, ai_service):
         """Test handling of API timeouts."""
         # Mock timeout exception
@@ -415,6 +433,7 @@ class TestAIServiceErrorHandling:
             await ai_service.generate_itinerary(sample_trip, {})
 
     @patch("app.services.ai_service.openai")
+    @pytest.mark.asyncio
     async def test_rate_limit_handling(self, mock_openai, ai_service):
         """Test handling of rate limit errors."""
 
@@ -441,6 +460,7 @@ class TestAIServiceCostMonitoring:
 
     @patch("app.services.ai_service.cost_monitoring_service")
     @patch("app.services.ai_service.openai")
+    @pytest.mark.asyncio
     async def test_cost_tracking_on_api_call(self, mock_openai, mock_cost_service, ai_service):
         """Test that API calls are tracked for cost monitoring."""
         # Mock OpenAI response

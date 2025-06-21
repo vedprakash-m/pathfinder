@@ -16,8 +16,8 @@ def test_trips_with_complete_mocking():
     
     from app.models.trip import TripResponse
     from datetime import date
-    from app.core.container import Container
-    from dependency_injector.wiring import Provide
+    from app.core.kink_container import get_container
+    import kink
     
     # Create a test user
     test_user_id = str(uuid4())

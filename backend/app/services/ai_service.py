@@ -583,15 +583,17 @@ class AIService:
                 "source": "direct_openai",
             }
 
-        except openai.RateLimitError:
-            logger.error("OpenAI rate limit exceeded")
-            raise ValueError("AI service temporarily unavailable due to rate limits")
-        except openai.APITimeoutError:
-            logger.error("OpenAI API timeout")
-            raise ValueError("AI service timeout - please try again")
         except Exception as e:
-            logger.error(f"OpenAI API error: {e}")
-            raise ValueError(f"AI service error: {str(e)}")
+            error_message = str(e).lower()
+            if "rate limit" in error_message:
+                logger.error("OpenAI rate limit exceeded")
+                raise ValueError("AI service temporarily unavailable due to rate limits")
+            elif "timeout" in error_message:
+                logger.error("OpenAI API timeout")
+                raise ValueError("AI service timeout - please try again")
+            else:
+                logger.error(f"OpenAI API error: {e}")
+                raise ValueError(f"AI service error: {str(e)}")
 
     def _parse_itinerary_response(self, response: Dict[str, Any]) -> Dict[str, Any]:
         """Parse and validate the AI response."""

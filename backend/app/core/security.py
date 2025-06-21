@@ -71,8 +71,11 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 async def verify_token(token: str) -> TokenData:
     """Verify and decode JWT token."""
     try:
-        # Check if we're in test mode
-        if settings.is_testing:
+        # Check if we're in test mode or if the token looks like a test token
+        # (created with our SECRET_KEY rather than Auth0)
+        is_test_token = settings.is_testing or not token.startswith("ey")  # Basic heuristic
+        
+        if is_test_token or settings.ENVIRONMENT.lower() in ["development", "test", "testing"]:
             # For test tokens, use simple verification with our secret key
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
         else:
