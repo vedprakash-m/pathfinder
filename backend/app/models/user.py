@@ -29,7 +29,8 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(GUID(), primary_key=True, default=uuid4)
-    auth0_id = Column(String(255), unique=True, index=True, nullable=False)
+    auth0_id = Column(String(255), unique=True, index=True, nullable=True)  # Legacy field for migration
+    entra_id = Column(String(255), unique=True, index=True, nullable=True)  # New Entra External ID
     email = Column(String(255), unique=True, index=True, nullable=False)
     name = Column(String(255), nullable=True)
     role = Column(
@@ -78,7 +79,8 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     """User creation model."""
 
-    auth0_id: str
+    auth0_id: Optional[str] = None  # Legacy field for migration
+    entra_id: Optional[str] = None  # New Entra External ID
 
 
 class UserUpdate(BaseModel):
@@ -93,7 +95,8 @@ class UserResponse(UserBase):
     """User response model."""
 
     id: str
-    auth0_id: str
+    auth0_id: Optional[str] = None  # Legacy field for migration
+    entra_id: Optional[str] = None  # New Entra External ID
     role: UserRole  # 🔑 INCLUDE ROLE IN RESPONSE
     picture: Optional[str] = None
     is_active: bool

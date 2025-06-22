@@ -8,6 +8,29 @@
 ---
 ## 🔥 CURRENT DEVELOPMENT STATUS (June 21, 2025)
 
+### 🚀 MAJOR INITIATIVE: Auth0 → Microsoft Entra External ID Migration - IN PROGRESS
+
+**Strategic Decision - APPROVED:** Complete rip-and-replace of Auth0 with Microsoft Entra External ID  
+**Timeline:** 5-7 days (Started: June 21, 2025)  
+**Objective:** Eliminate authentication complexity, improve test reliability, reduce costs  
+
+**Migration Justification:**
+- ✅ **Current Auth0 Pain Points**: 73.5% test pass rate, complex configuration (6 env vars), $23+/month cost
+- ✅ **Entra External ID Benefits**: 50K free MAU, 3 env vars, Azure-native integration
+- ✅ **Test Reliability**: Expected improvement to 95%+ pass rate with simplified mocks
+- ✅ **Cost Savings**: $276+ annual savings with unified Microsoft ecosystem
+
+**Migration Progress - Phase 1 (Day 1):**
+- ✅ **Pre-migration Checkpoint**: Committed current working state (ad466b7)
+- 🚧 **Entra External ID Setup**: Creating tenant and application registration
+- 📋 **Backend Configuration**: Updating config.py and auth service
+- 📋 **Frontend Migration**: MSAL integration and component updates
+- 📋 **Testing Infrastructure**: Mock updates and E2E flow validation
+
+**Files Identified for Migration**: 15 source files across frontend/backend requiring Auth0 replacement  
+**Risk Assessment**: Medium risk with comprehensive rollback plan available  
+**Quality Focus**: Cohesive working solution with no shortcuts - frequent commits to track progress
+
 ### Test Infrastructure Enhancement - MAJOR PROGRESS ✅
 
 **Backend Test Improvements - COMPLETED:**

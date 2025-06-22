@@ -100,37 +100,39 @@ class UnifiedSettings(BaseSettings):
     USE_REDIS_CACHE: bool = Field(default=False, description="Use Redis for caching")
 
     # ==================== AUTHENTICATION CONFIGURATION ====================
-    AUTH0_DOMAIN: str = Field(
+    # Microsoft Entra External ID Configuration (replaces Auth0)
+    ENTRA_EXTERNAL_TENANT_ID: Optional[str] = Field(
         default_factory=lambda: (
-            "test-domain.auth0.com"
+            "test-tenant-id"
             if os.getenv("ENVIRONMENT", "").lower() in ["test", "testing"]
             else None
         ),
-        description="Auth0 domain",
+        description="Microsoft Entra External ID tenant ID",
     )
-    AUTH0_AUDIENCE: str = Field(
-        default_factory=lambda: (
-            "test-audience" if os.getenv("ENVIRONMENT", "").lower() in ["test", "testing"] else None
-        ),
-        description="Auth0 API audience",
-    )
-    AUTH0_CLIENT_ID: str = Field(
+    ENTRA_EXTERNAL_CLIENT_ID: Optional[str] = Field(
         default_factory=lambda: (
             "test-client-id"
             if os.getenv("ENVIRONMENT", "").lower() in ["test", "testing"]
             else None
         ),
-        description="Auth0 client ID",
+        description="Microsoft Entra External ID application client ID",
     )
-    AUTH0_CLIENT_SECRET: str = Field(
+    ENTRA_EXTERNAL_AUTHORITY: Optional[str] = Field(
+        default_factory=lambda: (
+            f"https://login.microsoftonline.com/{os.getenv('ENTRA_EXTERNAL_TENANT_ID', 'test-tenant-id')}"
+            if not os.getenv("ENVIRONMENT", "").lower() in ["test", "testing"]
+            else "https://login.microsoftonline.com/test-tenant-id"
+        ),
+        description="Microsoft Entra External ID authority URL",
+    )
+    ENTRA_EXTERNAL_CLIENT_SECRET: Optional[str] = Field(
         default_factory=lambda: (
             "test-client-secret"
             if os.getenv("ENVIRONMENT", "").lower() in ["test", "testing"]
             else None
         ),
-        description="Auth0 client secret",
+        description="Microsoft Entra External ID client secret (optional for public clients)",
     )
-    AUTH0_ISSUER: Optional[str] = Field(default=None, description="Auth0 token issuer")
     JWT_ALGORITHM: str = Field(default="RS256", description="JWT signing algorithm")
     JWT_EXPIRATION: int = Field(
         default=3600, ge=300, le=86400, description="JWT expiration time in seconds"
@@ -321,13 +323,13 @@ class UnifiedSettings(BaseSettings):
 
         return hosts
 
-    @field_validator("AUTH0_ISSUER", mode="before")
+    @field_validator("ENTRA_EXTERNAL_AUTHORITY", mode="before")
     @classmethod
-    def set_auth0_issuer(cls, v, info):
-        """Set Auth0 issuer from domain if not provided."""
-        if v is None and hasattr(info, "data") and "AUTH0_DOMAIN" in info.data:
-            domain = info.data["AUTH0_DOMAIN"]
-            return f"https://{domain}/"
+    def set_entra_authority(cls, v, info):
+        """Set Entra External ID authority from tenant ID if not provided."""
+        if v is None and hasattr(info, "data") and "ENTRA_EXTERNAL_TENANT_ID" in info.data:
+            tenant_id = info.data["ENTRA_EXTERNAL_TENANT_ID"]
+            return f"https://login.microsoftonline.com/{tenant_id}"
         return v
 
     @field_validator("CORS_ORIGINS", mode="before")
@@ -560,12 +562,11 @@ class UnifiedSettings(BaseSettings):
                 "temperature": self.OPENAI_TEMPERATURE,
                 "timeout": self.OPENAI_TIMEOUT,
             },
-            "auth0": {
-                "domain": self.AUTH0_DOMAIN,
-                "audience": self.AUTH0_AUDIENCE,
-                "client_id": self.AUTH0_CLIENT_ID,
-                "client_secret": self.AUTH0_CLIENT_SECRET,
-                "issuer": self.AUTH0_ISSUER or f"https://{self.AUTH0_DOMAIN}/",
+            "entra_external_id": {
+                "tenant_id": self.ENTRA_EXTERNAL_TENANT_ID,
+                "client_id": self.ENTRA_EXTERNAL_CLIENT_ID,
+                "authority": self.ENTRA_EXTERNAL_AUTHORITY,
+                "client_secret": self.ENTRA_EXTERNAL_CLIENT_SECRET,
                 "algorithm": self.JWT_ALGORITHM,
                 "expiration": self.JWT_EXPIRATION,
             },
@@ -593,8 +594,8 @@ class UnifiedSettings(BaseSettings):
         issues = []
         warnings = []
 
-        # Check required environment variables
-        required_vars = ["SECRET_KEY", "DATABASE_URL", "AUTH0_DOMAIN", "OPENAI_API_KEY"]
+        # Check required environment variables (temporarily not requiring Entra during migration)
+        required_vars = ["SECRET_KEY", "DATABASE_URL", "OPENAI_API_KEY"]
         for var in required_vars:
             if not getattr(self, var, None):
                 issues.append(f"Missing required environment variable: {var}")
