@@ -31,9 +31,7 @@ class PreferenceDocumentService:
             partition_key="entity_id",
         )
 
-    async def create_preference(
-        self, preference: PreferenceDocument
-    ) -> PreferenceDocument:
+    async def create_preference(self, preference: PreferenceDocument) -> PreferenceDocument:
         """Create a new preference document."""
         # Ensure we have an ID
         if not preference.id:

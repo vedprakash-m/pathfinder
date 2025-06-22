@@ -60,11 +60,8 @@ class TripRepository:
         query = (
             select(Trip)
             .options(
-                selectinload(Trip.participations).selectinload(
-                    TripParticipation.family
-                ),
-                selectinload(Trip.participations).selectinload(
-                    TripParticipation.user),
+                selectinload(Trip.participations).selectinload(TripParticipation.family),
+                selectinload(Trip.participations).selectinload(TripParticipation.user),
                 selectinload(Trip.creator),
             )
             .where(Trip.id == trip_id)
@@ -87,16 +84,16 @@ class TripRepository:
             trip = await self.get_trip_by_id(trip_id)
             if not trip:
                 raise ValueError(f"Trip {trip_id} not found")
-            
+
             # Basic permission check - only creator can update
             if str(trip.creator_id) != user_id:
                 raise PermissionError("You don't have permission to update this trip")
-            
+
             # Apply updates from trip_update object
             for field, value in trip_update.model_dump(exclude_unset=True).items():
                 if hasattr(trip, field):
                     setattr(trip, field, value)
-            
+
             trip.updated_at = datetime.now(timezone.utc)
             self._db.add(trip)
             await self._db.flush()
@@ -114,11 +111,11 @@ class TripRepository:
             trip = await self.get_trip_by_id(trip_id)
             if not trip:
                 raise ValueError(f"Trip {trip_id} not found")
-            
+
             # Basic permission check - only creator can delete
             if str(trip.creator_id) != user_id:
                 raise PermissionError("You don't have permission to delete this trip")
-            
+
             await self._db.delete(trip)
 
     # ---------------------------------------------------------------------
@@ -130,16 +127,12 @@ class TripRepository:
         await self._db.flush()
 
     async def list_trip_participations(self, trip_id: UUID) -> List[TripParticipation]:
-        stmt = select(TripParticipation).where(
-            TripParticipation.trip_id == trip_id)
+        stmt = select(TripParticipation).where(TripParticipation.trip_id == trip_id)
         res = await self._db.execute(stmt)
         return res.scalars().all()
 
-    async def get_participation_by_id(
-        self, participation_id: UUID
-    ) -> Optional[TripParticipation]:
-        stmt = select(TripParticipation).where(
-            TripParticipation.id == participation_id)
+    async def get_participation_by_id(self, participation_id: UUID) -> Optional[TripParticipation]:
+        stmt = select(TripParticipation).where(TripParticipation.id == participation_id)
         res = await self._db.execute(stmt)
         return res.scalar_one_or_none()
 
@@ -210,12 +203,12 @@ class TripRepository:
         trip = await self.get_trip_by_id(trip_id)
         if not trip:
             raise ValueError(f"Trip {trip_id} not found")
-        
+
         # Apply updates from trip_update object
         for field, value in trip_update.dict(exclude_unset=True).items():
             if hasattr(trip, field):
                 setattr(trip, field, value)
-        
+
         await self.update_trip(trip)
         return trip
 
@@ -224,7 +217,7 @@ class TripRepository:
         trip = await self.get_trip_by_id(trip_id)
         if not trip:
             raise ValueError(f"Trip {trip_id} not found")
-        
+
         await self.delete_trip(trip)
 
     async def add_family_to_trip(
@@ -246,27 +239,34 @@ class TripRepository:
         trip = await self.get_trip_by_id(trip_id)
         if not trip:
             return None
-        
+
         participations = await self.list_trip_participations(trip_id)
-        
+
         # Simple stats calculation
         from collections import namedtuple
-        TripStats = namedtuple('TripStats', ['total_families', 'confirmed_families', 'budget_allocated', 'days_until_trip'])
-        
+
+        TripStats = namedtuple(
+            "TripStats",
+            ["total_families", "confirmed_families", "budget_allocated", "days_until_trip"],
+        )
+
         total_families = len(participations)
-        confirmed_families = len([p for p in participations if p.status == ParticipationStatus.CONFIRMED])
+        confirmed_families = len(
+            [p for p in participations if p.status == ParticipationStatus.CONFIRMED]
+        )
         budget_allocated = trip.budget_total or 0
-        
+
         # Calculate days until trip
         from datetime import date
+
         if trip.start_date:
             days_until = (trip.start_date - date.today()).days
         else:
             days_until = None
-        
+
         return TripStats(
             total_families=total_families,
             confirmed_families=confirmed_families,
             budget_allocated=budget_allocated,
-            days_until_trip=days_until
+            days_until_trip=days_until,
         )

@@ -34,8 +34,7 @@ class FileService:
             raise RuntimeError("Azure Blob Storage not configured")
 
         try:
-            container_client = self.client.get_container_client(
-                self.container_name)
+            container_client = self.client.get_container_client(self.container_name)
             await container_client.create_container()
             logger.info(f"Created container: {self.container_name}")
         except ResourceExistsError:
@@ -70,9 +69,7 @@ class FileService:
         blob_name = f"{folder}/{uuid4()}{file_extension}"
 
         try:
-            blob_client = self.client.get_blob_client(
-                container=self.container_name, blob=blob_name
-            )
+            blob_client = self.client.get_blob_client(container=self.container_name, blob=blob_name)
 
             # Upload with metadata
             metadata = {
@@ -123,9 +120,7 @@ class FileService:
             raise RuntimeError("Azure Blob Storage not configured")
 
         try:
-            blob_client = self.client.get_blob_client(
-                container=self.container_name, blob=blob_name
-            )
+            blob_client = self.client.get_blob_client(container=self.container_name, blob=blob_name)
 
             # Download blob
             download_stream = await blob_client.download_blob()
@@ -134,9 +129,7 @@ class FileService:
             # Get metadata
             properties = await blob_client.get_blob_properties()
             metadata = {
-                "original_filename": properties.metadata.get(
-                    "original_filename", blob_name
-                ),
+                "original_filename": properties.metadata.get("original_filename", blob_name),
                 "content_type": properties.content_settings.content_type,
                 "size": properties.size,
                 "last_modified": properties.last_modified.isoformat(),
@@ -167,9 +160,7 @@ class FileService:
             raise RuntimeError("Azure Blob Storage not configured")
 
         try:
-            blob_client = self.client.get_blob_client(
-                container=self.container_name, blob=blob_name
-            )
+            blob_client = self.client.get_blob_client(container=self.container_name, blob=blob_name)
 
             await blob_client.delete_blob()
             logger.info(f"File deleted successfully: {blob_name}")
@@ -194,8 +185,7 @@ class FileService:
             str: Signed download URL
         """
         if not settings.AZURE_STORAGE_ACCOUNT or not settings.AZURE_STORAGE_KEY:
-            raise RuntimeError(
-                "Azure Storage account credentials not configured")
+            raise RuntimeError("Azure Storage account credentials not configured")
 
         sas_token = generate_blob_sas(
             account_name=settings.AZURE_STORAGE_ACCOUNT,
@@ -223,23 +213,18 @@ class FileService:
             raise RuntimeError("Azure Blob Storage not configured")
 
         try:
-            container_client = self.client.get_container_client(
-                self.container_name)
+            container_client = self.client.get_container_client(self.container_name)
 
             name_starts_with = folder + "/" if folder else None
             files = []
 
-            async for blob in container_client.list_blobs(
-                name_starts_with=name_starts_with
-            ):
+            async for blob in container_client.list_blobs(name_starts_with=name_starts_with):
                 file_info = {
                     "blob_name": blob.name,
                     "size": blob.size,
                     "last_modified": blob.last_modified.isoformat(),
                     "content_type": (
-                        blob.content_settings.content_type
-                        if blob.content_settings
-                        else None
+                        blob.content_settings.content_type if blob.content_settings else None
                     ),
                     "etag": blob.etag,
                 }
@@ -250,8 +235,7 @@ class FileService:
 
                 files.append(file_info)
 
-            logger.info(
-                f"Listed {len(files)} files in folder: {folder or 'root'}")
+            logger.info(f"Listed {len(files)} files in folder: {folder or 'root'}")
             return files
 
         except Exception as e:
@@ -272,17 +256,13 @@ class FileService:
             raise RuntimeError("Azure Blob Storage not configured")
 
         try:
-            blob_client = self.client.get_blob_client(
-                container=self.container_name, blob=blob_name
-            )
+            blob_client = self.client.get_blob_client(container=self.container_name, blob=blob_name)
 
             properties = await blob_client.get_blob_properties()
 
             file_info = {
                 "blob_name": blob_name,
-                "original_filename": properties.metadata.get(
-                    "original_filename", blob_name
-                ),
+                "original_filename": properties.metadata.get("original_filename", blob_name),
                 "content_type": properties.content_settings.content_type,
                 "size": properties.size,
                 "last_modified": properties.last_modified.isoformat(),

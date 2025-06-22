@@ -44,9 +44,7 @@ from domain.trip import TripDomainService  # new domain-level facade
 class Container(containers.DeclarativeContainer):
     """Global application service container."""
 
-    wiring_config = containers.WiringConfiguration(
-        packages=("app.api",)
-    )  # wire all API routers
+    wiring_config = containers.WiringConfiguration(packages=("app.api",))  # wire all API routers
 
     # -------------------------------
     # Infrastructure / external deps
@@ -77,21 +75,13 @@ class Container(containers.DeclarativeContainer):
     )
 
     # Use-cases
-    create_trip_use_case = providers.Factory(
-        CreateTripUseCase, trip_service=trip_domain_service
-    )
-    get_trip_use_case = providers.Factory(
-        GetTripUseCase, trip_service=trip_domain_service
-    )
+    create_trip_use_case = providers.Factory(CreateTripUseCase, trip_service=trip_domain_service)
+    get_trip_use_case = providers.Factory(GetTripUseCase, trip_service=trip_domain_service)
     list_user_trips_use_case = providers.Factory(
         ListUserTripsUseCase, trip_service=trip_domain_service
     )
-    update_trip_use_case = providers.Factory(
-        UpdateTripUseCase, trip_service=trip_domain_service
-    )
-    delete_trip_use_case = providers.Factory(
-        DeleteTripUseCase, trip_service=trip_domain_service
-    )
+    update_trip_use_case = providers.Factory(UpdateTripUseCase, trip_service=trip_domain_service)
+    delete_trip_use_case = providers.Factory(DeleteTripUseCase, trip_service=trip_domain_service)
 
     # Stats & participant management
     get_trip_stats_use_case = providers.Factory(

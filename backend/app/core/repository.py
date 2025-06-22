@@ -87,9 +87,7 @@ class SqlAlchemyRepository(Repository[T]):
             if include_relations:
                 for relation in include_relations:
                     if hasattr(self.model_class, relation):
-                        query = query.options(
-                            selectinload(getattr(self.model_class, relation))
-                        )
+                        query = query.options(selectinload(getattr(self.model_class, relation)))
 
             result = await self.session.execute(query)
             return result.scalar_one_or_none()
@@ -123,8 +121,7 @@ class SqlAlchemyRepository(Repository[T]):
                         if "in" in value:
                             query = query.where(column.in_(value["in"]))
                         if "like" in value:
-                            query = query.where(
-                                column.like(f"%{value['like']}%"))
+                            query = query.where(column.like(f"%{value['like']}%"))
                     else:
                         query = query.where(column == value)
 
@@ -132,9 +129,7 @@ class SqlAlchemyRepository(Repository[T]):
             if include_relations:
                 for relation in include_relations:
                     if hasattr(self.model_class, relation):
-                        query = query.options(
-                            selectinload(getattr(self.model_class, relation))
-                        )
+                        query = query.options(selectinload(getattr(self.model_class, relation)))
 
             # Add ordering
             if order_by:
@@ -151,9 +146,7 @@ class SqlAlchemyRepository(Repository[T]):
             return result.scalars().all()
 
         except Exception as e:
-            logger.error(
-                f"Error querying {self.table_name} with filters {filters}: {e}"
-            )
+            logger.error(f"Error querying {self.table_name} with filters {filters}: {e}")
             return []
 
     async def create(self, entity: T, flush: bool = True) -> T:
@@ -164,8 +157,7 @@ class SqlAlchemyRepository(Repository[T]):
                 await self.session.flush()
                 await self.session.refresh(entity)
 
-            logger.info(
-                f"Created {self.table_name} entity with ID: {entity.id}")
+            logger.info(f"Created {self.table_name} entity with ID: {entity.id}")
             return entity
 
         except Exception as e:
@@ -182,16 +174,11 @@ class SqlAlchemyRepository(Repository[T]):
             if hasattr(self.model_class, "updated_at"):
                 updates["updated_at"] = datetime.utcnow()
 
-            query = (
-                update(self.model_class)
-                .where(self.model_class.id == id)
-                .values(**updates)
-            )
+            query = update(self.model_class).where(self.model_class.id == id).values(**updates)
             result = await self.session.execute(query)
 
             if result.rowcount == 0:
-                logger.warning(
-                    f"No {self.table_name} found with ID {id} for update")
+                logger.warning(f"No {self.table_name} found with ID {id} for update")
                 return None
 
             await self.session.flush()
@@ -217,8 +204,7 @@ class SqlAlchemyRepository(Repository[T]):
                 return result is not None
             else:
                 # Hard delete
-                query = delete(self.model_class).where(
-                    self.model_class.id == id)
+                query = delete(self.model_class).where(self.model_class.id == id)
                 result = await self.session.execute(query)
                 await self.session.flush()
 
@@ -256,14 +242,12 @@ class SqlAlchemyRepository(Repository[T]):
     async def exists(self, id: str) -> bool:
         """Check if entity exists by ID."""
         try:
-            query = select(self.model_class.id).where(
-                self.model_class.id == id)
+            query = select(self.model_class.id).where(self.model_class.id == id)
             result = await self.session.execute(query)
             return result.scalar_one_or_none() is not None
 
         except Exception as e:
-            logger.error(
-                f"Error checking {self.table_name} existence for ID {id}: {e}")
+            logger.error(f"Error checking {self.table_name} existence for ID {id}: {e}")
             return False
 
 
@@ -315,8 +299,7 @@ class CosmosDbRepository(Repository[T]):
             logger.debug(f"Document not found in {self.container_name}: {id}")
             return None
         except Exception as e:
-            logger.error(
-                f"Error retrieving document from {self.container_name}: {e}")
+            logger.error(f"Error retrieving document from {self.container_name}: {e}")
             return None
 
     async def get_by_filters(self, filters: Dict[str, Any], **kwargs) -> List[T]:
@@ -330,21 +313,16 @@ class CosmosDbRepository(Repository[T]):
                 if isinstance(value, dict):
                     if "gte" in value:
                         conditions.append(f"c.{field} >= @{field}_gte")
-                        parameters.append(
-                            {"name": f"@{field}_gte", "value": value["gte"]}
-                        )
+                        parameters.append({"name": f"@{field}_gte", "value": value["gte"]})
                     if "lte" in value:
                         conditions.append(f"c.{field} <= @{field}_lte")
-                        parameters.append(
-                            {"name": f"@{field}_lte", "value": value["lte"]}
-                        )
+                        parameters.append({"name": f"@{field}_lte", "value": value["lte"]})
                     if "in" in value:
                         conditions.append(
                             f"c.{field} IN ({','.join([f'@{field}_{i}' for i in range(len(value['in']))])})"
                         )
                         for i, val in enumerate(value["in"]):
-                            parameters.append(
-                                {"name": f"@{field}_{i}", "value": val})
+                            parameters.append({"name": f"@{field}_{i}", "value": val})
                 else:
                     conditions.append(f"c.{field} = @{field}")
                     parameters.append({"name": f"@{field}", "value": value})
@@ -367,9 +345,7 @@ class CosmosDbRepository(Repository[T]):
             return [self._deserialize_entity(item) for item in items]
 
         except Exception as e:
-            logger.error(
-                f"Error querying {self.container_name} with filters {filters}: {e}"
-            )
+            logger.error(f"Error querying {self.container_name} with filters {filters}: {e}")
             return []
 
     async def create(self, entity: T, **kwargs) -> T:
@@ -387,15 +363,12 @@ class CosmosDbRepository(Repository[T]):
             data["updated_at"] = now
 
             created_item = self.container.create_item(data)
-            logger.info(
-                f"Created document in {self.container_name} with ID: {created_item['id']}"
-            )
+            logger.info(f"Created document in {self.container_name} with ID: {created_item['id']}")
 
             return self._deserialize_entity(created_item)
 
         except Exception as e:
-            logger.error(
-                f"Error creating document in {self.container_name}: {e}")
+            logger.error(f"Error creating document in {self.container_name}: {e}")
             raise
 
     async def update(self, id: str, updates: Dict[str, Any], **kwargs) -> Optional[T]:
@@ -412,19 +385,15 @@ class CosmosDbRepository(Repository[T]):
 
             # Replace document
             updated_item = self.container.replace_item(id, existing)
-            logger.info(
-                f"Updated document in {self.container_name} with ID: {id}")
+            logger.info(f"Updated document in {self.container_name} with ID: {id}")
 
             return self._deserialize_entity(updated_item)
 
         except CosmosResourceNotFoundError:
-            logger.warning(
-                f"Document not found for update in {self.container_name}: {id}"
-            )
+            logger.warning(f"Document not found for update in {self.container_name}: {id}")
             return None
         except Exception as e:
-            logger.error(
-                f"Error updating document in {self.container_name}: {e}")
+            logger.error(f"Error updating document in {self.container_name}: {e}")
             raise
 
     async def delete(self, id: str, **kwargs) -> bool:
@@ -432,18 +401,14 @@ class CosmosDbRepository(Repository[T]):
         try:
             partition_key = kwargs.get("partition_key", id)
             self.container.delete_item(id, partition_key)
-            logger.info(
-                f"Deleted document from {self.container_name} with ID: {id}")
+            logger.info(f"Deleted document from {self.container_name} with ID: {id}")
             return True
 
         except CosmosResourceNotFoundError:
-            logger.warning(
-                f"Document not found for deletion in {self.container_name}: {id}"
-            )
+            logger.warning(f"Document not found for deletion in {self.container_name}: {id}")
             return False
         except Exception as e:
-            logger.error(
-                f"Error deleting document from {self.container_name}: {e}")
+            logger.error(f"Error deleting document from {self.container_name}: {e}")
             return False
 
     async def count(self, filters: Optional[Dict[str, Any]] = None) -> int:
@@ -456,15 +421,12 @@ class CosmosDbRepository(Repository[T]):
                 # Simple count query
                 query = "SELECT VALUE COUNT(1) FROM c"
                 result = list(
-                    self.container.query_items(
-                        query=query, enable_cross_partition_query=True
-                    )
+                    self.container.query_items(query=query, enable_cross_partition_query=True)
                 )
                 return result[0] if result else 0
 
         except Exception as e:
-            logger.error(
-                f"Error counting documents in {self.container_name}: {e}")
+            logger.error(f"Error counting documents in {self.container_name}: {e}")
             return 0
 
     async def exists(self, id: str, **kwargs) -> bool:
@@ -477,8 +439,7 @@ class CosmosDbRepository(Repository[T]):
         except CosmosResourceNotFoundError:
             return False
         except Exception as e:
-            logger.error(
-                f"Error checking existence in {self.container_name}: {e}")
+            logger.error(f"Error checking existence in {self.container_name}: {e}")
             return False
 
 
@@ -506,8 +467,7 @@ class RepositoryFactory:
     ) -> CosmosDbRepository:
         """Create Cosmos DB repository for given container."""
         if container_name not in self.cosmos_containers:
-            raise ValueError(
-                f"Cosmos container '{container_name}' not configured")
+            raise ValueError(f"Cosmos container '{container_name}' not configured")
 
         container = self.cosmos_containers[container_name]
         return CosmosDbRepository(container, partition_key_field)
@@ -536,8 +496,7 @@ def with_error_handling(repository_method):
         try:
             return await repository_method(*args, **kwargs)
         except Exception as e:
-            logger.error(
-                f"Repository error in {repository_method.__name__}: {e}")
+            logger.error(f"Repository error in {repository_method.__name__}: {e}")
             raise
 
     return wrapper
@@ -549,7 +508,9 @@ def with_caching(cache_key_prefix: str, ttl: int = 3600):
     def decorator(repository_method):
         async def wrapper(self, *args, **kwargs):
             # Generate cache key
-            cache_key = f"{cache_key_prefix}:{repository_method.__name__}:{hash(str(args) + str(kwargs))}"
+            cache_key = (
+                f"{cache_key_prefix}:{repository_method.__name__}:{hash(str(args) + str(kwargs))}"
+            )
 
             # Try cache first (implementation depends on cache provider)
             # For now, just execute the method

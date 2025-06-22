@@ -47,8 +47,7 @@ def export_trip_data(
                 # Get trip data
                 current_task.update_state(
                     state="PROGRESS",
-                    meta={"current": 30, "total": 100,
-                        "status": "Fetching trip data"},
+                    meta={"current": 30, "total": 100, "status": "Fetching trip data"},
                 )
 
                 trip_data = await trip_service.get_trip_by_id(trip_id, user_id)
@@ -72,9 +71,7 @@ def export_trip_data(
                     )
                 elif export_type == "itinerary":
                     # Export only itinerary data
-                    itinerary_data = await trip_service.get_latest_itinerary(
-                        trip_id, user_id
-                    )
+                    itinerary_data = await trip_service.get_latest_itinerary(trip_id, user_id)
                     result = await export_service.export_itinerary_data(
                         itinerary_data=itinerary_data or {},
                         trip_id=trip_id,
@@ -126,9 +123,7 @@ def export_trip_data(
                     }
                 )
 
-                logger.info(
-                    f"Successfully exported {export_type} data for trip {trip_id}"
-                )
+                logger.info(f"Successfully exported {export_type} data for trip {trip_id}")
 
                 return {
                     "status": "SUCCESS",
@@ -141,9 +136,7 @@ def export_trip_data(
                 }
 
             except Exception as e:
-                logger.error(
-                    f"Error exporting {export_type} data for trip {trip_id}: {e}"
-                )
+                logger.error(f"Error exporting {export_type} data for trip {trip_id}: {e}")
 
                 # Notify user of failure
                 try:
@@ -159,9 +152,7 @@ def export_trip_data(
                         }
                     )
                 except Exception as notify_error:
-                    logger.error(
-                        f"Failed to send export error notification: {notify_error}"
-                    )
+                    logger.error(f"Failed to send export error notification: {notify_error}")
 
                 raise
 
@@ -172,9 +163,7 @@ def export_trip_data(
 
 
 @conditional_task(bind=True, name="app.tasks.export_tasks.bulk_export_trips")
-def bulk_export_trips(
-    self, trip_ids: List[str], user_id: str, export_format: str = "excel"
-):
+def bulk_export_trips(self, trip_ids: List[str], user_id: str, export_format: str = "excel"):
     """Export multiple trips in a single archive."""
 
     async def _bulk_export():
@@ -208,22 +197,16 @@ def bulk_export_trips(
                         args=[trip_id, user_id, export_format, "complete"]
                     ).get()
 
-                    results.append(
-                        {"trip_id": trip_id, "status": "SUCCESS", "result": result}
-                    )
+                    results.append({"trip_id": trip_id, "status": "SUCCESS", "result": result})
 
                 except Exception as e:
                     logger.error(f"Failed to export trip {trip_id}: {e}")
-                    results.append(
-                        {"trip_id": trip_id,
-                            "status": "FAILED", "error": str(e)}
-                    )
+                    results.append({"trip_id": trip_id, "status": "FAILED", "error": str(e)})
 
             # Create combined archive
             current_task.update_state(
                 state="PROGRESS",
-                meta={"current": 95, "total": 100,
-                    "status": "Creating archive"},
+                meta={"current": 95, "total": 100, "status": "Creating archive"},
             )
 
             archive_result = await export_service.create_bulk_export_archive(

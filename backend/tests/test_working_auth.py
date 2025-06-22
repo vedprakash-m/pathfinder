@@ -25,8 +25,7 @@ def test_trips_with_complete_mocking():
         id=test_user_id,
         email="test@example.com",
         roles=["user"],
-        permissions=["create:trips", "read:trips",
-            "update:trips", "delete:trips"],
+        permissions=["create:trips", "read:trips", "update:trips", "delete:trips"],
     )
 
     # Create mock token data
@@ -34,8 +33,7 @@ def test_trips_with_complete_mocking():
         sub=test_user_id,
         email="test@example.com",
         roles=["user"],
-        permissions=["create:trips", "read:trips",
-            "update:trips", "delete:trips"],
+        permissions=["create:trips", "read:trips", "update:trips", "delete:trips"],
     )
 
     # Create mock trip response
@@ -94,8 +92,7 @@ def test_trips_with_complete_mocking():
                     "Content-Type": "application/json",
                 }
 
-                response = client.post(
-                    "/api/v1/trips", json=trip_data, headers=headers)
+                response = client.post("/api/v1/trips", json=trip_data, headers=headers)
 
                 print(f"Complete mock response status: {response.status_code}")
                 print(f"Complete mock response content: {response.content}")
@@ -129,17 +126,12 @@ def test_ai_service_with_proper_mocking():
             "duration": 5,
             "estimated_cost_per_person": 1000.0,
         },
-        "daily_itinerary": [
-            {"day": 1, "date": "2025-07-01",
-                "activities": ["Visit Eiffel Tower"]}
-        ],
+        "daily_itinerary": [{"day": 1, "date": "2025-07-01", "activities": ["Visit Eiffel Tower"]}],
         "budget_summary": {"total": 5000.0, "breakdown": {}},
     }
 
     # Test the AI service generate_itinerary method
-    with patch.object(
-        ai_service, "generate_itinerary", new_callable=AsyncMock
-    ) as mock_generate:
+    with patch.object(ai_service, "generate_itinerary", new_callable=AsyncMock) as mock_generate:
         mock_generate.return_value = mock_itinerary
 
         # Test calling the method directly

@@ -24,8 +24,7 @@ def test_trip_creation_end_to_end():
         sub=test_user_id,
         email="integration@example.com",
         roles=["user"],
-        permissions=["create:trips", "read:trips",
-            "update:trips", "delete:trips"],
+        permissions=["create:trips", "read:trips", "update:trips", "delete:trips"],
     )
 
     # Mock authentication
@@ -54,8 +53,7 @@ def test_trip_creation_end_to_end():
                 "Content-Type": "application/json",
             }
 
-            response = client.post(
-                "/api/v1/trips", json=trip_data, headers=headers)
+            response = client.post("/api/v1/trips", json=trip_data, headers=headers)
 
             print(f"Response status: {response.status_code}")
             print(f"Response content: {response.content}")
@@ -67,25 +65,17 @@ def test_trip_creation_end_to_end():
             response_data = response.json()
             assert "id" in response_data
             assert response_data["name"] == "Integration Test Trip"
-            assert (
-                response_data["description"]
-                == "A test trip created by integration test"
-            )
+            assert response_data["description"] == "A test trip created by integration test"
             assert response_data["destination"] == "Integration Test Destination"
             assert response_data["start_date"] == "2025-08-01"
             assert response_data["end_date"] == "2025-08-15"
-            assert (
-                response_data["budget_total"] is None
-                or response_data["budget_total"] == 3000.0
-            )
+            assert response_data["budget_total"] is None or response_data["budget_total"] == 3000.0
             assert response_data["is_public"] == False
             assert response_data["status"] == "planning"
             assert response_data["creator_id"] == test_user_id
             assert "created_at" in response_data
             assert "updated_at" in response_data
-            assert (
-                response_data["family_count"] == 0
-            )  # New trip should have no families initially
+            assert response_data["family_count"] == 0  # New trip should have no families initially
             assert response_data["confirmed_families"] == 0
 
 
@@ -157,8 +147,7 @@ def test_trip_creation_with_invalid_data():
                 "Content-Type": "application/json",
             }
 
-            response = client.post(
-                "/api/v1/trips", json=trip_data, headers=headers)
+            response = client.post("/api/v1/trips", json=trip_data, headers=headers)
 
             print(f"Invalid data response status: {response.status_code}")
             print(f"Invalid data response content: {response.content}")

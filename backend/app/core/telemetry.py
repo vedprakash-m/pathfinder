@@ -89,14 +89,12 @@ def setup_opentelemetry(app: FastAPI, sqlalchemy_engine=None):
 
     # Skip telemetry setup during testing or if telemetry is not available
     if TESTING or not TELEMETRY_AVAILABLE:
-        logger.info(
-            "Skipping OpenTelemetry setup (testing or telemetry not available)")
+        logger.info("Skipping OpenTelemetry setup (testing or telemetry not available)")
         return app
 
     try:
         # Get the Azure Monitor connection string from environment
-        app_insights_conn_string = os.getenv(
-            "APPLICATIONINSIGHTS_CONNECTION_STRING")
+        app_insights_conn_string = os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING")
         service_name = os.getenv("SERVICE_NAME", "pathfinder-api")
         environment = os.getenv("ENVIRONMENT", "development")
 
@@ -111,11 +109,8 @@ def setup_opentelemetry(app: FastAPI, sqlalchemy_engine=None):
         )
 
         if app_insights_conn_string:
-            logger.info(
-                "Setting up Azure Monitor OpenTelemetry instrumentation")
-            configure_azure_monitor(
-                connection_string=app_insights_conn_string, resource=resource
-            )
+            logger.info("Setting up Azure Monitor OpenTelemetry instrumentation")
+            configure_azure_monitor(connection_string=app_insights_conn_string, resource=resource)
         else:
             logger.info("Setting up default OpenTelemetry instrumentation")
             # Setup tracer provider with a default exporter (console)
@@ -147,9 +142,7 @@ def setup_opentelemetry(app: FastAPI, sqlalchemy_engine=None):
         )
 
         # Instrument FastAPI
-        FastAPIInstrumentor.instrument_app(
-            app, tracer_provider=trace.get_tracer_provider()
-        )
+        FastAPIInstrumentor.instrument_app(app, tracer_provider=trace.get_tracer_provider())
 
         # Instrument HTTPX for outgoing requests
         HTTPXClientInstrumentor().instrument()
@@ -161,8 +154,7 @@ def setup_opentelemetry(app: FastAPI, sqlalchemy_engine=None):
         logger.info("OpenTelemetry instrumentation setup complete")
 
     except Exception as e:
-        logger.error(
-            f"Failed to setup OpenTelemetry instrumentation: {str(e)}")
+        logger.error(f"Failed to setup OpenTelemetry instrumentation: {str(e)}")
         # Continue application startup even if instrumentation fails
 
     return app
@@ -174,9 +166,7 @@ class EnhancedMonitoring:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
 
-    def track_ai_operation(
-        self, operation_type: str, tokens_used: int, model: str = "gpt-4o-mini"
-    ):
+    def track_ai_operation(self, operation_type: str, tokens_used: int, model: str = "gpt-4o-mini"):
         """Track AI operation with detailed metrics."""
         if not tracer:
             return
@@ -195,8 +185,7 @@ class EnhancedMonitoring:
                 # Track costs
                 if cost_tracking_counter:
                     cost_tracking_counter.add(
-                        tokens_used, {
-                            "operation": operation_type, "model": model}
+                        tokens_used, {"operation": operation_type, "model": model}
                     )
 
         finally:
@@ -214,8 +203,7 @@ class EnhancedMonitoring:
         start_time = time.time()
         try:
             with tracer.start_as_current_span("database_operation") as span:
-                span.set_attributes(
-                    {"db.operation": operation, "db.table": table})
+                span.set_attributes({"db.operation": operation, "db.table": table})
         finally:
             duration = time.time() - start_time
             if database_operation_duration:

@@ -129,15 +129,13 @@ class TestDatabasePerformance:
 
             start_time = time.time()
 
-            tasks = [client.get("/health/ready")
-                                for _ in range(concurrent_queries)]
+            tasks = [client.get("/health/ready") for _ in range(concurrent_queries)]
 
             responses = await asyncio.gather(*tasks)
             end_time = time.time()
 
             total_time = end_time - start_time
-            successful_queries = sum(
-                1 for r in responses if r.status_code == 200)
+            successful_queries = sum(1 for r in responses if r.status_code == 200)
 
             if successful_queries > 0:
                 avg_time_per_query = total_time / successful_queries
@@ -328,8 +326,7 @@ class TestEndToEndPerformance:
 
             for user_time, responses in user_results:
                 total_user_time += user_time
-                successful_requests += sum(
-                    1 for r in responses if r.status_code == 200)
+                successful_requests += sum(1 for r in responses if r.status_code == 200)
 
             success_rate = successful_requests / total_requests
             avg_user_time = total_user_time / concurrent_users

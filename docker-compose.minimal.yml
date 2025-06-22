@@ -1,0 +1,20 @@
+version: '3.8'
+services:
+  test-db:
+    image: mongo:7.0
+    ports:
+      - "27019:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=pathfinder_test
+    volumes:
+      - test-db-data:/data/db
+    command: mongod --noauth --quiet
+
+  test-redis:
+    image: redis:7-alpine
+    ports:
+      - "6381:6379"
+    command: redis-server --save "" --appendonly no --maxmemory 100mb
+
+volumes:
+  test-db-data:

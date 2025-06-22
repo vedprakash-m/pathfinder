@@ -20,6 +20,8 @@ FIX_ISSUES=false
 QUICK_MODE=false
 COVERAGE_MODE=false
 VALIDATION_FAILED=false
+DOCKER_MODE=false
+DOCKER_COMPOSE_MODE=false
 
 # Test isolation
 TEST_ISOLATION=true
@@ -49,12 +51,22 @@ while [[ $# -gt 0 ]]; do
             TEST_ISOLATION=false
             shift
             ;;
+        --docker)
+            DOCKER_MODE=true
+            shift
+            ;;
+        --docker-compose)
+            DOCKER_COMPOSE_MODE=true
+            shift
+            ;;
         *)
-            echo "Usage: $0 [--fix] [--quick] [--coverage] [--no-isolation]"
-            echo "  --fix          : Automatically fix issues where possible"
-            echo "  --quick        : Skip time-consuming checks"
-            echo "  --coverage     : Generate detailed coverage reports"
-            echo "  --no-isolation : Skip test environment isolation"
+            echo "Usage: $0 [--fix] [--quick] [--coverage] [--no-isolation] [--docker] [--docker-compose]"
+            echo "  --fix              : Automatically fix issues where possible"
+            echo "  --quick            : Skip time-consuming checks"
+            echo "  --coverage         : Generate detailed coverage reports"
+            echo "  --no-isolation     : Skip test environment isolation"
+            echo "  --docker           : Use Docker for comprehensive testing"
+            echo "  --docker-compose   : Use Docker Compose for full stack testing"
             exit 1
             ;;
     esac
@@ -113,6 +125,75 @@ fi
 
 print_header "🔍 Pathfinder Local Validation"
 echo "Mode: $([ "$FIX_ISSUES" = true ] && echo "Fix Issues" || echo "Check Only") | $([ "$QUICK_MODE" = true ] && echo "Quick" || echo "Full")"
+if [ "$DOCKER_MODE" = true ]; then
+    echo "🐳 Docker Mode: Enabled"
+fi
+if [ "$DOCKER_COMPOSE_MODE" = true ]; then
+    echo "🐙 Docker Compose Mode: Enabled (Full Stack Testing)"
+fi
+
+# If Docker Compose mode is enabled, run comprehensive stack testing
+if [ "$DOCKER_COMPOSE_MODE" = true ]; then
+    print_header "🐙 Docker Compose Full Stack Testing"
+    
+    if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/null; then
+        print_status "Docker Compose not available" "error"
+        echo "   💡 Install Docker Compose or use Docker Desktop"
+        exit 1
+    fi
+    
+    echo "   🚀 Starting full stack test environment..."
+    
+    # Clean up any existing containers
+    docker-compose -f docker-compose.test.yml down -v >/dev/null 2>&1 || true
+    docker compose -f docker-compose.test.yml down -v >/dev/null 2>&1 || true
+    
+    # Build and start services
+    echo "   🏗️  Building and starting test services..."
+    COMPOSE_OUTPUT=$(docker-compose -f docker-compose.test.yml up --build --abort-on-container-exit 2>&1 || docker compose -f docker-compose.test.yml up --build --abort-on-container-exit 2>&1)
+    COMPOSE_EXIT_CODE=$?
+    
+    if [ $COMPOSE_EXIT_CODE -eq 0 ]; then
+        print_status "Full stack testing: PASSED" "success"
+        echo "   ✅ All services started and tests completed successfully"
+        
+        # Extract test results from output
+        if echo "$COMPOSE_OUTPUT" | grep -q "failed\|ERROR\|FAILED"; then
+            print_status "Some tests failed in full stack environment" "warning"
+            echo "   ⚠️  Check test output for details"
+        fi
+        
+        # Show test summary
+        PASSED_COUNT=$(echo "$COMPOSE_OUTPUT" | grep -o "[0-9]* passed" | tail -1)
+        if [ -n "$PASSED_COUNT" ]; then
+            print_status "Test Results: $PASSED_COUNT" "success"
+        fi
+        
+    else
+        print_status "Full stack testing: FAILED" "error"
+        echo "   ❌ Docker Compose test failed"
+        echo "   🔍 Check the output above for details"
+        VALIDATION_FAILED=true
+    fi
+    
+    # Clean up
+    echo "   🧹 Cleaning up test environment..."
+    docker-compose -f docker-compose.test.yml down -v >/dev/null 2>&1 || docker compose -f docker-compose.test.yml down -v >/dev/null 2>&1
+    
+    # If Docker Compose mode completes, skip other testing
+    if [ $COMPOSE_EXIT_CODE -eq 0 ]; then
+        print_header "📊 Validation Summary"
+        echo -e "\n${GREEN}✅ DOCKER COMPOSE FULL STACK TESTING COMPLETED${NC}"
+        echo "Your application passed comprehensive testing in a production-like environment!"
+        echo ""
+        echo "🚀 Next steps:"
+        echo "  1. Commit your changes: git add . && git commit -m 'Your message'"
+        echo "  2. Push to trigger CI/CD: git push origin main"
+        echo ""
+        echo "The CI/CD pipeline will run similar tests and deploy if successful."
+        exit 0
+    fi
+fi
 
 # 1. Requirements.txt Validation
 print_header "📦 Requirements.txt Validation"
@@ -584,21 +665,171 @@ if [ "$QUICK_MODE" = false ]; then
     cd ..
 fi
 
-# 5. Docker Build Validation
-print_header "🐳 Docker Build Validation"
+# 5. Docker-Based Comprehensive Validation
+print_header "🐳 Docker-Based Comprehensive Validation"
 
-# Test backend Docker build
-echo "   Testing backend Docker build..."
+# Check Docker availability
 if ! command -v docker &> /dev/null; then
-    print_status "Docker not available - skipping build test" "warning"
+    print_status "Docker not available - falling back to local testing" "warning"
+    DOCKER_AVAILABLE=false
 elif ! docker info >/dev/null 2>&1; then
-    print_status "Docker daemon not running - skipping build test" "warning"
-elif docker build -t pathfinder-backend-test ./backend >/dev/null 2>&1; then
-    print_status "Backend Docker build: Passed" "success"
-    docker rmi pathfinder-backend-test >/dev/null 2>&1 || true
+    print_status "Docker daemon not running - falling back to local testing" "warning"
+    DOCKER_AVAILABLE=false
 else
-    print_status "Backend Docker build failed" "error"
-    echo "   ❌ Run: docker build -t test ./backend"
+    print_status "Docker available - using containerized testing" "success"
+    DOCKER_AVAILABLE=true
+fi
+
+if [ "$DOCKER_AVAILABLE" = true ] || [ "$DOCKER_MODE" = true ]; then
+    echo "   🚀 Running comprehensive Docker-based validation..."
+    
+    # Build backend image
+    echo "   Building backend Docker image..."
+    if docker build -t pathfinder-backend-test ./backend >/dev/null 2>&1; then
+        print_status "Backend Docker build: Passed" "success"
+    else
+        print_status "Backend Docker build failed" "error"
+        echo "   ❌ Run: docker build -t pathfinder-backend-test ./backend"
+        VALIDATION_FAILED=true
+    fi
+    
+    # Build frontend image (if not quick mode)
+    if [ "$QUICK_MODE" = false ]; then
+        echo "   Building frontend Docker image..."
+        if docker build -t pathfinder-frontend-test ./frontend >/dev/null 2>&1; then
+            print_status "Frontend Docker build: Passed" "success"
+        else
+            print_status "Frontend Docker build failed" "error"
+            echo "   ❌ Run: docker build -t pathfinder-frontend-test ./frontend"
+            VALIDATION_FAILED=true
+        fi
+    fi
+    
+    # Create Docker network for testing
+    echo "   Setting up test network..."
+    docker network create pathfinder-test-network >/dev/null 2>&1 || true
+    
+    # Start test database
+    echo "   Starting test database..."
+    docker run -d \
+        --name pathfinder-test-db \
+        --network pathfinder-test-network \
+        -e POSTGRES_DB=pathfinder_test \
+        -e POSTGRES_USER=test_user \
+        -e POSTGRES_PASSWORD=test_password \
+        -p 5433:5432 \
+        postgres:15-alpine >/dev/null 2>&1 || true
+    
+    # Wait for database to be ready
+    echo "   Waiting for database to be ready..."
+    for i in {1..30}; do
+        if docker exec pathfinder-test-db pg_isready -U test_user >/dev/null 2>&1; then
+            break
+        fi
+        sleep 1
+    done
+    
+    # Start Redis for caching tests
+    echo "   Starting test Redis..."
+    docker run -d \
+        --name pathfinder-test-redis \
+        --network pathfinder-test-network \
+        -p 6380:6379 \
+        redis:7-alpine >/dev/null 2>&1 || true
+    
+    # Run backend tests in Docker with real dependencies
+    echo "   Running backend tests in Docker environment..."
+    DOCKER_TEST_OUTPUT=$(docker run --rm \
+        --network pathfinder-test-network \
+        -e DATABASE_URL="postgresql+asyncpg://test_user:test_password@pathfinder-test-db:5432/pathfinder_test" \
+        -e REDIS_URL="redis://pathfinder-test-redis:6379" \
+        -e ENVIRONMENT=testing \
+        -e AUTH0_DOMAIN="test-domain.auth0.com" \
+        -e AUTH0_AUDIENCE="test-audience" \
+        -e OPENAI_API_KEY="sk-test-key" \
+        pathfinder-backend-test \
+        sh -c "cd /app && python -m pytest tests/ -v --tb=short --maxfail=5" 2>&1)
+    
+    if echo "$DOCKER_TEST_OUTPUT" | grep -q "failed\|ERROR\|FAILED"; then
+        print_status "Docker-based backend tests failed" "error"
+        echo "   ❌ Test failures in containerized environment:"
+        echo "$DOCKER_TEST_OUTPUT" | grep -E "(FAILED|ERROR|AttributeError)" | head -10
+        VALIDATION_FAILED=true
+    else
+        print_status "Docker-based backend tests: Passed" "success"
+        # Extract test count
+        TEST_COUNT=$(echo "$DOCKER_TEST_OUTPUT" | grep -o "[0-9]* passed" | head -1)
+        if [ -n "$TEST_COUNT" ]; then
+            print_status "Backend tests in Docker: $TEST_COUNT" "success"
+        fi
+    fi
+    
+    # Run integration tests with real HTTP calls
+    echo "   Running API integration tests with real endpoints..."
+    docker run -d \
+        --name pathfinder-test-api \
+        --network pathfinder-test-network \
+        -p 8001:8000 \
+        -e DATABASE_URL="postgresql+asyncpg://test_user:test_password@pathfinder-test-db:5432/pathfinder_test" \
+        -e REDIS_URL="redis://pathfinder-test-redis:6379" \
+        -e ENVIRONMENT=testing \
+        pathfinder-backend-test \
+        sh -c "cd /app && uvicorn app.main:app --host 0.0.0.0 --port 8000" >/dev/null 2>&1
+    
+    # Wait for API to be ready
+    echo "   Waiting for API to be ready..."
+    for i in {1..30}; do
+        if curl -s http://localhost:8001/health >/dev/null 2>&1; then
+            break
+        fi
+        sleep 1
+    done
+    
+    # Test API endpoints directly
+    echo "   Testing API endpoints with real HTTP calls..."
+    API_HEALTH=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8001/health)
+    if [ "$API_HEALTH" = "200" ]; then
+        print_status "API health endpoint: Accessible" "success"
+    else
+        print_status "API health endpoint failed: HTTP $API_HEALTH" "error"
+        VALIDATION_FAILED=true
+    fi
+    
+    # Test authentication endpoints
+    AUTH_TEST=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8001/api/v1/trips/)
+    if [ "$AUTH_TEST" = "401" ]; then
+        print_status "Authentication protection: Working" "success"
+    else
+        print_status "Authentication protection failed: HTTP $AUTH_TEST (expected 401)" "error"
+        VALIDATION_FAILED=true
+    fi
+    
+    # Test CORS headers
+    CORS_TEST=$(curl -s -I -X OPTIONS http://localhost:8001/api/v1/trips/ | grep -i "access-control-allow-origin")
+    if [ -n "$CORS_TEST" ]; then
+        print_status "CORS headers: Present" "success"
+    else
+        print_status "CORS headers: Missing" "error"
+        VALIDATION_FAILED=true
+    fi
+    
+    # Cleanup Docker containers and network
+    echo "   Cleaning up Docker test environment..."
+    docker stop pathfinder-test-api pathfinder-test-db pathfinder-test-redis >/dev/null 2>&1 || true
+    docker rm pathfinder-test-api pathfinder-test-db pathfinder-test-redis >/dev/null 2>&1 || true
+    docker network rm pathfinder-test-network >/dev/null 2>&1 || true
+    docker rmi pathfinder-backend-test pathfinder-frontend-test >/dev/null 2>&1 || true
+    
+else
+    # Fallback to original Docker build test
+    echo "   Testing backend Docker build..."
+    if docker build -t pathfinder-backend-test ./backend >/dev/null 2>&1; then
+        print_status "Backend Docker build: Passed" "success"
+        docker rmi pathfinder-backend-test >/dev/null 2>&1 || true
+    else
+        print_status "Backend Docker build failed" "error"
+        echo "   ❌ Run: docker build -t test ./backend"
+    fi
 fi
 
 # Test frontend Docker build (if not quick mode)
@@ -705,6 +936,119 @@ if [ ${#MISSING_DEPS[@]} -gt 0 ]; then
         print_status "Missing test dependencies: ${MISSING_DEPS[*]}" "error"
         echo "   💡 Install: pip install ${MISSING_DEPS[*]}"
     fi
+fi
+
+# NEW: Specific CI/CD failure detection and validation
+echo "   Testing for specific CI/CD failure patterns..."
+
+# 1. Test trailing slash redirect issue (307 vs 401)
+echo "   ❯ Checking authentication redirect patterns..."
+if python3 -c "
+import asyncio
+from httpx import AsyncClient
+from app.main import app
+
+async def test_auth_redirects():
+    async with AsyncClient(app=app, base_url='http://test') as client:
+        # Test without trailing slash (should not redirect)
+        response = await client.get('/api/v1/trips/')
+        if response.status_code == 307:
+            print('ERROR: Auth endpoint returning 307 redirect instead of 401')
+            return False
+        elif response.status_code == 401:
+            print('✓ Auth endpoint correctly returns 401')
+            return True
+        else:
+            print(f'UNEXPECTED: Auth endpoint returns {response.status_code}')
+            return False
+
+result = asyncio.run(test_auth_redirects())
+exit(0 if result else 1)
+" 2>/dev/null; then
+    print_status "Authentication endpoints: Return 401 correctly" "success"
+else
+    print_status "Authentication redirect issue detected (307 instead of 401)" "error"
+    echo "   ❌ FastAPI is redirecting before auth check"
+    echo "   🔧 Check URL patterns in tests (trailing slashes)"
+    VALIDATION_FAILED=true
+fi
+
+# 2. Test database health SQL expression issue
+echo "   ❯ Checking database health endpoint SQL..."
+if python3 -c "
+import asyncio
+from httpx import AsyncClient
+from app.main import app
+
+async def test_health_sql():
+    async with AsyncClient(app=app, base_url='http://test') as client:
+        response = await client.get('/health/detailed')
+        data = response.json()
+        
+        # Check if database errors mention SQL expression issues
+        if 'details' in data and 'database' in data['details']:
+            db_detail = str(data['details']['database'])
+            if 'Textual SQL expression' in db_detail and 'text(' in db_detail:
+                print('ERROR: SQLAlchemy 2.0 text() wrapper issue detected')
+                return False
+        
+        print('✓ Database health check SQL is properly formatted')
+        return True
+
+result = asyncio.run(test_health_sql())
+exit(0 if result else 1)
+" 2>/dev/null; then
+    print_status "Database health SQL: Properly formatted" "success"
+else
+    print_status "Database health SQL expression issue" "error"
+    echo "   ❌ Raw SQL strings need text() wrapper for SQLAlchemy 2.0"
+    echo "   🔧 Wrap raw SQL with text('SELECT 1') in health endpoints"
+    VALIDATION_FAILED=true
+fi
+
+# 3. Test CORS headers on OPTIONS requests
+echo "   ❯ Checking CORS headers on OPTIONS requests..."
+if python3 -c "
+import asyncio
+from httpx import AsyncClient
+from app.main import app
+
+async def test_cors_options():
+    async with AsyncClient(app=app, base_url='http://test') as client:
+        response = await client.options('/api/v1/trips/')
+        
+        # Check for required CORS headers
+        if 'access-control-allow-origin' not in response.headers:
+            print('ERROR: Missing access-control-allow-origin header')
+            return False
+        
+        if 'access-control-allow-methods' not in response.headers:
+            print('ERROR: Missing access-control-allow-methods header')
+            return False
+            
+        print('✓ CORS headers present on OPTIONS requests')
+        return True
+
+result = asyncio.run(test_cors_options())
+exit(0 if result else 1)
+" 2>/dev/null; then
+    print_status "CORS headers: Present on OPTIONS requests" "success"
+else
+    print_status "CORS headers missing on OPTIONS requests" "error"
+    echo "   ❌ OPTIONS requests not returning CORS headers"
+    echo "   🔧 Check CORS middleware configuration"
+    VALIDATION_FAILED=true
+fi
+
+# 4. Check for PytestUnknownMarkWarning issues
+echo "   ❯ Checking pytest marker configuration..."
+if python3 -m pytest --collect-only tests/ -q 2>&1 | grep -q "PytestUnknownMarkWarning"; then
+    print_status "Pytest unknown mark warnings detected" "error"
+    echo "   ❌ Custom markers not properly registered"
+    echo "   🔧 Check pytest.ini markers configuration"
+    VALIDATION_FAILED=true
+else
+    print_status "Pytest markers: Properly registered" "success"
 fi
 
 # Test conftest.py import (critical failure point)

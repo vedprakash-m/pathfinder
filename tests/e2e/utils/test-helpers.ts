@@ -64,7 +64,7 @@ export const TEST_DATA = {
 };
 
 /**
- * Health check all services
+ * Health check all services with retries
  */
 export async function healthCheck() {
   const results = {
@@ -75,29 +75,54 @@ export async function healthCheck() {
     allHealthy: false,
   };
 
-  try {
-    // Frontend health check
-    const frontendResponse = await axios.get(E2E_CONFIG.frontend.url, { timeout: 5000 });
-    results.frontend = frontendResponse.status === 200;
-  } catch (error) {
-    console.warn('Frontend health check failed:', error.message);
-  }
+  const checkWithRetry = async (checkFn: () => Promise<void>, name: string, maxRetries = 3) => {
+    for (let i = 0; i <= maxRetries; i++) {
+      try {
+        await checkFn();
+        return true;
+      } catch (error) {
+        if (i === maxRetries) {
+          console.warn(`${name} health check failed after ${maxRetries + 1} attempts:`, error.message);
+          return false;
+        }
+        console.log(`${name} health check attempt ${i + 1}/${maxRetries + 1} failed, retrying...`);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    }
+    return false;
+  };
 
-  try {
-    // Backend health check
-    const backendResponse = await axios.get(`${E2E_CONFIG.backend.url}/health`, { timeout: 5000 });
-    results.backend = backendResponse.status === 200;
-  } catch (error) {
-    console.warn('Backend health check failed:', error.message);
-  }
+  // Frontend health check
+  results.frontend = await checkWithRetry(async () => {
+    const response = await axios.get(E2E_CONFIG.frontend.url, { timeout: 10000 });
+    if (response.status !== 200) {
+      throw new Error(`Status: ${response.status}`);
+    }
+  }, 'Frontend');
 
-  try {
-    // MongoDB health check
+  // Backend health check
+  results.backend = await checkWithRetry(async () => {
+    const response = await axios.get(`${E2E_CONFIG.backend.url}/health`, { timeout: 10000 });
+    if (response.status !== 200) {
+      throw new Error(`Status: ${response.status}`);
+    }
+  }, 'Backend');
+
+  // MongoDB health check
+  results.mongodb = await checkWithRetry(async () => {
     const mongoClient = new MongoClient(E2E_CONFIG.mongodb.url);
     await mongoClient.connect();
     await mongoClient.db().admin().ping();
     await mongoClient.close();
-    results.mongodb = true;
+  }, 'MongoDB');
+
+  // Redis health check
+  results.redis = await checkWithRetry(async () => {
+    const redisClient = Redis.createClient({ url: E2E_CONFIG.redis.url });
+    await redisClient.connect();
+    await redisClient.ping();
+    await redisClient.quit();
+  }, 'Redis');
   } catch (error) {
     console.warn('MongoDB health check failed:', error.message);
   }

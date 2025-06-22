@@ -70,8 +70,7 @@ class AuthService:
                 if response.status_code == 200:
                     return response.json()
                 else:
-                    logger.error(
-                        f"Auth0 userinfo error: {response.status_code}")
+                    logger.error(f"Auth0 userinfo error: {response.status_code}")
                     return None
 
         except Exception as e:
@@ -132,11 +131,7 @@ class AuthService:
 
             family = Family(
                 id=uuid4(),
-                name=(
-                    f"{db_user.name}'s Family"
-                    if db_user.name
-                    else f"{db_user.email}'s Family"
-                ),
+                name=(f"{db_user.name}'s Family" if db_user.name else f"{db_user.email}'s Family"),
                 description="Auto-created family",
                 admin_user_id=db_user.id,
                 created_at=datetime.utcnow(),
@@ -151,8 +146,7 @@ class AuthService:
                 id=uuid4(),
                 family_id=family.id,
                 user_id=db_user.id,
-                name=db_user.name if db_user.name else db_user.email.split(
-                    "@")[0],
+                name=db_user.name if db_user.name else db_user.email.split("@")[0],
                 role=FamilyRole.COORDINATOR,  # Map to existing family role system
                 is_active=True,
                 created_at=datetime.utcnow(),
@@ -163,9 +157,7 @@ class AuthService:
             await db.commit()
             await db.refresh(db_user)
 
-            logger.info(
-                f"Created user with auto-family: {db_user.email} (Family: {family.name})"
-            )
+            logger.info(f"Created user with auto-family: {db_user.email} (Family: {family.name})")
             return db_user
 
         except Exception as e:
@@ -183,9 +175,7 @@ class AuthService:
         result = await db.execute(select(User).filter(User.id == user_id))
         return result.scalar_one_or_none()
 
-    async def get_user_by_auth0_id(
-        self, db: AsyncSession, auth0_user_id: str
-    ) -> Optional[User]:
+    async def get_user_by_auth0_id(self, db: AsyncSession, auth0_user_id: str) -> Optional[User]:
         """Get user by Auth0 user ID."""
         result = await db.execute(select(User).filter(User.auth0_id == auth0_user_id))
         return result.scalar_one_or_none()
@@ -203,9 +193,7 @@ class AuthService:
 
             # Handle password update
             if "password" in update_data:
-                update_data["hashed_password"] = self.get_password_hash(
-                    update_data["password"]
-                )
+                update_data["hashed_password"] = self.get_password_hash(update_data["password"])
                 del update_data["password"]
 
             # Update fields
@@ -302,11 +290,8 @@ class AuthService:
                 # Update existing user with latest Auth0 info
                 update_data = UserUpdate(
                     full_name=user_info.get("name", user.full_name),
-                    profile_picture_url=user_info.get(
-                        "picture", user.profile_picture_url
-                    ),
-                    phone_number=user_info.get(
-                        "phone_number", user.phone_number),
+                    profile_picture_url=user_info.get("picture", user.profile_picture_url),
+                    phone_number=user_info.get("phone_number", user.phone_number),
                 )
                 user = self.update_user(db, user.id, update_data)
 
@@ -430,8 +415,7 @@ class AuthService:
                 if response.status_code == 200:
                     return response.json()
                 else:
-                    logger.error(
-                        f"Token exchange error: {response.status_code}")
+                    logger.error(f"Token exchange error: {response.status_code}")
                     return None
 
         except Exception as e:

@@ -54,11 +54,9 @@ class RouteRequest(BaseModel):
 
     origin: str = Field(..., description="Starting location")
     destination: str = Field(..., description="Ending location")
-    waypoints: Optional[List[str]] = Field(
-        None, description="Optional waypoints")
+    waypoints: Optional[List[str]] = Field(None, description="Optional waypoints")
     mode: str = Field("driving", description="Travel mode")
-    optimize_waypoints: bool = Field(
-        False, description="Optimize waypoint order")
+    optimize_waypoints: bool = Field(False, description="Optimize waypoint order")
 
 
 class RouteStepResponse(BaseModel):
@@ -86,8 +84,7 @@ class PlaceSearchRequest(BaseModel):
     """Request model for place search."""
 
     query: str = Field(..., description="Search query")
-    location: Optional[LocationResponse] = Field(
-        None, description="Center location")
+    location: Optional[LocationResponse] = Field(None, description="Center location")
     radius: int = Field(50000, description="Search radius in meters")
     place_type: Optional[str] = Field(None, description="Type of place")
 
@@ -183,9 +180,7 @@ async def reverse_geocode_coordinates(
 
     except Exception as e:
         logger.error(f"Error reverse geocoding coordinates {lat}, {lng}: {e}")
-        raise HTTPException(
-            status_code=500, detail="Error reverse geocoding coordinates"
-        )
+        raise HTTPException(status_code=500, detail="Error reverse geocoding coordinates")
 
 
 @router.post("/route", response_model=RouteResponse)
@@ -225,8 +220,7 @@ async def get_route(
                 instruction=step.instruction,
                 distance=step.distance,
                 duration=step.duration,
-                start_location=_convert_location_to_response(
-                    step.start_location),
+                start_location=_convert_location_to_response(step.start_location),
                 end_location=_convert_location_to_response(step.end_location),
             )
             for step in route.steps
@@ -242,9 +236,7 @@ async def get_route(
         )
 
     except Exception as e:
-        logger.error(
-            f"Error getting route from {request.origin} to {request.destination}: {e}"
-        )
+        logger.error(f"Error getting route from {request.origin} to {request.destination}: {e}")
         raise HTTPException(status_code=500, detail="Error getting route")
 
 
@@ -310,25 +302,20 @@ async def get_place_details(
         place = await maps_service.get_place_details(place_id)
 
         if not place:
-            raise HTTPException(
-                status_code=404, detail=f"Place not found: {place_id}")
+            raise HTTPException(status_code=404, detail=f"Place not found: {place_id}")
 
         return _convert_place_to_response(place)
 
     except Exception as e:
         logger.error(f"Error getting place details for {place_id}: {e}")
-        raise HTTPException(
-            status_code=500, detail="Error getting place details")
+        raise HTTPException(status_code=500, detail="Error getting place details")
 
 
 @router.get("/distance-matrix")
 async def get_distance_matrix(
     request: Request,
-    origins: str = Query(...,
-                         description="Comma-separated list of origin locations"),
-    destinations: str = Query(
-        ..., description="Comma-separated list of destination locations"
-    ),
+    origins: str = Query(..., description="Comma-separated list of origin locations"),
+    destinations: str = Query(..., description="Comma-separated list of destination locations"),
     mode: str = Query("driving", description="Travel mode"),
     current_user: User = Depends(require_permissions("maps", "read")),
 ):
@@ -353,15 +340,13 @@ async def get_distance_matrix(
         )
 
         if not matrix:
-            raise HTTPException(
-                status_code=404, detail="Distance matrix not available")
+            raise HTTPException(status_code=404, detail="Distance matrix not available")
 
         return matrix
 
     except Exception as e:
         logger.error(f"Error getting distance matrix: {e}")
-        raise HTTPException(
-            status_code=500, detail="Error getting distance matrix")
+        raise HTTPException(status_code=500, detail="Error getting distance matrix")
 
 
 @router.get("/nearby-attractions", response_model=List[PlaceResponse])
@@ -387,13 +372,10 @@ async def find_nearby_attractions(
     try:
         location = Location(lat=lat, lng=lng, address="")
 
-        places = await maps_service.find_nearby_attractions(
-            location=location, radius=radius
-        )
+        places = await maps_service.find_nearby_attractions(location=location, radius=radius)
 
         return [_convert_place_to_response(place) for place in places]
 
     except Exception as e:
         logger.error(f"Error finding nearby attractions: {e}")
-        raise HTTPException(
-            status_code=500, detail="Error finding nearby attractions")
+        raise HTTPException(status_code=500, detail="Error finding nearby attractions")

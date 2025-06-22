@@ -1,6 +1,7 @@
 """
 Unit tests for authentication endpoints.
 """
+
 import pytest
 from unittest.mock import AsyncMock, patch
 from datetime import datetime
@@ -20,7 +21,7 @@ class TestAuthEndpoints:
         """Test successful user registration."""
         # Create a mock user object that behaves like the User model
         from app.models.user import User
-        
+
         mock_user = User(
             id="test-user-id",  # String instead of UUID
             email="test@example.com",
@@ -31,7 +32,7 @@ class TestAuthEndpoints:
             is_verified=True,  # Add this required field
             created_at=datetime.utcnow(),
         )
-        
+
         # Mock the auth service instance
         mock_auth_service = AsyncMock()
         mock_auth_service.create_user = AsyncMock(return_value=mock_user)
@@ -82,7 +83,7 @@ class TestAuthEndpoints:
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
     def test_validate_token_success(self):
-        """Test successful token validation.""" 
+        """Test successful token validation."""
         # Skip this test for now as it requires complex auth setup
         # TODO: Implement proper auth mocking for validation endpoint
         pytest.skip("Validation endpoint requires complex auth setup - skip for now")
@@ -91,7 +92,7 @@ class TestAuthEndpoints:
     def test_logout_success(self, mock_auth_service_class):
         """Test successful logout."""
         # Skip this test for now as it requires complex auth setup
-        # TODO: Implement proper auth mocking for logout endpoint  
+        # TODO: Implement proper auth mocking for logout endpoint
         pytest.skip("Logout endpoint requires complex auth setup - skip for now")
 
     def test_register_invalid_format(self):
@@ -145,7 +146,7 @@ class TestEmailValidation:
         """Test valid email formats."""
         valid_emails = [
             "user@domain.com",
-            "user.name@domain.com", 
+            "user.name@domain.com",
             "user+tag@domain.co.uk",
             "user123@domain123.com",
         ]
@@ -153,7 +154,7 @@ class TestEmailValidation:
         for email in valid_emails:
             # Create a mock user object that behaves like the User model
             from app.models.user import User
-            
+
             mock_user = User(
                 id="test-user-id",
                 email=email,
@@ -164,7 +165,7 @@ class TestEmailValidation:
                 is_verified=True,
                 created_at=datetime.utcnow(),
             )
-            
+
             # Mock the auth service instance
             mock_auth_service = AsyncMock()
             mock_auth_service.create_user = AsyncMock(return_value=mock_user)

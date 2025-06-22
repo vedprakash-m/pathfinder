@@ -87,7 +87,7 @@ class TestAuthenticationIntegration:
     async def test_protected_endpoint_without_auth(self):
         """Test that protected endpoints require authentication."""
         async with AsyncClient(app=app, base_url="http://test") as client:
-            response = await client.get("/api/v1/trips")
+            response = await client.get("/api/v1/trips/")
             assert response.status_code == 401
 
     @pytest.mark.asyncio
@@ -95,14 +95,14 @@ class TestAuthenticationIntegration:
         """Test that invalid tokens are rejected."""
         headers = {"Authorization": "Bearer invalid-token"}
         async with AsyncClient(app=app, base_url="http://test") as client:
-            response = await client.get("/api/v1/trips", headers=headers)
+            response = await client.get("/api/v1/trips/", headers=headers)
             assert response.status_code == 401
 
     @pytest.mark.asyncio
     async def test_cors_headers_present(self):
         """Test that CORS headers are properly set."""
         async with AsyncClient(app=app, base_url="http://test") as client:
-            response = await client.options("/api/v1/trips")
+            response = await client.options("/api/v1/trips/")
 
             # Should include CORS headers
             assert "access-control-allow-origin" in response.headers
@@ -144,9 +144,7 @@ class TestTripAPIIntegration:
                 trip_id = created_trip["id"]
 
                 # 2. Read trip
-                get_response = await client.get(
-                    f"/api/v1/trips/{trip_id}", headers=headers
-                )
+                get_response = await client.get(f"/api/v1/trips/{trip_id}", headers=headers)
                 assert get_response.status_code == 200
 
                 retrieved_trip = get_response.json()
@@ -160,14 +158,11 @@ class TestTripAPIIntegration:
                 assert update_response.status_code == 200
 
                 # 4. Delete trip
-                delete_response = await client.delete(
-                    f"/api/v1/trips/{trip_id}", headers=headers
-                )
+                delete_response = await client.delete(f"/api/v1/trips/{trip_id}", headers=headers)
                 assert delete_response.status_code == 204
 
             except Exception as e:
-                pytest.skip(
-                    f"Trip API test requires full authentication setup: {e}")
+                pytest.skip(f"Trip API test requires full authentication setup: {e}")
 
     @pytest.mark.asyncio
     async def test_trip_validation_errors(self):
@@ -189,8 +184,7 @@ class TestTripAPIIntegration:
                 assert response.status_code == 422  # Validation error
 
             except Exception:
-                pytest.skip(
-                    "Trip validation test requires authentication setup")
+                pytest.skip("Trip validation test requires authentication setup")
 
     @pytest.mark.asyncio
     async def test_trip_list_pagination(self):
@@ -200,9 +194,7 @@ class TestTripAPIIntegration:
 
             try:
                 # Test with pagination parameters
-                response = await client.get(
-                    "/api/v1/trips?page=1&limit=10", headers=headers
-                )
+                response = await client.get("/api/v1/trips?page=1&limit=10", headers=headers)
 
                 if response.status_code == 401:
                     pytest.skip("Authentication required for pagination tests")
@@ -214,8 +206,7 @@ class TestTripAPIIntegration:
                 assert isinstance(trips_data, list) or "items" in trips_data
 
             except Exception:
-                pytest.skip(
-                    "Trip pagination test requires authentication setup")
+                pytest.skip("Trip pagination test requires authentication setup")
 
 
 @pytest.mark.integration
@@ -280,9 +271,7 @@ class TestFamilyAPIIntegration:
 
             try:
                 # Test invitation status endpoint
-                response = await client.get(
-                    "/api/v1/families/invitations", headers=headers
-                )
+                response = await client.get("/api/v1/families/invitations", headers=headers)
 
                 if response.status_code == 401:
                     pytest.skip("Authentication required for invitation tests")
@@ -291,8 +280,7 @@ class TestFamilyAPIIntegration:
                 assert response.status_code == 200
 
             except Exception:
-                pytest.skip(
-                    "Family invitation test requires authentication setup")
+                pytest.skip("Family invitation test requires authentication setup")
 
 
 @pytest.mark.integration
@@ -319,8 +307,7 @@ class TestAIServiceIntegration:
                 assert "daily_usage" in usage_data or "cost" in usage_data
 
             except Exception:
-                pytest.skip(
-                    "AI usage test requires authentication and service setup")
+                pytest.skip("AI usage test requires authentication and service setup")
 
     @pytest.mark.asyncio
     async def test_ai_itinerary_generation_endpoint(self):
@@ -346,8 +333,7 @@ class TestAIServiceIntegration:
                 )
 
                 if response.status_code == 401:
-                    pytest.skip(
-                        "Authentication required for AI generation tests")
+                    pytest.skip("Authentication required for AI generation tests")
 
                 # Should handle request appropriately
                 assert response.status_code in [
@@ -411,8 +397,7 @@ class TestDatabaseIntegration:
 
                 # Admin endpoints require special auth
                 if response.status_code == 401:
-                    pytest.skip(
-                        "Admin authentication required for migration tests")
+                    pytest.skip("Admin authentication required for migration tests")
 
                 assert response.status_code in [
                     200,

@@ -48,9 +48,7 @@ async def test_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    TestingSessionLocal = sessionmaker(
-        engine, class_=AsyncSession, expire_on_commit=False
-    )
+    TestingSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     async with TestingSessionLocal() as session:
         yield session
@@ -70,9 +68,7 @@ async def db_session():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    TestingSessionLocal = sessionmaker(
-        engine, class_=AsyncSession, expire_on_commit=False
-    )
+    TestingSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     async with TestingSessionLocal() as session:
         yield session
@@ -207,22 +203,14 @@ def mock_auth_dependency(mock_current_user):
         return mock_current_user
 
     # Override the authentication dependency - this is the key fix
-    app.dependency_overrides[require_permissions(
-        "trips", "create")] = get_mock_user
-    app.dependency_overrides[require_permissions(
-        "trips", "read")] = get_mock_user
-    app.dependency_overrides[require_permissions(
-        "trips", "update")] = get_mock_user
-    app.dependency_overrides[require_permissions(
-        "trips", "delete")] = get_mock_user
-    app.dependency_overrides[require_permissions(
-        "families", "create")] = get_mock_user
-    app.dependency_overrides[require_permissions(
-        "families", "read")] = get_mock_user
-    app.dependency_overrides[require_permissions(
-        "families", "update")] = get_mock_user
-    app.dependency_overrides[require_permissions(
-        "families", "delete")] = get_mock_user
+    app.dependency_overrides[require_permissions("trips", "create")] = get_mock_user
+    app.dependency_overrides[require_permissions("trips", "read")] = get_mock_user
+    app.dependency_overrides[require_permissions("trips", "update")] = get_mock_user
+    app.dependency_overrides[require_permissions("trips", "delete")] = get_mock_user
+    app.dependency_overrides[require_permissions("families", "create")] = get_mock_user
+    app.dependency_overrides[require_permissions("families", "read")] = get_mock_user
+    app.dependency_overrides[require_permissions("families", "update")] = get_mock_user
+    app.dependency_overrides[require_permissions("families", "delete")] = get_mock_user
 
     yield get_mock_user
 
@@ -296,11 +284,7 @@ def authenticated_client(mock_current_user):
         return mock_permission_checker
 
     # Patch the require_permissions function
-    with patch(
-        "app.core.zero_trust.require_permissions", side_effect=mock_require_permissions
-    ):
-        with patch(
-            "app.api.trips.require_permissions", side_effect=mock_require_permissions
-        ):
+    with patch("app.core.zero_trust.require_permissions", side_effect=mock_require_permissions):
+        with patch("app.api.trips.require_permissions", side_effect=mock_require_permissions):
             client = TestClient(app)
             yield client

@@ -86,16 +86,14 @@ class TestAuthEndpoints:
         """Test successful token validation."""
         # Skip this test for now as it requires complex auth setup
         # TODO: Implement proper auth mocking for validation endpoint
-        pytest.skip(
-            "Validation endpoint requires complex auth setup - skip for now")
+        pytest.skip("Validation endpoint requires complex auth setup - skip for now")
 
     @patch("app.api.auth.AuthService")
     def test_logout_success(self, mock_auth_service_class):
         """Test successful logout."""
         # Skip this test for now as it requires complex auth setup
         # TODO: Implement proper auth mocking for logout endpoint
-        pytest.skip(
-            "Logout endpoint requires complex auth setup - skip for now")
+        pytest.skip("Logout endpoint requires complex auth setup - skip for now")
 
     def test_register_invalid_format(self):
         """Test registration with invalid email format."""

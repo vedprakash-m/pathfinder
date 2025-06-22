@@ -88,9 +88,7 @@ async def generate_itinerary(
         # Verify trip exists and user has access
         trip = db.query(Trip).filter(Trip.id == trip_id).first()
         if not trip:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
 
         # Check if user is a participant
         participation = (
@@ -129,8 +127,7 @@ async def generate_itinerary(
                         else {}
                     ),
                     "budget_share": (
-                        float(trip.budget_total or 0) / \
-                              len(trip.participations)
+                        float(trip.budget_total or 0) / len(trip.participations)
                         if trip.budget_total
                         else None
                     ),
@@ -163,24 +160,20 @@ async def generate_itinerary(
             }
 
         # Generate itinerary using AI service with correct parameters
-        logger.info(
-            f"Generating itinerary for trip {trip_id} by user {current_user.id}"
-        )
+        logger.info(f"Generating itinerary for trip {trip_id} by user {current_user.id}")
         itinerary_data = await ai_service.generate_itinerary(
             destination=str(trip.destination),
             duration_days=duration_days,
             families_data=families_data,
             preferences=preferences,
-            budget_total=float(
-                trip.budget_total) if trip.budget_total else None,
+            budget_total=float(trip.budget_total) if trip.budget_total else None,
             user_id=str(current_user.id),
         )
 
         # Create itinerary response
         itinerary = GeneratedItinerary(
             trip_id=trip_id,
-            title=itinerary_data.get(
-                "title", f"Itinerary for {trip.destination}"),
+            title=itinerary_data.get("title", f"Itinerary for {trip.destination}"),
             description=itinerary_data.get("description"),
             days=[
                 ItineraryDay(
@@ -199,8 +192,7 @@ async def generate_itinerary(
         response = ItineraryResponse(
             itinerary=itinerary,
             alternatives=itinerary_data.get("alternatives"),
-            optimization_suggestions=itinerary_data.get(
-                "optimization_suggestions"),
+            optimization_suggestions=itinerary_data.get("optimization_suggestions"),
         )
 
         logger.info(f"Itinerary generated successfully for trip {trip_id}")
@@ -209,8 +201,7 @@ async def generate_itinerary(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(
-            f"Error generating itinerary for trip {trip_id}: {str(e)}")
+        logger.error(f"Error generating itinerary for trip {trip_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to generate itinerary",
@@ -232,9 +223,7 @@ async def customize_itinerary(
         # Verify trip access
         trip = db.query(Trip).filter(Trip.id == trip_id).first()
         if not trip:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
 
         participation = (
             db.query(TripParticipation)
@@ -262,17 +251,13 @@ async def customize_itinerary(
         }
 
         # Generate customized itinerary
-        logger.info(
-            f"Customizing itinerary for trip {trip_id} by user {current_user.id}"
-        )
+        logger.info(f"Customizing itinerary for trip {trip_id} by user {current_user.id}")
         itinerary_data = await ai_service.customize_itinerary(customization_context)
 
         # Create response
         itinerary = GeneratedItinerary(
             trip_id=trip_id,
-            title=itinerary_data.get(
-                "title", f"Customized Itinerary for {trip.destination}"
-            ),
+            title=itinerary_data.get("title", f"Customized Itinerary for {trip.destination}"),
             description=itinerary_data.get("description"),
             days=[
                 ItineraryDay(
@@ -292,8 +277,7 @@ async def customize_itinerary(
         response = ItineraryResponse(
             itinerary=itinerary,
             alternatives=itinerary_data.get("alternatives"),
-            optimization_suggestions=itinerary_data.get(
-                "optimization_suggestions"),
+            optimization_suggestions=itinerary_data.get("optimization_suggestions"),
         )
 
         logger.info(f"Itinerary customized successfully for trip {trip_id}")
@@ -302,8 +286,7 @@ async def customize_itinerary(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(
-            f"Error customizing itinerary for trip {trip_id}: {str(e)}")
+        logger.error(f"Error customizing itinerary for trip {trip_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to customize itinerary",
@@ -314,15 +297,9 @@ async def customize_itinerary(
 async def get_activity_suggestions(
     trip_id: int,
     request: Request,
-    activity_type: Optional[str] = Query(
-        None, description="Type of activity to suggest"
-    ),
-    location: Optional[str] = Query(
-        None, description="Specific location within trip destination"
-    ),
-    budget_range: Optional[str] = Query(
-        None, description="Budget range (low, medium, high)"
-    ),
+    activity_type: Optional[str] = Query(None, description="Type of activity to suggest"),
+    location: Optional[str] = Query(None, description="Specific location within trip destination"),
+    budget_range: Optional[str] = Query(None, description="Budget range (low, medium, high)"),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permissions("itineraries", "read")),
     ai_service: AIService = Depends(lambda: AIService()),
@@ -332,9 +309,7 @@ async def get_activity_suggestions(
         # Verify trip access
         trip = db.query(Trip).filter(Trip.id == trip_id).first()
         if not trip:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
 
         participation = (
             db.query(TripParticipation)
@@ -375,8 +350,7 @@ async def get_activity_suggestions(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(
-            f"Error getting activity suggestions for trip {trip_id}: {str(e)}")
+        logger.error(f"Error getting activity suggestions for trip {trip_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to get activity suggestions",
@@ -388,9 +362,7 @@ async def optimize_itinerary(
     trip_id: int,
     itinerary: Dict[str, Any],
     request: Request,
-    optimization_criteria: Optional[List[str]] = Query(
-        None, description="Optimization criteria"
-    ),
+    optimization_criteria: Optional[List[str]] = Query(None, description="Optimization criteria"),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permissions("itineraries", "update")),
     ai_service: AIService = Depends(lambda: AIService()),
@@ -400,9 +372,7 @@ async def optimize_itinerary(
         # Verify trip access
         trip = db.query(Trip).filter(Trip.id == trip_id).first()
         if not trip:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
 
         participation = (
             db.query(TripParticipation)
@@ -427,22 +397,17 @@ async def optimize_itinerary(
             "destination": trip.destination,
             "budget": trip.budget,
             "itinerary": itinerary,
-            "optimization_criteria": optimization_criteria
-            or ["cost", "time", "experience"],
+            "optimization_criteria": optimization_criteria or ["cost", "time", "experience"],
         }
 
         # Optimize itinerary
-        logger.info(
-            f"Optimizing itinerary for trip {trip_id} by user {current_user.id}"
-        )
+        logger.info(f"Optimizing itinerary for trip {trip_id} by user {current_user.id}")
         optimized_data = await ai_service.optimize_itinerary(optimization_context)
 
         # Create response
         optimized_itinerary = GeneratedItinerary(
             trip_id=trip_id,
-            title=optimized_data.get(
-                "title", f"Optimized Itinerary for {trip.destination}"
-            ),
+            title=optimized_data.get("title", f"Optimized Itinerary for {trip.destination}"),
             description=optimized_data.get("description"),
             days=[
                 ItineraryDay(
@@ -469,8 +434,7 @@ async def optimize_itinerary(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(
-            f"Error optimizing itinerary for trip {trip_id}: {str(e)}")
+        logger.error(f"Error optimizing itinerary for trip {trip_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to optimize itinerary",
@@ -494,9 +458,7 @@ async def get_itinerary_alternatives(
         # Verify trip access
         trip = db.query(Trip).filter(Trip.id == trip_id).first()
         if not trip:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
 
         participation = (
             db.query(TripParticipation)
@@ -560,9 +522,7 @@ async def get_itinerary_alternatives(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(
-            f"Error getting itinerary alternatives for trip {trip_id}: {str(e)}"
-        )
+        logger.error(f"Error getting itinerary alternatives for trip {trip_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to get itinerary alternatives",

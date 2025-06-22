@@ -121,25 +121,19 @@ class Reservation:
         self.status = getattr(self, "status", ReservationStatus.PENDING)
 
 
-@router.post(
-    "/", response_model=ReservationResponse, status_code=status.HTTP_201_CREATED
-)
+@router.post("/", response_model=ReservationResponse, status_code=status.HTTP_201_CREATED)
 async def create_reservation(
     reservation_data: ReservationCreate,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(
-        require_permissions("reservations", "create")),
+    current_user: User = Depends(require_permissions("reservations", "create")),
 ):
     """Create a new reservation for a trip."""
     try:
         # Verify trip exists and user has access
-        trip = db.query(Trip).filter(
-            Trip.id == reservation_data.trip_id).first()
+        trip = db.query(Trip).filter(Trip.id == reservation_data.trip_id).first()
         if not trip:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
 
         # Check if user is a participant
         participation = (
@@ -163,9 +157,7 @@ async def create_reservation(
         if reservation_data.participants:
             trip_participant_ids = [p.user_id for p in trip.participations]
             invalid_participants = [
-                p_id
-                for p_id in reservation_data.participants
-                if p_id not in trip_participant_ids
+                p_id for p_id in reservation_data.participants if p_id not in trip_participant_ids
             ]
 
             if invalid_participants:
@@ -225,15 +217,9 @@ async def get_trip_reservations(
     reservation_type: Optional[ReservationType] = Query(
         None, description="Filter by reservation type"
     ),
-    status_filter: Optional[ReservationStatus] = Query(
-        None, description="Filter by status"
-    ),
-    date_from: Optional[date] = Query(
-        None, description="Filter reservations from this date"
-    ),
-    date_to: Optional[date] = Query(
-        None, description="Filter reservations to this date"
-    ),
+    status_filter: Optional[ReservationStatus] = Query(None, description="Filter by status"),
+    date_from: Optional[date] = Query(None, description="Filter reservations from this date"),
+    date_to: Optional[date] = Query(None, description="Filter reservations to this date"),
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
@@ -244,9 +230,7 @@ async def get_trip_reservations(
         # Verify trip access
         trip = db.query(Trip).filter(Trip.id == trip_id).first()
         if not trip:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
 
         participation = (
             db.query(TripParticipation)
@@ -347,14 +331,10 @@ async def get_trip_reservations(
             ]
 
         if date_from:
-            filtered_reservations = [
-                r for r in filtered_reservations if r["date"] >= date_from
-            ]
+            filtered_reservations = [r for r in filtered_reservations if r["date"] >= date_from]
 
         if date_to:
-            filtered_reservations = [
-                r for r in filtered_reservations if r["date"] <= date_to
-            ]
+            filtered_reservations = [r for r in filtered_reservations if r["date"] <= date_to]
 
         # Apply pagination
         paginated_reservations = filtered_reservations[skip : skip + limit]
@@ -364,8 +344,7 @@ async def get_trip_reservations(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(
-            f"Error fetching reservations for trip {trip_id}: {str(e)}")
+        logger.error(f"Error fetching reservations for trip {trip_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to fetch reservations",
@@ -416,12 +395,9 @@ async def get_reservation(
         }
 
         # Verify trip access
-        trip = db.query(Trip).filter(
-            Trip.id == mock_reservation["trip_id"]).first()
+        trip = db.query(Trip).filter(Trip.id == mock_reservation["trip_id"]).first()
         if not trip:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
 
         participation = (
             db.query(TripParticipation)
@@ -458,8 +434,7 @@ async def update_reservation(
     reservation_data: ReservationUpdate,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(
-        require_permissions("reservations", "update")),
+    current_user: User = Depends(require_permissions("reservations", "update")),
 ):
     """Update a reservation."""
     try:
@@ -498,12 +473,9 @@ async def update_reservation(
         }
 
         # Verify trip access
-        trip = db.query(Trip).filter(
-            Trip.id == mock_reservation["trip_id"]).first()
+        trip = db.query(Trip).filter(Trip.id == mock_reservation["trip_id"]).first()
         if not trip:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
 
         participation = (
             db.query(TripParticipation)
@@ -541,8 +513,7 @@ async def update_reservation(
             mock_reservation["participants"] = participant_details
             mock_reservation["participant_count"] = len(participant_details)
 
-        logger.info(
-            f"Reservation {reservation_id} updated by user {current_user.id}")
+        logger.info(f"Reservation {reservation_id} updated by user {current_user.id}")
 
         return ReservationResponse(**mock_reservation)
 
@@ -561,8 +532,7 @@ async def cancel_reservation(
     reservation_id: int,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(
-        require_permissions("reservations", "delete")),
+    current_user: User = Depends(require_permissions("reservations", "delete")),
 ):
     """Cancel a reservation."""
     try:
@@ -574,12 +544,9 @@ async def cancel_reservation(
         }
 
         # Verify trip access and permissions
-        trip = db.query(Trip).filter(
-            Trip.id == mock_reservation["trip_id"]).first()
+        trip = db.query(Trip).filter(Trip.id == mock_reservation["trip_id"]).first()
         if not trip:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
 
         participation = (
             db.query(TripParticipation)
@@ -599,24 +566,19 @@ async def cancel_reservation(
             )
 
         # Additional check: only creator or trip admin can cancel
-        if (
-            mock_reservation["created_by"] != current_user.id
-            and participation.role != "admin"
-        ):
+        if mock_reservation["created_by"] != current_user.id and participation.role != "admin":
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only reservation creator or trip admin can cancel reservations",
             )
 
         # Cancel reservation (mock implementation)
-        logger.info(
-            f"Reservation {reservation_id} cancelled by user {current_user.id}")
+        logger.info(f"Reservation {reservation_id} cancelled by user {current_user.id}")
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(
-            f"Error cancelling reservation {reservation_id}: {str(e)}")
+        logger.error(f"Error cancelling reservation {reservation_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to cancel reservation",
@@ -629,8 +591,7 @@ async def add_participants(
     participant_ids: List[int],
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(
-        require_permissions("reservations", "update")),
+    current_user: User = Depends(require_permissions("reservations", "update")),
 ):
     """Add participants to a reservation."""
     try:
@@ -666,12 +627,9 @@ async def add_participants(
         }
 
         # Verify trip access
-        trip = db.query(Trip).filter(
-            Trip.id == mock_reservation["trip_id"]).first()
+        trip = db.query(Trip).filter(Trip.id == mock_reservation["trip_id"]).first()
         if not trip:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
 
         participation = (
             db.query(TripParticipation)
@@ -694,8 +652,7 @@ async def add_participants(
         current_participants = len(mock_reservation["participants"])
         if (
             mock_reservation["capacity"]
-            and current_participants + len(participant_ids)
-            > mock_reservation["capacity"]
+            and current_participants + len(participant_ids) > mock_reservation["capacity"]
         ):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -713,42 +670,33 @@ async def add_participants(
                     }
                 )
 
-        mock_reservation["participant_count"] = len(
-            mock_reservation["participants"])
+        mock_reservation["participant_count"] = len(mock_reservation["participants"])
         mock_reservation["total_cost"] = (
-            mock_reservation["participant_count"] * \
-                mock_reservation["cost_per_person"]
+            mock_reservation["participant_count"] * mock_reservation["cost_per_person"]
         )
         mock_reservation["updated_at"] = datetime.utcnow()
 
-        logger.info(
-            f"Participants added to reservation {reservation_id} by user {current_user.id}"
-        )
+        logger.info(f"Participants added to reservation {reservation_id} by user {current_user.id}")
 
         return ReservationResponse(**mock_reservation)
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(
-            f"Error adding participants to reservation {reservation_id}: {str(e)}"
-        )
+        logger.error(f"Error adding participants to reservation {reservation_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to add participants",
         )
 
 
-@router.delete(
-    "/{reservation_id}/participants/{user_id}", response_model=ReservationResponse
-)
+@router.delete("/{reservation_id}/participants/{user_id}", response_model=ReservationResponse)
 async def remove_participant(
     reservation_id: int,
     user_id: int,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(
-        require_permissions("reservations", "update")),
+    current_user: User = Depends(require_permissions("reservations", "update")),
 ):
     """Remove a participant from a reservation."""
     try:
@@ -789,12 +737,9 @@ async def remove_participant(
         }
 
         # Verify trip access
-        trip = db.query(Trip).filter(
-            Trip.id == mock_reservation["trip_id"]).first()
+        trip = db.query(Trip).filter(Trip.id == mock_reservation["trip_id"]).first()
         if not trip:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
 
         participation = (
             db.query(TripParticipation)
@@ -818,11 +763,9 @@ async def remove_participant(
             p for p in mock_reservation["participants"] if p["id"] != user_id
         ]
 
-        mock_reservation["participant_count"] = len(
-            mock_reservation["participants"])
+        mock_reservation["participant_count"] = len(mock_reservation["participants"])
         mock_reservation["total_cost"] = (
-            mock_reservation["participant_count"] * \
-                mock_reservation["cost_per_person"]
+            mock_reservation["participant_count"] * mock_reservation["cost_per_person"]
         )
         mock_reservation["updated_at"] = datetime.utcnow()
 
@@ -835,9 +778,7 @@ async def remove_participant(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(
-            f"Error removing participant from reservation {reservation_id}: {str(e)}"
-        )
+        logger.error(f"Error removing participant from reservation {reservation_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to remove participant",

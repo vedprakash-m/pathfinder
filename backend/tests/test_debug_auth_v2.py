@@ -39,8 +39,7 @@ def test_debug_auth_response(mock_current_user):
 
         def mock_permission_func(resource_type: str, action: str):
             async def permission_checker(*args, **kwargs):
-                print(
-                    f"Mock permission checker called for {resource_type}:{action}")
+                print(f"Mock permission checker called for {resource_type}:{action}")
                 return test_user
 
             return permission_checker
@@ -48,9 +47,7 @@ def test_debug_auth_response(mock_current_user):
         mock_require.side_effect = mock_permission_func
 
         # Also patch the imports in the trips module
-        with patch(
-            "app.api.trips.require_permissions", side_effect=mock_permission_func
-        ):
+        with patch("app.api.trips.require_permissions", side_effect=mock_permission_func):
             client = TestClient(app)
 
             trip_data = {
@@ -119,8 +116,7 @@ def test_direct_zero_trust_bypass():
 
                 # Add Authorization header
                 headers = {"Authorization": "Bearer mock-token"}
-                response = client.post(
-                    "/api/v1/trips", json=trip_data, headers=headers)
+                response = client.post("/api/v1/trips", json=trip_data, headers=headers)
 
                 print(f"Bypass response status: {response.status_code}")
                 print(f"Bypass response content: {response.content}")

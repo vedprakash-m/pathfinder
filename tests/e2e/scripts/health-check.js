@@ -9,6 +9,33 @@ const E2E_CONFIG = {
   redis: process.env.REDIS_URL || 'redis://localhost:6380',
 };
 
+// Add timeout and retry configuration
+const HEALTH_CHECK_CONFIG = {
+  timeout: 10000,
+  retries: 3,
+  retryDelay: 2000,
+};
+
+async function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function checkWithRetry(checkFn, name, retries = HEALTH_CHECK_CONFIG.retries) {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      await checkFn();
+      return true;
+    } catch (error) {
+      if (i === retries) {
+        console.log(`❌ ${name}: ${error.message}`);
+        return false;
+      }
+      console.log(`⏳ ${name}: Attempt ${i + 1}/${retries + 1} failed, retrying...`);
+      await delay(HEALTH_CHECK_CONFIG.retryDelay);
+    }
+  }
+}
+
 async function healthCheck() {
   console.log('🏥 Performing health checks...');
   
@@ -19,48 +46,58 @@ async function healthCheck() {
     redis: false,
   };
 
-  // Frontend health check
-  try {
-    const response = await axios.get(E2E_CONFIG.frontend, { timeout: 5000 });
-    results.frontend = response.status === 200;
+  // Frontend health check with retry
+  results.frontend = await checkWithRetry(async () => {
+    const response = await axios.get(E2E_CONFIG.frontend, { 
+      timeout: HEALTH_CHECK_CONFIG.timeout 
+    });
+    if (response.status !== 200) {
+      throw new Error(`Status: ${response.status}`);
+    }
+  }, 'Frontend');
+
+  if (results.frontend) {
     console.log(`✅ Frontend: ${E2E_CONFIG.frontend}`);
-  } catch (error) {
-    console.log(`❌ Frontend: ${E2E_CONFIG.frontend} - ${error.message}`);
   }
 
-  // Backend health check
-  try {
-    const response = await axios.get(`${E2E_CONFIG.backend}/health`, { timeout: 5000 });
-    results.backend = response.status === 200;
+  // Backend health check with retry
+  results.backend = await checkWithRetry(async () => {
+    const response = await axios.get(`${E2E_CONFIG.backend}/health`, { 
+      timeout: HEALTH_CHECK_CONFIG.timeout 
+    });
+    if (response.status !== 200) {
+      throw new Error(`Status: ${response.status}`);
+    }
+  }, 'Backend');
+
+  if (results.backend) {
     console.log(`✅ Backend: ${E2E_CONFIG.backend}/health`);
-  } catch (error) {
-    console.log(`❌ Backend: ${E2E_CONFIG.backend}/health - ${error.message}`);
   }
 
-  // MongoDB health check
-  try {
+  // MongoDB health check with retry
+  results.mongodb = await checkWithRetry(async () => {
     const { MongoClient } = require('mongodb');
     const client = new MongoClient(E2E_CONFIG.mongodb);
     await client.connect();
     await client.db().admin().ping();
     await client.close();
-    results.mongodb = true;
+  }, 'MongoDB');
+
+  if (results.mongodb) {
     console.log(`✅ MongoDB: ${E2E_CONFIG.mongodb}`);
-  } catch (error) {
-    console.log(`❌ MongoDB: ${E2E_CONFIG.mongodb} - ${error.message}`);
   }
 
-  // Redis health check
-  try {
+  // Redis health check with retry
+  results.redis = await checkWithRetry(async () => {
     const redis = require('redis');
     const client = redis.createClient({ url: E2E_CONFIG.redis });
     await client.connect();
     await client.ping();
     await client.quit();
-    results.redis = true;
+  }, 'Redis');
+
+  if (results.redis) {
     console.log(`✅ Redis: ${E2E_CONFIG.redis}`);
-  } catch (error) {
-    console.log(`❌ Redis: ${E2E_CONFIG.redis} - ${error.message}`);
   }
 
   const allHealthy = Object.values(results).every(Boolean);

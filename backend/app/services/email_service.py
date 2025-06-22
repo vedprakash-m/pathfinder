@@ -43,9 +43,7 @@ class EmailNotificationService:
         """Setup email client (SendGrid or SMTP)."""
         if settings.SENDGRID_API_KEY:
             try:
-                self.sendgrid_client = SendGridAPIClient(
-                    api_key=settings.SENDGRID_API_KEY
-                )
+                self.sendgrid_client = SendGridAPIClient(api_key=settings.SENDGRID_API_KEY)
                 logger.info("SendGrid client initialized")
             except Exception as e:
                 logger.error(f"Failed to initialize SendGrid client: {e}")
@@ -327,8 +325,7 @@ class EmailNotificationService:
             html_content = template.render(
                 trip_name=trip_data.get("name", "Your Trip"),
                 destination=trip_data.get("destination", "Unknown"),
-                duration_days=itinerary_summary.get(
-                    "duration_days", "Unknown"),
+                duration_days=itinerary_summary.get("duration_days", "Unknown"),
                 activity_count=itinerary_summary.get("activity_count", 0),
                 estimated_budget=itinerary_summary.get("estimated_budget", 0),
                 itinerary_link=itinerary_link,
@@ -345,8 +342,7 @@ class EmailNotificationService:
             )
 
             if success:
-                logger.info(
-                    f"Itinerary ready notification sent to {recipient_email}")
+                logger.info(f"Itinerary ready notification sent to {recipient_email}")
 
             return success
 
@@ -380,7 +376,9 @@ class EmailNotificationService:
                 trip_link=trip_link,
             )
 
-            subject = f"Trip Reminder: {trip_data.get('name', 'Your Trip')} - {days_until} days to go!"
+            subject = (
+                f"Trip Reminder: {trip_data.get('name', 'Your Trip')} - {days_until} days to go!"
+            )
 
             success = await self._send_email(
                 to_email=recipient_email,
@@ -414,8 +412,7 @@ class EmailNotificationService:
                 current_usage=alert_data.get("current_usage", 0),
                 limit=alert_data.get("limit", 0),
                 severity=alert_data.get("severity", "medium").upper(),
-                timestamp=alert_data.get(
-                    "timestamp", datetime.now().isoformat()),
+                timestamp=alert_data.get("timestamp", datetime.now().isoformat()),
             )
 
             subject = f"ALERT: {alert_data.get('service', 'Service')} Budget Threshold Reached"
@@ -432,9 +429,7 @@ class EmailNotificationService:
                 if success:
                     success_count += 1
 
-            logger.info(
-                f"Cost alert sent to {success_count}/{len(admin_emails)} administrators"
-            )
+            logger.info(f"Cost alert sent to {success_count}/{len(admin_emails)} administrators")
             return success_count > 0
 
         except Exception as e:
@@ -477,8 +472,7 @@ class EmailNotificationService:
                     attachment_type,
                 )
             else:
-                logger.error(
-                    "No email service configured for attachment sending")
+                logger.error("No email service configured for attachment sending")
                 return False
 
         except Exception as e:
@@ -497,13 +491,9 @@ class EmailNotificationService:
 
         try:
             if self.sendgrid_client:
-                return await self._send_sendgrid_email(
-                    to_email, to_name, subject, html_content
-                )
+                return await self._send_sendgrid_email(to_email, to_name, subject, html_content)
             elif self.smtp_config:
-                return await self._send_smtp_email(
-                    to_email, to_name, subject, html_content
-                )
+                return await self._send_smtp_email(to_email, to_name, subject, html_content)
             else:
                 logger.error(f"No email service configured for {email_type}")
                 return False
@@ -533,9 +523,7 @@ class EmailNotificationService:
             if response.status_code in [200, 201, 202]:
                 return True
             else:
-                logger.error(
-                    f"SendGrid error: {response.status_code} - {response.body}"
-                )
+                logger.error(f"SendGrid error: {response.status_code} - {response.body}")
                 return False
 
         except Exception as e:
@@ -559,13 +547,10 @@ class EmailNotificationService:
             html_part = MIMEText(html_content, "html")
             msg.attach(html_part)
 
-            with smtplib.SMTP(
-                self.smtp_config["host"], self.smtp_config["port"]
-            ) as server:
+            with smtplib.SMTP(self.smtp_config["host"], self.smtp_config["port"]) as server:
                 if self.smtp_config["use_tls"]:
                     server.starttls()
-                server.login(
-                    self.smtp_config["username"], self.smtp_config["password"])
+                server.login(self.smtp_config["username"], self.smtp_config["password"])
                 server.send_message(msg)
 
             return True
@@ -614,8 +599,7 @@ class EmailNotificationService:
             if response.status_code in [200, 201, 202]:
                 return True
             else:
-                logger.error(
-                    f"SendGrid attachment error: {response.status_code}")
+                logger.error(f"SendGrid attachment error: {response.status_code}")
                 return False
 
         except Exception as e:
@@ -656,13 +640,10 @@ class EmailNotificationService:
             )
             msg.attach(attachment_part)
 
-            with smtplib.SMTP(
-                self.smtp_config["host"], self.smtp_config["port"]
-            ) as server:
+            with smtplib.SMTP(self.smtp_config["host"], self.smtp_config["port"]) as server:
                 if self.smtp_config["use_tls"]:
                     server.starttls()
-                server.login(
-                    self.smtp_config["username"], self.smtp_config["password"])
+                server.login(self.smtp_config["username"], self.smtp_config["password"])
                 server.send_message(msg)
 
             return True
@@ -704,9 +685,7 @@ class EmailNotificationService:
             )
 
             if success:
-                logger.info(
-                    f"Family invitation sent to {recipient_email} for family {family_name}"
-                )
+                logger.info(f"Family invitation sent to {recipient_email} for family {family_name}")
 
             return success
 

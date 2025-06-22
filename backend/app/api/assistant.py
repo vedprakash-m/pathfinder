@@ -21,37 +21,26 @@ router = APIRouter(prefix="/api/assistant", tags=["assistant"])
 class MentionRequest(BaseModel):
     """Request model for @pathfinder mentions"""
 
-    message: str = Field(...,
-                         description="The message containing @pathfinder mention")
-    context: Dict[str, Any] = Field(
-        default_factory=dict, description="Current context information"
-    )
-    trip_id: Optional[str] = Field(
-        None, description="Current trip ID if applicable")
-    family_id: Optional[str] = Field(
-        None, description="Current family ID if applicable"
-    )
+    message: str = Field(..., description="The message containing @pathfinder mention")
+    context: Dict[str, Any] = Field(default_factory=dict, description="Current context information")
+    trip_id: Optional[str] = Field(None, description="Current trip ID if applicable")
+    family_id: Optional[str] = Field(None, description="Current family ID if applicable")
 
 
 class FeedbackRequest(BaseModel):
     """Request model for assistant feedback"""
 
-    interaction_id: str = Field(...,
-                                description="ID of the assistant interaction")
+    interaction_id: str = Field(..., description="ID of the assistant interaction")
     rating: int = Field(..., ge=1, le=5, description="Rating from 1-5 stars")
-    feedback_text: Optional[str] = Field(
-        None, description="Optional feedback text")
+    feedback_text: Optional[str] = Field(None, description="Optional feedback text")
 
 
 class SuggestionsRequest(BaseModel):
     """Request model for contextual suggestions"""
 
-    context: Dict[str, Any] = Field(
-        default_factory=dict, description="Current context information"
-    )
+    context: Dict[str, Any] = Field(default_factory=dict, description="Current context information")
     page: Optional[str] = Field(None, description="Current page/route")
-    trip_id: Optional[str] = Field(
-        None, description="Current trip ID if applicable")
+    trip_id: Optional[str] = Field(None, description="Current trip ID if applicable")
 
 
 @router.post("/mention")
@@ -89,14 +78,11 @@ async def process_mention(
                 },
             }
         else:
-            raise HTTPException(
-                status_code=400, detail=result.get("error", "Unknown error")
-            )
+            raise HTTPException(status_code=400, detail=result.get("error", "Unknown error"))
 
     except Exception as e:
         logger.error(f"Error processing mention: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail=f"Assistant error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Assistant error: {str(e)}")
 
 
 @router.get("/suggestions")
@@ -132,8 +118,7 @@ async def get_contextual_suggestions(
 
     except Exception as e:
         logger.error(f"Error getting suggestions: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail=f"Suggestions error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Suggestions error: {str(e)}")
 
 
 @router.post("/feedback")
@@ -154,15 +139,13 @@ async def provide_feedback(
         if success:
             return {"success": True, "message": "Feedback submitted successfully"}
         else:
-            raise HTTPException(
-                status_code=404, detail="Interaction not found")
+            raise HTTPException(status_code=404, detail="Interaction not found")
 
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error providing feedback: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail=f"Feedback error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Feedback error: {str(e)}")
 
 
 @router.get("/interactions/history")
@@ -185,10 +168,7 @@ async def get_interaction_history(
             query = query.filter(AssistantInteraction.trip_id == trip_id)
 
         interactions = (
-            query.order_by(AssistantInteraction.created_at.desc())
-            .offset(offset)
-            .limit(limit)
-            .all()
+            query.order_by(AssistantInteraction.created_at.desc()).offset(offset).limit(limit).all()
         )
 
         return {
@@ -222,8 +202,7 @@ async def get_interaction_details(
         )
 
         if not interaction:
-            raise HTTPException(
-                status_code=404, detail="Interaction not found")
+            raise HTTPException(status_code=404, detail="Interaction not found")
 
         # Get response cards
         response_cards = (
@@ -243,8 +222,7 @@ async def get_interaction_details(
         raise
     except Exception as e:
         logger.error(f"Error getting interaction details: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail=f"Interaction error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Interaction error: {str(e)}")
 
 
 @router.post("/cards/{card_id}/dismiss")
@@ -269,8 +247,7 @@ async def dismiss_response_card(
         )
 
         if not card:
-            raise HTTPException(
-                status_code=404, detail="Response card not found")
+            raise HTTPException(status_code=404, detail="Response card not found")
 
         card.is_dismissed = True
         db.commit()

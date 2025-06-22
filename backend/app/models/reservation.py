@@ -81,17 +81,13 @@ class Reservation(Base):
 
     # Reservation details
     type = Column(SQLEnum(ReservationType), nullable=False)
-    status = Column(SQLEnum(ReservationStatus),
-                    default=ReservationStatus.PENDING)
-    payment_status = Column(SQLEnum(PaymentStatus),
-                            default=PaymentStatus.UNPAID)
+    status = Column(SQLEnum(ReservationStatus), default=ReservationStatus.PENDING)
+    payment_status = Column(SQLEnum(PaymentStatus), default=PaymentStatus.UNPAID)
 
     # Basic information
     name = Column(String(200), nullable=False)
     description = Column(Text, nullable=True)
-    provider_name = Column(
-        String(200), nullable=True
-    )  # Hotel name, restaurant name, etc.
+    provider_name = Column(String(200), nullable=True)  # Hotel name, restaurant name, etc.
 
     # Location information
     location_name = Column(String(200), nullable=True)
@@ -143,8 +139,7 @@ class Reservation(Base):
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow,
-                        onupdate=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     cancelled_at = Column(DateTime, nullable=True)
 
     # Relationships
@@ -159,14 +154,11 @@ class ReservationDocument(Base):
     __tablename__ = "reservation_documents"
 
     id = Column(GUID(), primary_key=True, default=uuid4)
-    reservation_id = Column(GUID(), ForeignKey(
-        "reservations.id"), nullable=False)
+    reservation_id = Column(GUID(), ForeignKey("reservations.id"), nullable=False)
 
     # Document details
     name = Column(String(200), nullable=False)
-    document_type = Column(
-        String(50), nullable=False
-    )  # confirmation, ticket, receipt, etc.
+    document_type = Column(String(50), nullable=False)  # confirmation, ticket, receipt, etc.
     file_path = Column(String(500), nullable=True)
     file_url = Column(Text, nullable=True)
     file_size = Column(Integer, nullable=True)

@@ -19,12 +19,8 @@ logger = get_logger(__name__)
 settings = get_settings()
 
 
-@conditional_task(
-    bind=True, name="app.tasks.ai_tasks.generate_itinerary_async", max_retries=3
-)
-def generate_itinerary_async(
-    self, trip_id: str, preferences: Dict[str, Any], user_id: str
-):
+@conditional_task(bind=True, name="app.tasks.ai_tasks.generate_itinerary_async", max_retries=3)
+def generate_itinerary_async(self, trip_id: str, preferences: Dict[str, Any], user_id: str):
     """
     Generate trip itinerary asynchronously.
 
@@ -45,9 +41,7 @@ def generate_itinerary_async(
             raise
 
 
-async def _generate_itinerary_async(
-    trip_id: str, preferences: Dict[str, Any], user_id: str
-):
+async def _generate_itinerary_async(trip_id: str, preferences: Dict[str, Any], user_id: str):
     """Internal async function for itinerary generation."""
     async for db in get_db():
         try:
@@ -74,12 +68,8 @@ async def _generate_itinerary_async(
                     if member.is_active:
                         member_data = {
                             "age": member.age,
-                            "dietary_restrictions": json.loads(
-                                member.dietary_restrictions or "[]"
-                            ),
-                            "accessibility_needs": json.loads(
-                                member.accessibility_needs or "[]"
-                            ),
+                            "dietary_restrictions": json.loads(member.dietary_restrictions or "[]"),
+                            "accessibility_needs": json.loads(member.accessibility_needs or "[]"),
                         }
                         family_data["members"].append(member_data)
 
@@ -149,12 +139,9 @@ def optimize_itinerary_async(self, trip_id: str, optimization_type: str, user_id
     Optimize existing itinerary based on new constraints or preferences.
     """
     try:
-        return run_async_task(
-            _optimize_itinerary_async(trip_id, optimization_type, user_id)
-        )
+        return run_async_task(_optimize_itinerary_async(trip_id, optimization_type, user_id))
     except Exception as exc:
-        logger.error(
-            f"Itinerary optimization failed for trip {trip_id}: {exc}")
+        logger.error(f"Itinerary optimization failed for trip {trip_id}: {exc}")
         if hasattr(self, "retry"):
             raise self.retry(exc=exc, countdown=30 * (2**self.request.retries))
         else:
@@ -183,9 +170,7 @@ async def _optimize_itinerary_async(trip_id: str, optimization_type: str, user_i
                 )
 
                 # Save optimized version
-                await cosmos_ops.save_itinerary(
-                    trip_id, optimized_itinerary, version="optimized"
-                )
+                await cosmos_ops.save_itinerary(trip_id, optimized_itinerary, version="optimized")
 
                 # Notify participants
                 from app.api.websocket import websocket_manager
@@ -242,8 +227,7 @@ async def _generate_daily_cost_report():
                 "total_requests": usage_data.get("requests", 0),
                 "models_used": usage_data.get("models", {}),
                 "budget_limit": settings.AI_DAILY_BUDGET_LIMIT,
-                "budget_remaining": settings.AI_DAILY_BUDGET_LIMIT
-                - usage_data.get("cost", 0),
+                "budget_remaining": settings.AI_DAILY_BUDGET_LIMIT - usage_data.get("cost", 0),
                 "generated_at": datetime.now(timezone.utc).isoformat(),
             }
 

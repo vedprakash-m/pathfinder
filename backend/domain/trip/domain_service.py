@@ -337,21 +337,26 @@ class TripDomainService:  # pragma: no cover – thin façade for now
         try:
             # Check if the trip is in a session that's still active
             from sqlalchemy.inspection import inspect
+
             state = inspect(trip)
-            
+
             # If the participations haven't been loaded yet, assume empty for new trips
-            if 'participations' in state.unloaded:
+            if "participations" in state.unloaded:
                 participations = []
             else:
                 # If already loaded, use the loaded value
                 participations = getattr(trip, "participations", []) or []
-                
+
         except Exception:
             # Fallback to empty list for new trips to avoid any session issues
             participations = []
-            
+
         family_count = len(participations)
-        confirmed = [p for p in participations if hasattr(p, 'status') and p.status == ParticipationStatus.CONFIRMED]
+        confirmed = [
+            p
+            for p in participations
+            if hasattr(p, "status") and p.status == ParticipationStatus.CONFIRMED
+        ]
 
         completion = self._calculate_completion_percentage(trip, participations)
 

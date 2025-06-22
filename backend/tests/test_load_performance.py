@@ -41,9 +41,7 @@ class LoadTestMetrics:
 
         return {
             "total_requests": len(self.response_times),
-            "successful_requests": sum(
-                1 for code in self.status_codes if 200 <= code < 300
-            ),
+            "successful_requests": sum(1 for code in self.status_codes if 200 <= code < 300),
             "error_rate": len(self.errors) / len(self.response_times),
             "avg_response_time": statistics.mean(self.response_times),
             "min_response_time": min(self.response_times),
@@ -105,11 +103,8 @@ class TestLoadPerformance:
             return results
 
         # Run concurrent user sessions
-        with concurrent.futures.ThreadPoolExecutor(
-            max_workers=concurrent_users
-        ) as executor:
-            futures = [executor.submit(user_session)
-                                       for _ in range(concurrent_users)]
+        with concurrent.futures.ThreadPoolExecutor(max_workers=concurrent_users) as executor:
+            futures = [executor.submit(user_session) for _ in range(concurrent_users)]
 
             for future in concurrent.futures.as_completed(futures):
                 try:
@@ -127,13 +122,10 @@ class TestLoadPerformance:
 
         # Performance assertions
         assert (
-            summary["total_requests"] >= concurrent_users * \
-                requests_per_user * 0.8
+            summary["total_requests"] >= concurrent_users * requests_per_user * 0.8
         )  # Allow some failures
         assert summary["error_rate"] < 0.1  # Less than 10% error rate
-        assert (
-            summary["avg_response_time"] < 2.0
-        )  # Average response time under 2 seconds
+        assert summary["avg_response_time"] < 2.0  # Average response time under 2 seconds
 
         print(f"Load test summary: {summary}")
 
@@ -152,9 +144,7 @@ class TestLoadPerformance:
 
         while time.time() - start_time < duration_seconds:
             result = simulate_user_request("/health")
-            metrics.add_response(
-                result["response_time"], result["status_code"], result["error"]
-            )
+            metrics.add_response(result["response_time"], result["status_code"], result["error"])
 
             request_count += 1
 
@@ -168,9 +158,7 @@ class TestLoadPerformance:
 
         # Performance assertions
         assert summary["error_rate"] < 0.05  # Less than 5% error rate
-        assert (
-            summary["avg_response_time"] < 1.0
-        )  # Average response time under 1 second
+        assert summary["avg_response_time"] < 1.0  # Average response time under 1 second
         # 95th percentile under 2 seconds
         assert summary["p95_response_time"] < 2.0
 
@@ -262,8 +250,7 @@ class TestResourceLimits:
         for i in range(30):
             response = client.get("/health")
             # Should handle rapid requests without crashing
-            assert response.status_code in [
-                200, 429, 503]  # Allow rate limiting
+            assert response.status_code in [200, 429, 503]  # Allow rate limiting
 
 
 # Skip all tests if app is not available

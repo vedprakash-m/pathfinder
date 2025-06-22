@@ -57,8 +57,7 @@ class User(Base):
         "Family", foreign_keys="Family.admin_user_id", back_populates="admin"
     )
     family_memberships = relationship("FamilyMember", back_populates="user")
-    trip_participations = relationship(
-        "TripParticipation", back_populates="user")
+    trip_participations = relationship("TripParticipation", back_populates="user")
     created_trips = relationship("Trip", back_populates="creator")
     notifications = relationship("Notification", back_populates="user")
 

@@ -41,12 +41,9 @@ class CosmosDBService(Generic[T]):
 
         # In production environments, connect to actual Cosmos DB
         try:
-            self.client = CosmosClient(
-                settings.COSMOS_DB_URL, credential=settings.COSMOS_DB_KEY
-            )
+            self.client = CosmosClient(settings.COSMOS_DB_URL, credential=settings.COSMOS_DB_KEY)
 
-            self.database = self.client.get_database_client(
-                settings.COSMOS_DB_DATABASE)
+            self.database = self.client.get_database_client(settings.COSMOS_DB_DATABASE)
             self.container = self.database.get_container_client(container_name)
 
             logger.info(f"Connected to Cosmos DB container: {container_name}")
@@ -102,9 +99,7 @@ class CosmosDBService(Generic[T]):
 
         # In production with real Cosmos DB
         try:
-            item = self.container.read_item(
-                item=item_id, partition_key=partition_key_value
-            )
+            item = self.container.read_item(item=item_id, partition_key=partition_key_value)
             return self.model_type(**item)
         except exceptions.CosmosResourceNotFoundError:
             return None
@@ -153,9 +148,7 @@ class CosmosDBService(Generic[T]):
             logger.error(f"Cosmos DB query error: {str(e)}")
             raise
 
-    async def replace_item(
-        self, item_id: str, item: T, partition_key_value: str
-    ) -> Dict[str, Any]:
+    async def replace_item(self, item_id: str, item: T, partition_key_value: str) -> Dict[str, Any]:
         """Replace an existing item."""
         # Convert Pydantic model to dict
         item_dict = item.model_dump()
@@ -198,8 +191,7 @@ class CosmosDBService(Generic[T]):
 
         # In production with real Cosmos DB
         try:
-            self.container.delete_item(
-                item=item_id, partition_key=partition_key_value)
+            self.container.delete_item(item=item_id, partition_key=partition_key_value)
         except exceptions.CosmosResourceNotFoundError:
             raise ValueError(f"Item with ID {item_id} not found")
         except Exception as e:

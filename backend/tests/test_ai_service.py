@@ -58,9 +58,7 @@ async def test_cost_tracker_budget_limit():
 
     # Track high token usage to exceed budget faster
     for _ in range(10):
-        tracker.track_usage(
-            "gpt-4o", 5000, 5000, "general"
-        )  # Each call costs ~$0.10, total ~$1.00
+        tracker.track_usage("gpt-4o", 5000, 5000, "general")  # Each call costs ~$0.10, total ~$1.00
 
     # Verify the data structure was created correctly
     assert today in tracker.daily_usage
@@ -303,8 +301,6 @@ async def test_ai_service_budget_exceeded():
 
     # Act & Assert
     with pytest.raises(Exception) as excinfo:
-        await ai_service.generate_itinerary(
-            destination, duration_days, families_data, preferences
-        )
+        await ai_service.generate_itinerary(destination, duration_days, families_data, preferences)
 
     assert "budget" in str(excinfo.value).lower()

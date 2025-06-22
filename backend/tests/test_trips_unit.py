@@ -52,8 +52,7 @@ class TestTripCreation:
 
         # Mock authorization header
         headers = {"Authorization": "Bearer test-token"}
-        response = client.post(
-            "/api/v1/trips", json=trip_data, headers=headers)
+        response = client.post("/api/v1/trips", json=trip_data, headers=headers)
 
         assert response.status_code == status.HTTP_201_CREATED
         data = response.json()
@@ -77,8 +76,7 @@ class TestTripCreation:
         }
 
         headers = {"Authorization": "Bearer test-token"}
-        response = client.post(
-            "/api/v1/trips", json=trip_data, headers=headers)
+        response = client.post("/api/v1/trips", json=trip_data, headers=headers)
 
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
@@ -87,8 +85,7 @@ class TestTripCreation:
         trip_data = {"description": "Missing title and dates"}
 
         headers = {"Authorization": "Bearer test-token"}
-        response = client.post(
-            "/api/v1/trips", json=trip_data, headers=headers)
+        response = client.post("/api/v1/trips", json=trip_data, headers=headers)
 
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
@@ -100,8 +97,7 @@ class TestTripRetrieval:
     @patch("app.api.trips.get_current_user")
     def test_get_trip_by_id_success(self, mock_get_user, mock_trip_service):
         """Test successful trip retrieval by ID."""
-        mock_get_user.return_value = {
-            "id": "user-123", "family_id": "family-456"}
+        mock_get_user.return_value = {"id": "user-123", "family_id": "family-456"}
 
         mock_trip_service.get_trip_by_id = AsyncMock(
             return_value={
@@ -127,8 +123,7 @@ class TestTripRetrieval:
     @patch("app.api.trips.get_current_user")
     def test_get_trip_not_found(self, mock_get_user, mock_trip_service):
         """Test retrieval of non-existent trip."""
-        mock_get_user.return_value = {
-            "id": "user-123", "family_id": "family-456"}
+        mock_get_user.return_value = {"id": "user-123", "family_id": "family-456"}
         mock_trip_service.get_trip_by_id = AsyncMock(return_value=None)
 
         headers = {"Authorization": "Bearer test-token"}
@@ -140,8 +135,7 @@ class TestTripRetrieval:
     @patch("app.api.trips.get_current_user")
     def test_get_user_trips(self, mock_get_user, mock_trip_service):
         """Test retrieval of user's trips."""
-        mock_get_user.return_value = {
-            "id": "user-123", "family_id": "family-456"}
+        mock_get_user.return_value = {"id": "user-123", "family_id": "family-456"}
 
         mock_trip_service.get_user_trips = AsyncMock(
             return_value=[
@@ -177,8 +171,7 @@ class TestTripUpdates:
     @patch("app.api.trips.get_current_user")
     def test_update_trip_success(self, mock_get_user, mock_trip_service):
         """Test successful trip update."""
-        mock_get_user.return_value = {
-            "id": "user-123", "family_id": "family-456"}
+        mock_get_user.return_value = {"id": "user-123", "family_id": "family-456"}
 
         mock_trip_service.update_trip = AsyncMock(
             return_value={
@@ -198,9 +191,7 @@ class TestTripUpdates:
         }
 
         headers = {"Authorization": "Bearer test-token"}
-        response = client.put(
-            "/api/v1/trips/trip-789", json=update_data, headers=headers
-        )
+        response = client.put("/api/v1/trips/trip-789", json=update_data, headers=headers)
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -211,16 +202,13 @@ class TestTripUpdates:
     @patch("app.api.trips.get_current_user")
     def test_update_trip_not_found(self, mock_get_user, mock_trip_service):
         """Test update of non-existent trip."""
-        mock_get_user.return_value = {
-            "id": "user-123", "family_id": "family-456"}
+        mock_get_user.return_value = {"id": "user-123", "family_id": "family-456"}
         mock_trip_service.update_trip = AsyncMock(return_value=None)
 
         update_data = {"title": "Updated Title"}
 
         headers = {"Authorization": "Bearer test-token"}
-        response = client.put(
-            "/api/v1/trips/nonexistent", json=update_data, headers=headers
-        )
+        response = client.put("/api/v1/trips/nonexistent", json=update_data, headers=headers)
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -228,18 +216,13 @@ class TestTripUpdates:
     @patch("app.api.trips.get_current_user")
     def test_update_trip_unauthorized(self, mock_get_user, mock_trip_service):
         """Test update by non-authorized user."""
-        mock_get_user.return_value = {
-            "id": "user-999", "family_id": "other-family"}
-        mock_trip_service.update_trip = AsyncMock(
-            side_effect=PermissionError("Not authorized")
-        )
+        mock_get_user.return_value = {"id": "user-999", "family_id": "other-family"}
+        mock_trip_service.update_trip = AsyncMock(side_effect=PermissionError("Not authorized"))
 
         update_data = {"title": "Unauthorized Update"}
 
         headers = {"Authorization": "Bearer test-token"}
-        response = client.put(
-            "/api/v1/trips/trip-789", json=update_data, headers=headers
-        )
+        response = client.put("/api/v1/trips/trip-789", json=update_data, headers=headers)
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
@@ -251,8 +234,7 @@ class TestTripParticipation:
     @patch("app.api.trips.get_current_user")
     def test_join_trip_success(self, mock_get_user, mock_trip_service):
         """Test successful trip join."""
-        mock_get_user.return_value = {
-            "id": "user-123", "family_id": "family-456"}
+        mock_get_user.return_value = {"id": "user-123", "family_id": "family-456"}
 
         mock_trip_service.join_trip = AsyncMock(
             return_value={
@@ -274,8 +256,7 @@ class TestTripParticipation:
     @patch("app.api.trips.get_current_user")
     def test_leave_trip_success(self, mock_get_user, mock_trip_service):
         """Test successful trip leave."""
-        mock_get_user.return_value = {
-            "id": "user-123", "family_id": "family-456"}
+        mock_get_user.return_value = {"id": "user-123", "family_id": "family-456"}
 
         mock_trip_service.leave_trip = AsyncMock(return_value=True)
 
@@ -288,8 +269,7 @@ class TestTripParticipation:
     @patch("app.api.trips.get_current_user")
     def test_get_trip_participants(self, mock_get_user, mock_trip_service):
         """Test retrieval of trip participants."""
-        mock_get_user.return_value = {
-            "id": "user-123", "family_id": "family-456"}
+        mock_get_user.return_value = {"id": "user-123", "family_id": "family-456"}
 
         mock_trip_service.get_trip_participants = AsyncMock(
             return_value=[
@@ -309,8 +289,7 @@ class TestTripParticipation:
         )
 
         headers = {"Authorization": "Bearer test-token"}
-        response = client.get(
-            "/api/v1/trips/trip-789/participants", headers=headers)
+        response = client.get("/api/v1/trips/trip-789/participants", headers=headers)
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -335,8 +314,7 @@ class TestTripValidation:
             }
 
             headers = {"Authorization": "Bearer test-token"}
-            response = client.post(
-                "/api/v1/trips", json=trip_data, headers=headers)
+            response = client.post("/api/v1/trips", json=trip_data, headers=headers)
 
             if isinstance(budget, (int, float)) and budget <= 0:
                 assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
@@ -353,8 +331,7 @@ class TestTripValidation:
         }
 
         headers = {"Authorization": "Bearer test-token"}
-        response = client.post(
-            "/api/v1/trips", json=trip_data, headers=headers)
+        response = client.post("/api/v1/trips", json=trip_data, headers=headers)
 
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
@@ -368,8 +345,7 @@ class TestTripValidation:
         }
 
         headers = {"Authorization": "Bearer test-token"}
-        response = client.post(
-            "/api/v1/trips", json=trip_data, headers=headers)
+        response = client.post("/api/v1/trips", json=trip_data, headers=headers)
 
         # Should either reject past dates or allow them for testing
         assert response.status_code in [
@@ -384,8 +360,7 @@ class TestTripValidation:
             "end_date": "2025-07-01",
         }
 
-        response = client.post(
-            "/api/v1/trips", json=trip_data, headers=headers)
+        response = client.post("/api/v1/trips", json=trip_data, headers=headers)
 
         # Should allow single day trips
         assert response.status_code in [

@@ -43,10 +43,7 @@ async def get_trip_messages(
         )
 
         # Convert Cosmos DB documents to dictionary responses
-        return [
-            message.dict(exclude={"_resource_id", "_etag", "_ts"})
-            for message in messages
-        ]
+        return [message.dict(exclude={"_resource_id", "_etag", "_ts"}) for message in messages]
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

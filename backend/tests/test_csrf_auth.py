@@ -49,8 +49,7 @@ def test_trips_with_testing_env(testing_env):
         id=str(uuid4()),
         email="test@example.com",
         roles=["user"],
-        permissions=["create:trips", "read:trips",
-            "update:trips", "delete:trips"],
+        permissions=["create:trips", "read:trips", "update:trips", "delete:trips"],
     )
 
     # Mock the authentication dependency function
@@ -123,8 +122,7 @@ def test_trips_with_csrf_token():
                     "Authorization": "Bearer mock-token",
                 }
 
-                response = client.post(
-                    "/api/v1/trips", json=trip_data, headers=headers)
+                response = client.post("/api/v1/trips", json=trip_data, headers=headers)
 
                 print(f"CSRF response status: {response.status_code}")
                 print(f"CSRF response content: {response.content}")

@@ -61,8 +61,7 @@ class PerformanceMonitoringMiddleware(BaseHTTPMiddleware):
                 if route_path not in _metrics_store["endpoint_response_times"]:
                     _metrics_store["endpoint_response_times"][route_path] = []
 
-                _metrics_store["endpoint_response_times"][route_path].append(
-                    duration)
+                _metrics_store["endpoint_response_times"][route_path].append(duration)
 
                 # Track request counts
                 _metrics_store["api_request_counts"][route_path] = (
@@ -138,8 +137,7 @@ def track_execution_time(func_name: Optional[str] = None):
             if metric_name not in _metrics_store["endpoint_response_times"]:
                 _metrics_store["endpoint_response_times"][metric_name] = []
 
-            _metrics_store["endpoint_response_times"][metric_name].append(
-                duration)
+            _metrics_store["endpoint_response_times"][metric_name].append(duration)
 
             # Log slow function execution
             if duration > settings.SLOW_FUNCTION_THRESHOLD:
@@ -158,8 +156,7 @@ def track_execution_time(func_name: Optional[str] = None):
             if metric_name not in _metrics_store["endpoint_response_times"]:
                 _metrics_store["endpoint_response_times"][metric_name] = []
 
-            _metrics_store["endpoint_response_times"][metric_name].append(
-                duration)
+            _metrics_store["endpoint_response_times"][metric_name].append(duration)
 
             # Log slow function execution
             if duration > settings.SLOW_FUNCTION_THRESHOLD:
@@ -199,15 +196,12 @@ async def _rollup_metrics():
     memory_usage = process.memory_info().rss / 1024 / 1024  # MB
 
     # Add memory usage sample
-    _metrics_store["memory_usage_samples"].append(
-        (datetime.now(), memory_usage))
+    _metrics_store["memory_usage_samples"].append((datetime.now(), memory_usage))
 
     # Trim memory samples (keep last 24 hours)
     cutoff = datetime.now() - timedelta(hours=24)
     _metrics_store["memory_usage_samples"] = [
-        sample
-        for sample in _metrics_store["memory_usage_samples"]
-        if sample[0] >= cutoff
+        sample for sample in _metrics_store["memory_usage_samples"] if sample[0] >= cutoff
     ]
 
     # Compute average endpoint times and reset

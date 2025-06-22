@@ -134,9 +134,7 @@ async def test_auth_service_get_current_user():
     mock_user.auth0_id = "auth0|test123"
 
     # Mock both AuthService methods directly
-    with patch.object(
-        auth_service, "verify_token", new=AsyncMock(return_value=mock_token_data)
-    ):
+    with patch.object(auth_service, "verify_token", new=AsyncMock(return_value=mock_token_data)):
         with patch.object(
             auth_service, "get_user_by_auth0_id", new=AsyncMock(return_value=mock_user)
         ):

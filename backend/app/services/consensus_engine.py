@@ -52,9 +52,7 @@ class FamilyWeight:
         """Calculate total weight for this family."""
         # Base weight: 40% equal per family, 30% by participant count, 30% by budget
         base_weight = 0.4
-        participant_weight = 0.3 * (
-            self.participant_count / 10
-        )  # Normalize to max 10 participants
+        participant_weight = 0.3 * (self.participant_count / 10)  # Normalize to max 10 participants
         budget_weight = 0.3 * self.budget_contribution
 
         return base_weight + participant_weight + budget_weight + self.admin_bonus
@@ -120,32 +118,25 @@ class FamilyConsensusEngine:
         """Generate consensus using weighted family preferences."""
 
         # Calculate family weights
-        family_weights = self.calculate_family_weights(
-            families_data, total_budget)
+        family_weights = self.calculate_family_weights(families_data, total_budget)
 
         # Detect conflicts
         conflicts = self.detect_preference_conflicts(families_data)
 
         # Generate weighted preferences
-        weighted_prefs = self._calculate_weighted_preferences(
-            families_data, family_weights
-        )
+        weighted_prefs = self._calculate_weighted_preferences(families_data, family_weights)
 
         # Calculate consensus score
-        consensus_score = self._calculate_consensus_score(
-            conflicts, len(families_data))
+        consensus_score = self._calculate_consensus_score(conflicts, len(families_data))
 
         # Generate voting items for unresolved conflicts
         voting_items = self._generate_voting_items(conflicts)
 
         # Generate AI compromise suggestions
-        compromise_suggestions = self._generate_ai_compromises(
-            conflicts, weighted_prefs
-        )
+        compromise_suggestions = self._generate_ai_compromises(conflicts, weighted_prefs)
 
         # Generate next steps
-        next_steps = self._generate_next_steps(
-            consensus_score, conflicts, voting_items)
+        next_steps = self._generate_next_steps(consensus_score, conflicts, voting_items)
 
         return ConsensusResult(
             consensus_score=consensus_score,
@@ -171,9 +162,7 @@ class FamilyConsensusEngine:
 
             # Calculate budget contribution percentage
             budget_contribution = (
-                budget_allocation / total_budget
-                if total_budget > 0
-                else 1.0 / len(families_data)
+                budget_allocation / total_budget if total_budget > 0 else 1.0 / len(families_data)
             )
             admin_bonus = 0.1 if is_admin else 0.0
 
@@ -228,17 +217,14 @@ class FamilyConsensusEngine:
                     conflicting_values=unique_values,
                     families_involved=[fid for fid in family_prefs.keys()],
                     severity=severity,
-                    suggested_compromise=self._suggest_compromise(
-                        category, values),
+                    suggested_compromise=self._suggest_compromise(category, values),
                 )
 
                 conflicts.append(conflict)
 
         return conflicts
 
-    def _calculate_conflict_severity(
-        self, category: str, values: List[Any]
-    ) -> ConflictSeverity:
+    def _calculate_conflict_severity(self, category: str, values: List[Any]) -> ConflictSeverity:
         """Calculate the severity of a preference conflict."""
         # Critical conflicts (safety/accessibility related)
         critical_categories = [
@@ -250,8 +236,7 @@ class FamilyConsensusEngine:
             return ConflictSeverity.CRITICAL
 
         # High conflicts (budget/accommodation)
-        high_categories = ["budget_level",
-            "accommodation_type", "transportation_mode"]
+        high_categories = ["budget_level", "accommodation_type", "transportation_mode"]
         if category in high_categories:
             return ConflictSeverity.HIGH
 
@@ -276,17 +261,13 @@ class FamilyConsensusEngine:
         if category == "budget_level":
             # Take the more conservative budget
             budget_priority = {"low": 1, "medium": 2, "high": 3}
-            conservative_budget = min(
-                values, key=lambda x: budget_priority.get(str(x).lower(), 2)
-            )
+            conservative_budget = min(values, key=lambda x: budget_priority.get(str(x).lower(), 2))
             return f"Use conservative budget: {conservative_budget}"
 
         elif category == "activity_level":
             # Take more relaxed activity level for families
             activity_priority = {"relaxed": 1, "moderate": 2, "active": 3}
-            relaxed_level = min(
-                values, key=lambda x: activity_priority.get(str(x).lower(), 2)
-            )
+            relaxed_level = min(values, key=lambda x: activity_priority.get(str(x).lower(), 2))
             return f"Use family-friendly level: {relaxed_level}"
 
         elif category == "activities":
@@ -355,11 +336,7 @@ class FamilyConsensusEngine:
         if all(isinstance(v, (int, float)) for v in values):
             weighted_sum = sum(v * w for v, w in zip(values, weights))
             total_weight = sum(weights)
-            return (
-                weighted_sum / total_weight
-                if total_weight > 0
-                else sum(values) / len(values)
-            )
+            return weighted_sum / total_weight if total_weight > 0 else sum(values) / len(values)
 
         # For lists (e.g., activities)
         elif all(isinstance(v, list) for v in values):
@@ -378,8 +355,7 @@ class FamilyConsensusEngine:
             value_weights = {}
             for value, weight in zip(values, weights):
                 value_str = str(value)
-                value_weights[value_str] = value_weights.get(
-                    value_str, 0) + weight
+                value_weights[value_str] = value_weights.get(value_str, 0) + weight
 
             # Return most weighted value
             if value_weights:
@@ -414,9 +390,7 @@ class FamilyConsensusEngine:
 
         return max(0.0, score)
 
-    def _generate_voting_items(
-        self, conflicts: List[PreferenceConflict]
-    ) -> List[Dict[str, Any]]:
+    def _generate_voting_items(self, conflicts: List[PreferenceConflict]) -> List[Dict[str, Any]]:
         """Generate voting items for conflicts that need family input."""
         voting_items = []
 
@@ -432,15 +406,12 @@ class FamilyConsensusEngine:
                     category=conflict.category,
                     question=f"How should we resolve the {conflict.category} preference conflict?",
                     options=(
-                        conflict.conflicting_values + \
-                            [conflict.suggested_compromise]
+                        conflict.conflicting_values + [conflict.suggested_compromise]
                         if conflict.suggested_compromise
                         else conflict.conflicting_values
                     ),
                     current_votes={},
-                    threshold=(
-                        0.6 if conflict.severity != ConflictSeverity.CRITICAL else 0.8
-                    ),
+                    threshold=(0.6 if conflict.severity != ConflictSeverity.CRITICAL else 0.8),
                 )
 
                 voting_items.append(asdict(voting_item))
@@ -501,41 +472,26 @@ class FamilyConsensusEngine:
         next_steps = []
 
         if consensus_score >= 0.8:
-            next_steps.append(
-                "✅ Strong consensus achieved - proceed with itinerary generation"
-            )
-            next_steps.append(
-                "📋 Share final preferences with all families for confirmation"
-            )
+            next_steps.append("✅ Strong consensus achieved - proceed with itinerary generation")
+            next_steps.append("📋 Share final preferences with all families for confirmation")
 
         elif consensus_score >= 0.6:
-            next_steps.append(
-                "⚠️ Moderate consensus - address remaining conflicts")
+            next_steps.append("⚠️ Moderate consensus - address remaining conflicts")
             if voting_items:
-                next_steps.append(
-                    f"🗳️ {len(voting_items)} items need family votes")
-            next_steps.append(
-                "💬 Schedule family discussion to resolve differences")
+                next_steps.append(f"🗳️ {len(voting_items)} items need family votes")
+            next_steps.append("💬 Schedule family discussion to resolve differences")
 
         else:
-            next_steps.append(
-                "❌ Low consensus - significant discussion needed")
+            next_steps.append("❌ Low consensus - significant discussion needed")
             next_steps.append("📞 Schedule video call with all families")
-            next_steps.append(
-                "🔄 Consider revising preferences after discussion")
+            next_steps.append("🔄 Consider revising preferences after discussion")
 
         # Add specific actions for critical conflicts
-        critical_conflicts = [
-            c for c in conflicts if c.severity == ConflictSeverity.CRITICAL
-        ]
+        critical_conflicts = [c for c in conflicts if c.severity == ConflictSeverity.CRITICAL]
         if critical_conflicts:
-            next_steps.append(
-                "🚨 Critical conflicts must be resolved before proceeding"
-            )
+            next_steps.append("🚨 Critical conflicts must be resolved before proceeding")
             for conflict in critical_conflicts:
-                next_steps.append(
-                    f"   - {conflict.category}: {conflict.suggested_compromise}"
-                )
+                next_steps.append(f"   - {conflict.category}: {conflict.suggested_compromise}")
 
         return next_steps
 
@@ -569,9 +525,7 @@ class FamilyConsensusEngine:
 
             if winning_option[1] / total_families >= voting_item["threshold"]:
                 voting_item["status"] = VoteStatus.APPROVED.value
-            elif len(voting_item["current_votes"]) >= voting_item.get(
-                "expected_families", 3
-            ):
+            elif len(voting_item["current_votes"]) >= voting_item.get("expected_families", 3):
                 voting_item["status"] = VoteStatus.NEEDS_DISCUSSION.value
 
         return voting_item
@@ -581,10 +535,8 @@ class FamilyConsensusEngine:
     ) -> Dict[str, Any]:
         """Generate data for the consensus dashboard visualization."""
 
-        consensus_result = self.generate_weighted_consensus(
-            families_data, total_budget)
-        family_weights = self.calculate_family_weights(
-            families_data, total_budget)
+        consensus_result = self.generate_weighted_consensus(families_data, total_budget)
+        family_weights = self.calculate_family_weights(families_data, total_budget)
 
         # Prepare dashboard data
         dashboard_data = {
@@ -596,11 +548,7 @@ class FamilyConsensusEngine:
                 "total_conflicts": len(consensus_result.conflicts),
                 "by_severity": {
                     severity.value: len(
-                        [
-                            c
-                            for c in consensus_result.conflicts
-                            if c.severity == severity
-                        ]
+                        [c for c in consensus_result.conflicts if c.severity == severity]
                     )
                     for severity in ConflictSeverity
                 },
@@ -642,9 +590,7 @@ class FamilyConsensusEngine:
         else:
             return "Significant Conflicts"
 
-    def _identify_agreement_areas(
-        self, families_data: List[Dict[str, Any]]
-    ) -> List[str]:
+    def _identify_agreement_areas(self, families_data: List[Dict[str, Any]]) -> List[str]:
         """Identify areas where families already agree."""
         agreement_areas = []
 
@@ -679,14 +625,10 @@ def analyze_trip_consensus(
 
     try:
         # Generate consensus analysis
-        consensus_result = engine.generate_weighted_consensus(
-            families_data, total_budget
-        )
+        consensus_result = engine.generate_weighted_consensus(families_data, total_budget)
 
         # Get dashboard data
-        dashboard_data = engine.get_consensus_dashboard_data(
-            families_data, total_budget
-        )
+        dashboard_data = engine.get_consensus_dashboard_data(families_data, total_budget)
 
         # Combine results
         analysis = {
@@ -716,23 +658,15 @@ def _generate_trip_recommendations(consensus_result: ConsensusResult) -> List[st
     conflicts = consensus_result.conflicts
 
     if score >= 0.8:
-        recommendations.append(
-            "Proceed with AI itinerary generation using agreed preferences"
-        )
-        recommendations.append(
-            "Send summary to families for final confirmation")
+        recommendations.append("Proceed with AI itinerary generation using agreed preferences")
+        recommendations.append("Send summary to families for final confirmation")
 
     elif score >= 0.6:
-        recommendations.append(
-            "Resolve remaining conflicts before generating itinerary"
-        )
-        recommendations.append(
-            "Consider compromise solutions for disputed preferences")
+        recommendations.append("Resolve remaining conflicts before generating itinerary")
+        recommendations.append("Consider compromise solutions for disputed preferences")
 
         high_priority_conflicts = [
-            c
-            for c in conflicts
-            if c.severity in [ConflictSeverity.HIGH, ConflictSeverity.CRITICAL]
+            c for c in conflicts if c.severity in [ConflictSeverity.HIGH, ConflictSeverity.CRITICAL]
         ]
         if high_priority_conflicts:
             recommendations.append(
@@ -742,7 +676,6 @@ def _generate_trip_recommendations(consensus_result: ConsensusResult) -> List[st
     else:
         recommendations.append("Schedule family meeting before proceeding")
         recommendations.append("Consider simplifying or reducing trip scope")
-        recommendations.append(
-            "Focus on finding common ground in 2-3 key areas")
+        recommendations.append("Focus on finding common ground in 2-3 key areas")
 
     return recommendations

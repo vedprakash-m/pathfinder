@@ -65,8 +65,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             )
 
             # Get or create database
-            database = cosmos_client.get_database_client(
-                settings.COSMOS_DB_DATABASE)
+            database = cosmos_client.get_database_client(settings.COSMOS_DB_DATABASE)
 
             # Initialize or confirm containers
             try:
@@ -74,26 +73,20 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
                     id=settings.COSMOS_DB_CONTAINER_ITINERARIES,
                     partition_key="/trip_id",
                 )
-                logger.info(
-                    f"Created container: {settings.COSMOS_DB_CONTAINER_ITINERARIES}"
-                )
+                logger.info(f"Created container: {settings.COSMOS_DB_CONTAINER_ITINERARIES}")
             except CosmosResourceExistsError:
                 logger.info(
-                    f"Container already exists: "
-                    f"{settings.COSMOS_DB_CONTAINER_ITINERARIES}"
+                    f"Container already exists: " f"{settings.COSMOS_DB_CONTAINER_ITINERARIES}"
                 )
 
             try:
                 await database.create_container(
                     id=settings.COSMOS_DB_CONTAINER_MESSAGES, partition_key="/trip_id"
                 )
-                logger.info(
-                    f"Created container: {settings.COSMOS_DB_CONTAINER_MESSAGES}"
-                )
+                logger.info(f"Created container: {settings.COSMOS_DB_CONTAINER_MESSAGES}")
             except CosmosResourceExistsError:
                 logger.info(
-                    f"Container already exists: "
-                    f"{settings.COSMOS_DB_CONTAINER_MESSAGES}"
+                    f"Container already exists: " f"{settings.COSMOS_DB_CONTAINER_MESSAGES}"
                 )
 
             try:
@@ -101,13 +94,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
                     id=settings.COSMOS_DB_CONTAINER_PREFERENCES,
                     partition_key="/entity_id",
                 )
-                logger.info(
-                    f"Created container: {settings.COSMOS_DB_CONTAINER_PREFERENCES}"
-                )
+                logger.info(f"Created container: {settings.COSMOS_DB_CONTAINER_PREFERENCES}")
             except CosmosResourceExistsError:
                 logger.info(
-                    f"Container already exists: "
-                    f"{settings.COSMOS_DB_CONTAINER_PREFERENCES}"
+                    f"Container already exists: " f"{settings.COSMOS_DB_CONTAINER_PREFERENCES}"
                 )
 
             logger.info("Cosmos DB initialization complete")
@@ -115,8 +105,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         except Exception as e:
             logger.error(f"Failed to initialize Cosmos DB: {str(e)}")
             if settings.ENVIRONMENT != "production":
-                logger.warning(
-                    "Continuing without Cosmos DB in development mode")
+                logger.warning("Continuing without Cosmos DB in development mode")
             else:
                 raise
     logger.info("Application startup complete")
@@ -126,8 +115,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         from app.core.cache_service import cache_service
 
         app.state.cache_service = cache_service
-        logger.info(
-            "Cache service initialized (Redis-free for cost optimization)")
+        logger.info("Cache service initialized (Redis-free for cost optimization)")
     except Exception as e:
         logger.error(f"Failed to initialize cache service: {e}")
         if settings.ENVIRONMENT == "production":
@@ -258,9 +246,7 @@ async def add_security_headers(request: Request, call_next):
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
 
     if settings.ENVIRONMENT == "production":
-        response.headers["Strict-Transport-Security"] = (
-            "max-age=31536000; includeSubDomains"
-        )
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
     return response
 
@@ -281,10 +267,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 async def health_check():
     """Health check endpoint for monitoring."""
     # Check cache service
-    cache_status = (
-        "connected" if hasattr(
-            app.state, "cache_service") else "not_initialized"
-    )
+    cache_status = "connected" if hasattr(app.state, "cache_service") else "not_initialized"
 
     # Check database
     db_status = "connected"

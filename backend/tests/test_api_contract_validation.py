@@ -33,8 +33,7 @@ def test_db():
     engine = create_engine(f"sqlite:///{db_path}")
     Base.metadata.create_all(bind=engine)
 
-    TestingSessionLocal = sessionmaker(
-        autocommit=False, autoflush=False, bind=engine)
+    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
     def override_get_db():
         try:
@@ -96,8 +95,7 @@ class TestAPIContracts:
         # Should either succeed or fail with proper error format
         if response.status_code == 201:
             data = response.json()
-            required_fields = ["id", "title",
-                "destination", "start_date", "end_date"]
+            required_fields = ["id", "title", "destination", "start_date", "end_date"]
             for field in required_fields:
                 assert field in data
         else:

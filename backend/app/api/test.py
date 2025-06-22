@@ -55,8 +55,7 @@ async def test_ai_service(
         }
 
         # Test AI service
-        logger.info(
-            f"Testing AI service for destination: {request.destination}")
+        logger.info(f"Testing AI service for destination: {request.destination}")
 
         result = await ai_service.generate_itinerary(
             destination=request.destination,

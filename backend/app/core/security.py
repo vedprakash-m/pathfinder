@@ -73,9 +73,7 @@ async def verify_token(token: str) -> TokenData:
     try:
         # Check if we're in test mode or if the token looks like a test token
         # (created with our SECRET_KEY rather than Auth0)
-        is_test_token = settings.is_testing or not token.startswith(
-            "ey"
-        )  # Basic heuristic
+        is_test_token = settings.is_testing or not token.startswith("ey")  # Basic heuristic
 
         if is_test_token or settings.ENVIRONMENT.lower() in [
             "development",
@@ -83,8 +81,7 @@ async def verify_token(token: str) -> TokenData:
             "testing",
         ]:
             # For test tokens, use simple verification with our secret key
-            payload = jwt.decode(
-                token, settings.SECRET_KEY, algorithms=["HS256"])
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
         else:
             # For Auth0 tokens, we need to verify against Auth0's public key
             # This is a simplified version - in production, you'd fetch the public key
@@ -256,9 +253,7 @@ class RateLimiter:
 
 
 # Global rate limiter instance
-rate_limiter = RateLimiter(
-    requests=settings.RATE_LIMIT_REQUESTS, window=settings.RATE_LIMIT_WINDOW
-)
+rate_limiter = RateLimiter(requests=settings.RATE_LIMIT_REQUESTS, window=settings.RATE_LIMIT_WINDOW)
 
 
 async def check_rate_limit(request: Request):
@@ -305,9 +300,7 @@ def require_permissions(*permissions):
         # For now, we'll implement a basic permission check
         # In a full implementation, this would check user roles and permissions
         if not user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="Inactive user"
-            )
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Inactive user")
         return user
 
     return permission_checker

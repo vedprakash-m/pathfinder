@@ -141,9 +141,7 @@ class TestAIServiceItineraryGeneration:
         # Extract parameters from trip data
         # Use first destination
         destination = sample_trip_data["destinations"][0]
-        duration_days = (
-            sample_trip_data["end_date"] - sample_trip_data["start_date"]
-        ).days
+        duration_days = (sample_trip_data["end_date"] - sample_trip_data["start_date"]).days
         families_data = sample_trip_data["participants"]
 
         # Should handle the error gracefully
@@ -170,9 +168,7 @@ class TestAIServiceItineraryGeneration:
         # Extract parameters from trip data
         # Use first destination
         destination = sample_trip_data["destinations"][0]
-        duration_days = (
-            sample_trip_data["end_date"] - sample_trip_data["start_date"]
-        ).days
+        duration_days = (sample_trip_data["end_date"] - sample_trip_data["start_date"]).days
         families_data = sample_trip_data["participants"]
 
         # Should handle invalid response
@@ -430,8 +426,7 @@ class TestAIServiceOptimization:
         assert allocation["total_budget"] == 5000.0
 
         # Check category allocations sum to total
-        category_total = sum(cat["amount"]
-                             for cat in allocation["categories"].values())
+        category_total = sum(cat["amount"] for cat in allocation["categories"].values())
         assert abs(category_total - allocation["total_budget"]) < 0.01
 
 
@@ -537,8 +532,7 @@ class TestAIServiceCostMonitoring:
 
         # Make API call
         result = await ai_service.generate_itinerary(
-            "Paris", 3, [{"id": "family1", "size": 2}], {
-                "interests": ["culture"]}
+            "Paris", 3, [{"id": "family1", "size": 2}], {"interests": ["culture"]}
         )
 
         # Verify the call was made and result is valid

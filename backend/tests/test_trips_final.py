@@ -24,8 +24,7 @@ def test_create_trip_with_full_override():
         id=test_user_id,
         email="test@example.com",
         roles=["user"],
-        permissions=["create:trips", "read:trips",
-            "update:trips", "delete:trips"],
+        permissions=["create:trips", "read:trips", "update:trips", "delete:trips"],
     )
 
     # Create mock token data
@@ -33,8 +32,7 @@ def test_create_trip_with_full_override():
         sub=test_user_id,
         email="test@example.com",
         roles=["user"],
-        permissions=["create:trips", "read:trips",
-            "update:trips", "delete:trips"],
+        permissions=["create:trips", "read:trips", "update:trips", "delete:trips"],
     )
 
     # Create mock trip response
@@ -89,8 +87,7 @@ def test_create_trip_with_full_override():
                     "Content-Type": "application/json",
                 }
 
-                response = client.post(
-                    "/api/v1/trips", json=trip_data, headers=headers)
+                response = client.post("/api/v1/trips", json=trip_data, headers=headers)
 
                 print(f"Final test response status: {response.status_code}")
                 print(f"Final test response content: {response.content}")
@@ -156,8 +153,7 @@ def test_create_trip_use_case_isolated():
         assert result.status == TripStatus.PLANNING
 
         # Verify the service was called correctly
-        mock_trip_service.create_trip.assert_called_once_with(
-            trip_data, "user-456")
+        mock_trip_service.create_trip.assert_called_once_with(trip_data, "user-456")
 
         print("✅ Use case isolated test passed!")
         return result

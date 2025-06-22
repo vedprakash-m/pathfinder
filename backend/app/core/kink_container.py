@@ -103,8 +103,7 @@ class KinkContainer:
 
         kink.bind(
             CreateTripUseCase,
-            lambda: CreateTripUseCase(
-                trip_service=kink.get(TripDomainService)),
+            lambda: CreateTripUseCase(trip_service=kink.get(TripDomainService)),
         )
 
         kink.bind(
@@ -114,57 +113,47 @@ class KinkContainer:
 
         kink.bind(
             ListUserTripsUseCase,
-            lambda: ListUserTripsUseCase(
-                trip_service=kink.get(TripDomainService)),
+            lambda: ListUserTripsUseCase(trip_service=kink.get(TripDomainService)),
         )
 
         kink.bind(
             UpdateTripUseCase,
-            lambda: UpdateTripUseCase(
-                trip_service=kink.get(TripDomainService)),
+            lambda: UpdateTripUseCase(trip_service=kink.get(TripDomainService)),
         )
 
         kink.bind(
             DeleteTripUseCase,
-            lambda: DeleteTripUseCase(
-                trip_service=kink.get(TripDomainService)),
+            lambda: DeleteTripUseCase(trip_service=kink.get(TripDomainService)),
         )
 
         kink.bind(
             GetTripStatsUseCase,
-            lambda: GetTripStatsUseCase(
-                trip_service=kink.get(TripDomainService)),
+            lambda: GetTripStatsUseCase(trip_service=kink.get(TripDomainService)),
         )
 
         kink.bind(
             AddParticipantUseCase,
-            lambda: AddParticipantUseCase(
-                trip_service=kink.get(TripDomainService)),
+            lambda: AddParticipantUseCase(trip_service=kink.get(TripDomainService)),
         )
 
         kink.bind(
             GetParticipantsUseCase,
-            lambda: GetParticipantsUseCase(
-                trip_service=kink.get(TripDomainService)),
+            lambda: GetParticipantsUseCase(trip_service=kink.get(TripDomainService)),
         )
 
         kink.bind(
             UpdateParticipationUseCase,
-            lambda: UpdateParticipationUseCase(
-                trip_service=kink.get(TripDomainService)
-            ),
+            lambda: UpdateParticipationUseCase(trip_service=kink.get(TripDomainService)),
         )
 
         kink.bind(
             RemoveParticipantUseCase,
-            lambda: RemoveParticipantUseCase(
-                trip_service=kink.get(TripDomainService)),
+            lambda: RemoveParticipantUseCase(trip_service=kink.get(TripDomainService)),
         )
 
         kink.bind(
             SendInvitationUseCase,
-            lambda: SendInvitationUseCase(
-                trip_service=kink.get(TripDomainService)),
+            lambda: SendInvitationUseCase(trip_service=kink.get(TripDomainService)),
         )
 
         self._configured = True

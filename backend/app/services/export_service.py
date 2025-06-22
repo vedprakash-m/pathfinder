@@ -33,8 +33,7 @@ class DataExportService:
                 self.blob_service_client = BlobServiceClient.from_connection_string(
                     settings.AZURE_STORAGE_CONNECTION_STRING
                 )
-                logger.info(
-                    "Azure Blob Storage client initialized for exports")
+                logger.info("Azure Blob Storage client initialized for exports")
             except Exception as e:
                 logger.error(f"Failed to initialize blob storage client: {e}")
 
@@ -57,8 +56,7 @@ class DataExportService:
             excel_data = {}
 
             # Trip Overview Sheet
-            excel_data["Trip_Overview"] = self._prepare_trip_overview_data(
-                trip_data)
+            excel_data["Trip_Overview"] = self._prepare_trip_overview_data(trip_data)
 
             # Participants Sheet
             if include_participants and trip_data.get("participations"):
@@ -71,8 +69,7 @@ class DataExportService:
                 itinerary_data = trip_data["itinerary_data"]
                 if isinstance(itinerary_data, str):
                     itinerary_data = json.loads(itinerary_data)
-                excel_data["Itinerary"] = self._prepare_itinerary_data(
-                    itinerary_data)
+                excel_data["Itinerary"] = self._prepare_itinerary_data(itinerary_data)
 
             # Budget Sheet
             if include_budget:
@@ -111,8 +108,7 @@ class DataExportService:
             if blob_url:
                 result["download_url"] = blob_url
             else:
-                result["file_data"] = base64.b64encode(
-                    excel_bytes).decode("utf-8")
+                result["file_data"] = base64.b64encode(excel_bytes).decode("utf-8")
 
             logger.info(
                 "Excel export completed",
@@ -125,9 +121,7 @@ class DataExportService:
             return result
 
         except Exception as e:
-            logger.error(
-                f"Failed to export Excel data: {e}", trip_id=trip_id, user_id=user_id
-            )
+            logger.error(f"Failed to export Excel data: {e}", trip_id=trip_id, user_id=user_id)
             raise
 
     async def export_trip_data_csv(
@@ -149,8 +143,7 @@ class DataExportService:
                     itinerary_data = trip_data["itinerary_data"]
                     if isinstance(itinerary_data, str):
                         itinerary_data = json.loads(itinerary_data)
-                    csv_files["itinerary"] = self._create_itinerary_csv(
-                        itinerary_data)
+                    csv_files["itinerary"] = self._create_itinerary_csv(itinerary_data)
 
             if export_type in ["participants", "all"]:
                 if trip_data.get("participations"):
@@ -185,9 +178,9 @@ class DataExportService:
                 if blob_url:
                     result["download_url"] = blob_url
                 else:
-                    result["file_data"] = base64.b64encode(
-                        csv_content.encode("utf-8")
-                    ).decode("utf-8")
+                    result["file_data"] = base64.b64encode(csv_content.encode("utf-8")).decode(
+                        "utf-8"
+                    )
 
                 return result
 
@@ -223,42 +216,32 @@ class DataExportService:
                 if blob_url:
                     result["download_url"] = blob_url
                 else:
-                    result["file_data"] = base64.b64encode(
-                        zip_bytes).decode("utf-8")
+                    result["file_data"] = base64.b64encode(zip_bytes).decode("utf-8")
 
                 return result
 
         except Exception as e:
-            logger.error(
-                f"Failed to export CSV data: {e}", trip_id=trip_id, user_id=user_id
-            )
+            logger.error(f"Failed to export CSV data: {e}", trip_id=trip_id, user_id=user_id)
             raise
 
-    def _prepare_trip_overview_data(
-        self, trip_data: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
+    def _prepare_trip_overview_data(self, trip_data: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Prepare trip overview data for export."""
         overview = [
             {"Field": "Trip ID", "Value": trip_data.get("id", "")},
             {"Field": "Trip Name", "Value": trip_data.get("name", "")},
-            {"Field": "Description",
-                "Value": trip_data.get("description", "")},
-            {"Field": "Destination",
-                "Value": trip_data.get("destination", "")},
+            {"Field": "Description", "Value": trip_data.get("description", "")},
+            {"Field": "Destination", "Value": trip_data.get("destination", "")},
             {"Field": "Start Date", "Value": trip_data.get("start_date", "")},
             {"Field": "End Date", "Value": trip_data.get("end_date", "")},
             {"Field": "Status", "Value": trip_data.get("status", "")},
-            {"Field": "Total Budget",
-                "Value": trip_data.get("budget_total", 0)},
+            {"Field": "Total Budget", "Value": trip_data.get("budget_total", 0)},
             {"Field": "Creator ID", "Value": trip_data.get("creator_id", "")},
-            {"Field": "Family Count",
-                "Value": trip_data.get("family_count", 0)},
+            {"Field": "Family Count", "Value": trip_data.get("family_count", 0)},
             {
                 "Field": "Confirmed Families",
                 "Value": trip_data.get("confirmed_families", 0),
             },
-            {"Field": "Has Itinerary", "Value": trip_data.get(
-                "has_itinerary", False)},
+            {"Field": "Has Itinerary", "Value": trip_data.get("has_itinerary", False)},
             {"Field": "Created At", "Value": trip_data.get("created_at", "")},
             {"Field": "Updated At", "Value": trip_data.get("updated_at", "")},
         ]
@@ -292,9 +275,7 @@ class DataExportService:
 
         return participants
 
-    def _prepare_itinerary_data(
-        self, itinerary_data: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
+    def _prepare_itinerary_data(self, itinerary_data: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Prepare itinerary data for export."""
         itinerary_rows = []
 
@@ -444,9 +425,7 @@ class DataExportService:
 
         return output.getvalue()
 
-    async def _upload_to_blob_storage(
-        self, file_data: bytes, blob_name: str
-    ) -> Optional[str]:
+    async def _upload_to_blob_storage(self, file_data: bytes, blob_name: str) -> Optional[str]:
         """Upload file to Azure Blob Storage."""
         if not self.blob_service_client:
             return None
@@ -538,18 +517,13 @@ class DataExportService:
             if blob_url:
                 result["download_url"] = blob_url
             else:
-                result["file_data"] = base64.b64encode(
-                    csv_content.encode("utf-8")
-                ).decode("utf-8")
+                result["file_data"] = base64.b64encode(csv_content.encode("utf-8")).decode("utf-8")
 
-            logger.info(
-                "Activity summary exported", trip_id=trip_id, activities=len(activities)
-            )
+            logger.info("Activity summary exported", trip_id=trip_id, activities=len(activities))
             return result
 
         except Exception as e:
-            logger.error(
-                f"Failed to export activity summary: {e}", trip_id=trip_id)
+            logger.error(f"Failed to export activity summary: {e}", trip_id=trip_id)
             raise
 
 

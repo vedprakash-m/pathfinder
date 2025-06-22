@@ -15,6 +15,7 @@ from app.core.logging_config import get_logger
 from app.services.email_service import email_service
 from fastapi import APIRouter, Depends, HTTPException, status, Response
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text
 
 router = APIRouter(
     prefix="/health",
@@ -54,7 +55,7 @@ async def readiness_check(
 
     # Check SQL database connection
     try:
-        result = await db.execute("SELECT 1")
+        result = await db.execute(text("SELECT 1"))
         details["database"] = "connected"
     except Exception as e:
         status = "error"
@@ -127,7 +128,7 @@ async def detailed_health_check(
     # Check SQL database connection
     try:
         db_start = time.time()
-        result = await db.execute("SELECT 1")
+        result = await db.execute(text("SELECT 1"))
         db_time = round((time.time() - db_start) * 1000, 2)
 
         details["database"] = {
@@ -165,16 +166,14 @@ async def detailed_health_check(
                 "response_time_ms": cosmos_time,
             }
         else:
-            details["cosmos_db"] = {
-                "status": "disabled", "type": "azure_cosmos"}
+            details["cosmos_db"] = {"status": "disabled", "type": "azure_cosmos"}
     except Exception as e:
         if settings.COSMOS_DB_ENABLED:
             status = "degraded"
             details["cosmos_db"] = {"status": "error", "error": str(e)}
             logger.error(f"Cosmos DB connection error: {e}")
         else:
-            details["cosmos_db"] = {
-                "status": "disabled", "type": "azure_cosmos"}
+            details["cosmos_db"] = {"status": "disabled", "type": "azure_cosmos"}
 
     # Check email service
     try:

@@ -51,8 +51,7 @@ async def create_family(
             .filter(
                 and_(
                     Family.name == family_data.name,
-                    Family.members.any(
-                        FamilyMember.user_id == current_user.id),
+                    Family.members.any(FamilyMember.user_id == current_user.id),
                 )
             )
             .first()
@@ -132,9 +131,7 @@ async def get_family(
     try:
         family = db.query(Family).filter(Family.id == family_id).first()
         if not family:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Family not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Family not found")
 
         # Check if user is a member of this family
         membership = (
@@ -177,9 +174,7 @@ async def update_family(
     try:
         family = db.query(Family).filter(Family.id == family_id).first()
         if not family:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Family not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Family not found")
 
         # Check if user is admin of this family
         membership = (
@@ -232,9 +227,7 @@ async def delete_family(
     try:
         family = db.query(Family).filter(Family.id == family_id).first()
         if not family:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Family not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Family not found")
 
         # Check if user is admin of this family
         membership = (
@@ -290,9 +283,7 @@ async def add_family_member(
     try:
         family = db.query(Family).filter(Family.id == family_id).first()
         if not family:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Family not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Family not found")
 
         # Check if user is admin of this family
         admin_membership = (
@@ -316,9 +307,7 @@ async def add_family_member(
         # Check if user exists
         user = db.query(User).filter(User.id == member_data.user_id).first()
         if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
         # Check if user is already a member
         existing_membership = (
@@ -344,9 +333,7 @@ async def add_family_member(
         db.commit()
         db.refresh(family_member)
 
-        logger.info(
-            f"Family member added: {member_data.user_id} to family: {family_id}"
-        )
+        logger.info(f"Family member added: {member_data.user_id} to family: {family_id}")
         return family_member
 
     except HTTPException:
@@ -386,18 +373,14 @@ async def get_family_members(
                 detail="Not authorized to access this family",
             )
 
-        members = (
-            db.query(FamilyMember).filter(
-                FamilyMember.family_id == family_id).all()
-        )
+        members = db.query(FamilyMember).filter(FamilyMember.family_id == family_id).all()
 
         return members
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(
-            f"Error fetching family members for family {family_id}: {str(e)}")
+        logger.error(f"Error fetching family members for family {family_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to fetch family members",
@@ -416,10 +399,7 @@ async def update_family_member(
     try:
         family_member = (
             db.query(FamilyMember)
-            .filter(
-                and_(FamilyMember.id == member_id,
-                     FamilyMember.family_id == family_id)
-            )
+            .filter(and_(FamilyMember.id == member_id, FamilyMember.family_id == family_id))
             .first()
         )
 
@@ -453,10 +433,8 @@ async def update_family_member(
         update_data = member_data.dict(exclude_unset=True)
         if not is_admin and is_self:
             # Regular members can only update emergency contact
-            allowed_fields = ["emergency_contact_name",
-                "emergency_contact_phone"]
-            update_data = {k: v for k, v in update_data.items()
-                                                              if k in allowed_fields}
+            allowed_fields = ["emergency_contact_name", "emergency_contact_phone"]
+            update_data = {k: v for k, v in update_data.items() if k in allowed_fields}
 
         # Update family member
         for field, value in update_data.items():
@@ -465,8 +443,7 @@ async def update_family_member(
         db.commit()
         db.refresh(family_member)
 
-        logger.info(
-            f"Family member updated: {member_id} by user: {current_user.id}")
+        logger.info(f"Family member updated: {member_id} by user: {current_user.id}")
         return family_member
 
     except HTTPException:
@@ -480,9 +457,7 @@ async def update_family_member(
         )
 
 
-@router.delete(
-    "/{family_id}/members/{member_id}", status_code=status.HTTP_204_NO_CONTENT
-)
+@router.delete("/{family_id}/members/{member_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def remove_family_member(
     family_id: int,
     member_id: int,
@@ -493,10 +468,7 @@ async def remove_family_member(
     try:
         family_member = (
             db.query(FamilyMember)
-            .filter(
-                and_(FamilyMember.id == member_id,
-                     FamilyMember.family_id == family_id)
-            )
+            .filter(and_(FamilyMember.id == member_id, FamilyMember.family_id == family_id))
             .first()
         )
 
@@ -549,8 +521,7 @@ async def remove_family_member(
         db.delete(family_member)
         db.commit()
 
-        logger.info(
-            f"Family member removed: {member_id} from family: {family_id}")
+        logger.info(f"Family member removed: {member_id} from family: {family_id}")
 
     except HTTPException:
         raise
@@ -583,9 +554,7 @@ async def invite_family_member(
         # Verify family exists and user has permission to invite
         family = db.query(Family).filter(Family.id == family_id).first()
         if not family:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Family not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Family not found")
 
         # Check if current user is admin or has invite permissions
         user_membership = (
@@ -594,8 +563,7 @@ async def invite_family_member(
                 and_(
                     FamilyMember.family_id == family_id,
                     FamilyMember.user_id == current_user.id,
-                    FamilyMember.role.in_(
-                        [FamilyRole.COORDINATOR, FamilyRole.ADULT]),
+                    FamilyMember.role.in_([FamilyRole.COORDINATOR, FamilyRole.ADULT]),
                 )
             )
             .first()
@@ -678,9 +646,7 @@ async def invite_family_member(
             logger.warning(f"Failed to send invitation email: {email_error}")
             # Don't fail the invitation creation if email fails
 
-        logger.info(
-            f"Family invitation created: {invitation.id} for family: {family_id}"
-        )
+        logger.info(f"Family invitation created: {invitation.id} for family: {family_id}")
         return invitation
 
     except HTTPException:
@@ -770,9 +736,7 @@ async def accept_family_invitation(
         db.add(family_member)
         db.commit()
 
-        logger.info(
-            f"Family invitation accepted: {invitation.id} by user: {current_user.id}"
-        )
+        logger.info(f"Family invitation accepted: {invitation.id} by user: {current_user.id}")
         return {"message": "Successfully joined family"}
 
     except HTTPException:
@@ -825,9 +789,7 @@ async def decline_family_invitation(
         invitation.status = InvitationStatus.DECLINED
         db.commit()
 
-        logger.info(
-            f"Family invitation declined: {invitation.id} by user: {current_user.id}"
-        )
+        logger.info(f"Family invitation declined: {invitation.id} by user: {current_user.id}")
         return {"message": "Invitation declined"}
 
     except HTTPException:
@@ -853,9 +815,7 @@ async def get_family_invitations(
         # Verify family exists and user has permission
         family = db.query(Family).filter(Family.id == family_id).first()
         if not family:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Family not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Family not found")
 
         # Check if current user is admin or family member
         user_membership = (
@@ -906,9 +866,7 @@ async def send_family_invitation_email(
     from ..services.email_service import email_service
 
     # Create invitation URL (this would be configurable)
-    invitation_url = (
-        f"https://pathfinder.app/accept-invitation?token={invitation_token}"
-    )
+    invitation_url = f"https://pathfinder.app/accept-invitation?token={invitation_token}"
 
     success = await email_service.send_family_invitation(
         recipient_email=to_email,

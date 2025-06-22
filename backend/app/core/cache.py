@@ -60,9 +60,7 @@ class InMemoryCache:
         if now - self._last_cleanup > self._cleanup_interval:
             with self._lock:
                 # Find keys to remove
-                expired_keys = [
-                    key for key, item in self._cache.items() if item.is_expired()
-                ]
+                expired_keys = [key for key, item in self._cache.items() if item.is_expired()]
 
                 # Remove expired keys
                 for key in expired_keys:
@@ -137,9 +135,7 @@ class InMemoryCache:
 
         return result
 
-    async def set_many(
-        self, mapping: Dict[str, Any], ttl: Optional[int] = None
-    ) -> bool:
+    async def set_many(self, mapping: Dict[str, Any], ttl: Optional[int] = None) -> bool:
         """Set multiple values in cache."""
         if ttl is None:
             ttl = (
@@ -174,8 +170,7 @@ class RedisCache:
         self.in_memory = InMemoryCache()
 
         if not REDIS_AVAILABLE:
-            logger.warning(
-                "Redis library not available, using in-memory cache only")
+            logger.warning("Redis library not available, using in-memory cache only")
             self.redis = None
             return
 
@@ -235,9 +230,7 @@ class RedisCache:
 
         return default
 
-    async def set(
-        self, key: str, value: Any, ttl: Optional[int] = None, nx: bool = False
-    ) -> bool:
+    async def set(self, key: str, value: Any, ttl: Optional[int] = None, nx: bool = False) -> bool:
         """Set a value in cache."""
         if ttl is None:
             ttl = getattr(settings, "REDIS_TTL", None) or settings.CACHE_TTL
@@ -401,9 +394,7 @@ class RedisCache:
 
         return result
 
-    async def set_many(
-        self, mapping: Dict[str, Any], ttl: Optional[int] = None
-    ) -> bool:
+    async def set_many(self, mapping: Dict[str, Any], ttl: Optional[int] = None) -> bool:
         """Set multiple values in cache."""
         if ttl is None:
             ttl = getattr(settings, "REDIS_TTL", None) or settings.CACHE_TTL
@@ -437,8 +428,7 @@ class RedisCache:
 # Decide which implementation to use based on settings
 def get_cache() -> Union[RedisCache, InMemoryCache]:
     """Get the appropriate cache implementation based on settings."""
-    use_redis = hasattr(
-        settings, "USE_REDIS_CACHE") and settings.USE_REDIS_CACHE
+    use_redis = hasattr(settings, "USE_REDIS_CACHE") and settings.USE_REDIS_CACHE
 
     if use_redis and REDIS_AVAILABLE:
         return RedisCache()
@@ -473,8 +463,7 @@ def cached(ttl: Optional[int] = None, key_prefix: str = ""):
             if args:
                 key_parts.extend([str(arg) for arg in args])
             if kwargs:
-                key_parts.extend(
-                    [f"{k}={v}" for k, v in sorted(kwargs.items())])
+                key_parts.extend([f"{k}={v}" for k, v in sorted(kwargs.items())])
 
             cache_key = ":".join(key_parts)
 

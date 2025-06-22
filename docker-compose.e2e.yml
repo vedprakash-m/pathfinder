@@ -67,15 +67,19 @@ services:
     ports:
       - "3001:3000"
     volumes:
-      - ./frontend:/app
-      - /app/node_modules
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - ./frontend/index.html:/app/index.html
+      - ./frontend/vite.config.ts:/app/vite.config.ts
+      - ./frontend/package.json:/app/package.json
+      - frontend-e2e-node-modules:/app/node_modules
     command: npm run dev -- --host 0.0.0.0 --port 3000
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 20s
+      start_period: 30s
 
   # MongoDB for E2E Testing (isolated test data)
   mongodb-e2e:
@@ -167,6 +171,7 @@ volumes:
   mongodb-e2e-data:
   redis-e2e-data:
   e2e-backend-data:
+  frontend-e2e-node-modules:
 
 networks:
   default:

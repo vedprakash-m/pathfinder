@@ -72,8 +72,7 @@ def test_trips_with_valid_jwt():
                 "Content-Type": "application/json",
             }
 
-            response = client.post(
-                "/api/v1/trips", json=trip_data, headers=headers)
+            response = client.post("/api/v1/trips", json=trip_data, headers=headers)
 
             print(f"Valid JWT response status: {response.status_code}")
             print(f"Valid JWT response content: {response.content}")
@@ -93,8 +92,7 @@ def test_trips_with_mocked_verify_token():
         sub=test_user_id,
         email="test@example.com",
         roles=["user"],
-        permissions=["create:trips", "read:trips",
-            "update:trips", "delete:trips"],
+        permissions=["create:trips", "read:trips", "update:trips", "delete:trips"],
     )
 
     # Mock verify_token to return our token data
@@ -123,11 +121,9 @@ def test_trips_with_mocked_verify_token():
                 "Content-Type": "application/json",
             }
 
-            response = client.post(
-                "/api/v1/trips", json=trip_data, headers=headers)
+            response = client.post("/api/v1/trips", json=trip_data, headers=headers)
 
-            print(
-                f"Mocked verify_token response status: {response.status_code}")
+            print(f"Mocked verify_token response status: {response.status_code}")
             print(f"Mocked verify_token response content: {response.content}")
 
             # Should not be an auth error

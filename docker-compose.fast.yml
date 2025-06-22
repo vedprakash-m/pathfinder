@@ -1,0 +1,48 @@
+# Docker Compose override for faster local E2E testing
+# Usage: docker-compose -f docker-compose.e2e.yml -f docker-compose.fast.yml up
+
+version: '3.8'
+
+services:
+  backend-e2e:
+    # Skip health checks for faster startup
+    healthcheck:
+      disable: true
+    environment:
+      # Reduce startup overhead
+      - WORKER_PROCESSES=1
+      - LOG_LEVEL=ERROR
+      - DB_POOL_SIZE=1
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1
+
+  frontend-e2e:
+    healthcheck:
+      disable: true
+    environment:
+      - NODE_ENV=development
+      - VITE_ENABLE_HMR=false
+    command: npm run dev -- --host 0.0.0.0 --port 3000 --no-open
+
+  mongodb-e2e:
+    # Use smaller memory footprint
+    command: mongod --noauth --quiet --wiredTigerCacheSizeGB 0.25
+    healthcheck:
+      interval: 5s
+      timeout: 2s
+      retries: 3
+
+  redis-e2e:
+    # Disable persistence for faster startup
+    command: redis-server --save "" --appendonly no --maxmemory 50mb
+    healthcheck:
+      interval: 5s
+      timeout: 2s
+      retries: 3
+
+  playwright-e2e:
+    environment:
+      # Faster test execution
+      - E2E_HEADLESS=true
+      - E2E_WORKERS=1
+      - E2E_TIMEOUT=15000
+      - PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1

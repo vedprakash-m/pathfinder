@@ -65,8 +65,7 @@ class CacheService:
             ttl = ttl or self.ttl
 
             if self.use_redis:
-                serialized = json.dumps(value) if not isinstance(
-                    value, str) else value
+                serialized = json.dumps(value) if not isinstance(value, str) else value
                 await self.redis_client.setex(key, ttl, serialized)
                 return True
             else:

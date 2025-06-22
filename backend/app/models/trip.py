@@ -69,12 +69,8 @@ class Trip(Base):
     participations = relationship(
         "TripParticipation", back_populates="trip", cascade="all, delete-orphan"
     )
-    reservations = relationship(
-        "Reservation", back_populates="trip", cascade="all, delete-orphan"
-    )
-    itineraries = relationship(
-        "Itinerary", back_populates="trip", cascade="all, delete-orphan"
-    )
+    reservations = relationship("Reservation", back_populates="trip", cascade="all, delete-orphan")
+    itineraries = relationship("Itinerary", back_populates="trip", cascade="all, delete-orphan")
     notifications = relationship(
         "Notification", back_populates="trip", cascade="all, delete-orphan"
     )
@@ -89,8 +85,7 @@ class TripParticipation(Base):
     trip_id = Column(GUID(), ForeignKey("trips.id"), nullable=False)
     family_id = Column(GUID(), ForeignKey("families.id"), nullable=False)
     user_id = Column(GUID(), ForeignKey("users.id"), nullable=False)
-    status = Column(SQLEnum(ParticipationStatus),
-                    default=ParticipationStatus.INVITED)
+    status = Column(SQLEnum(ParticipationStatus), default=ParticipationStatus.INVITED)
     budget_allocation = Column(Numeric(10, 2), nullable=True)
     preferences = Column(Text, nullable=True)  # JSON string
     notes = Column(Text, nullable=True)

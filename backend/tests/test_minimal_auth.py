@@ -25,8 +25,7 @@ def test_trips_with_minimal_auth_mock(simple_client):
         id=str(uuid4()),
         email="test@example.com",
         roles=["user"],
-        permissions=["create:trips", "read:trips",
-            "update:trips", "delete:trips"],
+        permissions=["create:trips", "read:trips", "update:trips", "delete:trips"],
     )
 
     # Mock the entire require_permissions to return our test user
@@ -39,9 +38,7 @@ def test_trips_with_minimal_auth_mock(simple_client):
         mock_require.return_value = mock_permission_func
 
         # Also patch the direct import in trips
-        with patch(
-            "app.api.trips.require_permissions", return_value=mock_permission_func
-        ):
+        with patch("app.api.trips.require_permissions", return_value=mock_permission_func):
 
             trip_data = {
                 "name": "Test Trip",
@@ -85,9 +82,7 @@ def test_trips_with_direct_endpoint_mock():
     )
 
     # Mock the use case
-    with patch.object(
-        CreateTripUseCase, "__call__", new_callable=AsyncMock
-    ) as mock_use_case:
+    with patch.object(CreateTripUseCase, "__call__", new_callable=AsyncMock) as mock_use_case:
         mock_use_case.return_value = mock_trip_response
 
         # Mock the authentication completely
@@ -123,9 +118,7 @@ def test_trips_with_direct_endpoint_mock():
 
                 # Should succeed if use case was called
                 if mock_use_case.called:
-                    print(
-                        "✅ Use case was called - authentication bypassed successfully!"
-                    )
+                    print("✅ Use case was called - authentication bypassed successfully!")
                     assert response.status_code == 200 or response.status_code == 201
                 else:
                     print("❌ Use case not called - authentication still blocking")
@@ -151,8 +144,7 @@ def test_check_auth_dependency_override():
         return test_user
 
     # Override the dependency
-    app.dependency_overrides[require_permissions(
-        "trips", "create")] = get_test_user
+    app.dependency_overrides[require_permissions("trips", "create")] = get_test_user
 
     try:
         client = TestClient(app)

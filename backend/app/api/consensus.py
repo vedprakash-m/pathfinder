@@ -71,10 +71,7 @@ async def analyze_consensus(
         # Get trip with participations and families
         stmt = (
             select(Trip)
-            .options(
-                selectinload(Trip.participations).selectinload(
-                    TripParticipation.family)
-            )
+            .options(selectinload(Trip.participations).selectinload(TripParticipation.family))
             .where(Trip.id == trip_id)
         )
 
@@ -87,8 +84,7 @@ async def analyze_consensus(
         # Check if user has access to this trip
         user_has_access = await _check_trip_access(db, trip_id, str(current_user.id))
         if not user_has_access:
-            raise HTTPException(
-                status_code=403, detail="Access denied to this trip")
+            raise HTTPException(status_code=403, detail="Access denied to this trip")
 
         # Prepare families data for consensus analysis
         families_data = []
@@ -103,9 +99,7 @@ async def analyze_consensus(
             family_data = {
                 "id": str(family.id),
                 "name": family.name,
-                "members": [
-                    {"id": str(family.admin_user_id), "name": "Admin"}
-                ],  # Simplified
+                "members": [{"id": str(family.admin_user_id), "name": "Admin"}],  # Simplified
                 "preferences": {},
                 "budget_allocation": (
                     float(participation.budget_allocation)
@@ -118,21 +112,16 @@ async def analyze_consensus(
             # Parse preferences from participation
             if participation.preferences:
                 try:
-                    family_data["preferences"] = json.loads(
-                        participation.preferences)
+                    family_data["preferences"] = json.loads(participation.preferences)
                 except (json.JSONDecodeError, TypeError):
                     family_data["preferences"] = {}
 
             families_data.append(family_data)
 
         # Perform consensus analysis
-        consensus_analysis = analyze_trip_consensus(
-            trip_id, families_data, total_budget
-        )
+        consensus_analysis = analyze_trip_consensus(trip_id, families_data, total_budget)
 
-        logger.info(
-            f"Consensus analysis performed for trip {trip_id} by user {current_user.id}"
-        )
+        logger.info(f"Consensus analysis performed for trip {trip_id} by user {current_user.id}")
 
         return ConsensusResponse(**consensus_analysis)
 
@@ -140,8 +129,7 @@ async def analyze_consensus(
         raise
     except Exception as e:
         logger.error(f"Error analyzing consensus for trip {trip_id}: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail="Failed to analyze consensus")
+        raise HTTPException(status_code=500, detail="Failed to analyze consensus")
 
 
 @router.get("/dashboard/{trip_id}")
@@ -163,10 +151,7 @@ async def get_consensus_dashboard(
         # Get trip data
         stmt = (
             select(Trip)
-            .options(
-                selectinload(Trip.participations).selectinload(
-                    TripParticipation.family)
-            )
+            .options(selectinload(Trip.participations).selectinload(TripParticipation.family))
             .where(Trip.id == trip_id)
         )
 
@@ -205,8 +190,7 @@ async def get_consensus_dashboard(
 
             if participation.preferences:
                 try:
-                    family_data["preferences"] = json.loads(
-                        participation.preferences)
+                    family_data["preferences"] = json.loads(participation.preferences)
                 except (json.JSONDecodeError, TypeError):
                     family_data["preferences"] = {}
 
@@ -214,9 +198,7 @@ async def get_consensus_dashboard(
 
         # Generate dashboard data
         engine = FamilyConsensusEngine()
-        consensus_result = engine.generate_weighted_consensus(
-            families_data, total_budget
-        )
+        consensus_result = engine.generate_weighted_consensus(families_data, total_budget)
 
         dashboard_data = {
             "consensus_score": consensus_result.consensus_score,
@@ -229,19 +211,9 @@ async def get_consensus_dashboard(
             "conflicts_summary": {
                 "total": len(consensus_result.conflicts),
                 "critical": len(
-                    [
-                        c
-                        for c in consensus_result.conflicts
-                        if c.severity.value == "critical"
-                    ]
+                    [c for c in consensus_result.conflicts if c.severity.value == "critical"]
                 ),
-                "high": len(
-                    [
-                        c
-                        for c in consensus_result.conflicts
-                        if c.severity.value == "high"
-                    ]
-                ),
+                "high": len([c for c in consensus_result.conflicts if c.severity.value == "high"]),
             },
             "next_steps": consensus_result.next_steps,
         }
@@ -256,10 +228,8 @@ async def get_consensus_dashboard(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(
-            f"Error getting consensus dashboard for trip {trip_id}: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail="Failed to get dashboard data")
+        logger.error(f"Error getting consensus dashboard for trip {trip_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get dashboard data")
 
 
 @router.post("/vote/{trip_id}")
@@ -276,12 +246,9 @@ async def submit_family_vote(
     """
     try:
         # Check if user has access and get their family ID
-        user_family_id = await _get_user_family_for_trip(
-            db, trip_id, str(current_user.id)
-        )
+        user_family_id = await _get_user_family_for_trip(db, trip_id, str(current_user.id))
         if not user_family_id:
-            raise HTTPException(
-                status_code=403, detail="You are not part of this trip")
+            raise HTTPException(status_code=403, detail="You are not part of this trip")
 
         # For now, we'll store votes in memory or a simple cache
         # In production, you'd want to store votes in the database
@@ -331,10 +298,7 @@ async def get_consensus_recommendations(
         # Get trip and family data (similar to analyze_consensus)
         stmt = (
             select(Trip)
-            .options(
-                selectinload(Trip.participations).selectinload(
-                    TripParticipation.family)
-            )
+            .options(selectinload(Trip.participations).selectinload(TripParticipation.family))
             .where(Trip.id == trip_id)
         )
 
@@ -367,8 +331,7 @@ async def get_consensus_recommendations(
 
             if participation.preferences:
                 try:
-                    family_data["preferences"] = json.loads(
-                        participation.preferences)
+                    family_data["preferences"] = json.loads(participation.preferences)
                 except (json.JSONDecodeError, TypeError):
                     family_data["preferences"] = {}
 
@@ -376,9 +339,7 @@ async def get_consensus_recommendations(
 
         # Generate recommendations
         engine = FamilyConsensusEngine()
-        consensus_result = engine.generate_weighted_consensus(
-            families_data, total_budget
-        )
+        consensus_result = engine.generate_weighted_consensus(families_data, total_budget)
 
         recommendations = {
             "immediate_actions": consensus_result.next_steps,
@@ -396,10 +357,8 @@ async def get_consensus_recommendations(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(
-            f"Error getting recommendations for trip {trip_id}: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail="Failed to get recommendations")
+        logger.error(f"Error getting recommendations for trip {trip_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get recommendations")
 
 
 # Helper functions
@@ -420,9 +379,7 @@ async def _check_trip_access(db: AsyncSession, trip_id: str, user_id: str) -> bo
         participation_stmt = (
             select(TripParticipation)
             .join(Family)
-            .where(
-                TripParticipation.trip_id == trip_id, Family.admin_user_id == user_id
-            )
+            .where(TripParticipation.trip_id == trip_id, Family.admin_user_id == user_id)
         )
         participation_result = await db.execute(participation_stmt)
         participation = participation_result.scalar_one_or_none()
@@ -434,17 +391,13 @@ async def _check_trip_access(db: AsyncSession, trip_id: str, user_id: str) -> bo
         return False
 
 
-async def _get_user_family_for_trip(
-    db: AsyncSession, trip_id: str, user_id: str
-) -> Optional[str]:
+async def _get_user_family_for_trip(db: AsyncSession, trip_id: str, user_id: str) -> Optional[str]:
     """Get the family ID for a user in a specific trip."""
     try:
         stmt = (
             select(Family.id)
             .join(TripParticipation)
-            .where(
-                TripParticipation.trip_id == trip_id, Family.admin_user_id == user_id
-            )
+            .where(TripParticipation.trip_id == trip_id, Family.admin_user_id == user_id)
         )
         result = await db.execute(stmt)
         family_id = result.scalar_one_or_none()

@@ -60,8 +60,7 @@ class ContextValidator:
             with open(settings.USER_PATTERNS_FILE, "r") as f:
                 self.user_patterns = json.load(f)
         except (FileNotFoundError, json.JSONDecodeError):
-            logger.warning(
-                "Could not load user access patterns file. Starting fresh.")
+            logger.warning("Could not load user access patterns file. Starting fresh.")
 
     async def extract_context(
         self, request: Request, user_id: str, resource_type: str, action: str
@@ -112,14 +111,11 @@ class ContextValidator:
 
         # 2. Time-based validation
         time_score = await self._validate_time(context.request_time)
-        results["factors"]["time"] = {
-            "score": time_score, "is_valid": time_score < 0.8}
+        results["factors"]["time"] = {"score": time_score, "is_valid": time_score < 0.8}
         results["risk_score"] += time_score * 0.2  # 20% weight
 
         # 3. Device validation
-        device_score = await self._validate_device(
-            context.user_id, context.device_fingerprint
-        )
+        device_score = await self._validate_device(context.user_id, context.device_fingerprint)
         results["factors"]["device"] = {
             "score": device_score,
             "is_valid": device_score < 0.7,
@@ -168,27 +164,19 @@ class ContextValidator:
         # Check if within working hours
         if self.working_hours["start"] <= hour <= self.working_hours["end"]:
             return 0.1  # Low risk during working hours
-        elif (
-            hour < self.working_hours["start"] - 2
-            or hour > self.working_hours["end"] + 2
-        ):
+        elif hour < self.working_hours["start"] - 2 or hour > self.working_hours["end"] + 2:
             return 0.8  # Higher risk for very unusual hours
         else:
             return 0.4  # Medium risk for slightly outside hours
 
-    async def _validate_device(
-        self, user_id: str, device_fingerprint: Optional[str]
-    ) -> float:
+    async def _validate_device(self, user_id: str, device_fingerprint: Optional[str]) -> float:
         """Validate the device fingerprint."""
         if not device_fingerprint:
             return 0.7  # Higher risk when no fingerprint provided
 
         # Check if user has known devices
         user_key = f"user:{user_id}:devices"
-        if (
-            user_key in self.user_patterns
-            and device_fingerprint in self.user_patterns[user_key]
-        ):
+        if user_key in self.user_patterns and device_fingerprint in self.user_patterns[user_key]:
             return 0.1  # Low risk for known devices
 
         return 0.6  # Medium-high risk for new devices
@@ -207,8 +195,7 @@ class ContextValidator:
             return 0.5  # Medium risk for new users
 
         # Check if user commonly accesses this resource type
-        resource_accesses = self.user_patterns[user_key].get(
-            context.resource_type, 0)
+        resource_accesses = self.user_patterns[user_key].get(context.resource_type, 0)
         if resource_accesses > 10:
             return 0.1  # Low risk for frequently accessed resources
         elif resource_accesses > 3:
@@ -224,8 +211,7 @@ class ContextValidator:
             if device_key not in self.user_patterns:
                 self.user_patterns[device_key] = []
             if context.device_fingerprint not in self.user_patterns[device_key]:
-                self.user_patterns[device_key].append(
-                    context.device_fingerprint)
+                self.user_patterns[device_key].append(context.device_fingerprint)
 
         # Record resource access
         resource_key = f"user:{context.user_id}:resources"

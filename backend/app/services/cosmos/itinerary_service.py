@@ -53,9 +53,7 @@ class ItineraryDocumentService:
         # Convert back to Pydantic model and return
         return ItineraryDocument(**result)
 
-    async def get_itinerary(
-        self, itinerary_id: str, trip_id: str
-    ) -> Optional[ItineraryDocument]:
+    async def get_itinerary(self, itinerary_id: str, trip_id: str) -> Optional[ItineraryDocument]:
         """Get an itinerary document by ID and trip ID."""
         return await self.cosmos_service.get_item(itinerary_id, trip_id)
 
@@ -85,9 +83,7 @@ class ItineraryDocumentService:
         """Delete an itinerary document."""
         await self.cosmos_service.delete_item(itinerary_id, trip_id)
 
-    async def create_itinerary_version(
-        self, itinerary: ItineraryDocument
-    ) -> ItineraryDocument:
+    async def create_itinerary_version(self, itinerary: ItineraryDocument) -> ItineraryDocument:
         """Create a new version of an itinerary document."""
         # First mark all existing versions as not current
         existing_itineraries = await self.list_itineraries(itinerary.trip_id)
@@ -178,9 +174,7 @@ class ItineraryDocumentService:
             created_at=sql_itinerary.created_at,
             updated_at=sql_itinerary.updated_at,
             approved_at=sql_itinerary.approved_at,
-            approved_by=(
-                str(sql_itinerary.approved_by) if sql_itinerary.approved_by else None
-            ),
+            approved_by=(str(sql_itinerary.approved_by) if sql_itinerary.approved_by else None),
             days=[],
         )
 
@@ -224,9 +218,7 @@ class ItineraryDocumentService:
                                 else None
                             ),
                             end_time=(
-                                sql_activity.end_time.isoformat()
-                                if sql_activity.end_time
-                                else None
+                                sql_activity.end_time.isoformat() if sql_activity.end_time else None
                             ),
                             duration_minutes=sql_activity.duration_minutes,
                             estimated_cost_per_person=sql_activity.estimated_cost_per_person,

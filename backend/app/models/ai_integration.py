@@ -122,8 +122,7 @@ class MagicPoll(Base):
     responses = Column(JSON, nullable=True)  # User responses and preferences
     ai_analysis = Column(JSON, nullable=True)  # AI analysis of responses
     consensus_recommendation = Column(JSON, nullable=True)  # AI recommendation
-    status = Column(String(50), nullable=False,
-                    default=PollStatus.ACTIVE.value)
+    status = Column(String(50), nullable=False, default=PollStatus.ACTIVE.value)
     expires_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, onupdate=datetime.utcnow)
@@ -205,8 +204,7 @@ class AISuggestion(Base):
     description = Column(Text, nullable=True)
     # Data needed to execute the suggestion
     action_data = Column(JSON, nullable=True)
-    priority = Column(Integer, nullable=False,
-                      default=5)  # 1-10 priority scale
+    priority = Column(Integer, nullable=False, default=5)  # 1-10 priority scale
     is_acknowledged = Column(Boolean, nullable=False, default=False)
     is_dismissed = Column(Boolean, nullable=False, default=False)
     expires_at = Column(DateTime, nullable=True)
@@ -237,9 +235,7 @@ class AISuggestion(Base):
 
     def is_active(self) -> bool:
         """Check if the suggestion is still active"""
-        return (
-            not self.is_dismissed and not self.is_acknowledged and not self.is_expired()
-        )
+        return not self.is_dismissed and not self.is_acknowledged and not self.is_expired()
 
 
 # Helper functions for creating common AI interactions
