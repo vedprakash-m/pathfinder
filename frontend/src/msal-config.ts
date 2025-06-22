@@ -48,7 +48,7 @@ const msalConfig: Configuration = {
       },
       logLevel: import.meta.env.NODE_ENV === 'development' ? LogLevel.Verbose : LogLevel.Error,
     },
-    allowNativeBroker: false, // Disables WAM Broker
+    // Note: allowNativeBroker is not available in this MSAL version
     windowHashTimeout: 60000,
     iframeHashTimeout: 6000,
   },

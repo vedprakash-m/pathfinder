@@ -4,7 +4,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useMsal, useAccount, useIsAuthenticated } from '@azure/msal-react';
 import { loginRequest } from '../msal-config';
-import { AccountInfo } from '@azure/msal-browser';
 
 interface User {
   id: string;

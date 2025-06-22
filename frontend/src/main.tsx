@@ -9,6 +9,7 @@ import { Toaster } from 'react-hot-toast'
 import App from './App.tsx'
 import msalConfig from './msal-config.ts'
 import { AuthProvider } from './contexts/AuthContext'
+import { MsalApiProvider } from './components/providers/MsalApiProvider'
 import './styles/index.css'
 
 // Create a client with optimized caching configuration
@@ -39,7 +40,8 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <MsalProvider instance={msalInstance}>
       <AuthProvider>
-        <QueryClientProvider client={queryClient}>
+        <MsalApiProvider>
+          <QueryClientProvider client={queryClient}>
           <FluentProvider theme={webLightTheme}>
             <BrowserRouter>
               <App />
@@ -65,7 +67,8 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
               />
             </BrowserRouter>
           </FluentProvider>
-        </QueryClientProvider>
+                  </QueryClientProvider>
+        </MsalApiProvider>
       </AuthProvider>
     </MsalProvider>
   </React.StrictMode>,
