@@ -751,7 +751,7 @@ fi
 echo "   Running unit tests first (catch schema validation errors)..."
 if python3 -c "import pytest, coverage" 2>/dev/null; then
     # Run unit tests first to catch validation issues - DON'T SILENCE ERRORS
-    UNIT_TEST_OUTPUT=$(python3 -m pytest tests/ -m "unit or not (e2e or integration or performance)" -v --tb=short 2>&1)
+    UNIT_TEST_OUTPUT=$(python3 -m pytest tests/ -m "unit or not (e2e or performance)" -v --tb=short 2>&1)
     if echo "$UNIT_TEST_OUTPUT" | grep -q "failed\|ERROR\|FAILED"; then
         print_status "Unit tests failed - will cause CI/CD failure" "error"
         echo "   ❌ Unit test failures detected:"
@@ -759,6 +759,20 @@ if python3 -c "import pytest, coverage" 2>/dev/null; then
         VALIDATION_FAILED=true
     else
         print_status "Unit tests: Passed" "success"
+    fi
+fi
+
+echo "   Running integration tests (CI/CD includes these)..."
+if python3 -c "import pytest, coverage" 2>/dev/null; then
+    # Run integration tests separately to catch auth/endpoint issues
+    INTEGRATION_TEST_OUTPUT=$(python3 -m pytest tests/ -m "integration" -v --tb=short 2>&1)
+    if echo "$INTEGRATION_TEST_OUTPUT" | grep -q "failed\|ERROR\|FAILED"; then
+        print_status "Integration tests failed - will cause CI/CD failure" "error"
+        echo "   ❌ Integration test failures detected:"
+        echo "$INTEGRATION_TEST_OUTPUT" | grep -E "(FAILED|ERROR|AttributeError)" | head -10
+        VALIDATION_FAILED=true
+    else
+        print_status "Integration tests: Passed" "success"
     fi
 fi
 

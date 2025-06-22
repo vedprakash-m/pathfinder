@@ -25,7 +25,7 @@ from jwt.exceptions import PyJWTError
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)  # Disable auto errors to handle manually
 
 
 class AuditLogger:
@@ -310,9 +310,16 @@ def require_permissions(resource_type: str, action: str):
     """Decorator to require zero-trust verified permissions for a resource."""
 
     async def permission_checker(
-        request: Request, credentials: HTTPAuthorizationCredentials = Depends(security)
+        request: Request, credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
     ):
         try:
+            # Handle missing credentials
+            if credentials is None:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Authorization header required"
+                )
+            
             # Verify token and get user
             token_data = await verify_token(credentials.credentials)
             user = User(
