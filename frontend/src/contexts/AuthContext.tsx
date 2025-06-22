@@ -1,8 +1,10 @@
-// Simple AuthContext for the onboarding system
-// This provides compatibility with the existing Auth0 setup
+// AuthContext with Microsoft Entra External ID (MSAL) authentication
+// Replaces Auth0 with Microsoft's identity platform
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useMsal, useAccount, useIsAuthenticated } from '@azure/msal-react';
+import { loginRequest } from '../msal-config';
+import { AccountInfo } from '@azure/msal-browser';
 
 interface User {
   id: string;
@@ -16,34 +18,126 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  login: () => Promise<void>;
+  logout: () => Promise<void>;
+  getAccessToken: () => Promise<string | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user: auth0User, isAuthenticated, isLoading: auth0Loading } = useAuth0();
+  const { instance, accounts } = useMsal();
+  const account = useAccount(accounts[0] || {});
+  const isAuthenticated = useIsAuthenticated();
+  
   const [user, setUser] = useState<User | null>(null);
-  const [error] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isAuthenticated && auth0User) {
-      // Transform Auth0 user to our User interface
-      setUser({
-        id: auth0User.sub || '',
-        email: auth0User.email || '',
-        name: auth0User.name || '',
-        picture: auth0User.picture,
-      });
-    } else {
-      setUser(null);
+    const initializeAuth = async () => {
+      try {
+        setIsLoading(true);
+        
+        if (isAuthenticated && account) {
+          // Transform MSAL account to our User interface
+          setUser({
+            id: account.localAccountId || account.homeAccountId || '',
+            email: account.username || '',
+            name: account.name || account.username || '',
+            picture: undefined, // Can be fetched from Graph API if needed
+          });
+          setError(null);
+        } else {
+          setUser(null);
+        }
+      } catch (err) {
+        console.error('Auth initialization error:', err);
+        setError(err instanceof Error ? err.message : 'Authentication error');
+        setUser(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeAuth();
+  }, [isAuthenticated, account]);
+
+  const login = async () => {
+    try {
+      setError(null);
+      setIsLoading(true);
+      
+      const loginResponse = await instance.loginPopup(loginRequest);
+      console.log('Login successful:', loginResponse);
+      
+      // User state will be updated via the useEffect above
+    } catch (err) {
+      console.error('Login error:', err);
+      setError(err instanceof Error ? err.message : 'Login failed');
+      throw err;
+    } finally {
+      setIsLoading(false);
     }
-  }, [isAuthenticated, auth0User]);
+  };
+
+  const logout = async () => {
+    try {
+      setError(null);
+      setIsLoading(true);
+      
+      await instance.logoutPopup({
+        postLogoutRedirectUri: window.location.origin,
+        mainWindowRedirectUri: window.location.origin,
+      });
+      
+      setUser(null);
+    } catch (err) {
+      console.error('Logout error:', err);
+      setError(err instanceof Error ? err.message : 'Logout failed');
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getAccessToken = async (): Promise<string | null> => {
+    if (!account) {
+      return null;
+    }
+
+    try {
+      const response = await instance.acquireTokenSilent({
+        ...loginRequest,
+        account: account,
+      });
+      
+      return response.accessToken;
+    } catch (err) {
+      console.error('Token acquisition error:', err);
+      
+      // If silent token acquisition fails, try interactive
+      try {
+        const response = await instance.acquireTokenPopup({
+          ...loginRequest,
+          account: account,
+        });
+        return response.accessToken;
+      } catch (interactiveErr) {
+        console.error('Interactive token acquisition error:', interactiveErr);
+        return null;
+      }
+    }
+  };
 
   const contextValue: AuthContextType = {
     user,
     isAuthenticated,
-    isLoading: auth0Loading,
+    isLoading,
     error,
+    login,
+    logout,
+    getAccessToken,
   };
 
   return (

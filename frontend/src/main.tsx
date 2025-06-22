@@ -3,11 +3,12 @@ import ReactDOM from 'react-dom/client'
 import { FluentProvider, webLightTheme } from '@fluentui/react-components'
 import { BrowserRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { Auth0Provider } from '@auth0/auth0-react'
+import { MsalProvider } from '@azure/msal-react'
+import { PublicClientApplication } from '@azure/msal-browser'
 import { Toaster } from 'react-hot-toast'
 import App from './App.tsx'
-import auth0Config from './auth0-config.ts'
-import { Auth0ApiProvider } from './components/providers/Auth0ApiProvider'
+import msalConfig from './msal-config.ts'
+import { AuthProvider } from './contexts/AuthContext'
 import './styles/index.css'
 
 // Create a client with optimized caching configuration
@@ -22,21 +23,22 @@ const queryClient = new QueryClient({
   },
 })
 
-// Auth0 configuration is now imported from auth0-config.ts with hardcoded values
+// Initialize MSAL instance
+const msalInstance = new PublicClientApplication(msalConfig);
 
 // Debug logging for development
 if (import.meta.env.DEV) {
-  console.log('Auth0 Config:', {
-    domain: auth0Config.domain,
-    clientId: auth0Config.clientId ? `${auth0Config.clientId.substring(0, 8)}...` : 'MISSING',
-    audience: auth0Config.authorizationParams.audience,
+  console.log('MSAL Config:', {
+    authority: msalConfig.auth.authority,
+    clientId: msalConfig.auth.clientId ? `${msalConfig.auth.clientId.substring(0, 8)}...` : 'MISSING',
+    redirectUri: msalConfig.auth.redirectUri,
   });
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <Auth0Provider {...auth0Config}>
-      <Auth0ApiProvider>
+    <MsalProvider instance={msalInstance}>
+      <AuthProvider>
         <QueryClientProvider client={queryClient}>
           <FluentProvider theme={webLightTheme}>
             <BrowserRouter>
@@ -64,7 +66,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             </BrowserRouter>
           </FluentProvider>
         </QueryClientProvider>
-      </Auth0ApiProvider>
-    </Auth0Provider>
+      </AuthProvider>
+    </MsalProvider>
   </React.StrictMode>,
 )

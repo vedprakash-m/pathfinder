@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { useAuth0 } from '@auth0/auth0-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/store';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Layout Components
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -40,7 +40,7 @@ import {
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth0();
+  const { isAuthenticated, isLoading } = useAuth();
   const authStore = useAuthStore();
 
   if (isLoading || authStore.isLoading) {
@@ -64,7 +64,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
 // Public Route Component (redirect if authenticated)
 const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth0();
+  const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -95,7 +95,7 @@ const pageTransition = {
 };
 
 function App() {
-  const { isLoading } = useAuth0();
+  const { isLoading } = useAuth();
   const location = useLocation();
 
   // Initialize performance monitoring

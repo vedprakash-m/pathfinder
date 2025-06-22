@@ -24,6 +24,8 @@
   },
   "dependencies": {
     "@auth0/auth0-react": "^2.2.3",
+    "@azure/msal-browser": "^4.13.2",
+    "@azure/msal-react": "^3.0.13",
     "@fluentui/react": "^8.122.19",
     "@fluentui/react-card": "^9.2.6",
     "@fluentui/react-components": "^9.42.0",

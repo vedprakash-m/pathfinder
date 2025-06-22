@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth0 } from '@auth0/auth0-react';
 import { motion } from 'framer-motion';
 import {
   Card,
@@ -15,15 +14,16 @@ import {
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useFormValidation } from '@/hooks/useFormValidation';
 import { loginSchema } from '@/utils/validation';
+import { useAuth } from '@/contexts/AuthContext';
 
 
 export const LoginPage: React.FC = () => {
   const { 
-    loginWithRedirect, 
+    login, 
     isAuthenticated, 
     isLoading, 
-    error: auth0Error
-  } = useAuth0();
+    error: authError
+  } = useAuth();
 
   const [isEmailLogin, setIsEmailLogin] = useState(false);
 
@@ -49,13 +49,9 @@ export const LoginPage: React.FC = () => {
     }
     
     try {
-      console.log('🔄 Attempting login with redirect...');
-      // Use Auth0 redirect with email hint
-      await loginWithRedirect({
-        authorizationParams: {
-          login_hint: formData.email as string,
-        },
-      });
+      console.log('🔄 Attempting login with MSAL...');
+      // Use MSAL login popup
+      await login();
     } catch (error) {
       console.error('❌ Login error:', error);
       // Show user-friendly error message
@@ -125,14 +121,14 @@ export const LoginPage: React.FC = () => {
           </CardHeader>
 
           <div className="p-6 space-y-6">
-            {auth0Error && (
+            {authError && (
               <motion.div
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 className="p-4 bg-error-50 border border-error-200 rounded-lg"
               >
                 <Body2 className="text-error-700">
-                  Authentication error: {auth0Error.message}
+                  Authentication error: {authError}
                 </Body2>
               </motion.div>
             )}
@@ -203,10 +199,10 @@ export const LoginPage: React.FC = () => {
                   className="w-full py-3"
                   onClick={async () => {
                     try {
-                      console.log('🔄 Attempting social login...');
-                      await loginWithRedirect();
+                      console.log('🔄 Attempting MSAL login...');
+                      await login();
                     } catch (error) {
-                      console.error('❌ Social login error:', error);
+                      console.error('❌ MSAL login error:', error);
                       alert(`Login failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
                     }
                   }}
