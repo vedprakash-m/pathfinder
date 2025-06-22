@@ -20,10 +20,9 @@ services:
       - REDIS_URL=redis://redis-e2e:6379
       - REDIS_TTL=3600
       # Mock external services for E2E testing
-      - AUTH0_DOMAIN=mock-auth.local
-      - AUTH0_AUDIENCE=api://pathfinder-e2e
-      - AUTH0_CLIENT_ID=e2e_test_client_id
-      - AUTH0_CLIENT_SECRET=e2e_test_client_secret
+      - ENTRA_EXTERNAL_TENANT_ID=e2e-test-tenant
+      - ENTRA_EXTERNAL_CLIENT_ID=e2e_test_client_id
+      - ENTRA_EXTERNAL_AUTHORITY=https://e2e-test-tenant.ciamlogin.com/e2e-test-tenant.onmicrosoft.com
       - OPENAI_API_KEY=sk-mock-e2e-key
       - GOOGLE_MAPS_API_KEY=mock_e2e_maps_key
       - SENDGRID_API_KEY=mock_e2e_sendgrid_key
@@ -58,9 +57,8 @@ services:
     environment:
       - VITE_API_BASE_URL=http://localhost:8001
       - VITE_API_URL=http://localhost:8001
-      - VITE_AUTH0_DOMAIN=mock-auth.local
-      - VITE_AUTH0_CLIENT_ID=e2e_test_client_id
-      - VITE_AUTH0_AUDIENCE=api://pathfinder-e2e
+      - VITE_ENTRA_EXTERNAL_TENANT_ID=e2e-test-tenant
+      - VITE_ENTRA_EXTERNAL_CLIENT_ID=e2e_test_client_id
       - VITE_GOOGLE_MAPS_API_KEY=mock_e2e_maps_key
       - VITE_ENVIRONMENT=testing
       - NODE_ENV=development

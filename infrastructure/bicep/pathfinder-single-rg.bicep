@@ -16,17 +16,12 @@ param sqlAdminPassword string
 @secure()
 param openAIApiKey string = ''
 
-@description('Auth0 domain')
-@secure()
-param auth0Domain string = ''
+// Updated for Microsoft Entra External ID
+@description('Microsoft Entra External ID tenant ID')
+param entraTenantId string = ''
 
-@description('Auth0 client ID')
-@secure()
-param auth0ClientId string = ''
-
-@description('Auth0 audience')
-@secure()
-param auth0Audience string = ''
+@description('Microsoft Entra External ID client ID (application ID)')
+param entraClientId string = ''
 
 // Tags for all resources - single resource group strategy
 var tags = {
@@ -291,6 +286,19 @@ resource backendApp 'Microsoft.App/containerApps@2023-05-01' = {
               name: 'CELERY_RESULT_BACKEND'
               value: ''
             }
+            // Updated for Microsoft Entra External ID
+            {
+              name: 'ENTRA_EXTERNAL_TENANT_ID'
+              value: entraTenantId
+            }
+            {
+              name: 'ENTRA_EXTERNAL_CLIENT_ID'
+              value: entraClientId
+            }
+            {
+              name: 'ENTRA_EXTERNAL_AUTHORITY'
+              value: !empty(entraTenantId) ? 'https://${entraTenantId}.ciamlogin.com/${entraTenantId}.onmicrosoft.com' : ''
+            }
             {
               name: 'ENVIRONMENT'
               value: 'production'
@@ -335,16 +343,12 @@ resource frontendApp 'Microsoft.App/containerApps@2023-05-01' = {
       }
       secrets: [
         {
-          name: 'auth0-domain'
-          value: !empty(auth0Domain) ? auth0Domain : 'dev-jwnud3v8ghqnyygr.us.auth0.com'
+          name: 'entra-tenant-id'
+          value: !empty(entraTenantId) ? entraTenantId : 'test-tenant-id'
         }
         {
-          name: 'auth0-client-id'
-          value: !empty(auth0ClientId) ? auth0ClientId : 'KXu3KpGiyRHHHgiXX90sHuNC4rfYRcNn'
-        }
-        {
-          name: 'auth0-audience'
-          value: !empty(auth0Audience) ? auth0Audience : 'https://pathfinder-api.com'
+          name: 'entra-client-id'
+          value: !empty(entraClientId) ? entraClientId : 'test-client-id'
         }
       ]
     }
@@ -366,17 +370,14 @@ resource frontendApp 'Microsoft.App/containerApps@2023-05-01' = {
               name: 'VITE_API_URL'
               value: 'https://${backendApp.properties.configuration.ingress.fqdn}'
             }
+            // Updated for Microsoft Entra External ID
             {
-              name: 'VITE_AUTH0_DOMAIN'
-              secretRef: 'auth0-domain'
+              name: 'VITE_ENTRA_EXTERNAL_TENANT_ID'
+              secretRef: 'entra-tenant-id'
             }
             {
-              name: 'VITE_AUTH0_CLIENT_ID'
-              secretRef: 'auth0-client-id'
-            }
-            {
-              name: 'VITE_AUTH0_AUDIENCE'
-              secretRef: 'auth0-audience'
+              name: 'VITE_ENTRA_EXTERNAL_CLIENT_ID'
+              secretRef: 'entra-client-id'
             }
             {
               name: 'ENVIRONMENT'

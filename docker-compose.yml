@@ -19,10 +19,9 @@ services:
       - COSMOS_DB_DATABASE=pathfinder
       - REDIS_URL=redis://redis:6379
       - REDIS_TTL=3600
-      - AUTH0_DOMAIN=${AUTH0_DOMAIN:-localhost}
-      - AUTH0_AUDIENCE=${AUTH0_AUDIENCE:-api://pathfinder}
-      - AUTH0_CLIENT_ID=${AUTH0_CLIENT_ID:-client_id}
-      - AUTH0_CLIENT_SECRET=${AUTH0_CLIENT_SECRET:-client_secret}
+      - ENTRA_EXTERNAL_TENANT_ID=${ENTRA_EXTERNAL_TENANT_ID:-test-tenant-id}
+      - ENTRA_EXTERNAL_CLIENT_ID=${ENTRA_EXTERNAL_CLIENT_ID:-test-client-id}
+      - ENTRA_EXTERNAL_AUTHORITY=${ENTRA_EXTERNAL_AUTHORITY:-https://test-tenant-id.ciamlogin.com/test-tenant-id.onmicrosoft.com}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-sk-mock}
       - GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY:-mock_key}
     depends_on:
@@ -40,9 +39,8 @@ services:
       - "3000:3000"
     environment:
       - VITE_API_BASE_URL=http://localhost:8000
-      - VITE_AUTH0_DOMAIN=${AUTH0_DOMAIN:-localhost}
-      - VITE_AUTH0_CLIENT_ID=${AUTH0_CLIENT_ID:-client_id}
-      - VITE_AUTH0_AUDIENCE=${AUTH0_AUDIENCE:-api://pathfinder}
+      - VITE_ENTRA_EXTERNAL_TENANT_ID=${ENTRA_EXTERNAL_TENANT_ID:-test-tenant-id}
+      - VITE_ENTRA_EXTERNAL_CLIENT_ID=${ENTRA_EXTERNAL_CLIENT_ID:-test-client-id}
     command: npm run dev
 
   # Redis for caching

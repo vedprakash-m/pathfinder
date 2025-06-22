@@ -3,13 +3,13 @@
 // Connects to existing data layer in pathfinder-db-rg
 
 @description('Name of the application')
-param appName string = 'pathfinder'
+param appName string
 
 @description('Location for resources')
 param location string = resourceGroup().location
 
 @description('Data layer resource group name')
-param dataResourceGroup string = 'pathfinder-db-rg'
+param dataResourceGroup string
 
 @description('SQL Server name from data layer')
 param sqlServerName string
@@ -19,6 +19,9 @@ param cosmosAccountName string
 
 @description('Storage account name from data layer')
 param storageAccountName string
+
+@description('Data layer Key Vault name')
+param dataKeyVaultName string
 
 @description('SQL Server admin username')
 @secure()
@@ -32,43 +35,38 @@ param sqlAdminPassword string
 @secure()
 param openAIApiKey string = ''
 
-@description('Auth0 domain for authentication')
-@secure()
-param auth0Domain string = ''
-
-@description('Auth0 client ID for authentication')
-@secure()
-param auth0ClientId string = ''
-
-@description('Auth0 audience for API authorization')
-@secure()
-param auth0Audience string = ''
-
 @description('LLM Orchestration Service URL')
 param llmOrchestrationUrl string = ''
 
-@description('LLM Orchestration API Key')
+@description('LLM Orchestration API key')
 @secure()
 param llmOrchestrationApiKey string = ''
 
-@description('Azure Container Registry name (optional). If blank, a unique name will be generated.')
+// Updated for Microsoft Entra External ID
+@description('Microsoft Entra External ID tenant ID')
+param entraTenantId string = ''
+
+@description('Microsoft Entra External ID client ID (application ID)')
+param entraClientId string = ''
+
+@description('Azure Container Registry name (optional)')
 param acrName string = ''
 
 @description('Azure Container Registry SKU')
+@allowed(['Basic', 'Standard', 'Premium'])
 param acrSku string = 'Basic'
 
-// Generate globally-unique ACR name when param not supplied
-var resolvedAcrName = empty(acrName) ? toLower('${appName}acr${uniqueString(resourceGroup().id)}') : acrName
+// Resolve ACR name with defaults
+var resolvedAcrName = !empty(acrName) ? acrName : 'pathfinderdevregistry'
 
-// Compute layer tags - ephemeral resources
+// Compute layer tags (distinct from data layer)
 var computeTags = {
   app: appName
+  environment: 'prod'
   architecture: 'compute-layer'
-  resourceType: 'ephemeral'
   dataLayer: dataResourceGroup
   costOptimization: 'enabled'
-  autoDelete: 'allowed'
-  resumable: 'true'
+  autoShutdown: 'enabled'
 }
 
 // Compute resource naming
@@ -256,6 +254,10 @@ resource backendApp 'Microsoft.App/containerApps@2023-05-01' = {
               secretRef: 'openai-api-key'
             }
             {
+              name: 'AZURE_STORAGE_CONNECTION_STRING'
+              secretRef: 'storage-connection-string'
+            }
+            {
               name: 'LLM_ORCHESTRATION_URL'
               value: llmOrchestrationUrl
             }
@@ -263,9 +265,18 @@ resource backendApp 'Microsoft.App/containerApps@2023-05-01' = {
               name: 'LLM_ORCHESTRATION_API_KEY'
               secretRef: 'llm-orchestration-api-key'
             }
+            // Updated for Microsoft Entra External ID
             {
-              name: 'AZURE_STORAGE_CONNECTION_STRING'
-              secretRef: 'storage-connection-string'
+              name: 'ENTRA_EXTERNAL_TENANT_ID'
+              value: entraTenantId
+            }
+            {
+              name: 'ENTRA_EXTERNAL_CLIENT_ID'
+              value: entraClientId
+            }
+            {
+              name: 'ENTRA_EXTERNAL_AUTHORITY'
+              value: !empty(entraTenantId) ? 'https://${entraTenantId}.ciamlogin.com/${entraTenantId}.onmicrosoft.com' : ''
             }
             {
               name: 'USE_REDIS_CACHE'
@@ -282,14 +293,6 @@ resource backendApp 'Microsoft.App/containerApps@2023-05-01' = {
             {
               name: 'ENVIRONMENT'
               value: 'production'
-            }
-            {
-              name: 'AUTH0_DOMAIN'
-              value: auth0Domain
-            }
-            {
-              name: 'AUTH0_AUDIENCE'
-              value: auth0Audience
             }
             {
               name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
@@ -331,16 +334,12 @@ resource frontendApp 'Microsoft.App/containerApps@2023-05-01' = {
       }
       secrets: [
         {
-          name: 'auth0-domain'
-          value: !empty(auth0Domain) ? auth0Domain : 'dev-jwnud3v8ghqnyygr.us.auth0.com'
+          name: 'entra-tenant-id'
+          value: !empty(entraTenantId) ? entraTenantId : 'test-tenant-id'
         }
         {
-          name: 'auth0-client-id'
-          value: !empty(auth0ClientId) ? auth0ClientId : 'KXu3KpGiyRHHHgiXX90sHuNC4rfYRcNn'
-        }
-        {
-          name: 'auth0-audience'
-          value: !empty(auth0Audience) ? auth0Audience : 'https://pathfinder-api.com'
+          name: 'entra-client-id'
+          value: !empty(entraClientId) ? entraClientId : 'test-client-id'
         }
       ]
     }
@@ -362,17 +361,14 @@ resource frontendApp 'Microsoft.App/containerApps@2023-05-01' = {
               name: 'VITE_API_URL'
               value: 'https://${backendApp.properties.configuration.ingress.fqdn}'
             }
+            // Updated for Microsoft Entra External ID
             {
-              name: 'VITE_AUTH0_DOMAIN'
-              secretRef: 'auth0-domain'
+              name: 'VITE_ENTRA_EXTERNAL_TENANT_ID'
+              secretRef: 'entra-tenant-id'
             }
             {
-              name: 'VITE_AUTH0_CLIENT_ID'
-              secretRef: 'auth0-client-id'
-            }
-            {
-              name: 'VITE_AUTH0_AUDIENCE'
-              secretRef: 'auth0-audience'
+              name: 'VITE_ENTRA_EXTERNAL_CLIENT_ID'
+              secretRef: 'entra-client-id'
             }
             {
               name: 'ENVIRONMENT'

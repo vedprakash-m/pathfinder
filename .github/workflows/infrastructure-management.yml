@@ -187,6 +187,8 @@ jobs:
             openAIApiKey="${{ secrets.OPENAI_API_KEY }}" \
             llmOrchestrationUrl="${{ secrets.LLM_ORCHESTRATION_URL }}" \
             llmOrchestrationApiKey="${{ secrets.LLM_ORCHESTRATION_API_KEY }}" \
+            entraTenantId="${{ secrets.ENTRA_EXTERNAL_TENANT_ID }}" \
+            entraClientId="${{ secrets.ENTRA_EXTERNAL_CLIENT_ID }}" \
           --name $DEPLOYMENT_NAME
         
         # Get application URLs
