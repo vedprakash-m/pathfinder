@@ -11,6 +11,12 @@ importers:
       '@auth0/auth0-react':
         specifier: ^2.2.3
         version: 2.3.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@azure/msal-browser':
+        specifier: ^4.13.2
+        version: 4.13.2
+      '@azure/msal-react':
+        specifier: ^3.0.13
+        version: 3.0.13(@azure/msal-browser@4.13.2)(react@18.3.1)
       '@fluentui/react':
         specifier: ^8.122.19
         version: 8.122.19(@types/react-dom@18.3.7(@types/react@18.3.22))(@types/react@18.3.22)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -157,6 +163,21 @@ packages:
 
   '@auth0/auth0-spa-js@2.1.3':
     resolution: {integrity: sha512-NMTBNuuG4g3rame1aCnNS5qFYIzsTUV5qTFPRfTyYFS1feS6jsCBR+eTq9YkxCp1yuoM2UIcjunPaoPl77U9xQ==}
+
+  '@azure/msal-browser@4.13.2':
+    resolution: {integrity: sha512-lS75bF6FYZRwsacKLXc8UYu/jb+gOB7dtZq5938chCvV/zKTFDnzuXxCXhsSUh0p8s/P8ztgbfdueD9lFARQlQ==}
+    engines: {node: '>=0.8.0'}
+
+  '@azure/msal-common@15.7.1':
+    resolution: {integrity: sha512-a0eowoYfRfKZEjbiCoA5bPT3IlWRAdGSvi63OU23Hv+X6EI8gbvXCoeqokUceFMoT9NfRUWTJSx5FiuzruqT8g==}
+    engines: {node: '>=0.8.0'}
+
+  '@azure/msal-react@3.0.13':
+    resolution: {integrity: sha512-g0jk1CXCWVyshSqdaFW0ES8qTXGHiQZlgfnkS+Oxa0eDgw3phdm8I2EChtFiK67OmoQr+HmYPRrg+s8NpvdeRQ==}
+    engines: {node: '>=10'}
+    peerDependencies:
+      '@azure/msal-browser': ^4.13.2
+      react: ^16.8.0 || ^17 || ^18 || ^19
 
   '@babel/code-frame@7.27.1':
     resolution: {integrity: sha512-cjQ7ZlQ0Mv3b47hABuTevyTuYN4i+loJKGeV9flcCgIK37cCXRh+L1bd3iBHlynerhQ7BhCkn2BPbQUL+rGqFg==}
@@ -3054,6 +3075,17 @@ snapshots:
       react-dom: 18.3.1(react@18.3.1)
 
   '@auth0/auth0-spa-js@2.1.3': {}
+
+  '@azure/msal-browser@4.13.2':
+    dependencies:
+      '@azure/msal-common': 15.7.1
+
+  '@azure/msal-common@15.7.1': {}
+
+  '@azure/msal-react@3.0.13(@azure/msal-browser@4.13.2)(react@18.3.1)':
+    dependencies:
+      '@azure/msal-browser': 4.13.2
+      react: 18.3.1
 
   '@babel/code-frame@7.27.1':
     dependencies:

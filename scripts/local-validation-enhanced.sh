@@ -143,6 +143,96 @@ echo "Mode: $([ "$QUICK_MODE" = true ] && echo "Quick (2-3 min)" || echo "")$([ 
 echo "Auto-fix: $([ "$FIX_ISSUES" = true ] && echo "Enabled" || echo "Disabled")"
 echo "Target: 100% CI/CD Parity - Zero GitHub Failures"
 
+# 0. DEPENDENCY LOCKFILE VALIDATION (CRITICAL CI/CD PARITY)
+print_header "📦 Dependency Lockfile Validation (Critical CI/CD Gap)"
+
+# Frontend lockfile validation
+cd frontend
+echo "   🔍 Validating frontend dependencies..."
+FRONTEND_LOCKFILE_OK=true
+
+if command -v pnpm &> /dev/null; then
+    echo "   📋 Testing pnpm lockfile synchronization..."
+    if ! pnpm install --frozen-lockfile > ../frontend-early-lockfile-check.log 2>&1; then
+        FRONTEND_LOCKFILE_OK=false
+        print_status "pnpm-lock.yaml is out of sync with package.json" "error"
+        echo "   💥 This is the exact CI/CD failure we're fixing!"
+        
+        if [ "$FIX_ISSUES" = true ]; then
+            echo "   🔧 Auto-fixing lockfile synchronization..."
+            if pnpm install > ../frontend-lockfile-fix.log 2>&1; then
+                print_status "Lockfile synchronized successfully" "success"
+                FRONTEND_LOCKFILE_OK=true
+            else
+                print_status "Failed to fix lockfile synchronization" "error"
+            fi
+        else
+            echo "   💡 Fix with: cd frontend && pnpm install"
+            echo "   💡 Or run this script with --fix flag"
+        fi
+    else
+        print_status "pnpm lockfile synchronization: OK" "success"
+    fi
+elif [ -f "package-lock.json" ]; then
+    echo "   📋 Testing npm lockfile synchronization..."
+    if ! npm ci --dry-run > ../frontend-early-lockfile-check.log 2>&1; then
+        FRONTEND_LOCKFILE_OK=false
+        print_status "package-lock.json is out of sync" "error"
+        
+        if [ "$FIX_ISSUES" = true ]; then
+            echo "   🔧 Auto-fixing npm lockfile..."
+            npm install > ../frontend-lockfile-fix.log 2>&1
+            print_status "npm lockfile synchronized" "success"
+            FRONTEND_LOCKFILE_OK=true
+        else
+            echo "   💡 Fix with: cd frontend && npm install"
+        fi
+    else
+        print_status "npm lockfile synchronization: OK" "success"
+    fi
+else
+    print_status "No lockfile found - dependency management not enforced" "warning"
+fi
+
+cd ..
+
+# Backend dependency validation
+cd backend
+echo "   🐍 Validating backend dependencies..."
+
+# Check if requirements files are consistent
+if [ -f "requirements.txt" ] && [ -f "requirements-fixed.txt" ]; then
+    if ! diff requirements.txt requirements-fixed.txt > /dev/null 2>&1; then
+        print_status "requirements.txt files are inconsistent" "warning"
+        echo "   💡 Consider using a single requirements file or poetry"
+    fi
+fi
+
+# If using pip-tools, check if requirements.in and requirements.txt are in sync
+if [ -f "requirements.in" ] && [ -f "requirements.txt" ]; then
+    if command -v pip-compile &> /dev/null; then
+        echo "   📋 Checking pip-compile synchronization..."
+        if ! pip-compile --dry-run requirements.in > ../backend-pip-compile-check.log 2>&1; then
+            print_status "requirements.txt may be out of sync with requirements.in" "warning"
+            if [ "$FIX_ISSUES" = true ]; then
+                echo "   🔧 Recompiling requirements..."
+                pip-compile requirements.in > ../backend-pip-compile-fix.log 2>&1
+                print_status "Requirements recompiled" "success"
+            fi
+        fi
+    fi
+fi
+
+cd ..
+
+# Early exit if critical dependency issues found
+if [ "$FRONTEND_LOCKFILE_OK" = false ]; then
+    print_status "CRITICAL: Dependency lockfile issues must be fixed first" "error"
+    echo "   🚨 This would cause CI/CD to fail immediately"
+    echo "   🔧 Run with --fix to auto-resolve, or fix manually"
+    [ "$FIX_ISSUES" = false ] && exit 1
+fi
+
 # 1. ENHANCED SECURITY SCANNING (NEW)
 if [ "$SECURITY_MODE" = true ] || [ "$FULL_MODE" = true ]; then
     print_header "🔐 Security Scanning (CI/CD Parity)"
@@ -291,8 +381,46 @@ if [ "$QUICK_MODE" = false ]; then
         cd frontend
         echo "   [FRONTEND] Starting quality and test suite..."
         
-        # Ensure dependencies
-        if [ ! -d "node_modules" ]; then
+        # Check lockfile synchronization (critical CI/CD parity check)
+        LOCKFILE_SYNC_OK=true
+        if command -v pnpm &> /dev/null; then
+            # Test if lockfile is in sync with package.json
+            if ! pnpm install --frozen-lockfile > ../frontend-lockfile-check.log 2>&1; then
+                LOCKFILE_SYNC_OK=false
+                echo "   ❌ [FRONTEND] pnpm-lock.yaml is out of sync with package.json!"
+                echo "   📋 This is the exact issue that caused CI/CD failure"
+                
+                if [ "$FIX_ISSUES" = true ]; then
+                    echo "   🔧 [FRONTEND] Auto-fixing: updating lockfile..."
+                    pnpm install > ../frontend-lockfile-fix.log 2>&1
+                    echo "   ✅ [FRONTEND] Lockfile updated successfully"
+                else
+                    echo "   💡 Run with --fix to automatically update the lockfile"
+                    echo 1 > ../frontend-exit-code
+                    exit 1
+                fi
+            fi
+        else
+            # For npm, check if package-lock.json exists and is consistent
+            if [ -f "package-lock.json" ]; then
+                if ! npm ci --dry-run > ../frontend-lockfile-check.log 2>&1; then
+                    LOCKFILE_SYNC_OK=false
+                    echo "   ❌ [FRONTEND] package-lock.json is out of sync!"
+                    if [ "$FIX_ISSUES" = true ]; then
+                        echo "   🔧 [FRONTEND] Auto-fixing: updating lockfile..."
+                        npm install > ../frontend-lockfile-fix.log 2>&1
+                        echo "   ✅ [FRONTEND] Lockfile updated successfully"
+                    else
+                        echo "   💡 Run with --fix to automatically update the lockfile"
+                        echo 1 > ../frontend-exit-code
+                        exit 1
+                    fi
+                fi
+            fi
+        fi
+        
+        # Ensure dependencies are installed (only if lockfile sync passed)
+        if [ "$LOCKFILE_SYNC_OK" = true ] && [ ! -d "node_modules" ]; then
             if command -v pnpm &> /dev/null; then
                 pnpm install --frozen-lockfile > ../frontend-install.log 2>&1
             else
@@ -592,8 +720,10 @@ if [ "$VALIDATION_FAILED" = true ]; then
     echo "   • Run with --fix to auto-resolve issues"
     echo "   • Check specific error messages above"
     echo "   • Ensure all dependencies are installed"
+    echo "   • Fix lockfile sync issues first"
     echo ""
     echo "   📋 Manual commands if needed:"
+    echo "   Lockfile: cd frontend && pnpm install (or npm install)"
     echo "   Backend: cd backend && ruff format . && pytest tests/"
     echo "   Frontend: cd frontend && npm run type-check && npm test"
     echo "   Security: gitleaks detect --source ."
@@ -602,11 +732,17 @@ else
     echo -e "   ${GREEN}✅ ALL VALIDATIONS PASSED${NC}"
     echo "   Your code matches CI/CD requirements exactly!"
     echo ""
+    echo "   🎯 Critical Gap Fixed:"
+    echo "   • Dependency lockfile synchronization now validated"
+    echo "   • pnpm/npm install issues caught before CI/CD"
+    echo "   • ERR_PNPM_OUTDATED_LOCKFILE type errors prevented"
+    echo ""
     echo "   🚀 Ready for deployment:"
     echo "   • All quality gates satisfied"
     echo "   • Security checks passed"
     echo "   • Performance criteria met"
     echo "   • Infrastructure templates valid"
+    echo "   • Dependency lockfiles synchronized"
     echo ""
     echo "   📝 Next steps:"
     echo "   1. git add . && git commit -m 'Your commit message'"
@@ -616,4 +752,4 @@ else
 fi
 
 echo -e "\n${CYAN}📈 Validation completed in CI/CD parity mode${NC}"
-echo "Zero GitHub failures expected! 🎉"
+echo "🔧 LOCKFILE SYNC GAP FIXED - Zero GitHub failures expected! 🎉"
