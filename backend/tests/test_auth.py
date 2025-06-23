@@ -122,33 +122,44 @@ async def test_auth_service_get_current_user():
     auth_service = AuthService()
     token = "fake-jwt-token"
 
-    # Mock token data
-    mock_token_data = MagicMock()
-    mock_token_data.sub = "auth0|test123"
-    mock_token_data.email = "test@example.com"
-
     # Mock user
     mock_user = MagicMock()
     mock_user.id = "test-user-id"
     mock_user.email = "test@example.com"
     mock_user.auth0_id = "auth0|test123"
 
-    # Mock both AuthService methods directly
-    with patch.object(auth_service, "verify_token", new=AsyncMock(return_value=mock_token_data)):
-        with patch.object(
-            auth_service, "get_user_by_auth0_id", new=AsyncMock(return_value=mock_user)
-        ):
-            # Create mock db session
-            mock_db = MagicMock()
+    # Mock the decode_token method that get_current_user actually calls
+    mock_payload = {
+        "sub": "auth0|test123",
+        "email": "test@example.com"
+    }
+    
+    # Create proper async mocks for Python 3.11 compatibility
+    decode_token_mock = AsyncMock(return_value=mock_payload)
+    get_entra_mock = AsyncMock(return_value=None)
+    get_auth0_mock = AsyncMock(return_value=mock_user)
+    get_email_mock = AsyncMock(return_value=None)
+    
+    with patch.object(auth_service, "decode_token", decode_token_mock):
+        with patch.object(auth_service, "get_user_by_entra_id", get_entra_mock):
+            with patch.object(auth_service, "get_user_by_auth0_id", get_auth0_mock):
+                with patch.object(auth_service, "get_user_by_email", get_email_mock):
+                    # Create mock async db session
+                    mock_db = AsyncMock()
 
-            # Act
-            user = await auth_service.get_current_user(mock_db, token)
+                    # Act
+                    user = await auth_service.get_current_user(mock_db, token)
 
-            # Assert
-            assert user is not None
-            assert user.id == "test-user-id"
-            assert user.email == "test@example.com"
-            assert user.auth0_id == "auth0|test123"
+                    # Assert
+                    assert user is not None, "get_current_user should return a user when auth0_id matches"
+                    assert user.id == "test-user-id"
+                    assert user.email == "test@example.com"
+                    assert user.auth0_id == "auth0|test123"
+                    
+                    # Verify mocks were called in the correct order
+                    decode_token_mock.assert_called_once_with(token)
+                    get_entra_mock.assert_called_once_with(mock_db, "auth0|test123")
+                    get_auth0_mock.assert_called_once_with(mock_db, "auth0|test123")
 
 
 @pytest.mark.asyncio
