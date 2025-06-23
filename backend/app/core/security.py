@@ -64,24 +64,29 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
         expire = datetime.utcnow() + timedelta(minutes=15)
 
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
+    # Get fresh settings instead of using cached module-level settings
+    current_settings = get_settings()
+    encoded_jwt = jwt.encode(to_encode, current_settings.SECRET_KEY, algorithm="HS256")
     return encoded_jwt
 
 
 async def verify_token(token: str) -> TokenData:
     """Verify and decode JWT token."""
     try:
+        # Get fresh settings instead of using cached module-level settings
+        current_settings = get_settings()
+        
         # Check if we're in test mode or if the token looks like a test token
         # (created with our SECRET_KEY rather than Auth0)
-        is_test_token = settings.is_testing or not token.startswith("ey")  # Basic heuristic
+        is_test_token = current_settings.is_testing or not token.startswith("ey")  # Basic heuristic
 
-        if is_test_token or settings.ENVIRONMENT.lower() in [
+        if is_test_token or current_settings.ENVIRONMENT.lower() in [
             "development",
             "test",
             "testing",
         ]:
             # For test tokens, use simple verification with our secret key
-            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            payload = jwt.decode(token, current_settings.SECRET_KEY, algorithms=["HS256"])
         else:
             # For Auth0 tokens, we need to verify against Auth0's public key
             # This is a simplified version - in production, you'd fetch the public key
@@ -90,8 +95,8 @@ async def verify_token(token: str) -> TokenData:
                 token,
                 # In production, set to True
                 options={"verify_signature": False},
-                audience=settings.AUTH0_AUDIENCE,
-                issuer=settings.AUTH0_ISSUER,
+                audience=current_settings.AUTH0_AUDIENCE,
+                issuer=current_settings.AUTH0_ISSUER,
             )
 
         email: str = payload.get("email")
@@ -252,15 +257,26 @@ class RateLimiter:
         return True
 
 
-# Global rate limiter instance
-rate_limiter = RateLimiter(requests=settings.RATE_LIMIT_REQUESTS, window=settings.RATE_LIMIT_WINDOW)
+# Global rate limiter instance - use lazy initialization
+rate_limiter = None
+
+def get_rate_limiter():
+    """Get rate limiter instance with fresh settings."""
+    global rate_limiter
+    if rate_limiter is None:
+        current_settings = get_settings()
+        rate_limiter = RateLimiter(
+            requests=current_settings.RATE_LIMIT_REQUESTS, 
+            window=current_settings.RATE_LIMIT_WINDOW
+        )
+    return rate_limiter
 
 
 async def check_rate_limit(request: Request):
     """Rate limiting dependency."""
     client_ip = request.client.host
 
-    if not rate_limiter.is_allowed(client_ip):
+    if not get_rate_limiter().is_allowed(client_ip):
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="Rate limit exceeded"
         )

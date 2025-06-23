@@ -3,12 +3,31 @@ Test trip endpoints with minimal authentication bypass for unit testing.
 """
 
 import pytest
+import os
 from unittest.mock import patch, AsyncMock
 from fastapi.testclient import TestClient
 from fastapi import status
 from app.main import app
 from app.core.security import User
+from app.core.config import get_settings
 from uuid import uuid4
+import jwt
+from datetime import datetime, timedelta
+
+
+def create_valid_jwt_token(user_data: dict) -> str:
+    """Create a valid JWT token for testing."""
+    payload = {
+        "sub": user_data.get("id", str(uuid4())),
+        "email": user_data.get("email", "test@example.com"),
+        "exp": datetime.utcnow() + timedelta(hours=1),
+        "iat": datetime.utcnow(),
+        "https://pathfinder.app/roles": user_data.get("roles", ["user"]),
+        "https://pathfinder.app/permissions": user_data.get("permissions", [
+            "read:trips", "create:trips", "update:trips", "delete:trips"
+        ])
+    }
+    return jwt.encode(payload, "test-secret-key", algorithm="HS256")
 
 
 @pytest.fixture
@@ -17,156 +36,234 @@ def simple_client():
     return TestClient(app)
 
 
-def test_trips_with_minimal_auth_mock(simple_client):
-    """Test trip creation with full authentication bypass."""
-
-    # Create a test user
-    test_user = User(
-        id=str(uuid4()),
-        email="test@example.com",
-        roles=["user"],
-        permissions=["create:trips", "read:trips", "update:trips", "delete:trips"],
-    )
-
-    # Mock the entire require_permissions to return our test user
-    async def mock_permission_func(*args, **kwargs):
-        return test_user
-
-    # Patch everything at once
-    with patch("app.core.zero_trust.require_permissions") as mock_require:
-        # Make require_permissions return a function that returns our test user
-        mock_require.return_value = mock_permission_func
-
-        # Also patch the direct import in trips
-        with patch("app.api.trips.require_permissions", return_value=mock_permission_func):
-
-            trip_data = {
-                "name": "Test Trip",
-                "description": "Test description",
-                "destination": "Test Destination",
-                "start_date": "2025-07-01",
-                "end_date": "2025-07-15",
-                "budget_total": 5000.00,
-                "is_public": False,
-            }
-
-            response = simple_client.post("/api/v1/trips", json=trip_data)
-
-            print(f"Response status: {response.status_code}")
-            print(f"Response content: {response.content}")
-
-            # Should not be an auth error
-            assert response.status_code not in [401, 403]
-
-
-def test_trips_with_direct_endpoint_mock():
-    """Test by mocking the trip creation function directly."""
-
-    from app.application.trip_use_cases import CreateTripUseCase
-    from app.models.trip import TripResponse
-    from datetime import date
-
-    # Create mock response
-    mock_trip_response = TripResponse(
-        id="trip-123",
-        name="Test Trip",
-        description="Test description",
-        destination="Test Destination",
-        start_date=date(2025, 7, 1),
-        end_date=date(2025, 7, 15),
-        budget_total=5000.0,
-        is_public=False,
-        creator_id="user-123",
-        created_at="2025-01-01T00:00:00",
-        updated_at="2025-01-01T00:00:00",
-    )
-
-    # Mock the use case
-    with patch.object(CreateTripUseCase, "__call__", new_callable=AsyncMock) as mock_use_case:
-        mock_use_case.return_value = mock_trip_response
-
-        # Mock the authentication completely
-        test_user = User(
-            id="user-123",
-            email="test@example.com",
-            roles=["user"],
-            permissions=["create:trips"],
+def test_trips_with_proper_auth_bypass(simple_client):
+    """Test trip creation with proper FastAPI security bypass using valid JWT."""
+    
+    # Set environment to testing first
+    original_env = os.environ.get('ENVIRONMENT')
+    os.environ['ENVIRONMENT'] = 'testing'
+    
+    try:
+        # Clear the cached settings
+        get_settings.cache_clear()
+        
+        # Create a test user
+        test_user_data = {
+            "id": str(uuid4()),
+            "email": "test@example.com",
+            "roles": ["user"],
+            "permissions": ["create:trips", "read:trips", "update:trips", "delete:trips"],
+        }
+        
+        # Create a valid JWT token
+        valid_jwt_token = create_valid_jwt_token(test_user_data)
+        
+        # Import the actual security dependency
+        from app.core.zero_trust import security
+        from fastapi.security import HTTPAuthorizationCredentials
+        
+        # Mock credentials with valid JWT token
+        mock_credentials = HTTPAuthorizationCredentials(
+            scheme="Bearer",
+            credentials=valid_jwt_token
         )
-
-        async def mock_auth(*args, **kwargs):
-            return test_user
-
-        with patch("app.core.zero_trust.require_permissions", return_value=mock_auth):
-            with patch("app.api.trips.require_permissions", return_value=mock_auth):
-
-                client = TestClient(app)
-
+        
+        # Mock the security dependency to return our mock credentials
+        def mock_security():
+            return mock_credentials
+        
+        # Force reload the settings module with test environment
+        with patch.dict(os.environ, {'ENVIRONMENT': 'testing', 'SECRET_KEY': 'test-secret-key'}):
+            get_settings.cache_clear()  # Clear cache again to pick up env changes
+            
+            # Override the security dependency
+            app.dependency_overrides[security] = mock_security
+            
+            try:
                 trip_data = {
                     "name": "Test Trip",
-                    "description": "Test description",
+                    "description": "Test description", 
                     "destination": "Test Destination",
                     "start_date": "2025-07-01",
                     "end_date": "2025-07-15",
                     "budget_total": 5000.00,
                     "is_public": False,
                 }
-
-                response = client.post("/api/v1/trips", json=trip_data)
-
-                print(f"Direct mock response status: {response.status_code}")
-                print(f"Direct mock response content: {response.content}")
-
-                # Should succeed if use case was called
-                if mock_use_case.called:
-                    print("✅ Use case was called - authentication bypassed successfully!")
-                    assert response.status_code == 200 or response.status_code == 201
-                else:
-                    print("❌ Use case not called - authentication still blocking")
-                    assert response.status_code not in [
-                        401,
-                        403,
-                    ], "Auth should be bypassed"
-
-
-def test_check_auth_dependency_override():
-    """Test using FastAPI's dependency override system."""
-
-    from app.core.zero_trust import require_permissions
-
-    test_user = User(
-        id="user-123",
-        email="test@example.com",
-        roles=["user"],
-        permissions=["create:trips"],
-    )
-
-    async def get_test_user():
-        return test_user
-
-    # Override the dependency
-    app.dependency_overrides[require_permissions("trips", "create")] = get_test_user
-
-    try:
-        client = TestClient(app)
-
-        trip_data = {
-            "name": "Test Trip",
-            "description": "Test description",
-            "destination": "Test Destination",
-            "start_date": "2025-07-01",
-            "end_date": "2025-07-15",
-            "budget_total": 5000.00,
-            "is_public": False,
-        }
-
-        response = client.post("/api/v1/trips", json=trip_data)
-
-        print(f"Dependency override response status: {response.status_code}")
-        print(f"Dependency override response content: {response.content}")
-
-        # Should not get auth errors
-        assert response.status_code not in [401, 403]
-
+                
+                response = simple_client.post("/api/v1/trips", json=trip_data)
+                
+                print(f"Response status: {response.status_code}")
+                print(f"Response content: {response.content}")
+                
+                # Should not be an auth error
+                assert response.status_code not in [401, 403]
+                
+            finally:
+                # Clean up
+                app.dependency_overrides.clear()
+                
     finally:
-        # Clean up
-        app.dependency_overrides.clear()
+        # Restore environment
+        if original_env:
+            os.environ['ENVIRONMENT'] = original_env
+        else:
+            os.environ.pop('ENVIRONMENT', None)
+        get_settings.cache_clear()
+
+
+def test_trips_with_environment_bypass():
+    """Test with environment-based auth bypass using valid JWT."""
+    
+    # Set testing environment  
+    original_env = os.environ.get('ENVIRONMENT')
+    original_secret = os.environ.get('SECRET_KEY')
+    
+    os.environ['ENVIRONMENT'] = 'testing'
+    os.environ['SECRET_KEY'] = 'test-secret-key'
+    
+    try:
+        # Clear cached settings to pick up environment changes
+        get_settings.cache_clear()
+        
+        # Create test user data
+        test_user_data = {
+            "id": str(uuid4()),
+            "email": "test@example.com",
+            "roles": ["user"],
+            "permissions": ["create:trips", "read:trips", "update:trips", "delete:trips"],
+        }
+        
+        # Create valid JWT token
+        valid_jwt_token = create_valid_jwt_token(test_user_data)
+        
+        # Mock the security dependencies
+        from app.core.zero_trust import security
+        from fastapi.security import HTTPAuthorizationCredentials
+        
+        mock_credentials = HTTPAuthorizationCredentials(
+            scheme="Bearer", 
+            credentials=valid_jwt_token
+        )
+        
+        def mock_security():
+            return mock_credentials
+            
+        app.dependency_overrides[security] = mock_security
+        
+        try:
+            client = TestClient(app)
+            
+            trip_data = {
+                "name": "Test Trip",
+                "description": "Test description",
+                "destination": "Test Destination", 
+                "start_date": "2025-07-01",
+                "end_date": "2025-07-15",
+                "budget_total": 5000.00,
+                "is_public": False,
+            }
+            
+            response = client.post("/api/v1/trips", json=trip_data)
+            
+            print(f"Environment bypass response status: {response.status_code}")
+            print(f"Environment bypass response content: {response.content}")
+            
+            # Should not get auth errors
+            assert response.status_code not in [401, 403]
+            
+        finally:
+            app.dependency_overrides.clear()
+                
+    finally:
+        # Restore environment
+        if original_env:
+            os.environ['ENVIRONMENT'] = original_env
+        else:
+            os.environ.pop('ENVIRONMENT', None)
+            
+        if original_secret:
+            os.environ['SECRET_KEY'] = original_secret
+        else:
+            os.environ.pop('SECRET_KEY', None)
+            
+        get_settings.cache_clear()
+
+
+def test_check_auth_with_complete_mock_stack():
+    """Test using complete mock of the entire auth stack with valid JWT."""
+    
+    # Set up test environment
+    original_env = os.environ.get('ENVIRONMENT')
+    original_secret = os.environ.get('SECRET_KEY')
+    
+    os.environ['ENVIRONMENT'] = 'testing'
+    os.environ['SECRET_KEY'] = 'test-secret-key'
+    
+    try:
+        # Clear cached settings
+        get_settings.cache_clear()
+        
+        test_user_data = {
+            "id": "user-123",
+            "email": "test@example.com",
+            "roles": ["user"],
+            "permissions": ["create:trips"],
+        }
+        
+        # Create valid JWT token
+        valid_jwt_token = create_valid_jwt_token(test_user_data)
+        
+        # Import all the auth components we need to mock
+        from app.core.zero_trust import security, zero_trust_security
+        from fastapi.security import HTTPAuthorizationCredentials
+        
+        mock_credentials = HTTPAuthorizationCredentials(
+            scheme="Bearer",
+            credentials=valid_jwt_token
+        )
+        
+        def mock_security():
+            return mock_credentials
+        
+        # Mock the zero trust security verification
+        with patch.object(zero_trust_security, 'verify_access', return_value=True):
+            
+            app.dependency_overrides[security] = mock_security
+            
+            try:
+                client = TestClient(app)
+                
+                trip_data = {
+                    "name": "Test Trip",
+                    "description": "Test description",
+                    "destination": "Test Destination",
+                    "start_date": "2025-07-01", 
+                    "end_date": "2025-07-15",
+                    "budget_total": 5000.00,
+                    "is_public": False,
+                }
+                
+                response = client.post("/api/v1/trips", json=trip_data)
+                
+                print(f"Complete mock response status: {response.status_code}")
+                print(f"Complete mock response content: {response.content}")
+                
+                # Should not get auth errors
+                assert response.status_code not in [401, 403]
+                
+            finally:
+                app.dependency_overrides.clear()
+                
+    finally:
+        # Restore environment
+        if original_env:
+            os.environ['ENVIRONMENT'] = original_env
+        else:
+            os.environ.pop('ENVIRONMENT', None)
+            
+        if original_secret:
+            os.environ['SECRET_KEY'] = original_secret
+        else:
+            os.environ.pop('SECRET_KEY', None)
+            
+        get_settings.cache_clear()

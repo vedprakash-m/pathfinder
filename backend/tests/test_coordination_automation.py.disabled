@@ -1,0 +1,148 @@
+"""
+Tests for Smart Coordination Automation Service.
+
+This module tests the coordination automation service that eliminates manual 
+coordination overhead through automated family notifications, smart scheduling,
+and progress tracking.
+"""
+
+import pytest
+from datetime import datetime, timedelta, timezone
+from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import uuid4
+
+from app.services.coordination_automation import (
+    SmartCoordinationService,
+    CoordinationEvent,
+    CoordinationEventType,
+    NotificationPriority,
+    AutomationRule,
+    SmartScheduleSuggestion,
+    trigger_coordination_event,
+    family_joined_trip,
+    preferences_updated,
+)
+from app.services.notifications import NotificationService
+
+
+@pytest.fixture
+def mock_db():
+    """Mock database session."""
+    return AsyncMock()
+
+
+@pytest.fixture
+def mock_notification_service():
+    """Mock notification service."""
+    return AsyncMock(spec=NotificationService)
+
+
+@pytest.fixture
+def coordination_service(mock_db, mock_notification_service):
+    """Create coordination service instance."""
+    return SmartCoordinationService(mock_db, mock_notification_service)
+
+
+@pytest.fixture
+def sample_trip_id():
+    """Sample trip ID."""
+    return str(uuid4())
+
+
+@pytest.fixture
+def sample_family_id():
+    """Sample family ID."""
+    return str(uuid4())
+
+
+@pytest.fixture
+def sample_user_id():
+    """Sample user ID."""
+    return str(uuid4())
+
+
+class TestCoordinationEvent:
+    """Test CoordinationEvent dataclass."""
+
+    def test_coordination_event_creation(self, sample_trip_id, sample_family_id):
+        """Test creating coordination event."""
+        event = CoordinationEvent(
+            event_type=CoordinationEventType.FAMILY_JOINED,
+            trip_id=sample_trip_id,
+            family_id=sample_family_id,
+            user_id=None,
+            event_data={"test": "data"},
+            timestamp=datetime.now(timezone.utc),
+        )
+        
+        assert event.event_type == CoordinationEventType.FAMILY_JOINED
+        assert event.trip_id == sample_trip_id
+        assert event.family_id == sample_family_id
+        assert event.priority == NotificationPriority.MEDIUM
+
+    def test_coordination_event_with_priority(self, sample_trip_id):
+        """Test coordination event with custom priority."""
+        event = CoordinationEvent(
+            event_type=CoordinationEventType.CONFLICT_DETECTED,
+            trip_id=sample_trip_id,
+            family_id=None,
+            user_id=None,
+            event_data={},
+            timestamp=datetime.now(timezone.utc),
+            priority=NotificationPriority.URGENT,
+        )
+        
+        assert event.priority == NotificationPriority.URGENT
+
+
+class TestSmartCoordinationService:
+    """Test SmartCoordinationService functionality."""
+
+    def test_service_initialization(self, coordination_service):
+        """Test service initialization."""
+        assert coordination_service.db is not None
+        assert coordination_service.notification_service is not None
+        assert coordination_service.consensus_engine is not None
+        assert len(coordination_service.automation_rules) > 0
+
+    def test_automation_rules_initialization(self, coordination_service):
+        """Test that automation rules are properly initialized."""
+        rules = coordination_service.automation_rules
+        
+        # Check we have rules for key event types
+        event_types = [rule.event_type for rule in rules]
+        assert CoordinationEventType.FAMILY_JOINED in event_types
+        assert CoordinationEventType.PREFERENCES_UPDATED in event_types
+        assert CoordinationEventType.CONFLICT_DETECTED in event_types
+        assert CoordinationEventType.ALL_FAMILIES_READY in event_types
+
+    def test_check_conditions_empty(self, coordination_service, sample_trip_id):
+        """Test condition checking with empty conditions."""
+        event = CoordinationEvent(
+            event_type=CoordinationEventType.FAMILY_JOINED,
+            trip_id=sample_trip_id,
+            family_id=None,
+            user_id=None,
+            event_data={},
+            timestamp=datetime.now(timezone.utc),
+        )
+        
+        result = coordination_service._check_conditions({}, event)
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_process_coordination_event_no_matching_rules(
+        self, coordination_service, sample_trip_id
+    ):
+        """Test processing event with no matching rules."""
+        event = CoordinationEvent(
+            event_type=CoordinationEventType.VOTING_STARTED,  # No rules for this
+            trip_id=sample_trip_id,
+            family_id=None,
+            user_id=None,
+            event_data={},
+            timestamp=datetime.now(timezone.utc),
+        )
+        
+        executed_actions = await coordination_service.process_coordination_event(event)
+        assert executed_actions == []

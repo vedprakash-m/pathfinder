@@ -299,6 +299,53 @@ from app.api.health import router as health_router
 app.include_router(health_router)
 
 
+def create_app(testing: bool = False) -> FastAPI:
+    """Create FastAPI application instance - useful for testing."""
+    
+    if testing:
+        # Simplified lifespan for testing
+        @asynccontextmanager
+        async def test_lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+            """Simplified lifespan for testing."""
+            logger.info("Starting test application...")
+            
+            # Minimal initialization for tests
+            try:
+                await init_db()
+            except Exception as e:
+                logger.warning(f"Test DB init failed: {e}")
+                
+            yield
+            
+            logger.info("Test application shutdown")
+        
+        test_app = FastAPI(
+            title="Pathfinder API (Test)",
+            description="AI-Powered Group Trip Planner - Test Mode",
+            version="1.0.0",
+            docs_url="/docs",
+            redoc_url="/redoc",
+            lifespan=test_lifespan,
+        )
+        
+        # Essential middleware for testing
+        test_app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+        
+        # Add API router
+        test_app.include_router(api_router, prefix="/api/v1")
+        
+        return test_app
+    else:
+        # Return the main app instance
+        return app
+
+
 if __name__ == "__main__":
     uvicorn.run(
         "app.main:app",

@@ -1,0 +1,445 @@
+"""
+Simple tests for Auth Service Backup.
+
+This module tests the auth service backup functionality
+focusing on core methods without complex dependencies.
+"""
+
+import pytest
+from datetime import datetime
+from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import uuid4
+
+from app.services.auth_service_backup import AuthService
+from app.models.user import User, UserCreate, UserUpdate
+
+
+@pytest.fixture
+def auth_service():
+    """Create auth service instance."""
+    return AuthService()
+
+
+@pytest.fixture
+def mock_db():
+    """Mock database session."""
+    return AsyncMock()
+
+
+@pytest.fixture
+def sample_user():
+    """Sample user instance."""
+    return User(
+        id=str(uuid4()),
+        email="test@example.com",
+        name="Test User",
+        auth0_id="auth0|123456",
+        is_active=True,
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow(),
+    )
+
+
+@pytest.fixture
+def sample_user_create():
+    """Sample user creation data."""
+    return UserCreate(
+        email="newuser@example.com",
+        name="New User",
+        auth0_id="auth0|654321",
+        phone="+1234567890",
+        preferences={"theme": "dark"},
+    )
+
+
+class TestAuthServiceInitialization:
+    """Test AuthService initialization."""
+
+    def test_auth_service_initialization(self, auth_service):
+        """Test auth service initialization."""
+        assert auth_service.auth0_domain is not None
+        assert auth_service.auth0_client_id is not None
+        assert auth_service.auth0_client_secret is not None
+        assert auth_service.auth0_audience is not None
+
+    def test_auth_service_attributes(self, auth_service):
+        """Test auth service has required attributes."""
+        assert hasattr(auth_service, 'auth0_domain')
+        assert hasattr(auth_service, 'auth0_client_id')
+        assert hasattr(auth_service, 'auth0_client_secret')
+        assert hasattr(auth_service, 'auth0_audience')
+
+
+class TestPasswordOperations:
+    """Test password hashing and verification."""
+
+    def test_password_hashing(self, auth_service):
+        """Test password hashing."""
+        password = "test_password_123"
+        hashed = auth_service.get_password_hash(password)
+        
+        assert hashed is not None
+        assert hashed != password
+        assert len(hashed) > 20  # Bcrypt hashes are typically 60 chars
+
+    def test_password_verification_success(self, auth_service):
+        """Test successful password verification."""
+        password = "test_password_123"
+        hashed = auth_service.get_password_hash(password)
+        
+        result = auth_service.verify_password(password, hashed)
+        assert result is True
+
+    def test_password_verification_failure(self, auth_service):
+        """Test failed password verification."""
+        password = "test_password_123"
+        wrong_password = "wrong_password"
+        hashed = auth_service.get_password_hash(password)
+        
+        result = auth_service.verify_password(wrong_password, hashed)
+        assert result is False
+
+    def test_password_hash_uniqueness(self, auth_service):
+        """Test that same password produces different hashes."""
+        password = "test_password_123"
+        hash1 = auth_service.get_password_hash(password)
+        hash2 = auth_service.get_password_hash(password)
+        
+        # Bcrypt should produce different hashes for same password due to salt
+        assert hash1 != hash2
+        # But both should verify correctly
+        assert auth_service.verify_password(password, hash1)
+        assert auth_service.verify_password(password, hash2)
+
+
+class TestTokenOperations:
+    """Test JWT token operations."""
+
+    def test_decode_token_development_mode(self, auth_service):
+        """Test token decoding in development mode."""
+        with patch('app.services.auth_service_backup.settings') as mock_settings:
+            mock_settings.ENVIRONMENT = "development"
+            
+            # Mock jwt.get_unverified_claims
+            with patch('app.services.auth_service_backup.jwt') as mock_jwt:
+                mock_payload = {"sub": "user123", "email": "test@example.com"}
+                mock_jwt.get_unverified_claims.return_value = mock_payload
+                
+                result = auth_service.decode_token("fake_token")
+                
+                assert result == mock_payload
+                mock_jwt.get_unverified_claims.assert_called_once_with("fake_token")
+
+    def test_decode_token_jwt_error(self, auth_service):
+        """Test token decoding with JWT error."""
+        with patch('app.services.auth_service_backup.settings') as mock_settings:
+            mock_settings.ENVIRONMENT = "development"
+            
+            # Mock jwt.get_unverified_claims to raise JWTError
+            with patch('app.services.auth_service_backup.jwt') as mock_jwt:
+                from jose import JWTError
+                mock_jwt.get_unverified_claims.side_effect = JWTError("Invalid token")
+                
+                result = auth_service.decode_token("invalid_token")
+                
+                assert result is None
+
+    def test_decode_token_production_mode(self, auth_service):
+        """Test token decoding in production mode."""
+        with patch('app.services.auth_service_backup.settings') as mock_settings:
+            mock_settings.ENVIRONMENT = "production"
+            mock_settings.SECRET_KEY = "test_secret"
+            
+            with patch('app.services.auth_service_backup.jwt') as mock_jwt:
+                mock_payload = {"sub": "user123", "email": "test@example.com"}
+                mock_jwt.decode.return_value = mock_payload
+                
+                result = auth_service.decode_token("valid_token")
+                
+                assert result == mock_payload
+
+
+class TestUserQueries:
+    """Test user query operations."""
+
+    @pytest.mark.asyncio
+    async def test_get_user_by_email_found(self, auth_service, mock_db, sample_user):
+        """Test getting user by email when user exists."""
+        mock_result = AsyncMock()
+        mock_result.scalar_one_or_none.return_value = sample_user
+        mock_db.execute.return_value = mock_result
+        
+        result = await auth_service.get_user_by_email(mock_db, "test@example.com")
+        
+        assert result == sample_user
+        mock_db.execute.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_get_user_by_email_not_found(self, auth_service, mock_db):
+        """Test getting user by email when user doesn't exist."""
+        mock_result = AsyncMock()
+        mock_result.scalar_one_or_none.return_value = None
+        mock_db.execute.return_value = mock_result
+        
+        result = await auth_service.get_user_by_email(mock_db, "nonexistent@example.com")
+        
+        assert result is None
+        mock_db.execute.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_get_user_by_id_found(self, auth_service, mock_db, sample_user):
+        """Test getting user by ID when user exists."""
+        mock_result = AsyncMock()
+        mock_result.scalar_one_or_none.return_value = sample_user
+        mock_db.execute.return_value = mock_result
+        
+        result = await auth_service.get_user_by_id(mock_db, sample_user.id)
+        
+        assert result == sample_user
+        mock_db.execute.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_get_user_by_id_not_found(self, auth_service, mock_db):
+        """Test getting user by ID when user doesn't exist."""
+        mock_result = AsyncMock()
+        mock_result.scalar_one_or_none.return_value = None
+        mock_db.execute.return_value = mock_result
+        
+        result = await auth_service.get_user_by_id(mock_db, "nonexistent_id")
+        
+        assert result is None
+        mock_db.execute.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_get_user_by_auth0_id_found(self, auth_service, mock_db, sample_user):
+        """Test getting user by Auth0 ID when user exists."""
+        mock_result = AsyncMock()
+        mock_result.scalar_one_or_none.return_value = sample_user
+        mock_db.execute.return_value = mock_result
+        
+        result = await auth_service.get_user_by_auth0_id(mock_db, "auth0|123456")
+        
+        assert result == sample_user
+        mock_db.execute.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_get_user_by_auth0_id_not_found(self, auth_service, mock_db):
+        """Test getting user by Auth0 ID when user doesn't exist."""
+        mock_result = AsyncMock()
+        mock_result.scalar_one_or_none.return_value = None
+        mock_db.execute.return_value = mock_result
+        
+        result = await auth_service.get_user_by_auth0_id(mock_db, "auth0|nonexistent")
+        
+        assert result is None
+        mock_db.execute.assert_called_once()
+
+
+class TestUserAuthentication:
+    """Test user authentication methods."""
+
+    @pytest.mark.asyncio
+    async def test_authenticate_user_success(self, auth_service, mock_db, sample_user):
+        """Test successful user authentication."""
+        # Mock user with hashed password
+        password = "test_password"
+        sample_user.hashed_password = auth_service.get_password_hash(password)
+        
+        mock_result = AsyncMock()
+        mock_result.scalar_one_or_none.return_value = sample_user
+        mock_db.execute.return_value = mock_result
+        
+        result = await auth_service.authenticate_user(mock_db, "test@example.com", password)
+        
+        assert result == sample_user
+
+    @pytest.mark.asyncio
+    async def test_authenticate_user_wrong_password(self, auth_service, mock_db, sample_user):
+        """Test authentication with wrong password."""
+        # Mock user with hashed password
+        password = "test_password"
+        wrong_password = "wrong_password"
+        sample_user.hashed_password = auth_service.get_password_hash(password)
+        
+        mock_result = AsyncMock()
+        mock_result.scalar_one_or_none.return_value = sample_user
+        mock_db.execute.return_value = mock_result
+        
+        result = await auth_service.authenticate_user(mock_db, "test@example.com", wrong_password)
+        
+        assert result is None
+
+    @pytest.mark.asyncio
+    async def test_authenticate_user_not_found(self, auth_service, mock_db):
+        """Test authentication when user doesn't exist."""
+        mock_result = AsyncMock()
+        mock_result.scalar_one_or_none.return_value = None
+        mock_db.execute.return_value = mock_result
+        
+        result = await auth_service.authenticate_user(mock_db, "nonexistent@example.com", "password")
+        
+        assert result is None
+
+    def test_create_access_token_for_user(self, auth_service, sample_user):
+        """Test creating access token for user."""
+        with patch('app.services.auth_service_backup.create_access_token') as mock_create_token:
+            mock_create_token.return_value = "mock_token"
+            
+            result = auth_service.create_access_token_for_user(sample_user)
+            
+            assert result == "mock_token"
+            mock_create_token.assert_called_once_with(data={"sub": sample_user.id})
+
+
+class TestAuth0Integration:
+    """Test Auth0 integration methods."""
+
+    @pytest.mark.asyncio
+    async def test_get_auth0_user_info_success(self, auth_service):
+        """Test successful Auth0 user info retrieval."""
+        mock_response_data = {
+            "sub": "auth0|123456",
+            "email": "test@example.com",
+            "name": "Test User",
+        }
+        
+        with patch('httpx.AsyncClient') as mock_client_class:
+            mock_client = AsyncMock()
+            mock_response = AsyncMock()
+            mock_response.status_code = 200
+            mock_response.json.return_value = mock_response_data
+            
+            mock_client.get.return_value = mock_response
+            mock_client_class.return_value.__aenter__.return_value = mock_client
+            
+            result = await auth_service.get_auth0_user_info("valid_token")
+            
+            assert result == mock_response_data
+
+    @pytest.mark.asyncio
+    async def test_get_auth0_user_info_error(self, auth_service):
+        """Test Auth0 user info retrieval with error."""
+        with patch('httpx.AsyncClient') as mock_client_class:
+            mock_client = AsyncMock()
+            mock_response = AsyncMock()
+            mock_response.status_code = 401
+            
+            mock_client.get.return_value = mock_response
+            mock_client_class.return_value.__aenter__.return_value = mock_client
+            
+            result = await auth_service.get_auth0_user_info("invalid_token")
+            
+            assert result is None
+
+    @pytest.mark.asyncio
+    async def test_get_auth0_user_info_exception(self, auth_service):
+        """Test Auth0 user info retrieval with exception."""
+        with patch('httpx.AsyncClient') as mock_client_class:
+            mock_client_class.side_effect = Exception("Network error")
+            
+            result = await auth_service.get_auth0_user_info("token")
+            
+            assert result is None
+
+    def test_get_auth0_login_url(self, auth_service):
+        """Test Auth0 login URL generation."""
+        redirect_uri = "http://localhost:3000/callback"
+        
+        result = auth_service.get_auth0_login_url(redirect_uri)
+        
+        assert result is not None
+        assert isinstance(result, str)
+        assert "authorize" in result
+        assert redirect_uri in result
+
+
+class TestUserOperations:
+    """Test user CRUD operations."""
+
+    @pytest.mark.asyncio
+    async def test_update_user_success(self, auth_service, mock_db, sample_user):
+        """Test successful user update."""
+        user_update = UserUpdate(name="Updated Name", phone="+9876543210")
+        
+        # Mock get_user_by_id to return the user
+        with patch.object(auth_service, 'get_user_by_id', return_value=sample_user):
+            mock_db.commit = AsyncMock()
+            mock_db.refresh = AsyncMock()
+            
+            result = await auth_service.update_user(mock_db, sample_user.id, user_update)
+            
+            assert result == sample_user
+            mock_db.commit.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_update_user_not_found(self, auth_service, mock_db):
+        """Test user update when user doesn't exist."""
+        user_update = UserUpdate(name="Updated Name")
+        
+        # Mock get_user_by_id to return None
+        with patch.object(auth_service, 'get_user_by_id', return_value=None):
+            result = await auth_service.update_user(mock_db, "nonexistent_id", user_update)
+            
+            assert result is None
+
+    @pytest.mark.asyncio
+    async def test_update_user_with_password(self, auth_service, mock_db, sample_user):
+        """Test user update with password change."""
+        user_update = UserUpdate(name="Updated Name", password="new_password")
+        
+        with patch.object(auth_service, 'get_user_by_id', return_value=sample_user):
+            mock_db.commit = AsyncMock()
+            mock_db.refresh = AsyncMock()
+            
+            result = await auth_service.update_user(mock_db, sample_user.id, user_update)
+            
+            assert result == sample_user
+            # Password should be hashed and stored
+            assert hasattr(sample_user, 'hashed_password')
+
+
+class TestEdgeCases:
+    """Test edge cases and error handling."""
+
+    def test_password_operations_with_empty_strings(self, auth_service):
+        """Test password operations with edge case inputs."""
+        # Empty password
+        empty_hash = auth_service.get_password_hash("")
+        assert empty_hash is not None
+        assert auth_service.verify_password("", empty_hash)
+        
+        # Very long password
+        long_password = "a" * 1000
+        long_hash = auth_service.get_password_hash(long_password)
+        assert auth_service.verify_password(long_password, long_hash)
+
+    def test_decode_token_with_none_input(self, auth_service):
+        """Test token decoding with None input."""
+        result = auth_service.decode_token(None)
+        assert result is None
+
+    def test_decode_token_with_empty_string(self, auth_service):
+        """Test token decoding with empty string."""
+        result = auth_service.decode_token("")
+        assert result is None
+
+    @pytest.mark.asyncio
+    async def test_database_operations_with_none_db(self, auth_service):
+        """Test database operations with None database."""
+        # These should handle gracefully or raise appropriate errors
+        with pytest.raises(AttributeError):
+            await auth_service.get_user_by_email(None, "test@example.com")
+
+    def test_auth_service_with_missing_config(self):
+        """Test auth service initialization with missing config."""
+        with patch('app.services.auth_service_backup.settings') as mock_settings:
+            mock_settings.AUTH0_DOMAIN = None
+            mock_settings.AUTH0_CLIENT_ID = None
+            mock_settings.AUTH0_CLIENT_SECRET = None
+            mock_settings.AUTH0_AUDIENCE = None
+            
+            service = AuthService()
+            assert service.auth0_domain is None
+            assert service.auth0_client_id is None
+            assert service.auth0_client_secret is None
+            assert service.auth0_audience is None

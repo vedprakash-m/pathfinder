@@ -76,11 +76,25 @@ class TestAuthEndpoints:
 
     def test_register_user_invalid_data(self):
         """Test registration with invalid data."""
-        invalid_data = {"email": "test@example.com"}  # Missing required fields
+        # Test with missing required field (email)
+        invalid_data = {"name": "Test User"}  # Missing required email field
 
         response = client.post("/api/v1/auth/register", json=invalid_data)
 
+        # FastAPI should return 422 for Pydantic validation errors
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+        assert "email" in str(response.json())
+        
+    def test_register_user_invalid_email_format(self):
+        """Test registration with invalid email format."""
+        # Test with invalid email format
+        invalid_data = {"email": "not-an-email"}  # Invalid email format
+
+        response = client.post("/api/v1/auth/register", json=invalid_data)
+
+        # FastAPI should return 422 for Pydantic validation errors
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+        assert "email" in str(response.json())
 
     def test_validate_token_success(self):
         """Test successful token validation."""
