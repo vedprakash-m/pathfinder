@@ -66,6 +66,7 @@ tmp/
 *$py.class
 *.so
 backend/venv/
+backend/venv-*/
 env/
 env/
 build/
