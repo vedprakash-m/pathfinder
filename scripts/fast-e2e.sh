@@ -147,7 +147,7 @@ start_backend() {
     fi
     
     # Mock external services
-    export AUTH0_DOMAIN=mock-auth.local
+    export AZURE_TENANT_ID=mock-tenant.local
     export OPENAI_API_KEY=sk-mock-key
     export AI_ENABLED=false
     export EMAIL_ENABLED=false

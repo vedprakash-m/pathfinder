@@ -49,12 +49,16 @@ export const tripService = {
 
   // Create new trip
   createTrip: async (tripData: CreateTripRequest): Promise<ApiResponse<Trip>> => {
-    return apiService.post('/trips/', tripData);
+    return apiService.post('/trips/', tripData, {
+      invalidateUrlPatterns: ['trips']
+    });
   },
 
   // Update existing trip
   updateTrip: async (tripId: string, tripData: UpdateTripRequest): Promise<ApiResponse<Trip>> => {
-    return apiService.patch(`/trips/${tripId}`, tripData);
+    return apiService.put(`/trips/${tripId}`, tripData, {
+      invalidateUrlPatterns: ['trips']
+    });
   },
 
   // Delete trip

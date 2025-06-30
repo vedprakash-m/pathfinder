@@ -223,3 +223,122 @@ async def track_onboarding_skip(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to track onboarding skip",
         )
+
+
+@router.post("/onboarding")
+async def track_onboarding_event(
+    session_id: str,
+    step: str,
+    event_type: str = "step_started",
+    user_id: Optional[str] = None,
+    metadata: Optional[Dict[str, Any]] = None,
+    request: Request = None,
+) -> Dict[str, Any]:
+    """Track onboarding analytics events."""
+
+    try:
+        # Track onboarding event with analytics service
+        await analytics_service.track_event(
+            event_type=EventType.USER_ACTION,
+            event_name="onboarding_event",
+            user_id=user_id,
+            session_id=session_id,
+            event_data={
+                "step": step,
+                "event_type": event_type,
+                "metadata": metadata or {},
+            },
+        )
+
+        return {"success": True, "message": f"Onboarding event tracked: {event_type} at {step}"}
+
+    except Exception as e:
+        logger.error(f"Failed to track onboarding event: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to track onboarding event: {str(e)}",
+        )
+
+
+@router.post("/onboarding/complete")
+async def track_onboarding_completion(
+    session_id: str,
+    completion_time: int,
+    trip_type: str,
+    total_duration: int,
+    user_id: Optional[str] = None,
+    metadata: Optional[Dict[str, Any]] = None,
+    request: Request = None,
+) -> Dict[str, Any]:
+    """Track onboarding completion with metrics."""
+
+    try:
+        # Track completion event
+        await analytics_service.track_event(
+            event_type=EventType.BUSINESS_METRIC,
+            event_name="onboarding_completed",
+            user_id=user_id,
+            session_id=session_id,
+            event_data={
+                "completion_time": completion_time,
+                "trip_type": trip_type,
+                "total_duration": total_duration,
+                "metadata": metadata or {},
+            },
+        )
+
+        # Track business metric for conversion
+        await analytics_service.track_business_metric(
+            metric="onboarding_conversion",
+            value=1,
+            user_id=user_id,
+            metadata={
+                "trip_type": trip_type,
+                "duration": total_duration,
+                "session_id": session_id,
+            },
+        )
+
+        return {"success": True, "message": "Onboarding completion tracked successfully"}
+
+    except Exception as e:
+        logger.error(f"Failed to track onboarding completion: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to track onboarding completion: {str(e)}",
+        )
+
+
+@router.post("/onboarding/drop-off")
+async def track_onboarding_drop_off(
+    session_id: str,
+    drop_off_step: str,
+    reason: Optional[str] = None,
+    user_id: Optional[str] = None,
+    metadata: Optional[Dict[str, Any]] = None,
+    request: Request = None,
+) -> Dict[str, Any]:
+    """Track onboarding drop-off for analysis."""
+
+    try:
+        # Track drop-off event
+        await analytics_service.track_event(
+            event_type=EventType.USER_ACTION,
+            event_name="onboarding_drop_off",
+            user_id=user_id,
+            session_id=session_id,
+            event_data={
+                "drop_off_step": drop_off_step,
+                "reason": reason,
+                "metadata": metadata or {},
+            },
+        )
+
+        return {"success": True, "message": f"Drop-off tracked at step: {drop_off_step}"}
+
+    except Exception as e:
+        logger.error(f"Failed to track onboarding drop-off: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to track onboarding drop-off: {str(e)}",
+        )

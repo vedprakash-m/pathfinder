@@ -1,19 +1,22 @@
 """
-API endpoints for Pathfinder Assistant functionality
+API endpoints for Pathfinder Assistant functionality - Unified Cosmos DB Implementation
 """
 
 import logging
 from typing import Any, Dict, Optional
 
-from app.core.database import get_db
-from app.core.security import get_current_user
-from app.models.user import User
-from app.services.pathfinder_assistant import assistant_service
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
-from sqlalchemy.orm import Session
 
-logger = logging.getLogger(__name__)
+from ..core.database_unified import get_cosmos_repository
+from ..core.security import get_current_user
+from ..core.logging_config import get_logger
+from ..core.ai_cost_management import ai_cost_control
+from ..models.user import User
+from ..repositories.cosmos_unified import UnifiedCosmosRepository
+from ..services.pathfinder_assistant import assistant_service
+
+logger = get_logger(__name__)
 
 router = APIRouter(prefix="/api/assistant", tags=["assistant"])
 
@@ -44,12 +47,13 @@ class SuggestionsRequest(BaseModel):
 
 
 @router.post("/mention")
+@ai_cost_control(model='gpt-4', max_tokens=2000)
 async def process_mention(
     request: MentionRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
 ):
-    """Process @pathfinder mention and return AI response"""
+    """Process @pathfinder mention and return AI response using unified Cosmos DB"""
     try:
         # Add user context to the request context
         context = request.context.copy()
@@ -64,7 +68,7 @@ async def process_mention(
 
         # Process the mention
         result = await assistant_service.process_mention(
-            message=request.message, user_id=current_user.id, context=context, db=db
+            message=request.message, user_id=current_user.id, context=context, cosmos_repo=cosmos_repo
         )
 
         if result.get("success"):
@@ -86,13 +90,14 @@ async def process_mention(
 
 
 @router.get("/suggestions")
+@ai_cost_control(model='gpt-3.5-turbo', max_tokens=1000)
 async def get_contextual_suggestions(
     page: Optional[str] = None,
     trip_id: Optional[str] = None,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
 ):
-    """Get contextual AI suggestions for the current user context"""
+    """Get contextual AI suggestions for the current user context using unified Cosmos DB"""
     try:
         context = {
             "current_page": page,
@@ -111,7 +116,7 @@ async def get_contextual_suggestions(
             }
 
         suggestions = await assistant_service.get_contextual_suggestions(
-            user_id=current_user.id, context=context, db=db
+            user_id=current_user.id, context=context, cosmos_repo=cosmos_repo
         )
 
         return {"success": True, "suggestions": suggestions}
@@ -125,15 +130,15 @@ async def get_contextual_suggestions(
 async def provide_feedback(
     request: FeedbackRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
 ):
-    """Provide feedback on an assistant interaction"""
+    """Provide feedback on an assistant interaction using unified Cosmos DB"""
     try:
         success = await assistant_service.provide_feedback(
             interaction_id=request.interaction_id,
             rating=request.rating,
             feedback_text=request.feedback_text,
-            db=db,
+            cosmos_repo=cosmos_repo,
         )
 
         if success:
@@ -154,27 +159,22 @@ async def get_interaction_history(
     offset: int = 0,
     trip_id: Optional[str] = None,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
 ):
-    """Get user's assistant interaction history"""
+    """Get user's assistant interaction history using unified Cosmos DB"""
     try:
-        from app.models.ai_integration import AssistantInteraction
-
-        query = db.query(AssistantInteraction).filter(
-            AssistantInteraction.user_id == current_user.id
-        )
-
-        if trip_id:
-            query = query.filter(AssistantInteraction.trip_id == trip_id)
-
-        interactions = (
-            query.order_by(AssistantInteraction.created_at.desc()).offset(offset).limit(limit).all()
+        history = await assistant_service.get_interaction_history(
+            user_id=current_user.id,
+            limit=limit,
+            offset=offset,
+            trip_id=trip_id,
+            cosmos_repo=cosmos_repo
         )
 
         return {
             "success": True,
-            "interactions": [interaction.to_dict() for interaction in interactions],
-            "total": query.count(),
+            "interactions": history["interactions"],
+            "total": history["total"],
         }
 
     except Exception as e:
@@ -186,37 +186,24 @@ async def get_interaction_history(
 async def get_interaction_details(
     interaction_id: str,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
 ):
-    """Get details of a specific assistant interaction"""
+    """Get details of a specific assistant interaction using unified Cosmos DB"""
     try:
-        from app.models.ai_integration import AIResponseCard, AssistantInteraction
-
-        interaction = (
-            db.query(AssistantInteraction)
-            .filter(
-                AssistantInteraction.id == interaction_id,
-                AssistantInteraction.user_id == current_user.id,
-            )
-            .first()
+        details = await assistant_service.get_interaction_details(
+            interaction_id=interaction_id,
+            user_id=current_user.id,
+            cosmos_repo=cosmos_repo
         )
 
-        if not interaction:
+        if details:
+            return {
+                "success": True,
+                "interaction": details["interaction"],
+                "response_cards": details["response_cards"],
+            }
+        else:
             raise HTTPException(status_code=404, detail="Interaction not found")
-
-        # Get response cards
-        response_cards = (
-            db.query(AIResponseCard)
-            .filter(AIResponseCard.interaction_id == interaction_id)
-            .order_by(AIResponseCard.display_order)
-            .all()
-        )
-
-        return {
-            "success": True,
-            "interaction": interaction.to_dict(),
-            "response_cards": [card.to_dict() for card in response_cards],
-        }
 
     except HTTPException:
         raise
@@ -229,30 +216,20 @@ async def get_interaction_details(
 async def dismiss_response_card(
     card_id: str,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
 ):
-    """Dismiss a response card"""
+    """Dismiss a response card using unified Cosmos DB"""
     try:
-        from app.models.ai_integration import AIResponseCard, AssistantInteraction
-
-        # Verify the card belongs to the current user
-        card = (
-            db.query(AIResponseCard)
-            .join(AssistantInteraction)
-            .filter(
-                AIResponseCard.id == card_id,
-                AssistantInteraction.user_id == current_user.id,
-            )
-            .first()
+        success = await assistant_service.dismiss_response_card(
+            card_id=card_id,
+            user_id=current_user.id,
+            cosmos_repo=cosmos_repo
         )
 
-        if not card:
+        if success:
+            return {"success": True, "message": "Response card dismissed"}
+        else:
             raise HTTPException(status_code=404, detail="Response card not found")
-
-        card.is_dismissed = True
-        db.commit()
-
-        return {"success": True, "message": "Response card dismissed"}
 
     except HTTPException:
         raise

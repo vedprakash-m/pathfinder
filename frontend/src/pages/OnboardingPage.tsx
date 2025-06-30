@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { AlertCircle, RefreshCw, Loader2 } from 'lucide-react';
 import OnboardingFlow, { TripType } from '../components/onboarding/OnboardingFlow';
 import { useOnboarding } from '../hooks/useOnboarding';
 
 const OnboardingPage: React.FC = () => {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth0();
+  const { isAuthenticated } = useAuth();
   const { completeOnboarding, onboardingStatus, isLoading, error, retryCheckStatus } = useOnboarding();
   const [isCompleting, setIsCompleting] = useState(false);
   const [completionError, setCompletionError] = useState<string | null>(null);

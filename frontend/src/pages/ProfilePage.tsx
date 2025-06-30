@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
@@ -30,13 +30,13 @@ import { useAuthStore } from '@/store';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 const ProfileSection: React.FC = () => {
-  const { user: auth0User } = useAuth0();
+  const { user: authUser } = useAuth();
   const { user, updateProfile } = useAuthStore();
   
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    name: user?.name || '',
-    email: user?.email || '',
+    name: user?.name || authUser?.name || '',
+    email: user?.email || authUser?.email || '',
     phone: user?.phone_number || '',
     bio: user?.bio || '',
     location: user?.location || '',
@@ -94,8 +94,7 @@ const ProfileSection: React.FC = () => {
         <div className="flex flex-col sm:flex-row gap-6">
           <div className="flex flex-col items-center">
             <Avatar
-              name={auth0User?.name || 'User'}
-              image={auth0User?.picture ? { src: auth0User.picture } : undefined}
+              name={authUser?.name || user?.name || 'User'}
               size={96}
               className="mb-4"
             />
@@ -370,7 +369,7 @@ const PrivacySettings: React.FC = () => {
 };
 
 const AccountSettings: React.FC = () => {
-  const { logout } = useAuth0();
+  const { logout } = useAuth();
 
   return (
     <Card>
@@ -395,7 +394,7 @@ const AccountSettings: React.FC = () => {
             <div className="space-y-3">
               <Button
                 appearance="outline"
-                onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}
+                onClick={() => logout()}
               >
                 Sign Out
               </Button>

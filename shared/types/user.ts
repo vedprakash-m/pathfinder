@@ -9,7 +9,7 @@ export interface User {
   emergency_contact_phone?: string;
   preferences?: Record<string, any>;
   is_active: boolean;
-  auth0_user_id?: string;
+  entra_id?: string;
   created_at: string;
   updated_at: string;
 }

@@ -32,7 +32,7 @@ main() {
     export ENVIRONMENT=testing
     export DATABASE_URL="sqlite:///:memory:"
     export REDIS_URL="memory://"
-    export AUTH0_DOMAIN="mock-auth.local"
+    export AZURE_TENANT_ID="mock-tenant.local"
     export AI_ENABLED=false
     export EMAIL_ENABLED=false
     export COSMOS_DB_ENABLED=false

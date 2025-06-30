@@ -1,13 +1,12 @@
 import { apiService } from './api';
 import { User, AuthCredentials, RegisterData, ApiResponse, UserProfile, LoginResponse } from '@/types';
-import auth0Config from '../auth0-config';
 
-// Auth0 configuration is now imported from hardcoded config to ensure consistency
+// Authentication configuration
 const authConfig = {
-  ...auth0Config.authorizationParams,
-  domain: auth0Config.domain,
-  clientId: auth0Config.clientId,
-  audience: auth0Config.authorizationParams.audience,
+  domain: 'login.microsoftonline.com',
+  tenantId: 'vedprakash.onmicrosoft.com',
+  clientId: import.meta.env.VITE_AZURE_CLIENT_ID,
+  audience: 'https://pathfinder-api.com',
   redirectUri: `${window.location.origin}/callback`,
 };
 

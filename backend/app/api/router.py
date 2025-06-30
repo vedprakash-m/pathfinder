@@ -3,6 +3,7 @@ Main API router that includes all endpoint routers.
 """
 
 from app.api.admin import router as admin_router
+from app.api.ai_cost import router as ai_cost_router
 from app.api.analytics import router as analytics_router
 from app.api.assistant import router as assistant_router
 from app.api.auth import router as auth_router
@@ -47,6 +48,7 @@ api_router.include_router(llm_analytics_router, tags=["LLM Analytics"])
 api_router.include_router(analytics_router, tags=["Analytics"])
 api_router.include_router(assistant_router, tags=["AI Assistant"])
 api_router.include_router(polls_router, tags=["Magic Polls"])
+api_router.include_router(ai_cost_router, tags=["AI Cost Management"])
 
 
 # Simple root endpoint

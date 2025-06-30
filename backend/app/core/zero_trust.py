@@ -18,7 +18,8 @@ from typing import Dict, Optional
 import jwt
 from app.core.config import get_settings
 from app.core.context_validator import context_validator
-from app.core.security import User, verify_token
+from app.core.security import verify_token
+from app.models.user import User
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt.exceptions import PyJWTError

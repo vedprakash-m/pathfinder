@@ -1,24 +1,20 @@
 """
-Trip messages API endpoints.
+Trip messages API endpoints - Unified Cosmos DB Implementation.
 """
 
 from typing import Any, Dict, Optional
 from uuid import UUID
 
 from app.core.config import get_settings
-from app.core.database import get_db
+from app.core.database_unified import get_cosmos_repository
 from app.core.zero_trust import require_permissions
+from app.repositories.cosmos_unified import UnifiedCosmosRepository
 from app.models.cosmos.message import MessageType
 from app.models.user import User
-from app.services.trip_cosmos import TripCosmosOperations
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.ext.asyncio import AsyncSession
 
 settings = get_settings()
 router = APIRouter()
-
-# Create an instance of the Cosmos operations service
-cosmos_service = TripCosmosOperations()
 
 
 @router.get("/{trip_id}/messages")
@@ -27,10 +23,10 @@ async def get_trip_messages(
     room_id: Optional[str] = None,
     limit: int = Query(50, gt=0, le=100),
     current_user: User = Depends(require_permissions("trips", "read")),
-    db: AsyncSession = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
 ):
     """
-    Get messages for a trip from Cosmos DB.
+    Get messages for a trip from unified Cosmos DB.
 
     Parameters:
     - trip_id: The trip ID
@@ -38,12 +34,18 @@ async def get_trip_messages(
     - limit: Maximum number of messages to return (default: 50, max: 100)
     """
     try:
-        messages = await cosmos_service.get_trip_messages(
+        # Get trip to verify access
+        trip = await cosmos_repo.get_trip(str(trip_id))
+        if not trip:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
+
+        # Get messages using unified repository
+        messages = await cosmos_repo.get_trip_messages(
             trip_id=str(trip_id), room_id=room_id, limit=limit
         )
 
-        # Convert Cosmos DB documents to dictionary responses
-        return [message.dict(exclude={"_resource_id", "_etag", "_ts"}) for message in messages]
+        # Convert to dictionary responses
+        return [message.dict() for message in messages]
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -57,10 +59,10 @@ async def send_trip_message(
     message: Dict[str, Any],
     room_id: Optional[str] = None,
     current_user: User = Depends(require_permissions("trips", "write")),
-    db: AsyncSession = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
 ):
     """
-    Send a new message in the trip chat.
+    Send a new message in the trip chat using unified Cosmos DB.
 
     Parameters:
     - trip_id: The trip ID
@@ -76,7 +78,13 @@ async def send_trip_message(
     message_type = MessageType(message.get("type", "chat"))
 
     try:
-        result = await cosmos_service.send_trip_message(
+        # Get trip to verify access
+        trip = await cosmos_repo.get_trip(str(trip_id))
+        if not trip:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
+
+        # Send message using unified repository
+        result = await cosmos_repo.send_trip_message(
             trip_id=str(trip_id),
             sender_id=str(current_user.id),
             sender_name=current_user.name or current_user.email,
@@ -86,7 +94,7 @@ async def send_trip_message(
         )
 
         if result:
-            return result.dict(exclude={"_resource_id", "_etag", "_ts"})
+            return result.dict()
         else:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

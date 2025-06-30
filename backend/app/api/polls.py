@@ -1,21 +1,24 @@
 """
-API endpoints for Magic Polls functionality
+API endpoints for Magic Polls functionality - Unified Cosmos DB Implementation
 """
 
 import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from app.core.database import get_db
-from app.core.security import get_current_user
-from app.models.ai_integration import PollType
-from app.models.user import User
-from app.services.magic_polls import magic_polls_service
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
-from sqlalchemy.orm import Session
 
-logger = logging.getLogger(__name__)
+from ..core.database_unified import get_cosmos_repository
+from ..core.security import get_current_user
+from ..core.logging_config import get_logger
+from ..core.ai_cost_management import ai_cost_control
+from ..models.ai_integration import PollType
+from ..models.user import User
+from ..repositories.cosmos_unified import UnifiedCosmosRepository
+from ..services.magic_polls import magic_polls_service
+
+logger = get_logger(__name__)
 
 router = APIRouter(prefix="/api/polls", tags=["magic-polls"])
 
@@ -57,12 +60,13 @@ class SubmitResponseRequest(BaseModel):
 
 
 @router.post("")
+@ai_cost_control(model='gpt-4', max_tokens=1500)
 async def create_poll(
     request: CreatePollRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
 ):
-    """Create a new Magic Poll"""
+    """Create a new Magic Poll using unified Cosmos DB"""
     try:
         # Validate poll type
         valid_poll_types = [pt.value for pt in PollType]
@@ -72,8 +76,22 @@ async def create_poll(
                 detail=f"Invalid poll type. Must be one of: {', '.join(valid_poll_types)}",
             )
 
-        # TODO: Verify user has access to the trip
-        # This would involve checking if user is part of the trip or family
+        # Verify user has access to the trip
+        trip = await cosmos_repo.get_trip_by_id(request.trip_id)
+        if not trip:
+            raise HTTPException(status_code=404, detail="Trip not found")
+        
+        # Check if user is part of trip's family or trip organizer
+        user_families = await cosmos_repo.get_user_families(str(current_user.id))
+        user_family_ids = [f.id for f in user_families]
+        
+        has_access = (
+            trip.organizer_user_id == str(current_user.id) or
+            any(family_id in trip.participating_family_ids for family_id in user_family_ids)
+        )
+        
+        if not has_access:
+            raise HTTPException(status_code=403, detail="No access to this trip")
 
         # Convert options to dict format
         options_dict = [option.dict() for option in request.options]
@@ -86,7 +104,7 @@ async def create_poll(
             options=options_dict,
             description=request.description,
             expires_hours=request.expires_hours,
-            db=db,
+            cosmos_repo=cosmos_repo,
         )
 
         if result.get("success"):
@@ -109,12 +127,12 @@ async def create_poll(
 async def get_trip_polls(
     trip_id: str,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
 ):
-    """Get all polls for a specific trip"""
+    """Get all polls for a specific trip using unified Cosmos DB"""
     try:
         polls = await magic_polls_service.get_trip_polls(
-            trip_id=trip_id, user_id=current_user.id, db=db
+            trip_id=trip_id, user_id=current_user.id, cosmos_repo=cosmos_repo
         )
 
         return {"success": True, "polls": polls, "count": len(polls)}
@@ -128,12 +146,12 @@ async def get_trip_polls(
 async def get_poll_details(
     poll_id: str,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
 ):
-    """Get details of a specific poll"""
+    """Get details of a specific poll using unified Cosmos DB"""
     try:
         result = await magic_polls_service.get_poll_results(
-            poll_id=poll_id, user_id=current_user.id, db=db
+            poll_id=poll_id, user_id=current_user.id, cosmos_repo=cosmos_repo
         )
 
         if result.get("success"):
@@ -161,15 +179,15 @@ async def submit_poll_response(
     poll_id: str,
     request: SubmitResponseRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
 ):
-    """Submit a response to a Magic Poll"""
+    """Submit a response to a Magic Poll using unified Cosmos DB"""
     try:
         result = await magic_polls_service.submit_response(
             poll_id=poll_id,
             user_id=current_user.id,
             response_data=request.response.dict(),
-            db=db,
+            cosmos_repo=cosmos_repo,
         )
 
         if result.get("success"):
@@ -195,12 +213,12 @@ async def submit_poll_response(
 async def get_poll_results(
     poll_id: str,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
 ):
-    """Get current results of a poll"""
+    """Get current results of a poll using unified Cosmos DB"""
     try:
         result = await magic_polls_service.get_poll_results(
-            poll_id=poll_id, user_id=current_user.id, db=db
+            poll_id=poll_id, user_id=current_user.id, cosmos_repo=cosmos_repo
         )
 
         if result.get("success"):
@@ -227,38 +245,36 @@ async def update_poll_status(
     poll_id: str,
     status: str = Query(..., description="New poll status (active, completed, cancelled)"),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
 ):
-    """Update poll status (only poll creator can do this)"""
+    """Update poll status (only poll creator can do this) using unified Cosmos DB"""
     try:
-        from app.models.ai_integration import MagicPoll, PollStatus
-
         # Validate status
-        valid_statuses = [ps.value for ps in PollStatus]
+        valid_statuses = ["active", "completed", "cancelled"]  # Simplified for now
         if status not in valid_statuses:
             raise HTTPException(
                 status_code=400,
                 detail=f"Invalid status. Must be one of: {', '.join(valid_statuses)}",
             )
 
-        # Get poll and verify ownership
-        poll = db.query(MagicPoll).filter(MagicPoll.id == poll_id).first()
+        result = await magic_polls_service.update_poll_status(
+            poll_id=poll_id,
+            user_id=current_user.id,
+            new_status=status,
+            cosmos_repo=cosmos_repo,
+        )
 
-        if not poll:
-            raise HTTPException(status_code=404, detail="Poll not found")
-
-        if poll.creator_id != current_user.id:
-            raise HTTPException(status_code=403, detail="Only poll creator can update status")
-
-        poll.status = status
-        poll.updated_at = datetime.utcnow()
-        db.commit()
-
-        return {
-            "success": True,
-            "data": poll.to_dict(),
-            "message": f"Poll status updated to {status}",
-        }
+        if result.get("success"):
+            return {
+                "success": True,
+                "data": result["poll"],
+                "message": f"Poll status updated to {status}",
+            }
+        else:
+            raise HTTPException(
+                status_code=result.get("status_code", 400),
+                detail=result.get("error", "Failed to update poll status")
+            )
 
     except HTTPException:
         raise
@@ -304,52 +320,26 @@ async def get_available_poll_types():
 async def get_poll_analytics(
     poll_id: str,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
 ):
-    """Get detailed analytics for a poll (creator only)"""
+    """Get detailed analytics for a poll (creator only) using unified Cosmos DB"""
     try:
-        from app.models.ai_integration import MagicPoll
+        result = await magic_polls_service.get_poll_analytics(
+            poll_id=poll_id,
+            user_id=current_user.id,
+            cosmos_repo=cosmos_repo,
+        )
 
-        # Get poll and verify ownership
-        poll = db.query(MagicPoll).filter(MagicPoll.id == poll_id).first()
-
-        if not poll:
-            raise HTTPException(status_code=404, detail="Poll not found")
-
-        if poll.creator_id != current_user.id:
-            raise HTTPException(status_code=403, detail="Only poll creator can view analytics")
-
-        # Get detailed analytics
-        responses = poll.responses.get("user_responses", []) if poll.responses else []
-
-        analytics = {
-            "total_responses": len(responses),
-            # Would calculate based on invited users
-            "response_rate": len(responses),
-            "time_to_respond": [],  # Average time from poll creation to response
-            "consensus_metrics": {
-                "consensus_level": (
-                    poll.ai_analysis.get("consensus_level", 0) if poll.ai_analysis else 0
-                ),
-                "conflicts_identified": (
-                    len(poll.ai_analysis.get("conflicts", [])) if poll.ai_analysis else 0
-                ),
-                "patterns_found": (
-                    len(poll.ai_analysis.get("patterns", [])) if poll.ai_analysis else 0
-                ),
-            },
-            "response_timeline": [
-                {
-                    "timestamp": response.get("timestamp"),
-                    # Anonymized
-                    "user_id": response.get("user_id")[:8] + "...",
-                    "choice": response.get("response", {}).get("choice"),
-                }
-                for response in responses
-            ],
-        }
-
-        return {"success": True, "analytics": analytics}
+        if result.get("success"):
+            return {
+                "success": True,
+                "analytics": result["analytics"]
+            }
+        else:
+            raise HTTPException(
+                status_code=result.get("status_code", 404),
+                detail=result.get("error", "Analytics not found")
+            )
 
     except HTTPException:
         raise

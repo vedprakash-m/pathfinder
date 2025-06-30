@@ -79,8 +79,8 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     """User creation model."""
 
-    auth0_id: Optional[str] = None  # Legacy field for migration
-    entra_id: Optional[str] = None  # New Entra External ID
+    entra_id: str  # Required Entra External ID per Vedprakash Domain standards
+    auth0_id: Optional[str] = None  # Legacy field for migration compatibility only
 
 
 class UserUpdate(BaseModel):

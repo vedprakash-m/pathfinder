@@ -13,7 +13,7 @@ import pytest
 import pytest_asyncio
 from app.core.database import Base, get_db
 from app.core.zero_trust import require_permissions
-from app.core.security import User as SecurityUser
+from app.core.security import VedUser as SecurityUser
 from app.main import app
 
 # Import ALL models to ensure they're registered with Base metadata
@@ -196,7 +196,9 @@ def mock_current_user():
     user = SecurityUser(
         id=str(uuid4()),
         email="test@example.com",
-        roles=["user", "family_admin"],
+        name="Test User",
+        givenName="Test",
+        familyName="User",
         permissions=["create:trips", "read:trips", "update:trips", "delete:trips", "read:families", "create:families"],
     )
     return user

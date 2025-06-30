@@ -184,14 +184,14 @@ cat > compute-params.json << EOF
     "openAIApiKey": {
       "value": "$OPENAI_API_KEY"
     },
-    "auth0Domain": {
-      "value": "${AUTH0_DOMAIN:-}"
+    "azureTenantId": {
+      "value": "${AZURE_TENANT_ID:-}"
     },
-    "auth0ClientId": {
-      "value": "${AUTH0_CLIENT_ID:-}"
+    "azureClientId": {
+      "value": "${AZURE_CLIENT_ID:-}"
     },
-    "auth0Audience": {
-      "value": "${AUTH0_AUDIENCE:-}"
+    "azureClientSecret": {
+      "value": "${AZURE_CLIENT_SECRET:-}"
     },
     "acrName": {
       "value": "${ACR_NAME:-pathfinderdevregistry}"

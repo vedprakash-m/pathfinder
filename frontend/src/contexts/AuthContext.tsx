@@ -4,22 +4,33 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useMsal, useAccount, useIsAuthenticated } from '@azure/msal-react';
 import { loginRequest } from '../msal-config';
+import { VedUser, AuthContextType } from '../types/auth';
 
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  picture?: string;
-}
-
-interface AuthContextType {
-  user: User | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  error: string | null;
-  login: () => Promise<void>;
-  logout: () => Promise<void>;
-  getAccessToken: () => Promise<string | null>;
+// Standard user extraction function per requirements
+function extractStandardUser(account: any): VedUser {
+  // Validate required claims
+  if (!account?.localAccountId && !account?.homeAccountId) {
+    throw new Error('Invalid account: missing required claims');
+  }
+  
+  const id = account.localAccountId || account.homeAccountId || '';
+  const email = account.username || '';
+  const name = account.name || account.username || '';
+  
+  return {
+    id,
+    email,
+    name,
+    givenName: account.given_name || '',
+    familyName: account.family_name || '',
+    permissions: [], // Will be populated from token claims
+    vedProfile: {
+      profileId: id,
+      subscriptionTier: 'free', // Default tier
+      appsEnrolled: ['pathfinder'],
+      preferences: {}
+    }
+  };
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -29,7 +40,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const account = useAccount(accounts[0] || {});
   const isAuthenticated = useIsAuthenticated();
   
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<VedUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,13 +50,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsLoading(true);
         
         if (isAuthenticated && account) {
-          // Transform MSAL account to our User interface
-          setUser({
-            id: account.localAccountId || account.homeAccountId || '',
-            email: account.username || '',
-            name: account.name || account.username || '',
-            picture: undefined, // Can be fetched from Graph API if needed
-          });
+          // Transform MSAL account to standard VedUser interface
+          const standardUser = extractStandardUser(account);
+          setUser(standardUser);
           setError(null);
         } else {
           setUser(null);
@@ -113,7 +120,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       return response.accessToken;
     } catch (err) {
-      console.error('Token acquisition error:', err);
+      console.warn('Silent token acquisition failed, falling back to interactive:', err);
       
       // If silent token acquisition fails, try interactive
       try {
@@ -124,7 +131,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return response.accessToken;
       } catch (interactiveErr) {
         console.error('Interactive token acquisition error:', interactiveErr);
-        return null;
+        // Throw error to trigger proper error handling per requirements
+        throw new Error('Failed to acquire access token');
       }
     }
   };

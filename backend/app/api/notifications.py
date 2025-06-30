@@ -5,8 +5,9 @@ Notification management API endpoints.
 from typing import List
 from uuid import UUID
 
-from app.core.database import get_db
+from app.core.database_unified import get_cosmos_repository
 from app.core.zero_trust import require_permissions
+from app.repositories.cosmos_unified import UnifiedCosmosRepository
 from app.models.user import User
 from app.services.notification_service import (
     BulkNotificationCreate,
@@ -15,7 +16,6 @@ from app.services.notification_service import (
     NotificationService,
 )
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 
@@ -27,10 +27,10 @@ async def get_notifications(
     limit: int = Query(50, ge=1, le=100),
     unread_only: bool = Query(False),
     current_user: User = Depends(require_permissions("notifications", "read")),
-    db: AsyncSession = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
 ):
     """Get user's notifications."""
-    notification_service = NotificationService(db)
+    notification_service = NotificationService(cosmos_repo)
 
     notifications = await notification_service.get_user_notifications(
         user_id=str(current_user.id), skip=skip, limit=limit, unread_only=unread_only
@@ -43,10 +43,10 @@ async def get_notifications(
 async def get_unread_count(
     request: Request,
     current_user: User = Depends(require_permissions("notifications", "read")),
-    db: AsyncSession = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
 ):
     """Get count of unread notifications."""
-    notification_service = NotificationService(db)
+    notification_service = NotificationService(cosmos_repo)
 
     count = await notification_service.get_unread_count(str(current_user.id))
 
@@ -58,10 +58,10 @@ async def create_notification(
     notification_data: NotificationCreate,
     request: Request,
     current_user: User = Depends(require_permissions("notifications", "create")),
-    db: AsyncSession = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
 ):
-    """Create a notification (admin/system use)."""
-    notification_service = NotificationService(db)
+    """Create a notification (admin/system use) using unified Cosmos DB."""
+    notification_service = NotificationService(cosmos_repo)
 
     try:
         notification = await notification_service.create_notification(notification_data)
@@ -75,10 +75,10 @@ async def create_bulk_notifications(
     bulk_data: BulkNotificationCreate,
     request: Request,
     current_user: User = Depends(require_permissions("notifications", "create")),
-    db: AsyncSession = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
 ):
-    """Create bulk notifications (admin/system use)."""
-    notification_service = NotificationService(db)
+    """Create bulk notifications (admin/system use) using unified Cosmos DB."""
+    notification_service = NotificationService(cosmos_repo)
 
     try:
         notifications = await notification_service.create_bulk_notifications(bulk_data)
@@ -92,10 +92,10 @@ async def mark_notification_read(
     notification_id: UUID,
     request: Request,
     current_user: User = Depends(require_permissions("notifications", "update")),
-    db: AsyncSession = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
 ):
-    """Mark a notification as read."""
-    notification_service = NotificationService(db)
+    """Mark a notification as read using unified Cosmos DB."""
+    notification_service = NotificationService(cosmos_repo)
 
     notification = await notification_service.mark_notification_read(
         notification_id=str(notification_id), user_id=str(current_user.id)
@@ -111,10 +111,10 @@ async def mark_notification_read(
 async def mark_all_notifications_read(
     request: Request,
     current_user: User = Depends(require_permissions("notifications", "update")),
-    db: AsyncSession = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
 ):
-    """Mark all notifications as read."""
-    notification_service = NotificationService(db)
+    """Mark all notifications as read using unified Cosmos DB."""
+    notification_service = NotificationService(cosmos_repo)
 
     updated_count = await notification_service.mark_all_notifications_read(str(current_user.id))
 
@@ -126,10 +126,10 @@ async def delete_notification(
     notification_id: UUID,
     request: Request,
     current_user: User = Depends(require_permissions("notifications", "delete")),
-    db: AsyncSession = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
 ):
-    """Delete a notification."""
-    notification_service = NotificationService(db)
+    """Delete a notification using unified Cosmos DB."""
+    notification_service = NotificationService(cosmos_repo)
 
     success = await notification_service.delete_notification(
         notification_id=str(notification_id), user_id=str(current_user.id)
@@ -145,10 +145,10 @@ async def delete_notification(
 async def cleanup_expired_notifications(
     request: Request,
     current_user: User = Depends(require_permissions("notifications", "admin")),
-    db: AsyncSession = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
 ):
-    """Clean up expired notifications (admin use)."""
-    notification_service = NotificationService(db)
+    """Clean up expired notifications (admin use) using unified Cosmos DB."""
+    notification_service = NotificationService(cosmos_repo)
 
     deleted_count = await notification_service.cleanup_expired_notifications()
 

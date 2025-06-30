@@ -6,7 +6,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 from app.main import app
 from fastapi.testclient import TestClient
-from app.core.security import User
+from app.core.security import VedUser
 from uuid import uuid4
 
 
@@ -14,10 +14,12 @@ def test_debug_auth_response(mock_current_user):
     """Debug the actual authentication response."""
 
     # Create a mock user with all permissions
-    test_user = User(
+    test_user = VedUser(
         id=str(uuid4()),
         email="test@example.com",
-        roles=["user"],
+        name="Test User",
+        givenName="Test",
+        familyName="User",
         permissions=[
             "read:trips",
             "create:trips",
@@ -74,10 +76,12 @@ def test_debug_auth_response(mock_current_user):
 def test_direct_zero_trust_bypass():
     """Test bypassing zero trust completely."""
 
-    test_user = User(
+    test_user = VedUser(
         id=str(uuid4()),
         email="test@example.com",
-        roles=["user"],
+        name="Test User",
+        givenName="Test", 
+        familyName="User",
         permissions=["create:trips"],
     )
 

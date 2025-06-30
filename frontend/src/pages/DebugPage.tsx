@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { useOnboarding } from '../hooks/useOnboarding';
 import { Card, Button } from '@fluentui/react-components';
 import { Link } from 'react-router-dom';
@@ -7,11 +7,11 @@ import { Link } from 'react-router-dom';
 export const DebugPage: React.FC = () => {
   const { 
     isAuthenticated, 
-    isLoading: auth0Loading, 
+    isLoading: authLoading, 
     user, 
-    error: auth0Error,
-    getAccessTokenSilently 
-  } = useAuth0();
+    error: authError,
+    getAccessToken 
+  } = useAuth();
   
   const { 
     onboardingStatus, 
@@ -23,8 +23,8 @@ export const DebugPage: React.FC = () => {
 
   const testAPICall = async () => {
     try {
-      const token = await getAccessTokenSilently();
-      console.log('Token:', token.substring(0, 20) + '...');
+      const token = await getAccessToken();
+      console.log('Token:', token ? token.substring(0, 20) + '...' : 'No token');
       
       const response = await fetch('https://pathfinder-backend.yellowdune-9b8d769a.eastus.azurecontainerapps.io/api/v1/auth/user/onboarding-status', {
         headers: {
@@ -45,15 +45,15 @@ export const DebugPage: React.FC = () => {
       <div className="max-w-4xl mx-auto space-y-6">
         <h1 className="text-3xl font-bold text-gray-900">Authentication Debug</h1>
         
-        {/* Auth0 Status */}
+        {/* Authentication Status */}
         <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-4">Auth0 Status</h2>
+          <h2 className="text-xl font-semibold mb-4">Authentication Status</h2>
           <div className="space-y-2">
-            <p><strong>Loading:</strong> {auth0Loading ? 'Yes' : 'No'}</p>
+            <p><strong>Loading:</strong> {authLoading ? 'Yes' : 'No'}</p>
             <p><strong>Authenticated:</strong> {isAuthenticated ? 'Yes' : 'No'}</p>
             <p><strong>User Email:</strong> {user?.email || 'Not available'}</p>
-            <p><strong>User Sub:</strong> {user?.sub || 'Not available'}</p>
-            <p><strong>Error:</strong> {auth0Error?.message || 'None'}</p>
+            <p><strong>User ID:</strong> {user?.id || 'Not available'}</p>
+            <p><strong>Error:</strong> {authError || 'None'}</p>
           </div>
         </Card>
 

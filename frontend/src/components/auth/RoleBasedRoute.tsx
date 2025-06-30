@@ -5,7 +5,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { UserRole, UserProfile } from '@/types';
 import { useAuthStore } from '@/store';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -30,7 +30,7 @@ export const RoleBasedRoute: React.FC<RoleBasedRouteProps> = ({
   allowedRoles, 
   fallbackPath = '/unauthorized' 
 }) => {
-  const { isAuthenticated, isLoading: auth0Loading } = useAuth0();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const authStore = useAuthStore();
   const { syncWithBackend } = useAuth0BackendIntegration();
   const [backendUser, setBackendUser] = useState<UserProfile | null>(null);
@@ -39,7 +39,7 @@ export const RoleBasedRoute: React.FC<RoleBasedRouteProps> = ({
   // Sync user data with backend when Auth0 is authenticated
   useEffect(() => {
     const syncUserWithBackend = async () => {
-      if (!isAuthenticated || auth0Loading) {
+      if (!isAuthenticated || authLoading) {
         setBackendLoading(false);
         return;
       }
@@ -64,10 +64,10 @@ export const RoleBasedRoute: React.FC<RoleBasedRouteProps> = ({
     };
 
     syncUserWithBackend();
-  }, [isAuthenticated, auth0Loading, authStore, syncWithBackend]);
+  }, [isAuthenticated, authLoading, authStore, syncWithBackend]);
 
   // Show loading spinner while checking authentication and syncing with backend
-  if (auth0Loading || backendLoading) {
+  if (authLoading || backendLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner size="large" />
@@ -115,7 +115,7 @@ export const withRoleProtection = (
  * Returns helper functions for role-based UI rendering
  */
 export const useRolePermissions = () => {
-  const { isAuthenticated } = useAuth0();
+  const { isAuthenticated } = useAuth();
   const authStore = useAuthStore();
   const [backendUser, setBackendUser] = useState<UserProfile | null>(null);
 

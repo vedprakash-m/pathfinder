@@ -1,24 +1,19 @@
 import React, { useState } from 'react';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, Title3, Body2, Button } from '@fluentui/react-components';
 
 export const ApiDebug: React.FC = () => {
-  const { getAccessTokenSilently, isAuthenticated, user } = useAuth0();
+  const { getAccessToken, isAuthenticated, user } = useAuth();
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
   const testApiCall = async () => {
     setLoading(true);
     try {
-      // Get the Auth0 token
-      const token = await getAccessTokenSilently({
-        authorizationParams: {
-          audience: import.meta.env.VITE_AUTH0_AUDIENCE || 'https://pathfinder-api.com',
-          scope: 'openid profile email'
-        }
-      });
+      // Get the access token
+      const token = await getAccessToken();
 
-      console.log('🔐 Auth0 Token:', token);
+      console.log('🔐 Access Token:', token);
 
       // Test the API call
       const apiUrl = import.meta.env.VITE_API_URL 
@@ -35,7 +30,7 @@ export const ApiDebug: React.FC = () => {
       const data = await response.text();
       
       setDebugInfo({
-        token: token.substring(0, 50) + '...',
+        token: token ? token.substring(0, 50) + '...' : 'No token',
         apiUrl,
         status: response.status,
         statusText: response.statusText,
@@ -46,7 +41,7 @@ export const ApiDebug: React.FC = () => {
     } catch (error: any) {
       console.error('❌ API Test Error:', error);
       setDebugInfo({
-        error: error.message,
+        error: error.message || String(error),
         stack: error.stack
       });
     }

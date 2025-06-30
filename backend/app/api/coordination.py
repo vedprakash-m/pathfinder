@@ -1,5 +1,5 @@
 """
-API endpoints for Smart Coordination Automation.
+API endpoints for Smart Coordination Automation - Unified Cosmos DB Implementation.
 
 Solves Pain Point #2: "Too much manual coordination required between families"
 """
@@ -9,10 +9,10 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..core.database import get_db
+from ..core.database_unified import get_cosmos_repository
 from ..core.zero_trust import require_permissions
+from ..repositories.cosmos_unified import UnifiedCosmosRepository
 from ..models.user import User
 from ..services.smart_notifications import (
     NotificationTrigger,
@@ -48,7 +48,7 @@ class CoordinationStatusResponse(BaseModel):
 @router.post("/trigger-event")
 async def trigger_coordination_event(
     request: CoordinationEventRequest,
-    db: AsyncSession = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
     current_user: User = Depends(require_permissions("trips", "update")),
 ):
     """
@@ -94,7 +94,7 @@ async def trigger_coordination_event(
 @router.get("/status/{trip_id}", response_model=CoordinationStatusResponse)
 async def get_coordination_status(
     trip_id: str,
-    db: AsyncSession = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
     current_user: User = Depends(require_permissions("trips", "read")),
 ):
     """
@@ -125,7 +125,7 @@ async def get_coordination_status(
 @router.post("/smart-notification")
 async def send_smart_notification(
     notification_data: Dict[str, Any],
-    db: AsyncSession = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
     current_user: User = Depends(require_permissions("trips", "update")),
 ):
     """
@@ -162,7 +162,7 @@ async def send_smart_notification(
 @router.get("/automation-health/{trip_id}")
 async def get_automation_health(
     trip_id: str,
-    db: AsyncSession = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
     current_user: User = Depends(require_permissions("trips", "read")),
 ):
     """
@@ -216,7 +216,7 @@ async def get_automation_health(
 async def suggest_coordination_meeting(
     trip_id: str,
     meeting_request: Dict[str, Any],
-    db: AsyncSession = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
     current_user: User = Depends(require_permissions("trips", "update")),
 ):
     """

@@ -1,0 +1,69 @@
+{
+  "summary": {
+    "security_configuration_check": true,
+    "authentication_implementation": true,
+    "cors_and_middleware": true,
+    "environment_variables_security": true,
+    "file_security_scan": false,
+    "api_security_structure": true
+  },
+  "success_rate": 83.33333333333334,
+  "execution_time": 0.04391908645629883,
+  "detailed_results": [
+    {
+      "test": "Security Config - main.py security features",
+      "success": true,
+      "details": "100.0% security features present (4/4)",
+      "timestamp": "2025-06-29T13:41:08.750007"
+    },
+    {
+      "test": "Authentication - security.py features",
+      "success": true,
+      "details": "100.0% authentication features present (5/5)",
+      "timestamp": "2025-06-29T13:41:08.750244"
+    },
+    {
+      "test": "Authentication - VedUser compliance",
+      "success": true,
+      "details": "User model has Entra ID integration",
+      "timestamp": "2025-06-29T13:41:08.750439"
+    },
+    {
+      "test": "CORS & Middleware - Configuration",
+      "success": true,
+      "details": "100.0% CORS/middleware features configured (4/4)",
+      "timestamp": "2025-06-29T13:41:08.750525"
+    },
+    {
+      "test": "Environment Security - Configuration",
+      "success": true,
+      "details": "75.0% environment security features (3/4)",
+      "timestamp": "2025-06-29T13:41:08.750845"
+    },
+    {
+      "test": "Environment Security - No .env files in repo",
+      "success": false,
+      "details": ".env files found: ['.env', '.env.local']",
+      "timestamp": "2025-06-29T13:41:08.751159"
+    },
+    {
+      "test": "File Security - Vulnerability scan",
+      "success": false,
+      "details": "8 potential issues found",
+      "timestamp": "2025-06-29T13:41:08.792432"
+    },
+    {
+      "test": "API Security - Security features coverage",
+      "success": true,
+      "details": "95.5% of API files have security features (21/22)",
+      "timestamp": "2025-06-29T13:41:08.793026"
+    },
+    {
+      "test": "API Security - Unified data access",
+      "success": false,
+      "details": "63.6% of API files use unified Cosmos DB (14/22)",
+      "timestamp": "2025-06-29T13:41:08.793417"
+    }
+  ],
+  "timestamp": "2025-06-29T13:41:08.793576"
+}

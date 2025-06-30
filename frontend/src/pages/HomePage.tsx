@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { motion } from 'framer-motion';
 import {
   Card,
@@ -43,7 +43,7 @@ const FeatureCard: React.FC<{
 );
 
 export const HomePage: React.FC = () => {
-  const { loginWithRedirect, isAuthenticated } = useAuth0();
+  const { login, isAuthenticated } = useAuth();
 
   const features = [
     {
@@ -100,7 +100,7 @@ export const HomePage: React.FC = () => {
                     appearance="primary"
                     size="large"
                     className="px-8 py-3"
-                    onClick={() => loginWithRedirect()}
+                    onClick={() => login()}
                   >
                     Get Started Free
                   </Button>
@@ -108,7 +108,7 @@ export const HomePage: React.FC = () => {
                     appearance="outline"
                     size="large"
                     className="px-8 py-3"
-                    onClick={() => loginWithRedirect()}
+                    onClick={() => login()}
                   >
                     Sign In
                   </Button>
@@ -173,7 +173,7 @@ export const HomePage: React.FC = () => {
                 appearance="primary"
                 size="large"
                 className="px-8 py-3 bg-white text-primary-600 hover:bg-primary-50"
-                onClick={() => loginWithRedirect()}
+                onClick={() => login()}
               >
                 Start Planning Today
               </Button>

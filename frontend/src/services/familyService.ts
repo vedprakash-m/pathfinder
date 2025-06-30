@@ -10,7 +10,7 @@ import {
 export const familyService = {
   // Get all families for current user
   getFamilies: async (): Promise<ApiResponse<PaginatedResponse<Family>>> => {
-    return apiService.get('/families');
+    return apiService.get('/families/');
   },
 
   // Get single family by ID
@@ -20,22 +20,30 @@ export const familyService = {
 
   // Create new family
   createFamily: async (familyData: CreateFamilyRequest): Promise<ApiResponse<Family>> => {
-    return apiService.post('/families', familyData);
+    return apiService.post('/families/', familyData, {
+      invalidateUrlPatterns: ['families']
+    });
   },
 
   // Update family
   updateFamily: async (familyId: string, familyData: Partial<CreateFamilyRequest>): Promise<ApiResponse<Family>> => {
-    return apiService.patch(`/families/${familyId}`, familyData);
+    return apiService.patch(`/families/${familyId}`, familyData, {
+      invalidateUrlPatterns: ['families']
+    });
   },
 
   // Delete family
   deleteFamily: async (familyId: string): Promise<ApiResponse<void>> => {
-    return apiService.delete(`/families/${familyId}`);
+    return apiService.delete(`/families/${familyId}`, {
+      invalidateUrlPatterns: ['families']
+    });
   },
 
   // Invite family member
   inviteMember: async (familyId: string, inviteData: InviteFamilyMemberRequest): Promise<ApiResponse<any>> => {
-    return apiService.post(`/families/${familyId}/invite`, inviteData);
+    return apiService.post(`/families/${familyId}/invite`, inviteData, {
+      invalidateUrlPatterns: ['families']
+    });
   },
 
   // Remove family member

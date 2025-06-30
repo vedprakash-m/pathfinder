@@ -1,159 +1,94 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { TripCard } from '../../components/trips/TripCard';
-import { TestWrapper } from '../utils';
+import { AllProviders } from '../utils';
+import type { Trip } from '../../types';
 
-// Mock react-router-dom
-vi.mock('react-router-dom', () => ({
-  useNavigate: () => vi.fn(),
-  Link: ({ children, to, ...props }: any) => (
-    <a href={to} {...props}>
-      {children}
-    </a>
-  ),
-}));
-
-const mockTrip = {
+const mockTrip: Trip = {
   id: '1',
-  title: 'Amazing Europe Trip',
-  description: 'A wonderful journey through Europe',
-  destination: 'Paris, France',
-  startDate: '2025-08-15',
-  endDate: '2025-08-25',
-  status: 'planning' as const,
-  budgetTotal: 5000,
-  maxParticipants: 10,
-  currentParticipants: 3,
-  isPublic: false,
-  createdBy: 'user1',
-  families: [
-    { id: 'fam1', name: 'Smith Family' },
-    { id: 'fam2', name: 'Johnson Family' },
-  ],
+  title: 'Test Trip',
+  name: 'Test Trip',
+  description: 'A test trip description',
+  destination: 'Test Destination',
+  start_date: '2024-06-01',
+  end_date: '2024-06-07',
+  status: 'planning',
+  family_id: 'family-1',
+  family_count: 1,
+  confirmed_families: 0,
+  created_by: 'user-1',
+  participants: [],
+  reservations: [],
+  created_at: '2024-05-01T10:00:00Z',
+  updated_at: '2024-05-01T10:00:00Z'
 };
 
 describe('TripCard', () => {
   it('renders trip information correctly', () => {
     render(
-      <TestWrapper>
+      <AllProviders>
         <TripCard trip={mockTrip} />
-      </TestWrapper>
+      </AllProviders>
     );
 
-    expect(screen.getByText('Amazing Europe Trip')).toBeInTheDocument();
-    expect(screen.getByText('Paris, France')).toBeInTheDocument();
-    expect(screen.getByText(/Aug 15.*Aug 25/)).toBeInTheDocument();
-    expect(screen.getByText('$5,000')).toBeInTheDocument();
-    expect(screen.getByText('3/10 participants')).toBeInTheDocument();
+    expect(screen.getByText('Test Trip')).toBeInTheDocument();
+    expect(screen.getByText('A test trip description')).toBeInTheDocument();
+    expect(screen.getByText('Test Destination')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /view details/i })).toBeInTheDocument();
   });
 
-  it('displays correct status badge', () => {
+  it('shows join button when onJoin is provided and status is planning', () => {
+    const mockOnJoin = vi.fn();
+    
     render(
-      <TestWrapper>
-        <TripCard trip={mockTrip} />
-      </TestWrapper>
+      <AllProviders>
+        <TripCard trip={mockTrip} onJoin={mockOnJoin} />
+      </AllProviders>
     );
 
-    expect(screen.getByText('Planning')).toBeInTheDocument();
+    const joinButton = screen.getByRole('button', { name: /join trip/i });
+    expect(joinButton).toBeInTheDocument();
+    
+    fireEvent.click(joinButton);
+    expect(mockOnJoin).toHaveBeenCalledWith(mockTrip.id);
   });
 
-  it('shows family participants', () => {
-    render(
-      <TestWrapper>
-        <TripCard trip={mockTrip} />
-      </TestWrapper>
-    );
-
-    expect(screen.getByText('Smith Family')).toBeInTheDocument();
-    expect(screen.getByText('Johnson Family')).toBeInTheDocument();
-  });
-
-  it('handles different trip statuses', () => {
-    const activeTrip = { ...mockTrip, status: 'active' as const };
-    const { rerender } = render(
-      <TestWrapper>
-        <TripCard trip={activeTrip} />
-      </TestWrapper>
-    );
-
-    expect(screen.getByText('Active')).toBeInTheDocument();
-
+  it('does not show join button when status is not planning', () => {
+    const mockOnJoin = vi.fn();
     const completedTrip = { ...mockTrip, status: 'completed' as const };
-    rerender(
-      <TestWrapper>
-        <TripCard trip={completedTrip} />
-      </TestWrapper>
+    
+    render(
+      <AllProviders>
+        <TripCard trip={completedTrip} onJoin={mockOnJoin} />
+      </AllProviders>
     );
 
-    expect(screen.getByText('Completed')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /join trip/i })).not.toBeInTheDocument();
   });
 
-  it('displays budget information correctly', () => {
-    const expensiveTrip = { ...mockTrip, budgetTotal: 15000 };
+  it('shows leave button when onLeave is provided', () => {
+    const mockOnLeave = vi.fn();
+    
     render(
-      <TestWrapper>
-        <TripCard trip={expensiveTrip} />
-      </TestWrapper>
+      <AllProviders>
+        <TripCard trip={mockTrip} onLeave={mockOnLeave} />
+      </AllProviders>
     );
 
-    expect(screen.getByText('$15,000')).toBeInTheDocument();
+    const leaveButton = screen.getByRole('button', { name: /leave/i });
+    expect(leaveButton).toBeInTheDocument();
+    
+    fireEvent.click(leaveButton);
+    expect(mockOnLeave).toHaveBeenCalledWith(mockTrip.id);
   });
 
-  it('handles trips with no families', () => {
-    const tripWithoutFamilies = { ...mockTrip, families: [] };
+  it('displays trip status badge', () => {
     render(
-      <TestWrapper>
-        <TripCard trip={tripWithoutFamilies} />
-      </TestWrapper>
-    );
-
-    // Should still render without crashing
-    expect(screen.getByText('Amazing Europe Trip')).toBeInTheDocument();
-  });
-
-  it('links to trip detail page', () => {
-    render(
-      <TestWrapper>
+      <AllProviders>
         <TripCard trip={mockTrip} />
-      </TestWrapper>
+      </AllProviders>
     );
 
-    const link = screen.getByRole('link');
-    expect(link).toHaveAttribute('href', `/trips/${mockTrip.id}`);
-  });
-
-  it('handles click events properly', () => {
-    const onCardClick = vi.fn();
-    render(
-      <TestWrapper>
-        <TripCard trip={mockTrip} onClick={onCardClick} />
-      </TestWrapper>
-    );
-
-    const card = screen.getByRole('article');
-    fireEvent.click(card);
-    expect(onCardClick).toHaveBeenCalledWith(mockTrip);
-  });
-
-  it('displays duration correctly', () => {
-    render(
-      <TestWrapper>
-        <TripCard trip={mockTrip} />
-      </TestWrapper>
-    );
-
-    // Trip is 10 days long (Aug 15-25)
-    expect(screen.getByText(/10 days/i)).toBeInTheDocument();
-  });
-
-  it('shows private/public status', () => {
-    const publicTrip = { ...mockTrip, isPublic: true };
-    render(
-      <TestWrapper>
-        <TripCard trip={publicTrip} />
-      </TestWrapper>
-    );
-
-    expect(screen.getByText(/public/i)).toBeInTheDocument();
+    expect(screen.getByText('planning')).toBeInTheDocument();
   });
 });

@@ -1,14 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { apiClient, tripsApi, familiesApi, authApi } from '../services/api';
+import { apiService } from '../services/api';
 
 // Mock fetch globally
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
-// Mock Auth0
-vi.mock('@auth0/auth0-react', () => ({
-  useAuth0: () => ({
-    getAccessTokenSilently: vi.fn(() => Promise.resolve('mock-token')),
+// Mock MSAL for Entra ID authentication
+vi.mock('@azure/msal-react', () => ({
+  useMsal: () => ({
+    instance: {
+      acquireTokenSilent: vi.fn(() => Promise.resolve({ accessToken: 'mock-entra-token' })),
+    },
+    accounts: [{ localAccountId: 'mock-user-id' }],
   }),
 }));
 
@@ -87,7 +90,7 @@ describe('Trips API', () => {
       // Note: This is a mock test structure - actual implementation will depend on your API service
       const trips = await fetch('/api/trips').then(r => r.json());
 
-      expect(mockFetch).toHaveBeenCalledWith('/api/trips', expect.any(Object));
+      expect(mockFetch).toHaveBeenCalledWith('/api/trips');
       expect(trips).toEqual(mockTrips);
     });
 

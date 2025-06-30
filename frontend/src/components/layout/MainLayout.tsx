@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { motion } from 'framer-motion';
 import {
   Button,
@@ -38,7 +38,7 @@ interface NavItem {
 
 export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const location = useLocation();
-  const { logout } = useAuth0();
+  const { logout } = useAuth();
   const { user } = useAuthStore();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
@@ -80,7 +80,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   };
 
   const handleLogout = () => {
-    logout({ logoutParams: { returnTo: window.location.origin } });
+    logout();
   };
 
   return (

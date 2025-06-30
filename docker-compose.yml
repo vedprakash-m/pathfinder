@@ -75,7 +75,7 @@ services:
     depends_on:
       - cosmosdb-emulator
 
-  # Mock Auth Service (for local development without Auth0)
+  # Mock Auth Service (for local development without Azure Entra ID)
   mock-auth:
     image: nginx:alpine
     volumes:

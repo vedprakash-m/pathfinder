@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useAuth } from '@/contexts/AuthContext';
 import apiService from '../services/api';
 
 interface OnboardingStatus {
@@ -13,7 +13,7 @@ export const useOnboarding = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
-  const { isAuthenticated } = useAuth0();
+  const { isAuthenticated } = useAuth();
   const isMountedRef = useRef(true);
   const retryTimeoutRef = useRef<NodeJS.Timeout>();
 

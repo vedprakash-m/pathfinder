@@ -1,11 +1,12 @@
-"""Simple dependency injection providers for FastAPI.
+"""Simple dependency injection providers for FastAPI - Unified Cosmos DB Implementation.
 
 This module provides dependency injection functions that work directly with FastAPI's
-dependency system, replacing the complex dependency-injector setup.
+dependency system, using our unified Cosmos DB approach per Tech Spec.
 """
 
 from typing import AsyncGenerator
 
+from fastapi import Depends
 from app.application.trip_use_cases import (
     AddParticipantUseCase,
     CreateTripUseCase,
@@ -19,10 +20,9 @@ from app.application.trip_use_cases import (
     UpdateParticipationUseCase,
     UpdateTripUseCase,
 )
-from app.core.database import get_db, SessionLocal
-from app.core.repositories.trip_cosmos_repository import TripCosmosRepository
-from app.core.repositories.trip_repository import TripRepository
-from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.database_unified import get_cosmos_service
+from app.repositories.cosmos_unified import UnifiedCosmosRepository
+from domain.trip import TripDomainService
 
 import sys
 import os
@@ -51,18 +51,11 @@ def get_trip_cosmos_repository() -> TripCosmosRepository:
 
 # Domain service providers
 async def get_trip_domain_service(
-    trip_repo: TripRepository = None, cosmos_repo: TripCosmosRepository = None
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_service)
 ) -> TripDomainService:
-    """Get TripDomainService instance."""
-    if trip_repo is None:
-        trip_repo = await get_trip_repository()
-    if cosmos_repo is None:
-        cosmos_repo = get_trip_cosmos_repository()
-
+    """Get TripDomainService instance with unified Cosmos DB repository."""
     return TripDomainService(
-        legacy_service=None,
-        trip_repository=trip_repo,
-        trip_cosmos_repository=cosmos_repo,
+        unified_cosmos_repository=cosmos_repo,
     )
 
 

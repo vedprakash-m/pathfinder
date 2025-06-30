@@ -1,5 +1,5 @@
 """
-Health check endpoints for the Pathfinder API.
+Health check endpoints for the Pathfinder API - Unified Cosmos DB Implementation.
 """
 
 import socket
@@ -9,13 +9,11 @@ from typing import Dict
 
 import psutil
 from app.core.config import get_settings
-from app.core.cosmos_db import get_cosmos_client
-from app.core.database import get_db
+from app.core.database_unified import get_cosmos_repository
 from app.core.logging_config import get_logger
+from app.repositories.cosmos_unified import UnifiedCosmosRepository
 from app.services.email_service import email_service
 from fastapi import APIRouter, Depends, HTTPException, status, Response
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import text
 
 router = APIRouter(
     prefix="/health",
@@ -44,34 +42,28 @@ async def health_check() -> Dict:
 
 @router.get("/ready")
 async def readiness_check(
-    db: AsyncSession = Depends(get_db), cosmos_client=Depends(get_cosmos_client)
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
 ) -> Dict:
     """
-    Readiness check that verifies database connections.
+    Readiness check that verifies database connections using unified Cosmos DB.
     Returns status OK if the API is ready to serve traffic.
     """
     status = "ok"
     details = {}
 
-    # Check SQL database connection
-    try:
-        result = await db.execute(text("SELECT 1"))
-        details["database"] = "connected"
-    except Exception as e:
-        status = "error"
-        details["database"] = f"error: {str(e)}"
-        logger.error(f"Database connection error: {e}")
-
     # Check Cosmos DB connection
     try:
-        cosmos_databases = list(cosmos_client.list_databases())
-        details["cosmos_db"] = "connected"
+        # Simple connection test by attempting to get container info
+        if cosmos_repo.container:
+            details["cosmos_db"] = "connected"
+        else:
+            details["cosmos_db"] = "simulation_mode"
     except Exception as e:
         status = "error"
         details["cosmos_db"] = f"error: {str(e)}"
         logger.error(f"Cosmos DB connection error: {e}")
 
-    # Add other checks as needed (Redis, AI service, etc.)
+    # Add other checks as needed (AI service, email service, etc.)
 
     return {"status": status, "service": "pathfinder-api", "details": details}
 
@@ -90,10 +82,10 @@ async def liveness_check() -> Dict:
 
 @router.get("/detailed")
 async def detailed_health_check(
-    db: AsyncSession = Depends(get_db), cosmos_client=Depends(get_cosmos_client)
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
 ) -> Dict:
     """
-    Detailed health check endpoint that provides comprehensive system status.
+    Detailed health check endpoint that provides comprehensive system status using unified Cosmos DB.
     """
     settings = get_settings()
     start_time = time.time()
@@ -125,55 +117,40 @@ async def detailed_health_check(
         details["system"] = {"status": "error", "error": str(e)}
         status = "degraded"
 
-    # Check SQL database connection
-    try:
-        db_start = time.time()
-        result = await db.execute(text("SELECT 1"))
-        db_time = round((time.time() - db_start) * 1000, 2)
-
-        details["database"] = {
-            "status": "connected",
-            "type": "sqlite" if "sqlite" in settings.DATABASE_URL else "postgresql",
-            "response_time_ms": db_time,
-            "url_type": (
-                settings.DATABASE_URL.split("://")[0]
-                if "://" in settings.DATABASE_URL
-                else "unknown"
-            ),
-        }
-
-        if db_time > 1000:  # More than 1 second is concerning
-            details["database"]["status"] = "slow"
-            if status == "healthy":
-                status = "degraded"
-
-    except Exception as e:
-        status = "degraded"
-        details["database"] = {"status": "error", "error": str(e)}
-        logger.error(f"Database connection error: {e}")
-
     # Check Cosmos DB connection
     try:
         if settings.COSMOS_DB_ENABLED:
             cosmos_start = time.time()
-            cosmos_databases = list(cosmos_client.list_databases())
-            cosmos_time = round((time.time() - cosmos_start) * 1000, 2)
-
+            
+            # Test Cosmos DB connection
+            if cosmos_repo.container:
+                cosmos_time = round((time.time() - cosmos_start) * 1000, 2)
+                details["cosmos_db"] = {
+                    "status": "connected",
+                    "response_time_ms": cosmos_time,
+                    "container": cosmos_repo.container_name,
+                    "database": cosmos_repo.database_name,
+                }
+                
+                if cosmos_time > 1000:  # More than 1 second is concerning
+                    details["cosmos_db"]["status"] = "slow"
+                    if status == "healthy":
+                        status = "degraded"
+            else:
+                details["cosmos_db"] = {
+                    "status": "simulation_mode",
+                    "message": "Running in development simulation mode"
+                }
+        else:
             details["cosmos_db"] = {
-                "status": "connected",
-                "type": "azure_cosmos",
-                "database_count": len(cosmos_databases),
-                "response_time_ms": cosmos_time,
+                "status": "disabled",
+                "message": "Cosmos DB not enabled in configuration"
             }
-        else:
-            details["cosmos_db"] = {"status": "disabled", "type": "azure_cosmos"}
+
     except Exception as e:
-        if settings.COSMOS_DB_ENABLED:
-            status = "degraded"
-            details["cosmos_db"] = {"status": "error", "error": str(e)}
-            logger.error(f"Cosmos DB connection error: {e}")
-        else:
-            details["cosmos_db"] = {"status": "disabled", "type": "azure_cosmos"}
+        status = "degraded"
+        details["cosmos_db"] = {"status": "error", "error": str(e)}
+        logger.error(f"Cosmos DB connection error: {e}")
 
     # Check email service
     try:

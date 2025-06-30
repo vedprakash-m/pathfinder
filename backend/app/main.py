@@ -1,6 +1,6 @@
 """
 FastAPI application entry point for Pathfinder AI-Powered Trip Planner.
-Updated to fix dashboard loading route conflicts.
+Updated to use unified Cosmos DB per Tech Spec requirements.
 """
 
 import logging
@@ -11,13 +11,14 @@ from typing import AsyncGenerator
 import uvicorn
 from app.api.router import api_router
 from app.core.config import get_settings
-from app.core.database import init_db
+from app.core.database_unified import get_cosmos_service
 from app.core.logging_config import setup_logging
 
 # from app.core.telemetry import setup_opentelemetry  # Commented out - not used yet
 from app.services.websocket import websocket_manager
 from fastapi import FastAPI, Request, status
-from fastapi.middleware.cors import CORSMiddleware
+# Import security middleware
+from app.core.middleware import setup_security_middleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 
@@ -31,10 +32,16 @@ settings = get_settings()
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan management."""
-    logger.info("Starting Pathfinder application...")
+    logger.info("Starting Pathfinder application with unified Cosmos DB...")
 
-    # Initialize database
-    await init_db()
+    # Initialize unified Cosmos DB
+    try:
+        cosmos_service = get_cosmos_service()
+        await cosmos_service.get_repository().initialize_container()
+        logger.info("Unified Cosmos DB initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize Cosmos DB: {e}")
+        # Continue startup - app can work with basic functionality
 
     # Initialize WebSocket manager
     await websocket_manager.startup()
@@ -161,9 +168,13 @@ if settings.ENVIRONMENT == "production":
 
 from app.core.csrf import CSRFMiddleware
 from app.core.performance import PerformanceMonitoringMiddleware
+from app.core.auth_monitoring import AuthenticationMonitoringMiddleware
 
 # Import security middleware
 from app.core.rate_limiting import RateLimiter
+
+# Authentication monitoring middleware (required by domain standards)
+app.add_middleware(AuthenticationMonitoringMiddleware)
 
 # Performance monitoring middleware
 app.add_middleware(PerformanceMonitoringMiddleware)
@@ -223,32 +234,8 @@ elif settings.ENVIRONMENT != "testing":
         strict_mode=False,  # Less strict in development
     )
 
-# CORS middleware - must be added after CSRF for proper interaction
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.cors_origins_list,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allow_headers=["*", "Authorization", "Content-Type", "X-CSRF-Token"],
-    expose_headers=["X-CSRF-Token"],  # Expose CSRF token to frontend
-)
-
-
-@app.middleware("http")
-async def add_security_headers(request: Request, call_next):
-    """Add security headers to all responses."""
-    response = await call_next(request)
-
-    # Security headers
-    response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
-    response.headers["X-XSS-Protection"] = "1; mode=block"
-    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-
-    if settings.ENVIRONMENT == "production":
-        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-
-    return response
+# Setup comprehensive security middleware
+app = setup_security_middleware(app)
 
 
 @app.exception_handler(Exception)

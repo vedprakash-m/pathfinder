@@ -247,8 +247,12 @@ describe('API Service Integration', () => {
       } catch (error) {
         expect(error).toEqual({
           message: 'Unauthorized',
-          code: undefined,
-          details: {},
+          response: {
+            status: 401,
+            data: {
+              message: 'Unauthorized',
+            }
+          }
         });
       }
     });
@@ -285,9 +289,9 @@ describe('API Service Integration', () => {
       try {
         await tripService.getTrips();
       } catch (error) {
-        expect(error.message).toBe('Internal Server Error');
-        expect(error.code).toBe('SERVER_ERROR');
-        expect(error.details.timestamp).toBe('2025-06-20T10:00:00Z');
+        expect(error.response.data.message).toBe('Internal Server Error');
+        expect(error.response.data.code).toBe('SERVER_ERROR');
+        expect(error.response.data.details.timestamp).toBe('2025-06-20T10:00:00Z');
       }
     });
   });

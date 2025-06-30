@@ -80,9 +80,9 @@ const TripTypeSelection: React.FC<TripTypeSelectionProps> = ({ onSelect }) => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6" role="region" aria-labelledby="trip-type-heading">
       <div className="text-center mb-8 sm:mb-12">
-        <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-3 sm:mb-4">
+        <h2 id="trip-type-heading" className="text-2xl sm:text-3xl font-bold text-gray-800 mb-3 sm:mb-4">
           What kind of trip are you dreaming of?
         </h2>
         <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
@@ -91,7 +91,7 @@ const TripTypeSelection: React.FC<TripTypeSelectionProps> = ({ onSelect }) => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8" role="radiogroup" aria-labelledby="trip-type-heading">
         {tripOptions.map((option) => (
           <motion.div
             key={option.id}
@@ -105,42 +105,55 @@ const TripTypeSelection: React.FC<TripTypeSelectionProps> = ({ onSelect }) => {
             onHoverStart={() => setHoveredOption(option.id)}
             onHoverEnd={() => setHoveredOption(null)}
             onClick={() => handleSelect(option.id)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleSelect(option.id);
+              }
+            }}
             whileHover={{ y: -4 }}
             whileTap={{ scale: 0.98 }}
+            role="radio"
+            aria-checked={selectedOption === option.id}
+            aria-labelledby={`trip-option-${option.id}-title`}
+            aria-describedby={`trip-option-${option.id}-description`}
+            tabIndex={0}
           >
             {/* Gradient Header */}
             <div className={`bg-gradient-to-r ${option.gradient} p-6 text-white relative`}>
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-3">
-                  {option.icon}
+                  <div aria-hidden="true">
+                    {option.icon}
+                  </div>
                   <div>
-                    <h3 className="text-xl font-bold">{option.title}</h3>
+                    <h3 id={`trip-option-${option.id}-title`} className="text-xl font-bold">{option.title}</h3>
                     <p className="text-sm opacity-90">{option.subtitle}</p>
                   </div>
                 </div>
-                <ChevronRight className="h-5 w-5 opacity-70" />
+                <ChevronRight className="h-5 w-5 opacity-70" aria-hidden="true" />
               </div>
               
               {/* Decorative elements */}
-              <div className="absolute top-2 right-6 opacity-20">
+              <div className="absolute top-2 right-6 opacity-20" aria-hidden="true">
                 <Sparkles className="h-6 w-6" />
               </div>
             </div>
 
             {/* Content */}
             <div className="p-6">
-              <p className="text-gray-600 mb-6 leading-relaxed">
+              <p id={`trip-option-${option.id}-description`} className="text-gray-600 mb-6 leading-relaxed">
                 {option.description}
               </p>
 
               {/* Trip Details */}
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div className="flex items-center space-x-2 text-sm text-gray-500">
-                  <Clock className="h-4 w-4" />
+                  <Clock className="h-4 w-4" aria-hidden="true" />
                   <span>{option.duration}</span>
                 </div>
                 <div className="flex items-center space-x-2 text-sm text-gray-500">
-                  <Users className="h-4 w-4" />
+                  <Users className="h-4 w-4" aria-hidden="true" />
                   <span>{option.groupSize}</span>
                 </div>
               </div>

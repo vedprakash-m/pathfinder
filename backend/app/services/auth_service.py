@@ -2,11 +2,10 @@
 Authentication service for user management with Microsoft Entra External ID.
 
 This module handles:
-- User authentication with Microsoft Entra External ID (replacing Auth0)
+- User authentication with Microsoft Entra External ID
 - JWT token validation
 - User profile management
 - Session management
-- Migration compatibility (supports both Auth0 and Entra External ID during transition)
 """
 
 import logging
@@ -34,18 +33,11 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 class AuthService:
     """
     Service for handling authentication operations with Microsoft Entra External ID.
-    Maintains backward compatibility with Auth0 during migration period.
     """
 
     def __init__(self):
         # Initialize Entra External ID service
         self.entra_service = EntraAuthService()
-        
-        # Legacy Auth0 settings for compatibility (can be removed after migration)
-        self.auth0_domain = getattr(settings, 'AUTH0_DOMAIN', None)
-        self.auth0_client_id = getattr(settings, 'AUTH0_CLIENT_ID', None)
-        self.auth0_client_secret = getattr(settings, 'AUTH0_CLIENT_SECRET', None)
-        self.auth0_audience = getattr(settings, 'AUTH0_AUDIENCE', None)
         
         logger.info("AuthService initialized with Entra External ID support")
 
@@ -59,21 +51,13 @@ class AuthService:
 
     async def decode_token(self, token: str) -> Optional[Dict[str, Any]]:
         """
-        Decode and validate JWT token.
-        Supports both Entra External ID and Auth0 tokens during migration.
+        Decode and validate JWT token using Entra External ID.
         """
         try:
-            # Try Entra External ID first
+            # Validate with Entra External ID
             payload = await self.entra_service.validate_token(token)
             if payload:
                 logger.debug("Token validated as Entra External ID token")
-                return payload
-
-            # Fallback to legacy Auth0 validation for migration compatibility
-            if self.auth0_domain and settings.ENVIRONMENT == "development":
-                # Skip signature verification in development
-                payload = jwt.get_unverified_claims(token)
-                logger.debug("Token validated as Auth0 token (dev mode)")
                 return payload
 
             return None
@@ -88,12 +72,11 @@ class AuthService:
             from uuid import uuid4
             from app.models.family import Family, FamilyMember, FamilyRole
 
-            # Create user record with both auth fields for migration compatibility
+            # Create user record with Entra ID support
             db_user = User(
                 email=user_data.email,
                 name=user_data.name,
-                auth0_id=user_data.auth0_id,  # Legacy field
-                entra_id=user_data.entra_id,  # New field
+                entra_id=user_data.entra_id,  # Primary field for Entra ID
                 picture=None,
                 phone=user_data.phone,
                 preferences=(
@@ -155,9 +138,9 @@ class AuthService:
         return result.scalar_one_or_none()
 
     async def get_user_by_auth0_id(self, db: AsyncSession, auth0_user_id: str) -> Optional[User]:
-        """Get user by Auth0 user ID (legacy compatibility)."""
-        result = await db.execute(select(User).filter(User.auth0_id == auth0_user_id))
-        return result.scalar_one_or_none()
+        """Get user by Auth0 user ID (DEPRECATED - legacy compatibility only)."""
+        # Auth0 migration complete - this method returns None
+        return None
 
     async def get_user_by_entra_id(self, db: AsyncSession, entra_id: str) -> Optional[User]:
         """Get user by Entra External ID."""
@@ -226,10 +209,7 @@ class AuthService:
                 if user:
                     return user
 
-                # Then try by Auth0 ID (legacy)
-                user = await self.get_user_by_auth0_id(db, user_id)
-                if user:
-                    return user
+                # Auth0 migration complete - skip legacy lookup
 
             # Finally try by email
             if email:
@@ -248,7 +228,7 @@ class AuthService:
     ) -> Optional[tuple[User, str]]:
         """
         Process Entra External ID login and return user and internal token.
-        This replaces the process_auth0_login method.
+        This replaces the legacy Auth0 process and handles Entra ID tokens.
         """
         try:
             # Use the Entra service to process login

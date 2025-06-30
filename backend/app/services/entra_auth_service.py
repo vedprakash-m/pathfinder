@@ -1,6 +1,6 @@
 """
 Microsoft Entra External ID Authentication Service.
-Replaces Auth0 authentication with Microsoft's external identity solution.
+Unified Cosmos DB implementation per Tech Spec requirements.
 """
 
 import logging
@@ -12,9 +12,8 @@ import asyncio
 from msal import ConfidentialClientApplication, PublicClientApplication
 
 from app.core.config import get_settings
-from app.models.user import User, UserCreate
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from app.core.database_unified import get_cosmos_repository
+from app.repositories.cosmos_unified import UserDocument, FamilyDocument
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -42,9 +41,10 @@ class EntraAuthService:
     """
 
     def __init__(self):
-        self.tenant_id = settings.ENTRA_EXTERNAL_TENANT_ID
+        # Use Vedprakash domain standard configuration
+        self.tenant_id = 'vedid.onmicrosoft.com'  # ✅ Fixed to Vedprakash domain
         self.client_id = settings.ENTRA_EXTERNAL_CLIENT_ID
-        self.authority = settings.ENTRA_EXTERNAL_AUTHORITY
+        self.authority = 'https://login.microsoftonline.com/vedid.onmicrosoft.com'  # ✅ Fixed domain
         self.client_secret = getattr(settings, 'ENTRA_EXTERNAL_CLIENT_SECRET', None)
         
         # Initialize MSAL client applications
@@ -53,7 +53,10 @@ class EntraAuthService:
         self._jwks_cache = {}
         self._jwks_cache_expiry = None
         
-        logger.info(f"EntraAuthService initialized with tenant: {self.tenant_id}")
+        # Initialize unified Cosmos DB repository
+        self.cosmos_repo = get_cosmos_repository()
+        
+        logger.info(f"EntraAuthService initialized with tenant: {self.tenant_id}, unified Cosmos DB")
 
     @property
     def public_client(self) -> PublicClientApplication:
@@ -88,8 +91,8 @@ class EntraAuthService:
                 self._jwks_cache):
                 return self._jwks_cache
 
-            # Construct JWKS endpoint URL
-            jwks_url = f"https://login.microsoftonline.com/{self.tenant_id}/discovery/v2.0/keys"
+            # Construct JWKS endpoint URL for Vedprakash domain
+            jwks_url = 'https://login.microsoftonline.com/vedid.onmicrosoft.com/discovery/v2.0/keys'
             
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.get(jwks_url)
@@ -172,84 +175,67 @@ class EntraAuthService:
 
     async def create_user_from_entra(
         self, 
-        db: AsyncSession, 
         user_info: Dict[str, Any], 
         entra_id: str
-    ) -> Optional[User]:
-        """Create user from Entra External ID with auto-family creation."""
+    ) -> Optional[UserDocument]:
+        """Create user from Entra External ID with auto-family creation using Cosmos DB."""
         try:
             from uuid import uuid4
-            from app.models.family import Family, FamilyMember, FamilyRole
 
             email = user_info.get("mail") or user_info.get("userPrincipalName")
             name = user_info.get("displayName", email.split("@")[0] if email else "Unknown")
 
-            db_user = User(
-                id=uuid4(),
+            user_id = str(uuid4())
+            family_id = str(uuid4())
+
+            # Create user document
+            user_doc = UserDocument(
+                id=user_id,
+                pk=f"user_{user_id}",
                 email=email,
                 name=name,
                 entra_id=entra_id,
                 is_active=True,
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow(),
+                role="family_admin",  # Default role per PRD
+                family_ids=[family_id]
             )
 
-            db.add(db_user)
-            await db.flush()
-
-            # Auto-create family
-            family = Family(
-                id=uuid4(),
+            # Create family document with user as admin
+            family_doc = FamilyDocument(
+                id=family_id,
+                pk=f"family_{family_id}",
                 name=f"{name}'s Family",
-                description="Auto-created family",
-                admin_user_id=db_user.id,
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow(),
+                admin_user_id=user_id,
+                member_ids=[user_id],
+                members_count=1
             )
 
-            db.add(family)
-            await db.flush()
+            # Save both documents to Cosmos DB
+            await self.cosmos_repo.create_user(user_doc)
+            await self.cosmos_repo.create_family(family_doc)
 
-            family_member = FamilyMember(
-                id=uuid4(),
-                family_id=family.id,
-                user_id=db_user.id,
-                name=name,
-                role=FamilyRole.COORDINATOR,
-                is_active=True,
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow(),
-            )
-
-            db.add(family_member)
-            await db.commit()
-            await db.refresh(db_user)
-
-            logger.info(f"Created user from Entra: {email}")
-            return db_user
+            logger.info(f"Created user {user_id} with auto-family {family_id} from Entra ID")
+            return user_doc
 
         except Exception as e:
-            await db.rollback()
-            logger.error(f"Error creating user: {e}")
+            logger.error(f"Error creating user from Entra ID: {e}")
             return None
 
-    async def get_user_by_entra_id(self, db: AsyncSession, entra_id: str) -> Optional[User]:
-        """Get user by Entra External ID."""
+    async def get_user_by_entra_id(self, entra_id: str) -> Optional[UserDocument]:
+        """Get user by Entra External ID using Cosmos DB."""
         try:
-            result = await db.execute(select(User).filter(User.entra_id == entra_id))
-            return result.scalar_one_or_none()
+            return await self.cosmos_repo.get_user_by_entra_id(entra_id)
         except Exception as e:
             logger.error(f"Error getting user by Entra ID: {e}")
             return None
 
     async def process_entra_login(
         self, 
-        db: AsyncSession, 
         access_token: str
-    ) -> Optional[tuple[User, str]]:
+    ) -> Optional[tuple[UserDocument, str]]:
         """
         Process Entra External ID login and return user and our internal token.
-        Creates user if doesn't exist (auto-family creation).
+        Creates user if doesn't exist (auto-family creation) using Cosmos DB.
         """
         try:
             # Validate the Entra token
@@ -264,7 +250,7 @@ class EntraAuthService:
                 return None
 
             # Check if user exists
-            user = await self.get_user_by_entra_id(db, entra_user_id)
+            user = await self.get_user_by_entra_id(entra_user_id)
             
             if not user:
                 # Get user info from Graph API and create user
@@ -273,7 +259,7 @@ class EntraAuthService:
                     logger.error("Failed to get user info from Graph API")
                     return None
                 
-                user = await self.create_user_from_entra(db, user_info, entra_user_id)
+                user = await self.create_user_from_entra(user_info, entra_user_id)
                 if not user:
                     logger.error("Failed to create user from Entra External ID")
                     return None

@@ -9,8 +9,9 @@ from datetime import datetime, timezone
 from uuid import UUID
 
 from app.core.container import Container
-from app.core.database import get_db
+from app.core.database_unified import get_cosmos_repository
 from app.core.security import get_current_user, get_current_user_websocket
+from app.repositories.cosmos_unified import UnifiedCosmosRepository
 from app.models.user import User
 from app.services.websocket import handle_websocket_message, websocket_manager
 from fastapi import (
@@ -21,7 +22,6 @@ from fastapi import (
     WebSocket,
     WebSocketDisconnect,
 )
-from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ async def websocket_trip_endpoint(
     websocket: WebSocket,
     trip_id: UUID,
     token: str = Query(..., description="Authentication token"),
-    db: AsyncSession = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
 ):
     """
     WebSocket endpoint for real-time trip collaboration.
@@ -42,7 +42,7 @@ async def websocket_trip_endpoint(
         websocket: WebSocket connection
         trip_id: Trip ID to connect to
         token: Authentication token
-        db: Database session
+        cosmos_repo: Unified Cosmos DB repository
     """
     trip_service = Container().trip_domain_service()
     try:
@@ -194,15 +194,15 @@ async def websocket_notifications_endpoint(
 async def get_trip_connections(
     trip_id: UUID,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
 ):
     """
-    Get active connections for a trip.
+    Get active connections for a trip using unified Cosmos DB.
 
     Args:
         trip_id: Trip ID
         current_user: Authenticated user
-        db: Database session
+        cosmos_repo: Unified Cosmos DB repository
 
     Returns:
         List of active connection information
@@ -236,16 +236,16 @@ async def broadcast_to_trip(
     trip_id: UUID,
     message: dict,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
 ):
     """
-    Broadcast a message to all users in a trip.
+    Broadcast a message to all users in a trip using unified Cosmos DB.
 
     Args:
         trip_id: Trip ID
         message: Message to broadcast
         current_user: Authenticated user
-        db: Database session
+        cosmos_repo: Unified Cosmos DB repository
 
     Returns:
         Success confirmation

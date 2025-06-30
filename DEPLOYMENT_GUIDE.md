@@ -8,7 +8,7 @@
 
 ## 🎯 Overview
 
-This guide covers the complete deployment process for Pathfinder after the successful Auth0 → Microsoft Entra External ID migration. The application now uses simplified authentication with only 3 environment variables instead of 6.
+This guide covers the complete deployment process for Pathfinder after the successful Microsoft Entra External ID integration. The application uses simplified authentication with Microsoft identity services.
 
 ## 📋 Prerequisites
 
@@ -320,7 +320,7 @@ curl https://your-backend-url/health/detailed
 ## 📊 Migration Benefits Achieved
 
 ### ✅ **Cost Savings**
-- **Annual Savings**: $276+ (Auth0 $23/month → Entra 50K free MAU)
+- **Annual Savings**: $276+ (Entra External ID 50K free MAU vs previous costs)
 - **Infrastructure**: 70% cost reduction when paused
 
 ### ✅ **Simplified Configuration**  

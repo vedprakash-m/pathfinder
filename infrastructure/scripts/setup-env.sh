@@ -170,9 +170,9 @@ OPENAI_DEFAULT_MODEL=gpt-4o-mini
 APPLICATIONINSIGHTS_CONNECTION_STRING=${APP_INSIGHTS_CONNECTION_STRING}
 LOG_LEVEL=info
 
-# Authentication
-AUTH0_DOMAIN=dev-jwnud3v8ghqnyygr.us.auth0.com
-AUTH0_AUDIENCE=https://api.pathfinder.com
+# Authentication (Microsoft Entra External ID)
+AZURE_TENANT_ID=vedid.onmicrosoft.com
+AZURE_CLIENT_ID=your-client-id-here
 JWT_SECRET=your-jwt-secret-key-here
 
 # Application settings

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { render } from '../utils';
+import { render } from './utils';
 
 // Mock components that might not exist yet - we'll create basic test structures
 const TripCard = ({ trip, onView, onEdit }: any) => (
@@ -207,7 +207,8 @@ describe('ChatMessage Component', () => {
     
     render(<ChatMessage {...emptyMessage} />);
     
-    const messageContent = screen.getByText('');
-    expect(messageContent).toHaveClass('message-content');
+    const messageContent = screen.getByTestId('chat-message').querySelector('.message-content');
+    expect(messageContent).toBeInTheDocument();
+    expect(messageContent).toHaveTextContent('');
   });
 });

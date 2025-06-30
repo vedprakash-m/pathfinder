@@ -52,10 +52,10 @@ class ApiCache {
 
 const apiCache = new ApiCache();
 
-// Global token getter function - will be set by the Auth0 provider
+// Global token getter function - will be set by the Auth provider
 let getAccessToken: (() => Promise<string>) | null = null;
 
-// Function to set the token getter (called from Auth0 provider)
+// Function to set the token getter (called from Auth provider)
 export const setTokenGetter = (tokenGetter: () => Promise<string>) => {
   getAccessToken = tokenGetter;
 };
@@ -73,13 +73,13 @@ const createApiClient = (baseURL: string = (import.meta.env.VITE_API_URL ? `${im
   // Request interceptor to add auth token and CSRF token
   client.interceptors.request.use(
     async (config) => {
-      // Try to get token from Auth0 first, then fallback to localStorage
+      // Try to get token from auth provider first, then fallback to localStorage
       try {
         if (getAccessToken) {
           const token = await getAccessToken();
           if (token) {
             config.headers.Authorization = `Bearer ${token}`;
-            console.log('🔐 Using Auth0 token for API request:', config.url);
+            console.log('🔐 Using auth token for API request:', config.url);
           }
         } else {
           // Fallback to localStorage for development
@@ -172,10 +172,37 @@ const createApiClient = (baseURL: string = (import.meta.env.VITE_API_URL ? `${im
         timings.delete(requestId);
       }
 
+      // Handle authentication errors per Vedprakash Domain standards
       if (error.response?.status === 401) {
-        // Handle unauthorized - redirect to login
+        const errorData = error.response.data;
+        const errorCode = errorData?.code;
+        
+        switch (errorCode) {
+          case 'AUTH_TOKEN_MISSING':
+            console.error('❌ Authentication token missing');
+            // Could trigger login redirect here
+            break;
+          case 'AUTH_TOKEN_INVALID':
+            console.error('❌ Authentication token invalid or expired');
+            // Could trigger token refresh here
+            break;
+          default:
+            console.error('❌ Authentication failed:', errorData?.error || error.message);
+        }
+        
+        // Legacy fallback for existing behavior
         localStorage.removeItem('auth_token');
         window.location.href = '/login';
+      } else if (error.response?.status === 403) {
+        const errorData = error.response.data;
+        if (errorData?.code === 'AUTH_PERMISSION_DENIED') {
+          console.error('❌ Insufficient permissions:', errorData?.error);
+        }
+      } else if (error.response?.status === 503) {
+        const errorData = error.response.data;
+        if (errorData?.code === 'AUTH_SERVICE_UNAVAILABLE') {
+          console.error('❌ Authentication service temporarily unavailable');
+        }
       }
       
       // Transform error to consistent format
@@ -279,6 +306,47 @@ export const apiService = {
   // Method to invalidate specific cache entries
   invalidateCache: (pattern: string) => {
     apiCache.invalidate(pattern);
+  },
+
+  // Onboarding-specific methods
+  onboarding: {
+    // Create sample trip for onboarding
+    createSampleTrip: async (template: 'weekend_getaway' | 'family_vacation' | 'adventure_trip') => {
+      return apiService.post<any>(`/api/trips/sample?template=${template}`);
+    },
+
+    // Track onboarding analytics
+    trackAnalytics: async (data: {
+      sessionId: string;
+      userId?: string;
+      step: string;
+      timestamp: number;
+      metadata?: any;
+    }) => {
+      return apiService.post<any>('/api/analytics/onboarding', data);
+    },
+
+    // Track onboarding completion
+    trackCompletion: async (data: {
+      sessionId: string;
+      userId?: string;
+      completionTime: number;
+      tripType: string;
+      totalDuration: number;
+    }) => {
+      return apiService.post<any>('/api/analytics/onboarding/complete', data);
+    },
+
+    // Track onboarding drop-off
+    trackDropOff: async (data: {
+      sessionId: string;
+      userId?: string;
+      dropOffStep: string;
+      timestamp: number;
+      reason?: string;
+    }) => {
+      return apiService.post<any>('/api/analytics/onboarding/drop-off', data);
+    }
   }
 };
 

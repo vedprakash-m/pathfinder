@@ -35,57 +35,68 @@ from app.models.trip import (
 class TripDomainService:  # pragma: no cover – thin façade for now
     """Domain façade exposing trip use-cases.
 
-    NOTE: This class should become pure business logic.  Today it simply wraps
-    the existing *TripService* to avoid a flag-day rewrite.
+    Updated to use unified Cosmos DB repository per Tech Spec requirements.
     """
 
     def __init__(
         self,
-        legacy_service: Any | None = None,
-        trip_repository=None,
-        trip_cosmos_repository=None,
+        unified_cosmos_repository=None,
     ):
-        self._svc = legacy_service
-        self._trip_repo = trip_repository
-        self._trip_cosmos_repo = trip_cosmos_repository
+        from app.repositories.cosmos_unified import unified_cosmos_repo
+        self._cosmos_repo = unified_cosmos_repository or unified_cosmos_repo
 
     # ---------------------------------------------------------------------
     # Trip lifecycle
     # ---------------------------------------------------------------------
 
     async def create_trip(self, trip_data: TripCreate, creator_id: str) -> TripResponse:
-        # If repository not injected, fallback to legacy service
-        if not self._trip_repo or not self._trip_cosmos_repo:
-            return await self._svc.create_trip(trip_data, creator_id)
-
-        # 1) Persist SQL row
-        trip = await self._trip_repo.create_trip(trip_data, creator_id)
-        await self._trip_repo.commit()
-
-        # 2) Persist preferences document, if any
-        if trip_data.preferences:
-            await self._trip_cosmos_repo.save_preferences(
-                str(trip.id), trip_data.preferences.dict()
-            )
-
-        # 3) Return DTO
-        return await self._build_trip_response(trip)
+        """Create a new trip using unified Cosmos DB storage."""
+        # Create trip document in Cosmos DB
+        trip_doc = await self._cosmos_repo.create_trip(trip_data, creator_id)
+        
+        # Convert to response format
+        return TripResponse(
+            id=trip_doc.id,
+            name=trip_doc.name,
+            description=trip_doc.description,
+            destination=trip_doc.destination,
+            start_date=trip_doc.start_date,
+            end_date=trip_doc.end_date,
+            budget=trip_doc.budget,
+            status=trip_doc.status,
+            creator_id=trip_doc.creator_id,
+            created_at=trip_doc.created_at,
+            updated_at=trip_doc.updated_at,
+            participant_count=len(trip_doc.participants) if trip_doc.participants else 0,
+            preferences=trip_doc.preferences
+        )
 
     async def get_trip_by_id(self, trip_id: UUID, user_id: str) -> Optional[TripDetail]:
-        if not self._trip_repo:
-            return await self._svc.get_trip_by_id(trip_id, user_id)
-
-        trip = await self._trip_repo.get_trip_by_id(trip_id)
-        if not trip:
+        """Get trip by ID with access control using unified Cosmos DB."""
+        trip_doc = await self._cosmos_repo.get_trip_by_id(str(trip_id))
+        if not trip_doc:
             return None
 
         # Access control: creator or participant
-        if str(trip.creator_id) != user_id and not any(
-            p.user_id and str(p.user_id) == user_id for p in (trip.participations or [])
-        ):
+        if trip_doc.creator_id != user_id and user_id not in (trip_doc.participants or []):
             return None
 
-        return await self._build_trip_detail(trip)
+        # Convert to TripDetail format
+        return TripDetail(
+            id=trip_doc.id,
+            name=trip_doc.name,
+            description=trip_doc.description,
+            destination=trip_doc.destination,
+            start_date=trip_doc.start_date,
+            end_date=trip_doc.end_date,
+            budget=trip_doc.budget,
+            status=trip_doc.status,
+            creator_id=trip_doc.creator_id,
+            created_at=trip_doc.created_at,
+            updated_at=trip_doc.updated_at,
+            participants=trip_doc.participants or [],
+            preferences=trip_doc.preferences or {}
+        )
 
     async def get_user_trips(
         self,
@@ -94,76 +105,85 @@ class TripDomainService:  # pragma: no cover – thin façade for now
         limit: int = 100,
         status_filter: Optional[str] = None,
     ) -> List[TripResponse]:
-        if not self._trip_repo:
-            return await self._svc.get_user_trips(user_id, skip, limit, status_filter)
-
-        trips = await self._trip_repo.list_user_trips(user_id, skip, limit, status_filter)
-        return [await self._build_trip_response(t) for t in trips]
+        """Get all trips for a user using unified Cosmos DB."""
+        trip_docs = await self._cosmos_repo.get_user_trips(user_id, skip, limit, status_filter)
+        
+        return [
+            TripResponse(
+                id=trip.id,
+                name=trip.name,
+                description=trip.description,
+                destination=trip.destination,
+                start_date=trip.start_date,
+                end_date=trip.end_date,
+                budget=trip.budget,
+                status=trip.status,
+                creator_id=trip.creator_id,
+                created_at=trip.created_at,
+                updated_at=trip.updated_at,
+                participant_count=len(trip.participants) if trip.participants else 0,
+                preferences=trip.preferences
+            )
+            for trip in trip_docs
+        ]
 
     async def update_trip(self, trip_id: UUID, update: TripUpdate, user_id: str) -> TripResponse:
-        if not self._trip_repo:
-            return await self._svc.update_trip(trip_id, update, user_id)
-
-        trip = await self._trip_repo.get_trip_by_id(trip_id)
-        if not trip:
+        """Update trip using unified Cosmos DB repository."""
+        trip_doc = await self._cosmos_repo.get_trip_by_id(str(trip_id))
+        if not trip_doc:
             raise ValueError("Trip not found")
 
-        if str(trip.creator_id) != user_id:
+        if trip_doc.creator_id != user_id:
             raise PermissionError("Only trip creator can update trip details")
 
-        # Apply update fields
-        update_data = update.dict(exclude_unset=True)
-        if "preferences" in update_data and update_data["preferences"] is not None:
-            update_data["preferences"] = json.dumps(update_data["preferences"].dict())
+        # Update the trip document
+        updated_trip = await self._cosmos_repo.update_trip(str(trip_id), update)
 
-        for field, value in update_data.items():
-            if hasattr(trip, field):
-                setattr(trip, field, value)
-
-        await self._trip_repo.commit()
-
-        # Update preferences doc if changed
-        if "preferences" in update_data and self._trip_cosmos_repo:
-            await self._trip_cosmos_repo.save_preferences(str(trip.id), update.preferences.dict())  # type: ignore[arg-type]
-
-        return await self._build_trip_response(trip)
+        # Convert to response format
+        return TripResponse(
+            id=updated_trip.id,
+            name=updated_trip.name,
+            description=updated_trip.description,
+            destination=updated_trip.destination,
+            start_date=updated_trip.start_date,
+            end_date=updated_trip.end_date,
+            budget=updated_trip.budget,
+            status=updated_trip.status,
+            creator_id=updated_trip.creator_id,
+            created_at=updated_trip.created_at,
+            updated_at=updated_trip.updated_at,
+            participant_count=len(updated_trip.participants) if updated_trip.participants else 0,
+            preferences=updated_trip.preferences
+        )
 
     async def delete_trip(self, trip_id: UUID, user_id: str) -> None:
-        if not self._trip_repo:
-            await self._svc.delete_trip(trip_id, user_id)
-            return
-
+        """Delete trip using unified Cosmos DB repository."""
         # Ensure trip exists
-        trip = await self._trip_repo.get_trip_by_id(trip_id)
-        if not trip:
+        trip_doc = await self._cosmos_repo.get_trip_by_id(str(trip_id))
+        if not trip_doc:
             raise ValueError("Trip not found")
 
         # Only creator can delete
-        if str(trip.creator_id) != user_id:
+        if trip_doc.creator_id != user_id:
             raise PermissionError("Only trip creator can delete the trip")
 
-        await self._trip_repo.delete_trip(trip)
-        await self._trip_repo.commit()
+        await self._cosmos_repo.delete_trip(str(trip_id))
 
     # ---------------------------------------------------------------------
     # Stats & participants
     # ---------------------------------------------------------------------
 
     async def get_trip_stats(self, trip_id: UUID, user_id: str) -> TripStats | None:  # noqa: D401
-        if not self._trip_repo:
-            return await self._svc.get_trip_stats(trip_id, user_id)
-
-        trip = await self._trip_repo.get_trip_by_id(trip_id)
-        if not trip:
+        """Get trip statistics using unified Cosmos DB repository."""
+        trip_doc = await self._cosmos_repo.get_trip_by_id(str(trip_id))
+        if not trip_doc:
             return None
 
         # Access check
-        if str(trip.creator_id) != user_id and not any(
-            p.user_id and str(p.user_id) == user_id for p in (trip.participations or [])
-        ):
+        if trip_doc.creator_id != user_id and user_id not in (trip_doc.participants or []):
             return None
 
-        participations = trip.participations or []
+        participants = trip_doc.participants or []
         total_families = len(participations)
         confirmed_families = len(
             [p for p in participations if p.status == ParticipationStatus.CONFIRMED]

@@ -162,6 +162,7 @@ temp/
 *.jks
 *.keystore
 auth0-config.json
+azure-config.json
 azure-credentials.json
 .auth0
 .azure
@@ -186,6 +187,7 @@ private/
 .DS_Store
 secrets-to-replace.txt
 *-auth0-*.sh
+*-azure-*.sh
 *-emergency-*.sh
 *-nuclear-*.sh
 *-ultimate-*.sh

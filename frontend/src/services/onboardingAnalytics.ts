@@ -171,6 +171,42 @@ class OnboardingAnalyticsService {
     this.sendAnalytics();
   }
 
+  // Track API integration success/failure
+  trackApiIntegration(endpoint: string, success: boolean, error?: string): void {
+    if (!this.isInitialized) return;
+    
+    this.trackEvent('api_integration', {
+      endpoint,
+      success,
+      error,
+      timestamp: Date.now()
+    });
+  }
+
+  // Track user interactions with onboarding elements
+  trackInteraction(element: string, action: string, metadata?: any): void {
+    if (!this.isInitialized) return;
+    
+    this.trackEvent('user_interaction', {
+      element,
+      action,
+      step: this.analytics.currentStep,
+      metadata,
+      timestamp: Date.now()
+    });
+  }
+
+  // Track time spent on specific steps
+  trackStepTime(step: string, duration: number): void {
+    if (!this.isInitialized) return;
+    
+    this.trackEvent('step_timing', {
+      step,
+      duration,
+      timestamp: Date.now()
+    });
+  }
+
   // Get current session analytics
   getCurrentAnalytics(): OnboardingAnalytics {
     return { ...this.analytics };

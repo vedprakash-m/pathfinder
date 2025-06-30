@@ -6,14 +6,11 @@ Handles AI-generated itinerary creation, customization, and management.
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from sqlalchemy import and_
-from sqlalchemy.orm import Session
 
-from ..core.database import get_db
+from ..core.database_unified import get_cosmos_repository
 from ..core.logging_config import get_logger
 from ..core.zero_trust import require_permissions
-from ..models.trip import Trip, TripParticipation
-from ..models.user import User
+from ..repositories.cosmos_unified import UnifiedCosmosRepository
 from ..services.ai_service import AIService
 
 router = APIRouter(tags=["itineraries"])
@@ -79,30 +76,20 @@ async def generate_itinerary(
     trip_id: int,
     request_data: ItineraryRequest,
     request: Request,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_permissions("itineraries", "create")),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
+    current_user: dict = Depends(require_permissions("itineraries", "create")),
     ai_service: AIService = Depends(lambda: AIService()),
 ):
     """Generate an AI-powered itinerary for a trip."""
     try:
         # Verify trip exists and user has access
-        trip = db.query(Trip).filter(Trip.id == trip_id).first()
+        trip = await cosmos_repo.get_trip_by_id(str(trip_id))
         if not trip:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
 
-        # Check if user is a participant
-        participation = (
-            db.query(TripParticipation)
-            .filter(
-                and_(
-                    TripParticipation.trip_id == trip_id,
-                    TripParticipation.user_id == current_user.id,
-                )
-            )
-            .first()
-        )
-
-        if not participation:
+        # Check if user has access to trip
+        user_trips = await cosmos_repo.get_user_trips(current_user["id"])
+        if not any(t.id == str(trip_id) for t in user_trips):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not authorized to access this trip",
@@ -214,7 +201,7 @@ async def customize_itinerary(
     customization: ItineraryCustomization,
     request: Request,
     base_itinerary: Optional[Dict[str, Any]] = None,
-    db: Session = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
     current_user: User = Depends(require_permissions("itineraries", "update")),
     ai_service: AIService = Depends(lambda: AIService()),
 ):
@@ -300,7 +287,7 @@ async def get_activity_suggestions(
     activity_type: Optional[str] = Query(None, description="Type of activity to suggest"),
     location: Optional[str] = Query(None, description="Specific location within trip destination"),
     budget_range: Optional[str] = Query(None, description="Budget range (low, medium, high)"),
-    db: Session = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
     current_user: User = Depends(require_permissions("itineraries", "read")),
     ai_service: AIService = Depends(lambda: AIService()),
 ):
@@ -363,7 +350,7 @@ async def optimize_itinerary(
     itinerary: Dict[str, Any],
     request: Request,
     optimization_criteria: Optional[List[str]] = Query(None, description="Optimization criteria"),
-    db: Session = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
     current_user: User = Depends(require_permissions("itineraries", "update")),
     ai_service: AIService = Depends(lambda: AIService()),
 ):
@@ -449,7 +436,7 @@ async def get_itinerary_alternatives(
     variation_type: Optional[str] = Query(
         "budget", description="Type of variation (budget, activity, timeline)"
     ),
-    db: Session = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
     current_user: User = Depends(require_permissions("itineraries", "read")),
     ai_service: AIService = Depends(lambda: AIService()),
 ):

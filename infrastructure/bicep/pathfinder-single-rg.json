@@ -42,25 +42,25 @@
         "description": "OpenAI API key"
       }
     },
-    "auth0Domain": {
+    "azureTenantId": {
       "type": "securestring",
       "defaultValue": "",
       "metadata": {
-        "description": "Auth0 domain"
+        "description": "Azure Tenant ID"
       }
     },
-    "auth0ClientId": {
+    "azureClientId": {
       "type": "securestring",
       "defaultValue": "",
       "metadata": {
-        "description": "Auth0 client ID"
+        "description": "Azure Client ID"
       }
     },
-    "auth0Audience": {
+    "azureClientSecret": {
       "type": "securestring",
       "defaultValue": "",
       "metadata": {
-        "description": "Auth0 audience"
+        "description": "Azure Client Secret"
       }
     }
   },
@@ -399,16 +399,16 @@
           },
           "secrets": [
             {
-              "name": "auth0-domain",
-              "value": "[if(not(empty(parameters('auth0Domain'))), parameters('auth0Domain'), 'dev-jwnud3v8ghqnyygr.us.auth0.com')]"
+              "name": "azure-tenant-id",
+              "value": "[if(not(empty(parameters('azureTenantId'))), parameters('azureTenantId'), 'vedid.onmicrosoft.com')]"
             },
             {
-              "name": "auth0-client-id",
-              "value": "[if(not(empty(parameters('auth0ClientId'))), parameters('auth0ClientId'), 'KXu3KpGiyRHHHgiXX90sHuNC4rfYRcNn')]"
+              "name": "azure-client-id",
+              "value": "[if(not(empty(parameters('azureClientId'))), parameters('azureClientId'), 'your-client-id')]"
             },
             {
-              "name": "auth0-audience",
-              "value": "[if(not(empty(parameters('auth0Audience'))), parameters('auth0Audience'), 'https://pathfinder-api.com')]"
+              "name": "azure-client-secret",
+              "value": "[if(not(empty(parameters('azureClientSecret'))), parameters('azureClientSecret'), 'your-client-secret')]"
             }
           ]
         },
@@ -431,16 +431,16 @@
                   "value": "[format('https://{0}', reference(resourceId('Microsoft.App/containerApps', variables('resourceNames').backendApp), '2023-05-01').configuration.ingress.fqdn)]"
                 },
                 {
-                  "name": "VITE_AUTH0_DOMAIN",
-                  "secretRef": "auth0-domain"
+                  "name": "VITE_AZURE_TENANT_ID",
+                  "secretRef": "azure-tenant-id"
                 },
                 {
-                  "name": "VITE_AUTH0_CLIENT_ID",
-                  "secretRef": "auth0-client-id"
+                  "name": "VITE_AZURE_CLIENT_ID",
+                  "secretRef": "azure-client-id"
                 },
                 {
-                  "name": "VITE_AUTH0_AUDIENCE",
-                  "secretRef": "auth0-audience"
+                  "name": "VITE_AZURE_REDIRECT_URI",
+                  "value": "[format('https://{0}', reference(resourceId('Microsoft.App/containerApps', variables('resourceNames').frontendApp), '2023-05-01').configuration.ingress.fqdn)]"
                 },
                 {
                   "name": "ENVIRONMENT",

@@ -11,14 +11,11 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
-from ..core.database import get_db
+from ..core.database_unified import get_cosmos_repository
 from ..core.zero_trust import require_permissions
-from ..models.family import Family
-from ..models.trip import Trip, TripParticipation
+from ..core.ai_cost_management import ai_cost_control
+from ..repositories.cosmos_unified import UnifiedCosmosRepository
 from ..models.user import User
 from ..services.consensus_engine import FamilyConsensusEngine, analyze_trip_consensus
 
@@ -56,10 +53,11 @@ class ConsensusResponse(BaseModel):
 
 
 @router.post("/analyze/{trip_id}", response_model=ConsensusResponse)
+@ai_cost_control(model='gpt-4', max_tokens=2500)
 async def analyze_consensus(
     trip_id: str,
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
     current_user: User = Depends(require_permissions("trips", "read")),
 ):
     """
@@ -68,53 +66,40 @@ async def analyze_consensus(
     This addresses the #1 pain point: achieving consensus across families with varying preferences.
     """
     try:
-        # Get trip with participations and families
-        stmt = (
-            select(Trip)
-            .options(selectinload(Trip.participations).selectinload(TripParticipation.family))
-            .where(Trip.id == trip_id)
-        )
-
-        result = await db.execute(stmt)
-        trip = result.scalar_one_or_none()
-
+        # Get trip from Cosmos DB
+        trip = await cosmos_repo.get_trip(trip_id)
         if not trip:
             raise HTTPException(status_code=404, detail="Trip not found")
 
-        # Check if user has access to this trip
-        user_has_access = await _check_trip_access(db, trip_id, str(current_user.id))
-        if not user_has_access:
+        # Check access permissions
+        has_access = await _check_trip_access_cosmos(cosmos_repo, trip_id, str(current_user.id))
+        if not has_access:
             raise HTTPException(status_code=403, detail="Access denied to this trip")
+
+        # Get participating families
+        family_ids = trip.participating_family_ids
+        families = []
+        for family_id in family_ids:
+            family = await cosmos_repo.get_family(family_id)
+            if family:
+                families.append(family)
 
         # Prepare families data for consensus analysis
         families_data = []
-        total_budget = float(trip.budget_total) if trip.budget_total else 0.0
+        total_budget = float(trip.budget) if trip.budget else 0.0
 
-        for participation in trip.participations:
-            family = participation.family
-            if not family:
-                continue
-
-            # Get family members (simplified for now)
+        for family in families:
+            # Get family members from Cosmos DB
+            family_members = await cosmos_repo.get_family_members(family.id)
+            
             family_data = {
-                "id": str(family.id),
+                "id": family.id,
                 "name": family.name,
-                "members": [{"id": str(family.admin_user_id), "name": "Admin"}],  # Simplified
-                "preferences": {},
-                "budget_allocation": (
-                    float(participation.budget_allocation)
-                    if participation.budget_allocation
-                    else 0.0
-                ),
-                "is_trip_admin": str(trip.creator_id) == str(family.admin_user_id),
+                "members": [{"id": str(member.id), "name": member.name or "Unknown"} for member in family_members],
+                "preferences": family.settings or {},
+                "budget_allocation": 0.0,  # TODO: Get from trip participation data
+                "is_trip_admin": trip.creator_id == family.admin_user_id,
             }
-
-            # Parse preferences from participation
-            if participation.preferences:
-                try:
-                    family_data["preferences"] = json.loads(participation.preferences)
-                except (json.JSONDecodeError, TypeError):
-                    family_data["preferences"] = {}
 
             families_data.append(family_data)
 
@@ -135,11 +120,11 @@ async def analyze_consensus(
 @router.get("/dashboard/{trip_id}")
 async def get_consensus_dashboard(
     trip_id: str,
-    db: AsyncSession = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
     current_user: User = Depends(require_permissions("trips", "read")),
 ):
     """
-    Get consensus dashboard data for visualization.
+    Get consensus dashboard data for visualization using unified Cosmos DB.
 
     Returns data optimized for frontend dashboard components showing:
     - Consensus score and status
@@ -148,51 +133,40 @@ async def get_consensus_dashboard(
     - Voting status
     """
     try:
-        # Get trip data
-        stmt = (
-            select(Trip)
-            .options(selectinload(Trip.participations).selectinload(TripParticipation.family))
-            .where(Trip.id == trip_id)
-        )
-
-        result = await db.execute(stmt)
-        trip = result.scalar_one_or_none()
-
+        # Get trip from Cosmos DB
+        trip = await cosmos_repo.get_trip(trip_id)
         if not trip:
             raise HTTPException(status_code=404, detail="Trip not found")
 
         # Check access
-        user_has_access = await _check_trip_access(db, trip_id, str(current_user.id))
-        if not user_has_access:
+        has_access = await _check_trip_access_cosmos(cosmos_repo, trip_id, str(current_user.id))
+        if not has_access:
             raise HTTPException(status_code=403, detail="Access denied")
+
+        # Get participating families
+        family_ids = trip.participating_family_ids
+        families = []
+        for family_id in family_ids:
+            family = await cosmos_repo.get_family(family_id)
+            if family:
+                families.append(family)
 
         # Prepare families data
         families_data = []
-        total_budget = float(trip.budget_total) if trip.budget_total else 0.0
+        total_budget = float(trip.budget) if trip.budget else 0.0
 
-        for participation in trip.participations:
-            family = participation.family
-            if not family:
-                continue
-
+        for family in families:
+            # Get family members from Cosmos DB
+            family_members = await cosmos_repo.get_family_members(family.id)
+            
             family_data = {
-                "id": str(family.id),
+                "id": family.id,
                 "name": family.name,
-                "members": [{"id": str(family.admin_user_id), "name": "Admin"}],
-                "preferences": {},
-                "budget_allocation": (
-                    float(participation.budget_allocation)
-                    if participation.budget_allocation
-                    else 0.0
-                ),
-                "is_trip_admin": str(trip.creator_id) == str(family.admin_user_id),
+                "members": [{"id": str(member.id), "name": member.name or "Unknown"} for member in family_members],
+                "preferences": family.settings or {},
+                "budget_allocation": 0.0,  # TODO: Get from trip participation data
+                "is_trip_admin": trip.creator_id == family.admin_user_id,
             }
-
-            if participation.preferences:
-                try:
-                    family_data["preferences"] = json.loads(participation.preferences)
-                except (json.JSONDecodeError, TypeError):
-                    family_data["preferences"] = {}
 
             families_data.append(family_data)
 
@@ -236,17 +210,19 @@ async def get_consensus_dashboard(
 async def submit_family_vote(
     trip_id: str,
     vote_request: VoteRequest,
-    db: AsyncSession = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
     current_user: User = Depends(require_permissions("trips", "update")),
 ):
     """
-    Submit a family's vote on a consensus item.
+    Submit a family's vote on a consensus item using unified Cosmos DB.
 
     Enables families to vote on disputed preferences to reach consensus.
     """
     try:
         # Check if user has access and get their family ID
-        user_family_id = await _get_user_family_for_trip(db, trip_id, str(current_user.id))
+        user_family_id = await _get_user_family_for_trip_cosmos(
+            cosmos_repo, trip_id, str(current_user.id)
+        )
         if not user_family_id:
             raise HTTPException(status_code=403, detail="You are not part of this trip")
 
@@ -279,61 +255,51 @@ async def submit_family_vote(
 
 
 @router.get("/recommendations/{trip_id}")
+@ai_cost_control(model='gpt-3.5-turbo', max_tokens=1500)
 async def get_consensus_recommendations(
     trip_id: str,
-    db: AsyncSession = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
     current_user: User = Depends(require_permissions("trips", "read")),
 ):
     """
-    Get AI-powered recommendations for resolving consensus conflicts.
+    Get AI-powered recommendations for resolving consensus conflicts using unified Cosmos DB.
 
     Returns specific, actionable suggestions for trip organizers.
     """
     try:
         # Check access
-        user_has_access = await _check_trip_access(db, trip_id, str(current_user.id))
-        if not user_has_access:
+        has_access = await _check_trip_access_cosmos(cosmos_repo, trip_id, str(current_user.id))
+        if not has_access:
             raise HTTPException(status_code=403, detail="Access denied")
 
-        # Get trip and family data (similar to analyze_consensus)
-        stmt = (
-            select(Trip)
-            .options(selectinload(Trip.participations).selectinload(TripParticipation.family))
-            .where(Trip.id == trip_id)
-        )
-
-        result = await db.execute(stmt)
-        trip = result.scalar_one_or_none()
-
+        # Get trip from Cosmos DB
+        trip = await cosmos_repo.get_trip(trip_id)
         if not trip:
             raise HTTPException(status_code=404, detail="Trip not found")
 
+        # Get participating families
+        family_ids = trip.participating_family_ids
+        families = []
+        for family_id in family_ids:
+            family = await cosmos_repo.get_family(family_id)
+            if family:
+                families.append(family)
+
         # Quick consensus analysis
         families_data = []
-        total_budget = float(trip.budget_total) if trip.budget_total else 0.0
+        total_budget = float(trip.budget) if trip.budget else 0.0
 
-        for participation in trip.participations:
-            family = participation.family
-            if not family:
-                continue
-
+        for family in families:
+            # Get family members from Cosmos DB
+            family_members = await cosmos_repo.get_family_members(family.id)
+            
             family_data = {
-                "id": str(family.id),
+                "id": family.id,
                 "name": family.name,
-                "members": [{"id": str(family.admin_user_id), "name": "Admin"}],
-                "preferences": {},
-                "budget_allocation": (
-                    float(participation.budget_allocation)
-                    if participation.budget_allocation
-                    else 0.0
-                ),
+                "members": [{"id": str(member.id), "name": member.name or "Unknown"} for member in family_members],
+                "preferences": family.settings or {},
+                "budget_allocation": 0.0,  # TODO: Get from trip participation data
             }
-
-            if participation.preferences:
-                try:
-                    family_data["preferences"] = json.loads(participation.preferences)
-                except (json.JSONDecodeError, TypeError):
-                    family_data["preferences"] = {}
 
             families_data.append(family_data)
 
@@ -364,44 +330,53 @@ async def get_consensus_recommendations(
 # Helper functions
 
 
-async def _check_trip_access(db: AsyncSession, trip_id: str, user_id: str) -> bool:
-    """Check if user has access to the trip."""
+async def _check_trip_access_cosmos(
+    cosmos_repo: UnifiedCosmosRepository, trip_id: str, user_id: str
+) -> bool:
+    """Check if user has access to a specific trip using Cosmos DB."""
     try:
+        # Get user's families
+        user_families = await cosmos_repo.get_user_families(user_id)
+        user_family_ids = [family.id for family in user_families]
+        
+        # Get trip
+        trip = await cosmos_repo.get_trip(trip_id)
+        if not trip:
+            return False
+        
         # Check if user is trip creator
-        trip_stmt = select(Trip).where(Trip.id == trip_id)
-        trip_result = await db.execute(trip_stmt)
-        trip = trip_result.scalar_one_or_none()
-
-        if trip and str(trip.creator_id) == user_id:
+        if trip.creator_id == user_id:
             return True
-
-        # Check if user's family is participating
-        participation_stmt = (
-            select(TripParticipation)
-            .join(Family)
-            .where(TripParticipation.trip_id == trip_id, Family.admin_user_id == user_id)
-        )
-        participation_result = await db.execute(participation_stmt)
-        participation = participation_result.scalar_one_or_none()
-
-        return participation is not None
+        
+        # Check if any user family is participating in the trip
+        participating_families = trip.participating_family_ids
+        return any(family_id in participating_families for family_id in user_family_ids)
 
     except Exception as e:
         logger.error(f"Error checking trip access: {str(e)}")
         return False
 
 
-async def _get_user_family_for_trip(db: AsyncSession, trip_id: str, user_id: str) -> Optional[str]:
-    """Get the family ID for a user in a specific trip."""
+async def _get_user_family_for_trip_cosmos(
+    cosmos_repo: UnifiedCosmosRepository, trip_id: str, user_id: str
+) -> Optional[str]:
+    """Get the family ID for a user in a specific trip using Cosmos DB."""
     try:
-        stmt = (
-            select(Family.id)
-            .join(TripParticipation)
-            .where(TripParticipation.trip_id == trip_id, Family.admin_user_id == user_id)
-        )
-        result = await db.execute(stmt)
-        family_id = result.scalar_one_or_none()
-        return str(family_id) if family_id else None
+        # Get user's families
+        user_families = await cosmos_repo.get_user_families(user_id)
+        
+        # Get trip
+        trip = await cosmos_repo.get_trip(trip_id)
+        if not trip:
+            return None
+        
+        # Find which family is participating in this trip
+        participating_families = trip.participating_family_ids
+        for family in user_families:
+            if family.id in participating_families:
+                return family.id
+                
+        return None
 
     except Exception as e:
         logger.error(f"Error getting user family: {str(e)}")

@@ -64,11 +64,11 @@ export interface RegisterData {
   preferences?: Record<string, any>;
 }
 
-// User creation interface for backend integration (without password for Auth0 users)
+// User creation interface for backend integration (for Entra ID users)
 export interface UserCreate {
   email: string;
   name: string;
-  auth0_id: string;
+  entra_id: string;
   picture?: string;
   phone?: string;
   preferences?: Record<string, any>;

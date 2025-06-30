@@ -10,7 +10,7 @@ const clientId = import.meta.env.VITE_ENTRA_EXTERNAL_CLIENT_ID || 'test-client-i
 const msalConfig: Configuration = {
   auth: {
     clientId: clientId,
-    authority: `https://login.microsoftonline.com/${tenantId}`,
+    authority: 'https://login.microsoftonline.com/vedid.onmicrosoft.com', // ✅ Fixed to use standard domain
     redirectUri: typeof window !== 'undefined' 
       ? window.location.origin 
       : 'https://pathfinder-frontend.yellowdune-9b8d769a.eastus.azurecontainerapps.io',
@@ -20,8 +20,8 @@ const msalConfig: Configuration = {
     navigateToLoginRequestUrl: false,
   },
   cache: {
-    cacheLocation: 'localStorage',
-    storeAuthStateInCookie: false, // Set to true for IE11 or Edge legacy
+    cacheLocation: 'sessionStorage', // ✅ Required for SSO across Vedprakash apps
+    storeAuthStateInCookie: true,    // ✅ Required for Safari/iOS SSO support
   },
   system: {
     loggerOptions: {
@@ -47,8 +47,8 @@ const msalConfig: Configuration = {
         }
       },
       logLevel: import.meta.env.NODE_ENV === 'development' ? LogLevel.Verbose : LogLevel.Error,
+      piiLoggingEnabled: false  // ✅ Required: Disable PII logging for security
     },
-    // Note: allowNativeBroker is not available in this MSAL version
     windowHashTimeout: 60000,
     iframeHashTimeout: 6000,
   },
@@ -70,18 +70,30 @@ console.log('🔧 MSAL Config Loaded:', {
   authority: msalConfig.auth.authority,
   clientId: msalConfig.auth.clientId ? `${msalConfig.auth.clientId.substring(0, 8)}...` : 'MISSING',
   redirectUri: msalConfig.auth.redirectUri,
-  tenantId: tenantId,
+  cacheLocation: msalConfig.cache?.cacheLocation,
+  storeAuthStateInCookie: msalConfig.cache?.storeAuthStateInCookie,
 });
 
-// Validate configuration
-if (!tenantId || !clientId || tenantId === 'test-tenant-id' || clientId === 'test-client-id') {
-  console.warn('⚠️ MSAL configuration is using test values or missing required fields!');
-  console.warn('Tenant ID:', tenantId);
-  console.warn('Client ID:', clientId ? 'Present' : 'MISSING');
+// Validate configuration for Vedprakash domain compliance
+if (!msalConfig.auth.authority?.includes('vedid.onmicrosoft.com')) {
+  console.warn('⚠️ MSAL configuration not using Vedprakash domain tenant!');
+  console.warn('Current authority:', msalConfig.auth.authority);
+  console.warn('Required: https://login.microsoftonline.com/vedid.onmicrosoft.com');
   
   if (import.meta.env.NODE_ENV === 'production') {
-    console.error('❌ Production deployment requires valid Entra External ID configuration!');
+    console.error('❌ Production deployment requires Vedprakash domain tenant!');
   }
+}
+
+if (msalConfig.cache?.cacheLocation !== 'sessionStorage') {
+  console.warn('⚠️ MSAL cache configuration may break SSO across Vedprakash apps!');
+  console.warn('Current cacheLocation:', msalConfig.cache?.cacheLocation);
+  console.warn('Required for SSO: sessionStorage');
+}
+
+if (!msalConfig.cache?.storeAuthStateInCookie) {
+  console.warn('⚠️ MSAL cookie configuration may break SSO on Safari/iOS!');
+  console.warn('Required for Safari SSO: storeAuthStateInCookie: true');
 }
 
 export default msalConfig;

@@ -8,14 +8,11 @@ from enum import Enum
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from sqlalchemy import and_
-from sqlalchemy.orm import Session
 
-from ..core.database import get_db
+from ..core.database_unified import get_cosmos_repository
 from ..core.logging_config import get_logger
 from ..core.zero_trust import require_permissions
-from ..models.trip import Trip, TripParticipation
-from ..models.user import User
+from ..repositories.cosmos_unified import UnifiedCosmosRepository
 
 router = APIRouter(tags=["reservations"])
 logger = get_logger(__name__)
@@ -125,39 +122,40 @@ class Reservation:
 async def create_reservation(
     reservation_data: ReservationCreate,
     request: Request,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_permissions("reservations", "create")),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
+    current_user: dict = Depends(require_permissions("reservations", "create")),
 ):
     """Create a new reservation for a trip."""
     try:
         # Verify trip exists and user has access
-        trip = db.query(Trip).filter(Trip.id == reservation_data.trip_id).first()
+        trip = await cosmos_repo.get_trip_by_id(str(reservation_data.trip_id))
         if not trip:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
 
-        # Check if user is a participant
-        participation = (
-            db.query(TripParticipation)
-            .filter(
-                and_(
-                    TripParticipation.trip_id == reservation_data.trip_id,
-                    TripParticipation.user_id == current_user.id,
-                )
+        # Check if user is a participant (check if user has access to trip)
+        user_trips = await cosmos_repo.get_user_trips(current_user["id"])
+        if not any(t.id == str(reservation_data.trip_id) for t in user_trips):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not authorized to create reservations for this trip",
             )
-            .first()
-        )
-
-        if not participation:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not authorized to create reservations for this trip",
             )
 
-        # Validate participants are trip members
+        # Validate participants are trip members if specified
         if reservation_data.participants:
-            trip_participant_ids = [p.user_id for p in trip.participations]
+            # Get trip participants from family members
+            trip_families = await cosmos_repo.get_trip_families(str(reservation_data.trip_id))
+            trip_participant_ids = []
+            for family in trip_families:
+                family_members = await cosmos_repo.get_family_members(family.id)
+                trip_participant_ids.extend([member.id for member in family_members])
+            
             invalid_participants = [
-                p_id for p_id in reservation_data.participants if p_id not in trip_participant_ids
+                str(p_id) for p_id in reservation_data.participants 
+                if str(p_id) not in trip_participant_ids
             ]
 
             if invalid_participants:
@@ -166,39 +164,66 @@ async def create_reservation(
                     detail=f"Invalid participants: {invalid_participants}",
                 )
 
-        # Create reservation (mock implementation)
-        reservation_dict = reservation_data.dict()
+        # Create reservation using Cosmos DB
+        reservation_dict = reservation_data.model_dump()
         reservation_dict.update(
             {
-                "id": 1,  # Would be auto-generated
-                "created_by": current_user.id,
-                "created_at": datetime.utcnow(),
-                "updated_at": datetime.utcnow(),
-                "status": ReservationStatus.PENDING,
+                "trip_id": str(reservation_data.trip_id),
+                "created_by": current_user["id"],
+                "date": reservation_data.date.isoformat(),
+                "participants": [str(p) for p in (reservation_data.participants or [])]
             }
         )
 
-        # Mock participant details
+        reservation_doc = await cosmos_repo.create_reservation(reservation_dict)
+
+        # Get participant details for response
         participant_details = []
         if reservation_data.participants:
             for user_id in reservation_data.participants:
-                # Would query actual user data
-                participant_details.append(
-                    {
-                        "id": user_id,
-                        "name": f"User {user_id}",
-                        "email": f"user{user_id}@example.com",
-                    }
-                )
+                user = await cosmos_repo.get_user_by_id(str(user_id))
+                if user:
+                    participant_details.append(
+                        {
+                            "id": user_id,
+                            "name": user.name or f"User {user_id}",
+                            "email": user.email,
+                        }
+                    )
 
-        reservation_dict["participants"] = participant_details
-        reservation_dict["participant_count"] = len(participant_details)
+        # Prepare response
+        response_data = {
+            "id": int(reservation_doc.id.split("-")[0], 16) % (10**9),  # Generate numeric ID for response
+            "trip_id": int(reservation_data.trip_id),
+            "type": reservation_data.type,
+            "name": reservation_data.name,
+            "description": reservation_data.description,
+            "date": reservation_data.date,
+            "time": reservation_data.time,
+            "duration_hours": reservation_data.duration_hours,
+            "location": reservation_data.location,
+            "address": reservation_data.address,
+            "contact_info": reservation_data.contact_info,
+            "cost_per_person": reservation_data.cost_per_person,
+            "total_cost": reservation_data.total_cost,
+            "capacity": reservation_data.capacity,
+            "participants": participant_details,
+            "participant_count": len(participant_details),
+            "booking_reference": reservation_data.booking_reference,
+            "status": ReservationStatus.PENDING,
+            "cancellation_policy": reservation_data.cancellation_policy,
+            "special_requirements": reservation_data.special_requirements,
+            "external_booking_url": reservation_data.external_booking_url,
+            "created_by": int(current_user["id"]),
+            "created_at": reservation_doc.created_at,
+            "updated_at": reservation_doc.updated_at,
+        }
 
         logger.info(
-            f"Reservation created for trip {reservation_data.trip_id} by user {current_user.id}"
+            f"Reservation created for trip {reservation_data.trip_id} by user {current_user['id']}"
         )
 
-        return ReservationResponse(**reservation_dict)
+        return ReservationResponse(**response_data)
 
     except HTTPException:
         raise
@@ -222,124 +247,89 @@ async def get_trip_reservations(
     date_to: Optional[date] = Query(None, description="Filter reservations to this date"),
     skip: int = 0,
     limit: int = 100,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_permissions("reservations", "read")),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
+    current_user: dict = Depends(require_permissions("reservations", "read")),
 ):
     """Get all reservations for a trip."""
     try:
         # Verify trip access
-        trip = db.query(Trip).filter(Trip.id == trip_id).first()
+        trip = await cosmos_repo.get_trip_by_id(str(trip_id))
         if not trip:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
 
-        participation = (
-            db.query(TripParticipation)
-            .filter(
-                and_(
-                    TripParticipation.trip_id == trip_id,
-                    TripParticipation.user_id == current_user.id,
-                )
-            )
-            .first()
-        )
-
-        if not participation:
+        # Check if user has access to trip
+        user_trips = await cosmos_repo.get_user_trips(current_user["id"])
+        if not any(t.id == str(trip_id) for t in user_trips):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not authorized to access this trip",
             )
 
-        # Mock reservations data (would query actual reservation table)
-        mock_reservations = [
-            {
-                "id": 1,
+        # Get reservations from Cosmos DB
+        reservations = await cosmos_repo.get_trip_reservations(str(trip_id))
+        
+        # Convert to response format
+        result = []
+        for reservation in reservations:
+            # Apply filters
+            if reservation_type and reservation.type != reservation_type:
+                continue
+                
+            if status_filter and reservation.status != status_filter:
+                continue
+                
+            # Parse date for filtering
+            try:
+                res_date = date.fromisoformat(reservation.date)
+                if date_from and res_date < date_from:
+                    continue
+                if date_to and res_date > date_to:
+                    continue
+            except:
+                pass  # Skip date filtering if date format is invalid
+            
+            # Get participant details
+            participant_details = []
+            if reservation.participants:
+                for user_id in reservation.participants:
+                    user = await cosmos_repo.get_user_by_id(user_id)
+                    if user:
+                        participant_details.append({
+                            "id": int(user_id),
+                            "name": user.name or f"User {user_id}",
+                            "email": user.email,
+                        })
+            
+            response_data = {
+                "id": int(reservation.id.split("-")[0], 16) % (10**9),
                 "trip_id": trip_id,
-                "type": ReservationType.ACCOMMODATION,
-                "name": "Grand Hotel",
-                "description": "Luxury hotel in downtown",
-                "date": date(2024, 7, 15),
-                "time": "15:00",
-                "duration_hours": 24.0,
-                "location": "Downtown",
-                "address": "123 Main St",
-                "contact_info": {
-                    "phone": "+1-555-0123",
-                    "email": "reservations@grandhotel.com",
-                },
-                "cost_per_person": 150.0,
-                "total_cost": 600.0,
-                "capacity": 4,
-                "participant_count": 4,
-                "participants": [
-                    {"id": 1, "name": "John Doe", "email": "john@example.com"},
-                    {"id": 2, "name": "Jane Smith", "email": "jane@example.com"},
-                ],
-                "booking_reference": "GH123456",
-                "status": ReservationStatus.CONFIRMED,
-                "cancellation_policy": "Free cancellation up to 24 hours before check-in",
-                "special_requirements": "Non-smoking rooms",
-                "external_booking_url": "https://grandhotel.com/booking/GH123456",
-                "created_by": current_user.id,
-                "created_at": datetime.utcnow(),
-                "updated_at": datetime.utcnow(),
-            },
-            {
-                "id": 2,
-                "trip_id": trip_id,
-                "type": ReservationType.ACTIVITY,
-                "name": "City Museum Tour",
-                "description": "Guided tour of the city museum",
-                "date": date(2024, 7, 16),
-                "time": "10:00",
-                "duration_hours": 2.5,
-                "location": "City Museum",
-                "address": "456 Culture Ave",
-                "contact_info": {
-                    "phone": "+1-555-0124",
-                    "email": "tours@citymuseum.com",
-                },
-                "cost_per_person": 25.0,
-                "total_cost": 100.0,
-                "capacity": 20,
-                "participant_count": 4,
-                "participants": [
-                    {"id": 1, "name": "John Doe", "email": "john@example.com"},
-                    {"id": 2, "name": "Jane Smith", "email": "jane@example.com"},
-                ],
-                "booking_reference": "CM789012",
-                "status": ReservationStatus.CONFIRMED,
-                "cancellation_policy": "Refund available up to 48 hours before tour",
-                "special_requirements": "Wheelchair accessible",
-                "external_booking_url": "https://citymuseum.com/tours/CM789012",
-                "created_by": current_user.id,
-                "created_at": datetime.utcnow(),
-                "updated_at": datetime.utcnow(),
-            },
-        ]
-
-        # Apply filters
-        filtered_reservations = mock_reservations
-
-        if reservation_type:
-            filtered_reservations = [
-                r for r in filtered_reservations if r["type"] == reservation_type
-            ]
-
-        if status_filter:
-            filtered_reservations = [
-                r for r in filtered_reservations if r["status"] == status_filter
-            ]
-
-        if date_from:
-            filtered_reservations = [r for r in filtered_reservations if r["date"] >= date_from]
-
-        if date_to:
-            filtered_reservations = [r for r in filtered_reservations if r["date"] <= date_to]
+                "type": reservation.type,
+                "name": reservation.name,
+                "description": reservation.description,
+                "date": date.fromisoformat(reservation.date),
+                "time": reservation.time,
+                "duration_hours": reservation.duration_hours,
+                "location": reservation.location,
+                "address": reservation.address,
+                "contact_info": reservation.contact_info,
+                "cost_per_person": reservation.cost_per_person,
+                "total_cost": reservation.total_cost,
+                "capacity": reservation.capacity,
+                "participants": participant_details,
+                "participant_count": len(participant_details),
+                "booking_reference": reservation.booking_reference,
+                "status": reservation.status,
+                "cancellation_policy": reservation.cancellation_policy,
+                "special_requirements": reservation.special_requirements,
+                "external_booking_url": reservation.external_booking_url,
+                "created_by": int(reservation.created_by),
+                "created_at": reservation.created_at,
+                "updated_at": reservation.updated_at,
+            }
+            result.append(ReservationResponse(**response_data))
 
         # Apply pagination
-        paginated_reservations = filtered_reservations[skip : skip + limit]
-
-        return [ReservationResponse(**res) for res in paginated_reservations]
+        return result[skip : skip + limit]
 
     except HTTPException:
         raise
@@ -355,68 +345,71 @@ async def get_trip_reservations(
 async def get_reservation(
     reservation_id: int,
     request: Request,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_permissions("reservations", "read")),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
+    current_user: dict = Depends(require_permissions("reservations", "read")),
 ):
     """Get a specific reservation by ID."""
     try:
-        # Mock reservation lookup (would query actual reservation table)
-        mock_reservation = {
-            "id": reservation_id,
-            "trip_id": 1,
-            "type": ReservationType.ACCOMMODATION,
-            "name": "Grand Hotel",
-            "description": "Luxury hotel in downtown",
-            "date": date(2024, 7, 15),
-            "time": "15:00",
-            "duration_hours": 24.0,
-            "location": "Downtown",
-            "address": "123 Main St",
-            "contact_info": {
-                "phone": "+1-555-0123",
-                "email": "reservations@grandhotel.com",
-            },
-            "cost_per_person": 150.0,
-            "total_cost": 600.0,
-            "capacity": 4,
-            "participant_count": 2,
-            "participants": [
-                {"id": 1, "name": "John Doe", "email": "john@example.com"},
-                {"id": 2, "name": "Jane Smith", "email": "jane@example.com"},
-            ],
-            "booking_reference": "GH123456",
-            "status": ReservationStatus.CONFIRMED,
-            "cancellation_policy": "Free cancellation up to 24 hours before check-in",
-            "special_requirements": "Non-smoking rooms",
-            "external_booking_url": "https://grandhotel.com/booking/GH123456",
-            "created_by": current_user.id,
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow(),
-        }
-
-        # Verify trip access
-        trip = db.query(Trip).filter(Trip.id == mock_reservation["trip_id"]).first()
-        if not trip:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
-
-        participation = (
-            db.query(TripParticipation)
-            .filter(
-                and_(
-                    TripParticipation.trip_id == mock_reservation["trip_id"],
-                    TripParticipation.user_id == current_user.id,
-                )
+        # Convert numeric ID to string format for document lookup
+        # This is a simple implementation - in production you'd want a better ID mapping
+        reservation_uuid = f"{reservation_id:08x}-0000-0000-0000-000000000000"
+        
+        reservation_doc = await cosmos_repo._get_document_by_id(reservation_uuid)
+        if not reservation_doc or reservation_doc.get("entity_type") != "reservation":
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Reservation not found"
             )
-            .first()
-        )
 
-        if not participation:
+        # Verify user has access to the trip
+        trip_id = reservation_doc["trip_id"]
+        user_trips = await cosmos_repo.get_user_trips(current_user["id"])
+        if not any(t.id == trip_id for t in user_trips):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not authorized to access this reservation",
             )
 
-        return ReservationResponse(**mock_reservation)
+        # Get participant details
+        participant_details = []
+        if reservation_doc.get("participants"):
+            for user_id in reservation_doc["participants"]:
+                user = await cosmos_repo.get_user_by_id(user_id)
+                if user:
+                    participant_details.append({
+                        "id": int(user_id),
+                        "name": user.name or f"User {user_id}",
+                        "email": user.email,
+                    })
+
+        response_data = {
+            "id": reservation_id,
+            "trip_id": int(trip_id),
+            "type": reservation_doc["type"],
+            "name": reservation_doc["name"],
+            "description": reservation_doc.get("description"),
+            "date": date.fromisoformat(reservation_doc["date"]),
+            "time": reservation_doc.get("time"),
+            "duration_hours": reservation_doc.get("duration_hours"),
+            "location": reservation_doc["location"],
+            "address": reservation_doc.get("address"),
+            "contact_info": reservation_doc.get("contact_info"),
+            "cost_per_person": reservation_doc.get("cost_per_person"),
+            "total_cost": reservation_doc.get("total_cost"),
+            "capacity": reservation_doc.get("capacity"),
+            "participants": participant_details,
+            "participant_count": len(participant_details),
+            "booking_reference": reservation_doc.get("booking_reference"),
+            "status": reservation_doc["status"],
+            "cancellation_policy": reservation_doc.get("cancellation_policy"),
+            "special_requirements": reservation_doc.get("special_requirements"),
+            "external_booking_url": reservation_doc.get("external_booking_url"),
+            "created_by": int(reservation_doc["created_by"]),
+            "created_at": datetime.fromisoformat(reservation_doc["created_at"]),
+            "updated_at": datetime.fromisoformat(reservation_doc["updated_at"]),
+        }
+
+        return ReservationResponse(**response_data)
 
     except HTTPException:
         raise
@@ -433,8 +426,8 @@ async def update_reservation(
     reservation_id: int,
     reservation_data: ReservationUpdate,
     request: Request,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_permissions("reservations", "update")),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
+    current_user: dict = Depends(require_permissions("reservations", "update")),
 ):
     """Update a reservation."""
     try:
@@ -531,7 +524,7 @@ async def update_reservation(
 async def cancel_reservation(
     reservation_id: int,
     request: Request,
-    db: Session = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
     current_user: User = Depends(require_permissions("reservations", "delete")),
 ):
     """Cancel a reservation."""
@@ -590,7 +583,7 @@ async def add_participants(
     reservation_id: int,
     participant_ids: List[int],
     request: Request,
-    db: Session = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
     current_user: User = Depends(require_permissions("reservations", "update")),
 ):
     """Add participants to a reservation."""
@@ -695,7 +688,7 @@ async def remove_participant(
     reservation_id: int,
     user_id: int,
     request: Request,
-    db: Session = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
     current_user: User = Depends(require_permissions("reservations", "update")),
 ):
     """Remove a participant from a reservation."""

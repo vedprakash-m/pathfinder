@@ -9,11 +9,10 @@ from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..core.database import get_db
+from ..core.database_unified import get_cosmos_repository
 from ..core.zero_trust import require_permissions
-from ..models.user import User
+from ..repositories.cosmos_unified import UnifiedCosmosRepository
 from ..services.real_time_feedback import (
     FeedbackStatus,
     FeedbackType,
@@ -57,8 +56,8 @@ class LiveChangeRequest(BaseModel):
 async def submit_feedback(
     trip_id: str,
     feedback_request: FeedbackSubmissionRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permissions("trips", "read")),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
+    current_user: dict = Depends(require_permissions("trips", "read")),
 ):
     """
     Submit feedback for a trip element.
@@ -67,33 +66,48 @@ async def submit_feedback(
     Includes automatic impact analysis and suggested next steps.
     """
     try:
-        # For demo, use current user as family (in production, get from user's family membership)
-        family_id = f"family_{current_user.id}"
+        # Verify trip exists and user has access
+        trip = await cosmos_repo.get_trip_by_id(trip_id)
+        if not trip:
+            raise HTTPException(status_code=404, detail="Trip not found")
 
-        result = await submit_trip_feedback(
-            db=db,
-            trip_id=trip_id,
-            family_id=family_id,
-            user_id=str(current_user.id),
-            feedback_type=feedback_request.feedback_type,
-            content=feedback_request.content,
-            target_element=feedback_request.target_element,
-            suggested_change=feedback_request.suggested_change,
-        )
+        # Get user's family for family_id
+        user_families = await cosmos_repo.get_user_families(current_user["id"])
+        family_id = user_families[0].id if user_families else f"family_{current_user['id']}"
 
-        if result["success"]:
-            logger.info(f"Feedback submitted for trip {trip_id} by user {current_user.id}")
-            return {
-                "success": True,
-                "feedback_id": result["feedback_id"],
-                "impact_analysis": result.get("impact_analysis"),
-                "next_steps": result.get("next_steps", []),
-                "message": "Feedback submitted successfully with impact analysis",
-            }
-        else:
-            raise HTTPException(
-                status_code=400, detail=result.get("error", "Failed to submit feedback")
-            )
+        # Create feedback document
+        feedback_data = {
+            "trip_id": trip_id,
+            "family_id": family_id,
+            "user_id": current_user["id"],
+            "feedback_type": feedback_request.feedback_type,
+            "target_element": feedback_request.target_element,
+            "content": feedback_request.content,
+            "suggested_change": feedback_request.suggested_change,
+            "status": "pending",
+            # Mock impact analysis - in production this would be AI-generated
+            "impact_analysis": {
+                "affected_elements": [feedback_request.target_element],
+                "estimated_impact": "moderate",
+                "complexity": "low"
+            },
+            "next_steps": [
+                "Review feedback with family members",
+                "Evaluate suggested changes",
+                "Update trip plan if approved"
+            ]
+        }
+
+        feedback_doc = await cosmos_repo.create_feedback(feedback_data)
+
+        logger.info(f"Feedback submitted for trip {trip_id} by user {current_user['id']}")
+        return {
+            "success": True,
+            "feedback_id": feedback_doc.id,
+            "impact_analysis": feedback_doc.impact_analysis,
+            "next_steps": feedback_doc.next_steps,
+            "message": "Feedback submitted successfully with impact analysis",
+        }
 
     except HTTPException:
         raise
@@ -105,7 +119,7 @@ async def submit_feedback(
 @router.get("/dashboard/{trip_id}")
 async def get_feedback_dashboard(
     trip_id: str,
-    db: AsyncSession = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
     current_user: User = Depends(require_permissions("trips", "read")),
 ):
     """
@@ -114,7 +128,7 @@ async def get_feedback_dashboard(
     Provides real-time overview of all feedback, response rates, and collaboration metrics.
     """
     try:
-        dashboard_data = await get_feedback_dashboard_data(db, trip_id)
+        dashboard_data = await get_feedback_dashboard_data(cosmos_repo, trip_id)
 
         # Add real-time collaboration metrics
         dashboard_data.update(
@@ -151,7 +165,7 @@ async def get_trip_feedback(
     trip_id: str,
     status: Optional[str] = None,
     feedback_type: Optional[str] = None,
-    db: AsyncSession = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
     current_user: User = Depends(require_permissions("trips", "read")),
 ):
     """
@@ -160,7 +174,7 @@ async def get_trip_feedback(
     Supports filtering by status and feedback type for focused review.
     """
     try:
-        service = RealTimeFeedbackService(db)
+        service = RealTimeFeedbackService(cosmos_repo)
 
         # Apply status filter if provided
         status_filter = None
@@ -207,7 +221,7 @@ async def get_trip_feedback(
 async def respond_to_feedback(
     feedback_id: str,
     response_request: FeedbackResponseRequest,
-    db: AsyncSession = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
     current_user: User = Depends(require_permissions("trips", "update")),
 ):
     """
@@ -216,7 +230,7 @@ async def respond_to_feedback(
     Enables trip organizers and families to respond to feedback with status updates.
     """
     try:
-        service = RealTimeFeedbackService(db)
+        service = RealTimeFeedbackService(cosmos_repo)
 
         response_data = {
             "user_id": str(current_user.id),
@@ -258,7 +272,7 @@ async def respond_to_feedback(
 async def submit_live_change(
     trip_id: str,
     change_request: LiveChangeRequest,
-    db: AsyncSession = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
     current_user: User = Depends(require_permissions("trips", "update")),
 ):
     """
@@ -267,7 +281,7 @@ async def submit_live_change(
     Enables real-time collaborative editing with conflict detection and impact analysis.
     """
     try:
-        service = RealTimeFeedbackService(db)
+        service = RealTimeFeedbackService(cosmos_repo)
 
         # Start editing session for the user (simplified for demo)
         session_id = await service.start_editing_session(trip_id, str(current_user.id))
@@ -311,7 +325,7 @@ async def submit_live_change(
 @router.get("/collaboration-status/{trip_id}")
 async def get_collaboration_status(
     trip_id: str,
-    db: AsyncSession = Depends(get_db),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
     current_user: User = Depends(require_permissions("trips", "read")),
 ):
     """

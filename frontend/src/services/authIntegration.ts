@@ -1,56 +1,60 @@
 /**
- * Auth Integration Service for Phase 2 - Backend Integration & Auto-Family Creation
- * Handles the integration between Auth0 frontend authentication and backend user management
+ * Auth Integration Service - Microsoft Entra ID Integration
+ * Handles the integration between Entra ID authentication and backend user management
+ * Aligned with Vedprakash Domain Authentication Standards
  */
 
-import { useAuth0 } from '@auth0/auth0-react';
-import { authService } from './auth';
-import { UserRole, UserProfile, UserCreate } from '@/types';
-import { useAuthStore } from '@/store';
+import { UserCreate, UserRole, UserProfile } from '@/types';
+import { apiService } from './api';
 
-export interface Auth0UserInfo {
-  sub: string;
+export interface UserInfo {
+  id: string;
   name?: string;
   email: string;
   picture?: string;
   phone_number?: string;
   email_verified?: boolean;
-  family_name?: string;
-  given_name?: string;
+  familyName?: string;
+  givenName?: string;
+  // Entra ID specific fields
+  entra_id?: string;
+  preferred_username?: string;
 }
 
 export class AuthIntegrationService {
   /**
-   * Process Auth0 login and sync with backend
+   * Process user login and sync with backend
    * This handles the auto-family creation workflow for new users
    */
-  static async processAuth0Login(auth0User: Auth0UserInfo): Promise<UserProfile | null> {
+  static async processUserLogin(user: UserInfo): Promise<UserProfile | null> {
     try {
-      console.log('🔄 Processing Auth0 login for:', auth0User.email);
+      console.log('🔄 Processing Entra ID user login for:', user.email);
 
       // First, try to get existing user from backend
-      const currentUserResponse = await authService.getCurrentUser();
-      
-      if (currentUserResponse.data) {
-        console.log('✅ Existing user found in backend:', currentUserResponse.data.email);
-        return currentUserResponse.data;
+      try {
+        const currentUserResponse = await apiService.get<UserProfile>('/auth/me');
+        if (currentUserResponse.data) {
+          console.log('✅ Existing user found in backend:', currentUserResponse.data.email);
+          return currentUserResponse.data;
+        }
+      } catch (error) {
+        console.log('🔄 User not found in backend, proceeding with registration...');
       }
 
       // User doesn't exist in backend, create new user with auto-family creation
       console.log('🆕 Creating new user in backend with auto-family creation...');
       
       const newUserData: UserCreate = {
-        email: auth0User.email,
-        name: auth0User.name || `${auth0User.given_name || ''} ${auth0User.family_name || ''}`.trim() || auth0User.email.split('@')[0],
-        auth0_id: auth0User.sub,
-        picture: auth0User.picture,
-        phone: auth0User.phone_number,
-        // Additional fields that might be in UserCreate
+        email: user.email,
+        name: user.name || `${user.givenName || ''} ${user.familyName || ''}`.trim() || user.email.split('@')[0],
+        entra_id: user.entra_id || user.id,
+        picture: user.picture,
+        phone: user.phone_number,
         preferences: {},
       };
 
       // Register user - this triggers auto-family creation in backend
-      const registerResponse = await authService.register(newUserData as any);
+      const registerResponse = await apiService.post<UserProfile>('/auth/register', newUserData);
       
       if (!registerResponse.data) {
         throw new Error('Failed to register user in backend');
@@ -59,7 +63,7 @@ export class AuthIntegrationService {
       console.log('✅ User registered with auto-family creation:', registerResponse.data.email);
 
       // Now get the full user profile with family information
-      const userProfileResponse = await authService.getCurrentUser();
+      const userProfileResponse = await apiService.get<UserProfile>('/auth/me');
       
       if (userProfileResponse.data) {
         console.log('✅ User profile retrieved with family data');
@@ -69,8 +73,8 @@ export class AuthIntegrationService {
       throw new Error('Failed to retrieve user profile after registration');
 
     } catch (error) {
-      console.error('❌ Auth0 login processing failed:', error);
-      throw error;
+      console.error('❌ Entra ID login processing failed:', error);
+      return null;
     }
   }
 
@@ -79,40 +83,11 @@ export class AuthIntegrationService {
    */
   static async verifyUserRole(): Promise<UserRole | null> {
     try {
-      const response = await authService.getCurrentUser();
+      const response = await apiService.get<UserProfile>('/auth/me');
       return response.data?.role || null;
     } catch (error) {
       console.error('Failed to verify user role:', error);
       return null;
-    }
-  }
-
-  /**
-   * Handle Auth0 callback and complete user setup
-   */
-  static async handleAuth0Callback(code: string): Promise<UserProfile | null> {
-    try {
-      // Exchange Auth0 code for backend token and user data
-      const callbackResponse = await authService.handleAuth0Callback(code);
-      
-      if (!callbackResponse.data) {
-        throw new Error('Auth0 callback failed');
-      }
-
-      // Convert User to UserProfile by adding missing fields
-      const user = callbackResponse.data.user;
-      const userProfile: UserProfile = {
-        ...user,
-        families: [],
-        trips_count: 0
-      };
-      
-      console.log('✅ Auth0 callback processed, user:', userProfile.email);
-      
-      return userProfile;
-    } catch (error) {
-      console.error('❌ Auth0 callback handling failed:', error);
-      throw error;
     }
   }
 
@@ -124,7 +99,7 @@ export class AuthIntegrationService {
       console.log('🧪 Testing auto-family creation workflow...');
       
       // Get current user
-      const userResponse = await authService.getCurrentUser();
+      const userResponse = await apiService.get<UserProfile>('/auth/me');
       if (!userResponse.data) {
         console.log('❌ No authenticated user found');
         return false;
@@ -146,7 +121,7 @@ export class AuthIntegrationService {
       }
 
       console.log('✅ User has', user.families.length, 'family(ies):');
-      user.families.forEach(family => {
+      user.families.forEach((family: any) => {
         console.log(`  - ${family.name} (Role: ${family.role})`);
       });
 
@@ -156,60 +131,20 @@ export class AuthIntegrationService {
       return false;
     }
   }
-}
 
-/**
- * React hook for Auth0 backend integration
- */
-/**
- * React hook for Auth0 backend integration
- */
-export const useAuth0BackendIntegration = () => {
-  const { user: auth0User, isAuthenticated } = useAuth0();
-  const authStore = useAuthStore();
-
-  const syncWithBackend = async (): Promise<UserProfile | null> => {
-    if (!isAuthenticated || !auth0User) {
-      return null;
-    }
-
+  /**
+   * Handle user logout and cleanup
+   */
+  static async handleLogout(): Promise<void> {
     try {
-      // Convert Auth0 user to our Auth0UserInfo interface
-      const auth0UserInfo: Auth0UserInfo = {
-        sub: auth0User.sub || '',
-        name: auth0User.name,
-        email: auth0User.email || '',
-        picture: auth0User.picture,
-        phone_number: auth0User.phone_number,
-        email_verified: auth0User.email_verified,
-        family_name: auth0User.family_name,
-        given_name: auth0User.given_name,
-      };
-
-      const userProfile = await AuthIntegrationService.processAuth0Login(auth0UserInfo);
-      
-      if (userProfile) {
-        authStore.setUser(userProfile);
-      }
-      
-      return userProfile;
+      console.log('🔄 Processing user logout...');
+      await apiService.post<void>('/auth/logout', {});
+      console.log('✅ User logout processed successfully');
     } catch (error) {
-      console.error('Backend sync failed:', error);
-      authStore.setError({ message: 'Failed to sync with backend' });
-      return null;
+      console.error('❌ Logout processing failed:', error);
+      throw error;
     }
-  };
-
-  const testAutoFamilyCreation = () => {
-    return AuthIntegrationService.testAutoFamilyCreation();
-  };
-
-  return {
-    syncWithBackend,
-    testAutoFamilyCreation,
-    isAuthenticated,
-    auth0User,
-  };
-};
+  }
+}
 
 export default AuthIntegrationService;

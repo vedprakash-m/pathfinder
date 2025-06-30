@@ -13,6 +13,7 @@ import {
 import { TripType } from './OnboardingFlow';
 import { TripTemplateService, TripTemplate } from '../../services/tripTemplateService';
 import { useOnboardingAnalytics } from '../../services/onboardingAnalytics';
+import apiService from '../../services/api';
 
 interface SampleFamily {
   id: string;
@@ -66,28 +67,77 @@ const SampleTripDemo: React.FC<SampleTripDemoProps> = ({ tripType, onComplete })
   ];
 
   useEffect(() => {
-    // Simulate AI trip generation with real template data
+    // Generate sample trip using backend API
     const generateTrip = async () => {
       setIsGenerating(true);
       setAnimationStep(0);
       
-      // Show generation steps
-      for (let i = 0; i < generationSteps.length; i++) {
-        setAnimationStep(i);
-        await new Promise(resolve => setTimeout(resolve, 800));
-      }
-      
-      // Get a random template for the selected trip type
-      const template = TripTemplateService.getRandomTemplate(tripType);
-      
-      if (template) {
-        setCurrentTemplate(template);
-        setIsGenerating(false);
+      try {
+        // Show generation steps
+        for (let i = 0; i < generationSteps.length; i++) {
+          setAnimationStep(i);
+          await new Promise(resolve => setTimeout(resolve, 800));
+        }
+        
+        // Try to call backend API first, fallback to template service
+        let template: TripTemplate | null = null;
+        
+        try {
+          // Convert tripType to backend format
+          const backendTripType = tripType.replace('-', '_') as 'weekend_getaway' | 'family_vacation' | 'adventure_trip';
+          
+          // Call backend to create sample trip
+          const response = await apiService.onboarding.createSampleTrip(backendTripType);
+          
+          if (response.success && response.data) {
+            // Convert backend response to frontend template format
+            template = {
+              id: response.data.id || `sample_${Date.now()}`,
+              type: tripType,
+              title: response.data.name || 'Sample Trip',
+              description: response.data.description || 'A wonderful trip created by Pathfinder AI',
+              duration: `${response.data.duration || 3} days`,
+              location: response.data.destination || 'Unknown Location',
+              groupSize: '2-6 people',
+              budget: response.data.budget ? `$${response.data.budget}` : '$1,000',
+              highlights: response.data.activities || ['Great activities', 'Beautiful scenery'],
+              itinerary: [], // Will be populated later
+              tags: ['AI Generated', 'Sample'],
+              imageUrl: '',
+              difficulty: 'Easy' as const,
+              bestSeason: ['Spring', 'Summer']
+            };
+            
+            // Track successful API integration
+            analytics.trackApiIntegration('sample_trip_created', true);
+          }
+        } catch (apiError) {
+          console.warn('Backend API not available, using template service:', apiError);
+          analytics.trackApiIntegration('sample_trip_created', false);
+        }
+        
+        // Fallback to template service if API fails
+        if (!template) {
+          template = TripTemplateService.getRandomTemplate(tripType);
+        }
+        
+        if (template) {
+          setCurrentTemplate(template);
+          setIsGenerating(false);
+        }
+      } catch (error) {
+        console.error('Error generating trip:', error);
+        // Fallback to template service
+        const template = TripTemplateService.getRandomTemplate(tripType);
+        if (template) {
+          setCurrentTemplate(template);
+          setIsGenerating(false);
+        }
       }
     };
 
     generateTrip();
-  }, [tripType]);
+  }, [tripType, analytics]);
 
   const handleContinue = () => {
     if (currentTemplate) {

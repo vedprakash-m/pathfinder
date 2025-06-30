@@ -71,18 +71,25 @@ class UnifiedSettings(BaseSettings):
     DATABASE_ECHO: bool = Field(default=False, description="Enable database query logging")
 
     # ==================== COSMOS DB CONFIGURATION ====================
-    COSMOS_DB_ENABLED: bool = Field(default=False, description="Enable Cosmos DB integration")
+    # Unified Cosmos DB approach per Tech Spec
+    COSMOS_DB_ENABLED: bool = Field(default=True, description="Enable unified Cosmos DB integration")
     COSMOS_DB_URL: Optional[str] = Field(default=None, description="Cosmos DB endpoint URL")
     COSMOS_DB_KEY: Optional[str] = Field(default=None, description="Cosmos DB primary key")
     COSMOS_DB_DATABASE: str = Field(default="pathfinder", description="Cosmos DB database name")
+    COSMOS_DB_CONTAINER: str = Field(default="entities", description="Unified entities container name")
+    
+    # Legacy SQL Database (to be deprecated)
+    USE_SQL_DATABASE: bool = Field(default=False, description="Use SQL database (legacy)")
+    
+    # Legacy container names (deprecated - will be removed after migration)
     COSMOS_DB_CONTAINER_ITINERARIES: str = Field(
-        default="itineraries", description="Itineraries container name"
+        default="itineraries", description="Legacy: Itineraries container name"
     )
     COSMOS_DB_CONTAINER_MESSAGES: str = Field(
-        default="messages", description="Messages container name"
+        default="messages", description="Legacy: Messages container name"
     )
     COSMOS_DB_CONTAINER_PREFERENCES: str = Field(
-        default="preferences", description="Preferences container name"
+        default="preferences", description="Legacy: Preferences container name"
     )
 
     # ==================== CACHE CONFIGURATION ====================
@@ -100,14 +107,10 @@ class UnifiedSettings(BaseSettings):
     USE_REDIS_CACHE: bool = Field(default=False, description="Use Redis for caching")
 
     # ==================== AUTHENTICATION CONFIGURATION ====================
-    # Microsoft Entra External ID Configuration (replaces Auth0)
+    # Microsoft Entra ID Configuration (Vedprakash Domain Standard)
     ENTRA_EXTERNAL_TENANT_ID: Optional[str] = Field(
-        default_factory=lambda: (
-            "test-tenant-id"
-            if os.getenv("ENVIRONMENT", "").lower() in ["test", "testing"]
-            else None
-        ),
-        description="Microsoft Entra External ID tenant ID",
+        default='vedid.onmicrosoft.com',  # ✅ Fixed to Vedprakash domain standard
+        description="Microsoft Entra ID tenant ID - Vedprakash domain standard",
     )
     ENTRA_EXTERNAL_CLIENT_ID: Optional[str] = Field(
         default_factory=lambda: (
@@ -115,15 +118,11 @@ class UnifiedSettings(BaseSettings):
             if os.getenv("ENVIRONMENT", "").lower() in ["test", "testing"]
             else None
         ),
-        description="Microsoft Entra External ID application client ID",
+        description="Microsoft Entra ID application client ID",
     )
     ENTRA_EXTERNAL_AUTHORITY: Optional[str] = Field(
-        default_factory=lambda: (
-            f"https://login.microsoftonline.com/{os.getenv('ENTRA_EXTERNAL_TENANT_ID', 'test-tenant-id')}"
-            if not os.getenv("ENVIRONMENT", "").lower() in ["test", "testing"]
-            else "https://login.microsoftonline.com/test-tenant-id"
-        ),
-        description="Microsoft Entra External ID authority URL",
+        default='https://login.microsoftonline.com/vedid.onmicrosoft.com',  # ✅ Fixed to Vedprakash domain
+        description="Microsoft Entra ID authority URL - Vedprakash domain standard",
     )
     ENTRA_EXTERNAL_CLIENT_SECRET: Optional[str] = Field(
         default_factory=lambda: (
@@ -131,7 +130,7 @@ class UnifiedSettings(BaseSettings):
             if os.getenv("ENVIRONMENT", "").lower() in ["test", "testing"]
             else None
         ),
-        description="Microsoft Entra External ID client secret (optional for public clients)",
+        description="Microsoft Entra ID client secret (optional for public clients)",
     )
     JWT_ALGORITHM: str = Field(default="RS256", description="JWT signing algorithm")
     JWT_EXPIRATION: int = Field(

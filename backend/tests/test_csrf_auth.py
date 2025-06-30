@@ -7,7 +7,7 @@ from unittest.mock import patch, AsyncMock
 from fastapi.testclient import TestClient
 from fastapi import status
 from app.main import app
-from app.core.security import User
+from app.core.security import VedUser
 from uuid import uuid4
 import os
 
@@ -45,10 +45,12 @@ def test_trips_with_testing_env(testing_env):
     assert settings.is_testing is True
 
     # Create a test user
-    test_user = User(
+    test_user = VedUser(
         id=str(uuid4()),
         email="test@example.com",
-        roles=["user"],
+        name="Test User",
+        givenName="Test",
+        familyName="User",
         permissions=["create:trips", "read:trips", "update:trips", "delete:trips"],
     )
 
@@ -93,10 +95,12 @@ def test_trips_with_csrf_token():
 
     if csrf_token:
         # Create a test user
-        test_user = User(
+        test_user = VedUser(
             id=str(uuid4()),
             email="test@example.com",
-            roles=["user"],
+            name="Test User", 
+            givenName="Test",
+            familyName="User",
             permissions=["create:trips"],
         )
 

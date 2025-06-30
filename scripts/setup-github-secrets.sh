@@ -92,15 +92,14 @@ set_secret "SQL_ADMIN_PASSWORD" "Strong database password (12+ chars)" "(hidden)
 
 set_secret "OPENAI_API_KEY" "OpenAI API key for AI features" "sk-..."
 
-echo "🎯 Optional: Auth0 configuration (skip if not using authentication)"
+echo "🎯 Optional: Azure Entra ID configuration (skip if not using authentication)"
 echo ""
 
-read -p "Do you want to configure Auth0? (y/N): " configure_auth0
-if [[ "$configure_auth0" =~ ^[Yy]$ ]]; then
-    set_secret "AUTH0_DOMAIN" "Auth0 domain" "your-tenant.auth0.com"
-    set_secret "AUTH0_CLIENT_ID" "Auth0 client ID" "your-client-id"
-    set_secret "AUTH0_CLIENT_SECRET" "Auth0 client secret" "(hidden)"
-    set_secret "AUTH0_AUDIENCE" "Auth0 audience" "https://api.pathfinder.com"
+read -p "Do you want to configure Azure Entra ID? (y/N): " configure_azure
+if [[ "$configure_azure" =~ ^[Yy]$ ]]; then
+    set_secret "AZURE_TENANT_ID" "Azure Tenant ID" "your-tenant-id"
+    set_secret "AZURE_CLIENT_ID" "Azure Client ID" "your-client-id"
+    set_secret "AZURE_CLIENT_SECRET" "Azure Client Secret" "(hidden)"
 fi
 
 echo ""

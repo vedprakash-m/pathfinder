@@ -8,7 +8,7 @@ from unittest.mock import patch, AsyncMock
 from fastapi.testclient import TestClient
 from fastapi import status
 from app.main import app
-from app.core.security import User
+from app.core.security import VedUser
 from app.core.config import get_settings
 from uuid import uuid4
 import jwt

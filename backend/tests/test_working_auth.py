@@ -7,7 +7,7 @@ from unittest.mock import patch, AsyncMock
 from fastapi.testclient import TestClient
 from fastapi import status
 from app.main import app
-from app.core.security import User, TokenData
+from app.core.security import VedUser, TokenData
 from uuid import uuid4
 
 
@@ -21,10 +21,12 @@ def test_trips_with_complete_mocking():
 
     # Create a test user
     test_user_id = str(uuid4())
-    test_user = User(
+    test_user = VedUser(
         id=test_user_id,
         email="test@example.com",
-        roles=["user"],
+        name="Test User",
+        givenName="Test",
+        familyName="User",
         permissions=["create:trips", "read:trips", "update:trips", "delete:trips"],
     )
 
