@@ -28,11 +28,11 @@ repos:
       - id: isort
         args: ["--profile", "black"]
 
-  - repo: https://github.com/joaopalmeiro/pre-commit-hooks
-    rev: v2.5.0
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
     hooks:
       - id: check-added-large-files
-        args: ["--maxkb", "512"]
+        args: ["--maxkb=512"]
 
   - repo: https://github.com/seddonym/import-linter
     rev: v2.3.0
