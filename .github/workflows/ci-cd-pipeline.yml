@@ -79,6 +79,7 @@ jobs:
           ENTRA_EXTERNAL_AUTHORITY: "https://test-tenant-id.ciamlogin.com/test-tenant-id.onmicrosoft.com"
           OPENAI_API_KEY: "sk-test-key-for-testing"
           GOOGLE_MAPS_API_KEY: "test-maps-key-for-testing"
+          # Cosmos DB will be automatically disabled in testing environment
         run: |
           cd backend
           python -m pip install --upgrade pip

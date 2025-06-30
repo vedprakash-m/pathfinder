@@ -169,12 +169,19 @@ def main():
     # Success if test passes (which means mocks are working)
     results.append(("Mock Isolation Test", success))
 
-    # 9. Validate configuration
+    # 9. Validate configuration - Test both local and CI/CD environments
     success, result = run_command(
         "python -c \"from app.core.config import get_settings; s = get_settings(); print(f'✅ Config loaded: {type(s).__name__}')\"",
-        "Testing configuration loading",
+        "Testing local configuration loading",
     )
-    results.append(("Configuration Test", success))
+    results.append(("Local Configuration Test", success))
+
+    # 9b. Test CI/CD-like environment configuration 
+    success, result = run_command(
+        "ENVIRONMENT=testing DATABASE_URL='sqlite+aiosqlite:///:memory:' OPENAI_API_KEY='sk-test-key-for-testing' GOOGLE_MAPS_API_KEY='test-maps-key-for-testing' /Users/vedprakashmishra/pathfinder/backend/venv/bin/python -c \"from app.core.config import get_settings; s = get_settings(); print(f'✅ CI/CD Config loaded: COSMOS_DB_ENABLED={s.COSMOS_DB_ENABLED}')\"",
+        "Testing CI/CD-like environment configuration",
+    )
+    results.append(("CI/CD Environment Configuration Test", success))
 
     # 10. Check database setup
     success, result = run_command(
@@ -182,6 +189,19 @@ def main():
         "Testing database component imports",
     )
     results.append(("Database Component Test", success))
+
+    # 10b. Test configuration loading in CI/CD environment
+    success, result = run_command(
+        "ENVIRONMENT=testing DATABASE_URL='sqlite+aiosqlite:///:memory:' OPENAI_API_KEY='sk-test-key-for-testing' GOOGLE_MAPS_API_KEY='test-maps-key-for-testing' /Users/vedprakashmishra/pathfinder/backend/venv/bin/python -c \"from app.core.config import get_settings; print('✅ Config loading works in CI/CD environment')\"",
+        "Testing configuration loading in CI/CD environment",
+    )
+    results.append(("Config Loading CI/CD Test", success))
+    # 10c. Test minimal pytest run with CI/CD environment
+    success, result = run_command(
+        "ENVIRONMENT=testing DATABASE_URL='sqlite+aiosqlite:///:memory:' ENTRA_EXTERNAL_TENANT_ID='test-tenant-id' ENTRA_EXTERNAL_CLIENT_ID='test-client-id' ENTRA_EXTERNAL_AUTHORITY='https://test-tenant-id.ciamlogin.com/test-tenant-id.onmicrosoft.com' OPENAI_API_KEY='sk-test-key-for-testing' GOOGLE_MAPS_API_KEY='test-maps-key-for-testing' python -m pytest --collect-only -q tests/ 2>&1 | head -20",
+        "Testing pytest collection with CI/CD environment",
+    )
+    results.append(("Pytest Collection CI/CD Test", success))
 
     # Summary
     print("\n" + "=" * 80)

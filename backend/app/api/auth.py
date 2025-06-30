@@ -10,6 +10,7 @@ from datetime import datetime
 from app.core.database_unified import get_cosmos_service
 from app.core.security import get_current_active_user
 from app.core.zero_trust import require_permissions
+from app.models.user import User
 from app.repositories.cosmos_unified import UserDocument, UnifiedCosmosRepository
 from app.schemas.auth import (
     UserCreate, UserUpdate, UserProfile, UserResponse, 

@@ -72,7 +72,13 @@ class UnifiedSettings(BaseSettings):
 
     # ==================== COSMOS DB CONFIGURATION ====================
     # Unified Cosmos DB approach per Tech Spec
-    COSMOS_DB_ENABLED: bool = Field(default=True, description="Enable unified Cosmos DB integration")
+    COSMOS_DB_ENABLED: bool = Field(
+        default_factory=lambda: (
+            False if os.getenv("ENVIRONMENT", "").lower() in ["test", "testing", "ci"] 
+            else True
+        ), 
+        description="Enable unified Cosmos DB integration"
+    )
     COSMOS_DB_URL: Optional[str] = Field(default=None, description="Cosmos DB endpoint URL")
     COSMOS_DB_KEY: Optional[str] = Field(default=None, description="Cosmos DB primary key")
     COSMOS_DB_DATABASE: str = Field(default="pathfinder", description="Cosmos DB database name")
@@ -138,11 +144,11 @@ class UnifiedSettings(BaseSettings):
     )
 
     # ==================== AI SERVICES CONFIGURATION ====================
-    OPENAI_API_KEY: str = Field(
+    OPENAI_API_KEY: Optional[str] = Field(
         default_factory=lambda: (
             "sk-test-key-for-testing"
-            if os.getenv("ENVIRONMENT", "").lower() in ["test", "testing"]
-            else None
+            if os.getenv("ENVIRONMENT", "").lower() in ["test", "testing", "ci"]
+            else os.getenv("OPENAI_API_KEY")
         ),
         description="OpenAI API key",
     )
@@ -155,11 +161,11 @@ class UnifiedSettings(BaseSettings):
     OPENAI_TIMEOUT: int = Field(default=60, ge=10, le=300, description="API request timeout")
 
     # ==================== EXTERNAL SERVICES ====================
-    GOOGLE_MAPS_API_KEY: str = Field(
+    GOOGLE_MAPS_API_KEY: Optional[str] = Field(
         default_factory=lambda: (
             "test-maps-key-for-testing"
-            if os.getenv("ENVIRONMENT", "").lower() in ["test", "testing"]
-            else None
+            if os.getenv("ENVIRONMENT", "").lower() in ["test", "testing", "ci"]
+            else os.getenv("GOOGLE_MAPS_API_KEY")
         ),
         description="Google Maps API key",
     )
@@ -353,7 +359,15 @@ class UnifiedSettings(BaseSettings):
         """Validate database configuration consistency."""
         if self.COSMOS_DB_ENABLED:
             if not self.COSMOS_DB_URL or not self.COSMOS_DB_KEY:
-                raise ValueError("Cosmos DB is enabled but URL or KEY is missing")
+                # Be more lenient in test environments
+                if self.ENVIRONMENT.lower() in ["test", "testing", "ci"]:
+                    logger.warning(
+                        "Cosmos DB is enabled but URL or KEY is missing in test environment - "
+                        "disabling Cosmos DB automatically"
+                    )
+                    self.COSMOS_DB_ENABLED = False
+                else:
+                    raise ValueError("Cosmos DB is enabled but URL or KEY is missing")
 
         if self.USE_REDIS_CACHE and not self.REDIS_URL:
             logger.warning(

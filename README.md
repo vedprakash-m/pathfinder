@@ -4,6 +4,8 @@
 [![Infrastructure Management](https://github.com/vedprakash-m/pathfinder/actions/workflows/infrastructure-management.yml/badge.svg)](https://github.com/vedprakash-m/pathfinder/actions)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
 
+> **🔧 Latest Update**: Enhanced CI/CD reliability with environment-aware configuration system. The pipeline now automatically handles test vs. production environment differences, ensuring consistent deployments.
+
 **Pathfinder** is a production-ready, AI-powered platform that transforms the chaotic process of planning multi-family group trips into a streamlined, collaborative experience. By centralizing communication, gathering preferences intelligently, and generating AI-powered itineraries, Pathfinder eliminates the typical frustrations of group travel planning.
 
 ---

@@ -10,6 +10,8 @@
 
 This guide covers the complete deployment process for Pathfinder after the successful Microsoft Entra External ID integration. The application uses simplified authentication with Microsoft identity services.
 
+> **📋 Configuration Updates**: Recent fixes ensure CI/CD pipeline compatibility with automatic environment-specific configuration. See [Configuration Environment Fixes](docs/configuration-environment-fixes.md) for details on how the system handles test vs. production environments.
+
 ## 📋 Prerequisites
 
 ### Required Tools
@@ -364,4 +366,4 @@ curl https://your-backend-url/health/detailed
 
 ---
 
-**🎉 Congratulations!** Your Pathfinder application is now running with Microsoft Entra External ID authentication, providing enterprise-grade security with simplified configuration and significant cost savings. 
+**🎉 Congratulations!** Your Pathfinder application is now running with Microsoft Entra External ID authentication, providing enterprise-grade security with simplified configuration and significant cost savings.
