@@ -35,7 +35,7 @@ repos:
         args: ["--maxkb=512"]
 
   - repo: https://github.com/seddonym/import-linter
-    rev: v2.3.0
+    rev: v2.0.0
     hooks:
       - id: lint-imports
         name: "Import Linter – enforce layer contracts"
