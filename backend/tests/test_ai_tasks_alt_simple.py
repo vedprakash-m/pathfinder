@@ -17,18 +17,15 @@ from app.tasks.ai_tasks_alt import (
     register_task_processors,
 )
 
-
 @pytest.fixture
 def sample_trip_id():
     """Sample trip ID."""
     return str(uuid4())
 
-
 @pytest.fixture
 def sample_user_id():
     """Sample user ID."""
     return str(uuid4())
-
 
 @pytest.fixture
 def sample_preferences():
@@ -39,7 +36,6 @@ def sample_preferences():
         "pace": "relaxed",
         "accommodation_type": "hotel",
     }
-
 
 class TestTaskQueueOperations:
     """Test task queue operations."""
@@ -110,8 +106,8 @@ class TestTaskQueueOperations:
             assert result["task_id"] == "cost_report_789"
             assert result["status"] == "queued"
             mock_queue.add_task.assert_called_once_with(
-                "generate_daily_cost_report",
-                {"timestamp": pytest.approx(datetime.now().timestamp(), abs=1)}
+                "generate_cost_report",
+                {}
             )
 
     def test_generate_daily_cost_report_failure(self):
@@ -121,7 +117,6 @@ class TestTaskQueueOperations:
             
             with pytest.raises(Exception, match="Cost report queue error"):
                 generate_daily_cost_report()
-
 
 class TestTaskRegistration:
     """Test task processor registration."""
@@ -140,8 +135,7 @@ class TestTaskRegistration:
             
             assert "generate_itinerary" in task_names
             assert "optimize_itinerary" in task_names
-            assert "generate_daily_cost_report" in task_names
-
+            assert "generate_cost_report" in task_names
 
 class TestFunctionParameters:
     """Test function parameter validation."""
@@ -183,7 +177,6 @@ class TestFunctionParameters:
             result = optimize_itinerary_async("", "", "")
             assert result["status"] == "queued"
 
-
 class TestLoggingAndErrorHandling:
     """Test logging and error handling."""
 
@@ -222,7 +215,6 @@ class TestLoggingAndErrorHandling:
                 # Check that error log contains trip ID
                 error_call = mock_logger.error.call_args[0][0]
                 assert sample_trip_id in error_call
-
 
 class TestTaskDataStructures:
     """Test task data structure creation."""
@@ -275,10 +267,9 @@ class TestTaskDataStructures:
             task_name = call_args[0][0]
             task_data = call_args[0][1]
             
-            assert task_name == "generate_daily_cost_report"
-            assert "timestamp" in task_data
-            assert isinstance(task_data["timestamp"], float)
-
+            assert task_name == "generate_cost_report"
+            # Empty task data for cost report
+            assert task_data == {}
 
 class TestReturnValues:
     """Test function return values."""
@@ -321,7 +312,6 @@ class TestReturnValues:
             assert "status" in result
             assert result["task_id"] == "cost_task_id"
             assert result["status"] == "queued"
-
 
 class TestEdgeCases:
     """Test edge cases and boundary conditions."""

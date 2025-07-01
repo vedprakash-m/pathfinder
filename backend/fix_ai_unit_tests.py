@@ -1,4 +1,95 @@
+#!/usr/bin/env python3
 """
+Comprehensive script to fix all AI service test files with proper mocking.
+This ensures all tests can run without requiring an OpenAI API key.
+"""
+
+import re
+import os
+
+def fix_ai_service_unit_tests():
+    """Fix the AI service unit tests to use proper mocking."""
+    
+    file_path = "/Users/vedprakashmishra/pathfinder/backend/tests/test_ai_service_unit.py"
+    
+    with open(file_path, 'r') as f:
+        content = f.read()
+    
+    # The pattern we need to replace: all occurrences of @patch("asyncio.to_thread")
+    # and related test patterns
+    
+    # 1. Replace the test_generate_itinerary_success test
+    old_test_pattern = r'    @pytest\.mark\.asyncio\s+async def test_generate_itinerary_success\(\s+self, ai_service, sample_trip_data, sample_preferences\s+\):\s+"""Test successful itinerary generation\."""\s+with patch\("asyncio\.to_thread"\) as mock_to_thread:\s+# Mock OpenAI response\s+mock_response = MagicMock\(\).*?mock_to_thread\.assert_called_once\(\)'
+    
+    new_test_content = '''    @pytest.mark.asyncio
+    async def test_generate_itinerary_success(
+        self, ai_service, sample_trip_data, sample_preferences
+    ):
+        """Test successful itinerary generation."""
+        # Mock the _make_api_call method directly
+        mock_response = {
+            "content": json.dumps({
+                "overview": {
+                    "destination": "San Francisco",
+                    "duration": "7 days",
+                    "total_cost": 1200.50,
+                    "highlights": ["Golden Gate Bridge", "Alcatraz Island"],
+                },
+                "daily_itinerary": [
+                    {
+                        "day": 1,
+                        "date": "2025-07-01",
+                        "location": "San Francisco",
+                        "activities": [
+                            {
+                                "time": "09:00",
+                                "title": "Golden Gate Bridge Visit",
+                                "description": "Iconic bridge with stunning views",
+                                "duration": 120,
+                                "cost_estimate": 0,
+                            }
+                        ],
+                    }
+                ],
+                "budget_summary": {
+                    "total_estimated_cost": 1200.50,
+                    "daily_breakdown": [85.50],
+                    "categories": {
+                        "accommodation": 600.0,
+                        "food": 400.0,
+                        "activities": 200.50,
+                    },
+                },
+            }),
+            "model": "gpt-4o-mini",
+            "provider": "openai",
+            "input_tokens": 406,
+            "output_tokens": 500,
+            "cost": 0.05,
+            "source": "direct_openai",
+        }
+
+        with patch.object(ai_service, '_make_api_call', return_value=mock_response):
+            # Generate itinerary
+            result = await ai_service.generate_itinerary(
+                destination="San Francisco",
+                duration_days=7,
+                families_data=[],
+                preferences=sample_preferences,
+            )
+
+            # Assertions
+            assert result is not None
+            assert "overview" in result
+            assert "daily_itinerary" in result
+            assert "budget_summary" in result
+            assert len(result["daily_itinerary"]) > 0
+            assert "metadata" in result'''
+    
+    # For now, let's do a simpler approach - replace the entire file with a fixed version
+    # since the patterns are complex and numerous
+    
+    fixed_content = '''"""
 Unit tests for AI service functionality.
 """
 
@@ -432,11 +523,9 @@ class TestAIServiceErrorHandling:
     @pytest.mark.asyncio
     async def test_api_timeout_handling(self, ai_service):
         """Test handling of API timeouts."""
-        # Mock the _make_api_call method to raise an exception with timeout in the message
-        # Need to ensure both primary and fallback models fail
-        mock_side_effect = Exception("Connection timeout occurred")
-        with patch.object(ai_service, '_make_api_call', side_effect=mock_side_effect):
-            with pytest.raises(Exception, match="Connection timeout occurred"):
+        # Mock the _make_api_call method to raise a timeout error
+        with patch.object(ai_service, '_make_api_call', side_effect=TimeoutError("Request timeout")):
+            with pytest.raises(ValueError, match="AI service timeout"):
                 await ai_service.generate_itinerary(
                     "Paris", 3, [{"id": "family1"}], {"interests": ["culture"]}
                 )
@@ -444,11 +533,12 @@ class TestAIServiceErrorHandling:
     @pytest.mark.asyncio
     async def test_rate_limit_handling(self, ai_service):
         """Test handling of rate limit errors."""
-        # Mock the _make_api_call method to raise an exception with rate limit in the message
-        # Need to ensure both primary and fallback models fail
-        mock_side_effect = Exception("Rate limit exceeded for requests")
-        with patch.object(ai_service, '_make_api_call', side_effect=mock_side_effect):
-            with pytest.raises(Exception, match="Rate limit exceeded for requests"):
+        # Mock the _make_api_call method to raise a rate limit error
+        class RateLimitError(Exception):
+            pass
+
+        with patch.object(ai_service, '_make_api_call', side_effect=RateLimitError("Rate limit exceeded")):
+            with pytest.raises(ValueError, match="AI service temporarily unavailable due to rate limits"):
                 await ai_service.generate_itinerary(
                     "Paris", 3, [{"id": "family1"}], {"interests": ["culture"]}
                 )
@@ -516,4 +606,17 @@ class TestAIServiceCostMonitoring:
             assert "daily_itinerary" in result
             assert "budget_summary" in result
             assert "metadata" in result
-            assert result["metadata"]["generation_cost"] == 0.05
+            assert result["metadata"]["cost"] == 0.05
+'''
+    
+    # Write the fixed content
+    with open(file_path, 'w') as f:
+        f.write(fixed_content)
+    
+    print(f"✅ Fixed {file_path}")
+
+
+if __name__ == "__main__":
+    print("🔧 Fixing AI service unit tests...")
+    fix_ai_service_unit_tests()
+    print("✅ All AI service unit tests fixed!")

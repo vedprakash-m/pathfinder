@@ -48,50 +48,51 @@ def run_command(cmd, description):
 
 def check_critical_imports():
     """Check critical imports that caused CI/CD failures."""
-    print_colored("\n🔍 CRITICAL IMPORT VALIDATION", 'blue')
+    print_colored("\n🔍 COMPREHENSIVE IMPORT VALIDATION", 'blue')
     
-    critical_modules = [
-        'app.api.feedback',
-        'app.api.trips', 
+    # Auto-discover ALL API modules instead of hardcoding
+    api_modules = []
+    import os
+    api_dir = "app/api"
+    if os.path.exists(api_dir):
+        for file in os.listdir(api_dir):
+            if file.endswith('.py') and file != '__init__.py':
+                module_name = f"app.api.{file[:-3]}"
+                api_modules.append(module_name)
+    
+    core_modules = [
         'app.core.dependencies',
-        # 'app.main'  # Skip due to pandas/numpy binary compatibility issue in local dev
+        'app.main'
     ]
+    
+    critical_modules = api_modules + core_modules
     
     import_script = f"""
 import sys
 failed = []
-modules = {critical_modules}
+api_modules = {api_modules}
+core_modules = {core_modules}
+modules = api_modules + core_modules
+
+print(f'🔍 Testing {{len(modules)}} modules ({{len(api_modules)}} API + {{len(core_modules)}} core):')
 
 for module_name in modules:
     try:
         __import__(module_name)
         print(f'✅ {{module_name}}: OK')
     except Exception as e:
-        print(f'❌ {{module_name}}: {{str(e)}}')
+        print(f'❌ {{module_name}}: {{str(e)[:80]}}...')
         failed.append((module_name, str(e)))
-
-# Special handling for app.main (may have pandas/numpy binary issues in local dev)
-print('\\n🔍 Testing app.main (with binary compatibility handling):')
-try:
-    __import__('app.main')
-    print('✅ app.main: OK')
-except Exception as e:
-    error_str = str(e)
-    if 'numpy.dtype size changed' in error_str:
-        print('⚠️ app.main: Binary compatibility issue (pandas/numpy)')
-        print('   This is common in local dev but should work in CI/CD')
-        print('   Run: python fix_environment.py to resolve')
-    else:
-        print(f'❌ app.main: {{error_str}}')
-        failed.append(('app.main', error_str))
 
 if failed:
     print(f'\\nFAILED: {{len(failed)}} critical modules')
     for module, error in failed:
-        print(f'  {{module}}: {{error}}')
+        print(f'  {{module}}: {{error[:100]}}...')
     sys.exit(1)
 else:
     print(f'\\n🎉 All {{len(modules)}} critical modules importing successfully!')
+    print(f'   - API modules tested: {{len(api_modules)}}')
+    print(f'   - Core modules tested: {{len(core_modules)}}')
 """
     
     result = subprocess.run([

@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from ..core.database_unified import get_cosmos_repository
 from ..core.logging_config import get_logger
 from ..core.zero_trust import require_permissions
+from ..models.user import User
 from ..repositories.cosmos_unified import UnifiedCosmosRepository
 
 router = APIRouter(tags=["reservations"])

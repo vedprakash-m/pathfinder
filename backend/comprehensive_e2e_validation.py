@@ -91,7 +91,7 @@ def run_command(cmd: List[str], description: str, capture_output: bool = True,
 
 def check_python_imports() -> Tuple[bool, List[str]]:
     """Check all Python modules for import errors - CRITICAL for CI/CD."""
-    print_section("IMPORT VALIDATION")
+    print_section("COMPREHENSIVE IMPORT VALIDATION")
     
     app_dir = Path("app")
     if not app_dir.exists():
@@ -103,13 +103,21 @@ def check_python_imports() -> Tuple[bool, List[str]]:
     
     print_info(f"Checking {len(python_files)} Python files for import errors...")
     
-    # Critical modules that must import successfully
-    critical_modules = [
+    # CRITICAL: Test ALL modules systematically - this was our gap!
+    critical_modules = []
+    
+    # Auto-discover all API modules
+    api_modules = []
+    for py_file in app_dir.glob("api/*.py"):
+        if py_file.name != "__init__.py":
+            module_name = f"app.api.{py_file.stem}"
+            api_modules.append(module_name)
+    
+    critical_modules.extend(api_modules)
+    
+    # Add core modules
+    core_modules = [
         "app.main",
-        "app.api.feedback",
-        "app.api.trips",
-        "app.api.auth", 
-        "app.api.websocket",
         "app.core.dependencies",
         "app.core.database",
         "app.core.database_unified",
@@ -117,8 +125,11 @@ def check_python_imports() -> Tuple[bool, List[str]]:
         "app.models.user",
         "app.models.trip"
     ]
+    critical_modules.extend(core_modules)
     
-    print_info("Testing critical modules:")
+    print_info(f"Testing {len(critical_modules)} critical modules:")
+    print_info(f"API modules: {len(api_modules)}, Core modules: {len(core_modules)}")
+    
     for module_name in critical_modules:
         try:
             __import__(module_name)
@@ -146,9 +157,11 @@ def check_python_imports() -> Tuple[bool, List[str]]:
     total_errors = len(failed_imports) + len(syntax_errors)
     if total_errors == 0:
         print_success("All import and syntax checks passed!")
+        print_info(f"Validated {len(critical_modules)} critical modules and {len(python_files)} Python files")
         return True, []
     else:
         print_error(f"Found {total_errors} import/syntax errors")
+        print_error(f"Import errors: {len(failed_imports)}, Syntax errors: {len(syntax_errors)}")
         return False, failed_imports + syntax_errors
 
 
