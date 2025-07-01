@@ -78,6 +78,9 @@ mypy==1.7.1
 # Environment and configuration
 python-dotenv==1.0.0
 
+# Monitoring and Observability
+structlog==23.2.0
+
 # Dependency Injection
 # Dependency injection (pinned to compatible version)
 # Note: dependency-injector has compilation issues with Python 3.12+

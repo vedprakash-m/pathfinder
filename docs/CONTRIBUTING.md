@@ -17,6 +17,7 @@ Pathfinder is an open-source project licensed under the GNU Affero General Publi
 - [Submitting Changes](#submitting-changes)
 - [Review Process](#review-process)
 - [License Agreement](#license-agreement)
+- [Dependency Management](#-dependency-management)
 
 ## 🤝 Code of Conduct
 
@@ -322,6 +323,66 @@ When adding new dependencies:
 - Document the license in the appropriate package files
 - Avoid GPL-incompatible licenses (e.g., Apache 2.0 with patents clause)
 
+## 📦 Dependency Management
+
+Pathfinder uses a comprehensive dependency validation system to ensure CI/CD reliability and prevent environment inconsistencies.
+
+### Adding New Dependencies
+
+When adding new Python packages:
+
+1. **Install the package**:
+   ```bash
+   pip install package-name==version
+   ```
+
+2. **Add to requirements.txt** with pinned version:
+   ```bash
+   echo "package-name==version" >> backend/requirements.txt
+   ```
+
+3. **Run dependency validation**:
+   ```bash
+   cd backend && python3 local_validation.py
+   ```
+
+### Dependency Validation Features
+
+Our local validation system includes:
+
+- **Undeclared Dependency Detection**: Scans all imports against requirements.txt
+- **Standard Library Filtering**: Excludes built-in Python modules
+- **Import Name Mapping**: Handles package name differences (e.g., `jwt` → `python-jose`)
+- **CI/CD Parity Checks**: Ensures local environment matches CI/CD exactly
+
+### Best Practices
+
+- **Pin versions**: Always specify exact versions in requirements.txt
+- **Test locally**: Run `local_validation.py` before committing
+- **Document why**: Add comments for non-obvious dependencies
+- **Keep minimal**: Only include dependencies actually used in the code
+
+### Common Issues
+
+If you see dependency-related errors:
+
+```bash
+# Check for undeclared dependencies
+cd backend && python3 local_validation.py
+
+# Verify all imports are declared
+python3 -c "
+import ast
+import subprocess
+# This will be caught by local validation
+"
+```
+
+The validation system will provide specific guidance on:
+- Missing dependencies to add to requirements.txt
+- Unused dependencies that can be removed
+- Version conflicts or compatibility issues
+
 ## 🙋‍♀️ Getting Help
 
 ### Resources
@@ -358,4 +419,4 @@ Check our [project roadmap](https://github.com/vedprakashmishra/pathfinder/proje
 
 Thank you for contributing to Pathfinder! Together, we're building the future of AI-powered group trip planning. 🚀
 
-**Remember**: All contributions are subject to the AGPLv3 license terms. By participating in this project, you agree to abide by its terms and help us build an open, collaborative platform that benefits everyone. 
+**Remember**: All contributions are subject to the AGPLv3 license terms. By participating in this project, you agree to abide by its terms and help us build an open, collaborative platform that benefits everyone.

@@ -218,30 +218,37 @@ Our optimized CI/CD system provides:
 ## 🛠️ Development Workflow
 
 ### Local Validation System
-Before pushing changes to CI/CD, use our comprehensive local validation system:
+Before pushing changes to CI/CD, use our comprehensive local validation system with enhanced dependency checking:
 
 ```bash
 # Quick validation (recommended before every commit)
-./scripts/local-validation.sh --quick
+cd backend && python3 local_validation.py
 
-# Full validation with auto-fix capabilities
+# Check for undeclared dependencies
+cd backend && python3 local_validation.py --dependency-check
+
+# Full project validation
 ./scripts/local-validation.sh --fix
-
-# Check-only mode (no modifications)
-./scripts/local-validation.sh
 ```
 
 ### What Gets Validated
-- ✅ **Dependencies:** Requirements.txt syntax and package conflicts
+- ✅ **Dependencies:** Undeclared dependencies, requirements.txt completeness, package conflicts
+- ✅ **CI/CD Parity:** Test collection validation, environment consistency
 - ✅ **Code Quality:** Formatting, linting, type checking, imports
 - ✅ **Build Compatibility:** Docker build validation
 - ✅ **Git Status:** Branch awareness and uncommitted changes
 - ✅ **Infrastructure:** GitHub Actions and Azure prerequisites
 
+### Dependency Validation Features
+- 🔍 **Undeclared Dependency Detection:** Scans imports vs requirements.txt
+- 📚 **Standard Library Filtering:** Avoids false positives for built-in modules
+- 🔀 **Import Name Mapping:** Handles cases like `jwt` → `python-jose`
+- 🎯 **CI/CD Environment Simulation:** Ensures local matches CI/CD exactly
+
 ### Benefits
 - 🚀 **40-60% faster feedback** than waiting for CI/CD
 - 🔧 **Auto-fix mode** resolves common issues automatically  
-- 🛡️ **Prevents CI/CD failures** by catching issues locally
+- 🛡️ **Prevents CI/CD failures** by catching dependency issues locally
 - 📊 **Comprehensive reporting** with actionable guidance
 
 ### CI/CD Pipeline

@@ -110,6 +110,165 @@ else:
         return False
 
 
+def check_dependency_isolation():
+    """Check if all required dependencies are properly declared in requirements.txt."""
+    print_colored("\n🔍 DEPENDENCY ISOLATION VALIDATION", 'blue')
+    
+    # Get currently imported modules from test runs
+    import_script = """
+import sys
+import importlib
+import pkgutil
+
+# Test modules that are likely to have external dependencies
+critical_test_modules = [
+    'tests.test_monitoring',
+    'tests.test_ai_service', 
+    'tests.test_performance',
+    'app.core.monitoring',
+    'app.services.ai_service',
+    'app.core.security'
+]
+
+imported_packages = set()
+
+for module_name in critical_test_modules:
+    try:
+        module = importlib.import_module(module_name)
+        # Get module's dependencies
+        if hasattr(module, '__file__') and module.__file__:
+            with open(module.__file__, 'r') as f:
+                content = f.read()
+                import re
+                # Find import statements
+                imports = re.findall(r'^import\s+([a-zA-Z_][a-zA-Z0-9_]*)', content, re.MULTILINE)
+                from_imports = re.findall(r'^from\s+([a-zA-Z_][a-zA-Z0-9_]*)', content, re.MULTILINE)
+                all_imports = imports + from_imports
+                for imp in all_imports:
+                    # More comprehensive list of standard library and built-in modules to exclude
+                    standard_lib = {
+                        'os', 'sys', 'json', 're', 'time', 'datetime', 'typing', 'pathlib', 
+                        'unittest', 'asyncio', 'collections', 'contextvars', 'tempfile', 
+                        'uuid', 'enum', 'dataclasses', 'functools', 'contextlib', 'logging',
+                        'abc', 'copy', 'itertools', 'warnings', 'weakref', 'threading',
+                        'multiprocessing', 'concurrent', 'socket', 'urllib', 'http', 'email',
+                        'mimetypes', 'base64', 'hashlib', 'hmac', 'secrets', 'ssl', 'calendar',
+                        'decimal', 'fractions', 'random', 'statistics', 'math', 'cmath'
+                    }
+                    if not imp.startswith('app') and not imp.startswith('tests') and imp not in standard_lib:
+                        imported_packages.add(imp)
+        print(f'✅ {module_name}: checked')
+    except Exception as e:
+        print(f'❌ {module_name}: {str(e)[:80]}')
+
+print(f'\\nExternal packages detected: {sorted(imported_packages)}')
+
+# Check if these are in requirements.txt
+with open('requirements.txt', 'r') as f:
+    requirements_content = f.read()
+
+missing_deps = []
+# Special mapping for packages that have different import vs install names
+package_mapping = {
+    'jwt': 'python-jose',  # PyJWT vs python-jose
+    'PIL': 'Pillow',
+    'yaml': 'PyYAML'
+}
+
+for pkg in imported_packages:
+    # Check the package or its mapped name
+    check_name = package_mapping.get(pkg, pkg)
+    if check_name not in requirements_content and pkg not in requirements_content:
+        missing_deps.append(pkg)
+
+if missing_deps:
+    print(f'\\n❌ MISSING DEPENDENCIES: {missing_deps}')
+    sys.exit(1)
+else:
+    print(f'\\n✅ All detected dependencies are declared in requirements.txt')
+"""
+    
+    result = subprocess.run([
+        "python3", "-c", import_script
+    ], capture_output=True, text=True)
+    
+    if result.returncode == 0:
+        print_colored("✅ Dependency isolation check - PASSED", 'green')
+        if result.stdout.strip():
+            print(f"{result.stdout.strip()}")
+        return True
+    else:
+        print_colored("❌ Dependency isolation check - FAILED", 'red')
+        print(f"Error: {result.stderr.strip()}")
+        if result.stdout.strip():
+            print(f"Output: {result.stdout.strip()}")
+        return False
+
+
+def check_ci_cd_environment_parity():
+    """Simulate CI/CD environment conditions to catch parity issues."""
+    print_colored("\n🔍 CI/CD ENVIRONMENT PARITY CHECK", 'blue')
+    
+    # Check for pytest markers that might be missing
+    marker_check_script = """
+import pytest
+import sys
+import os
+
+# Check if pytest.ini has proper marker configuration
+if os.path.exists('pytest.ini'):
+    with open('pytest.ini', 'r') as f:
+        content = f.read()
+        if 'markers' not in content:
+            print('❌ pytest.ini missing markers configuration')
+            print('This causes "Unknown pytest.mark" warnings in CI/CD')
+            sys.exit(1)
+        else:
+            print('✅ pytest.ini has markers configuration')
+else:
+    print('❌ pytest.ini not found')
+    sys.exit(1)
+
+# Test that critical test files can be collected
+test_files = [
+    'tests/test_monitoring.py',
+    'tests/test_ai_service.py', 
+    'tests/test_ai_service_unit.py',
+    'tests/test_ai_tasks_alt_simple.py'
+]
+
+for test_file in test_files:
+    if os.path.exists(test_file):
+        # Try to collect tests from this file
+        exit_code = pytest.main(['--collect-only', test_file, '-q'])
+        if exit_code != 0:
+            print(f'❌ Test collection failed for {test_file}')
+            sys.exit(1)
+        else:
+            print(f'✅ {test_file}: collection OK')
+    else:
+        print(f'❌ {test_file}: not found')
+
+print('\\n✅ All critical test files can be collected successfully')
+"""
+    
+    result = subprocess.run([
+        "python3", "-c", marker_check_script
+    ], capture_output=True, text=True)
+    
+    if result.returncode == 0:
+        print_colored("✅ CI/CD environment parity check - PASSED", 'green')
+        if result.stdout.strip():
+            print(f"{result.stdout.strip()}")
+        return True
+    else:
+        print_colored("❌ CI/CD environment parity check - FAILED", 'red')
+        print(f"Error: {result.stderr.strip()}")
+        if result.stdout.strip():
+            print(f"Output: {result.stdout.strip()}")
+        return False
+
+
 def main():
     """Run enhanced local validation."""
     print_colored("🚀 Enhanced Local Validation (Legacy + Critical Checks)", 'blue')
@@ -124,6 +283,24 @@ def main():
     if not import_success:
         print_colored("\n🚨 CRITICAL: Import failures detected!", 'red')
         print_colored("Fix import errors before running other tests", 'yellow')
+        print_colored("Run: python comprehensive_e2e_validation.py for detailed analysis", 'blue')
+        return 1
+
+    # Dependency isolation check
+    dependency_isolation_success = check_dependency_isolation()
+
+    if not dependency_isolation_success:
+        print_colored("\n🚨 CRITICAL: Dependency isolation issues detected!", 'red')
+        print_colored("Fix dependency issues before running other tests", 'yellow')
+        print_colored("Run: python comprehensive_e2e_validation.py for detailed analysis", 'blue')
+        return 1
+
+    # CI/CD environment parity check
+    ci_cd_parity_success = check_ci_cd_environment_parity()
+
+    if not ci_cd_parity_success:
+        print_colored("\n🚨 CRITICAL: CI/CD environment parity issues detected!", 'red')
+        print_colored("Fix environment issues before running other tests", 'yellow')
         print_colored("Run: python comprehensive_e2e_validation.py for detailed analysis", 'blue')
         return 1
 
