@@ -55,7 +55,7 @@ class UnifiedSettings(BaseSettings):
         default_factory=lambda: (
             "sqlite+aiosqlite:///:memory:"
             if os.getenv("ENVIRONMENT", "").lower() in ["test", "testing"]
-            else "sqlite:///pathfinder.db"
+            else "sqlite+aiosqlite:///pathfinder.db"
         ),
         description="Primary database connection URL",
     )
@@ -73,10 +73,7 @@ class UnifiedSettings(BaseSettings):
     # ==================== COSMOS DB CONFIGURATION ====================
     # Unified Cosmos DB approach per Tech Spec
     COSMOS_DB_ENABLED: bool = Field(
-        default_factory=lambda: (
-            False if os.getenv("ENVIRONMENT", "").lower() in ["test", "testing", "ci"] 
-            else True
-        ), 
+        default=False,  # Simplified: disabled by default for cost optimization
         description="Enable unified Cosmos DB integration"
     )
     COSMOS_DB_URL: Optional[str] = Field(default=None, description="Cosmos DB endpoint URL")
@@ -119,11 +116,7 @@ class UnifiedSettings(BaseSettings):
         description="Microsoft Entra ID tenant ID - Vedprakash domain standard",
     )
     ENTRA_EXTERNAL_CLIENT_ID: Optional[str] = Field(
-        default_factory=lambda: (
-            "test-client-id"
-            if os.getenv("ENVIRONMENT", "").lower() in ["test", "testing"]
-            else None
-        ),
+        default=None,  # Simplified: get from env var or None
         description="Microsoft Entra ID application client ID",
     )
     ENTRA_EXTERNAL_AUTHORITY: Optional[str] = Field(
@@ -131,11 +124,7 @@ class UnifiedSettings(BaseSettings):
         description="Microsoft Entra ID authority URL - Vedprakash domain standard",
     )
     ENTRA_EXTERNAL_CLIENT_SECRET: Optional[str] = Field(
-        default_factory=lambda: (
-            "test-client-secret"
-            if os.getenv("ENVIRONMENT", "").lower() in ["test", "testing"]
-            else None
-        ),
+        default=None,  # Simplified: get from env var or None
         description="Microsoft Entra ID client secret (optional for public clients)",
     )
     JWT_ALGORITHM: str = Field(default="RS256", description="JWT signing algorithm")
@@ -145,11 +134,7 @@ class UnifiedSettings(BaseSettings):
 
     # ==================== AI SERVICES CONFIGURATION ====================
     OPENAI_API_KEY: Optional[str] = Field(
-        default_factory=lambda: (
-            "sk-test-key-for-testing"
-            if os.getenv("ENVIRONMENT", "").lower() in ["test", "testing", "ci"]
-            else os.getenv("OPENAI_API_KEY")
-        ),
+        default=None,  # Simplified: get from env var or None
         description="OpenAI API key",
     )
     OPENAI_MODEL_PRIMARY: str = Field(default="gpt-4o-mini", description="Primary OpenAI model")
@@ -162,11 +147,7 @@ class UnifiedSettings(BaseSettings):
 
     # ==================== EXTERNAL SERVICES ====================
     GOOGLE_MAPS_API_KEY: Optional[str] = Field(
-        default_factory=lambda: (
-            "test-maps-key-for-testing"
-            if os.getenv("ENVIRONMENT", "").lower() in ["test", "testing", "ci"]
-            else os.getenv("GOOGLE_MAPS_API_KEY")
-        ),
+        default=None,  # Simplified: get from env var or None
         description="Google Maps API key",
     )
 
@@ -359,15 +340,12 @@ class UnifiedSettings(BaseSettings):
         """Validate database configuration consistency."""
         if self.COSMOS_DB_ENABLED:
             if not self.COSMOS_DB_URL or not self.COSMOS_DB_KEY:
-                # Be more lenient in test environments
-                if self.ENVIRONMENT.lower() in ["test", "testing", "ci"]:
-                    logger.warning(
-                        "Cosmos DB is enabled but URL or KEY is missing in test environment - "
-                        "disabling Cosmos DB automatically"
-                    )
-                    self.COSMOS_DB_ENABLED = False
-                else:
-                    raise ValueError("Cosmos DB is enabled but URL or KEY is missing")
+                # Simplified: just warn and disable rather than error
+                logger.warning(
+                    "Cosmos DB is enabled but URL or KEY is missing - "
+                    "disabling Cosmos DB automatically"
+                )
+                self.COSMOS_DB_ENABLED = False
 
         if self.USE_REDIS_CACHE and not self.REDIS_URL:
             logger.warning(
@@ -607,11 +585,15 @@ class UnifiedSettings(BaseSettings):
         issues = []
         warnings = []
 
-        # Check required environment variables (temporarily not requiring Entra during migration)
-        required_vars = ["SECRET_KEY", "DATABASE_URL", "OPENAI_API_KEY"]
+        # Check required environment variables (simplified for single-environment deployment)
+        required_vars = ["SECRET_KEY", "DATABASE_URL"]  # OPENAI_API_KEY is optional with defaults
         for var in required_vars:
             if not getattr(self, var, None):
                 issues.append(f"Missing required environment variable: {var}")
+        
+        # Optional services with warnings (not errors)
+        if not self.OPENAI_API_KEY:
+            warnings.append("OPENAI_API_KEY not set - using test defaults for AI features")
 
         # Check production-specific requirements
         if self.is_production:

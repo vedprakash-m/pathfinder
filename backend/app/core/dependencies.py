@@ -7,6 +7,8 @@ dependency system, using our unified Cosmos DB approach per Tech Spec.
 from typing import AsyncGenerator
 
 from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.repositories.trip_repository import TripRepository
 from app.application.trip_use_cases import (
     AddParticipantUseCase,
     CreateTripUseCase,

@@ -58,7 +58,7 @@
 - **Spending Analytics:** Track expenses by category and family
 
 ### 🔐 Enterprise Security
-- **Zero-Trust Architecture:** Auth0 integration with comprehensive RBAC
+- **Zero-Trust Architecture:** Microsoft Entra External ID integration with comprehensive RBAC
 - **Data Protection:** CSRF/CORS protection, input validation, audit logging
 - **Secrets Management:** Azure Key Vault integration with automatic rotation
 
@@ -103,10 +103,11 @@ Pathfinder employs a cost-optimized two-layer architecture designed for scalabil
 - **Backend:** FastAPI + Python 3.11 + Pydantic v2 + SQLAlchemy + Alembic
 - **Real-time:** Socket.IO for chat and live presence
 - **AI Services:** Custom LLM orchestration with cost tracking and fallbacks
-- **Data:** Azure SQL (relational) + Cosmos DB (documents) + Storage Account (files)
+- **Data:** Azure SQL (relational) + Cosmos DB (documents) + SQLite (local dev)
+- **Caching:** Redis for session management and performance optimization
 - **Infrastructure:** Docker + Bicep IaC + Azure Container Apps + Azure Key Vault
 - **CI/CD:** GitHub Actions with optimized workflows (71% reduction in complexity)
-- **Authentication:** Auth0 with zero-trust security model
+- **Authentication:** Microsoft Entra External ID with zero-trust security model
 - **Testing:** Playwright E2E + Pytest with comprehensive coverage
 
 ---
@@ -123,11 +124,11 @@ Pathfinder employs a cost-optimized two-layer architecture designed for scalabil
 git clone https://github.com/vedprakashmishra/pathfinder.git
 cd pathfinder
 
-# Configure backend environment
-cp backend/.env.example backend/.env
+# Configure backend environment (copy from template)
+cp backend/.env.test backend/.env
 
-# Configure frontend environment  
-cp frontend/.env.example frontend/.env.local
+# Configure frontend environment (copy from template)
+cp frontend/.env.template frontend/.env.local
 
 # Launch the full stack
 docker compose up -d
@@ -150,10 +151,11 @@ open http://localhost:8000/docs   # FastAPI Documentation (Backend)
 ```
 
 **What's Included:**
-- ✅ **Backend API** with FastAPI and auto-generated documentation
+- ✅ **Backend API** with FastAPI and auto-generated documentation at `/docs`
 - ✅ **Frontend PWA** with hot-reload and modern development tools  
-- ✅ **Database** with SQLite for local development
+- ✅ **Database** with SQLite for local development and Cosmos DB emulator
 - ✅ **Real-time features** via Socket.IO
+- ✅ **Caching** with Redis for optimal performance
 - ✅ **AI integration** with mock services for local testing
 
 ---
@@ -168,6 +170,8 @@ Pathfinder uses **Bicep Infrastructure as Code** for reliable, repeatable deploy
    - `SQL_ADMIN_USERNAME` (Database admin username)  
    - `SQL_ADMIN_PASSWORD` (Database admin password)
    - `OPENAI_API_KEY` (Optional - for AI features)
+   - `ENTRA_TENANT_ID` (Microsoft Entra External ID tenant)
+   - `ENTRA_CLIENT_ID` (Microsoft Entra External ID client ID)
 
 ### 🏗️ Deployment Process
 
@@ -381,6 +385,7 @@ We welcome contributions! Please see:
 - [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md) for contribution guidelines
 - [`docs/User_Experience.md`](docs/User_Experience.md) for UX principles  
 - [`docs/metadata.md`](docs/metadata.md) for comprehensive technical documentation
+- [`docs/Tech_Spec_Pathfinder.md`](docs/Tech_Spec_Pathfinder.md) for detailed technical specifications
 
 ---
 **© Pathfinder 2025** – Empowering seamless group travel planning with AI-powered intelligence and cost-optimized cloud architecture.

@@ -9,6 +9,7 @@ from app.core.container import Container
 from app.core.database_unified import get_cosmos_repository
 from app.core.logging_config import get_logger
 from app.core.security import get_current_user, require_permissions
+from app.models.user import User
 from app.repositories.cosmos_unified import UnifiedCosmosRepository
 from app.services.export_service import DataExportService
 from app.tasks.export_tasks import bulk_export_trips, export_trip_data
@@ -22,6 +23,7 @@ from fastapi import (
     Request,
     status,
 )
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = get_logger(__name__)

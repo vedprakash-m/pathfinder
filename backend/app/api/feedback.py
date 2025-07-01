@@ -120,7 +120,7 @@ async def submit_feedback(
 async def get_feedback_dashboard(
     trip_id: str,
     cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
-    current_user: User = Depends(require_permissions("trips", "read")),
+    current_user: dict = Depends(require_permissions("trips", "read")),
 ):
     """
     Get comprehensive feedback dashboard data for a trip.
@@ -166,7 +166,7 @@ async def get_trip_feedback(
     status: Optional[str] = None,
     feedback_type: Optional[str] = None,
     cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
-    current_user: User = Depends(require_permissions("trips", "read")),
+    current_user: dict = Depends(require_permissions("trips", "read")),
 ):
     """
     Get all feedback for a trip with optional filtering.
@@ -222,7 +222,7 @@ async def respond_to_feedback(
     feedback_id: str,
     response_request: FeedbackResponseRequest,
     cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
-    current_user: User = Depends(require_permissions("trips", "update")),
+    current_user: dict = Depends(require_permissions("trips", "update")),
 ):
     """
     Respond to a feedback item.
@@ -233,7 +233,7 @@ async def respond_to_feedback(
         service = RealTimeFeedbackService(cosmos_repo)
 
         response_data = {
-            "user_id": str(current_user.id),
+            "user_id": current_user["id"],
             "content": response_request.response_content,
             "decision": response_request.decision,
         }
@@ -251,7 +251,7 @@ async def respond_to_feedback(
         success = await service.respond_to_feedback(feedback_id, response_data)
 
         if success:
-            logger.info(f"Response added to feedback {feedback_id} by user {current_user.id}")
+            logger.info(f"Response added to feedback {feedback_id} by user {current_user['id']}")
             return {
                 "success": True,
                 "message": "Response added successfully",
@@ -273,7 +273,7 @@ async def submit_live_change(
     trip_id: str,
     change_request: LiveChangeRequest,
     cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
-    current_user: User = Depends(require_permissions("trips", "update")),
+    current_user: dict = Depends(require_permissions("trips", "update")),
 ):
     """
     Submit a live collaborative change during trip planning.
@@ -284,7 +284,7 @@ async def submit_live_change(
         service = RealTimeFeedbackService(cosmos_repo)
 
         # Start editing session for the user (simplified for demo)
-        session_id = await service.start_editing_session(trip_id, str(current_user.id))
+        session_id = await service.start_editing_session(trip_id, current_user["id"])
 
         if not session_id:
             raise HTTPException(status_code=400, detail="Failed to start editing session")
@@ -297,10 +297,10 @@ async def submit_live_change(
             "description": change_request.description,
         }
 
-        result = await service.submit_live_change(session_id, str(current_user.id), change_data)
+        result = await service.submit_live_change(session_id, current_user["id"], change_data)
 
         if result["success"]:
-            logger.info(f"Live change submitted for trip {trip_id} by user {current_user.id}")
+            logger.info(f"Live change submitted for trip {trip_id} by user {current_user['id']}")
             return {
                 "success": True,
                 "change_id": result["change_id"],

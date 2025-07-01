@@ -27,8 +27,14 @@ from openai import OpenAI
 settings = get_settings()
 logger = create_logger(__name__)
 
-# Initialize OpenAI client
-client = OpenAI(api_key=settings.OPENAI_API_KEY)
+# Initialize OpenAI client with fallback for missing API key
+try:
+    client = OpenAI(api_key=settings.OPENAI_API_KEY) if settings.OPENAI_API_KEY else None
+    if not client:
+        logger.warning("OpenAI client not initialized - API key not provided")
+except Exception as e:
+    logger.warning(f"Failed to initialize OpenAI client: {e}")
+    client = None
 
 
 # Note: AICache functionality moved to core.cache_service.AICacheService
@@ -558,6 +564,10 @@ class AIService:
 
         # Fallback to direct OpenAI API
         try:
+            if not client:
+                logger.error("OpenAI client not available - API key not configured")
+                raise ValueError("AI service not configured - OpenAI API key required")
+            
             logger.info("Using direct OpenAI API call")
 
             max_tokens = getattr(settings, "OPENAI_MAX_TOKENS", 4000)
