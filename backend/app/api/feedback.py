@@ -12,6 +12,7 @@ from pydantic import BaseModel
 
 from ..core.database_unified import get_cosmos_repository
 from ..core.zero_trust import require_permissions
+from ..models.user import User
 from ..repositories.cosmos_unified import UnifiedCosmosRepository
 from ..services.real_time_feedback import (
     FeedbackStatus,
