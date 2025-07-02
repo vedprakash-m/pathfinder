@@ -74,7 +74,7 @@ class UserPresence:
 class TripChatRoom:
     """Manages real-time chat for a specific trip."""
 
-    def __init__(self, trip_id: str):
+    def __init__(self, trip_id: str) -> None:
         self.trip_id = trip_id
         self.connections: Dict[str, WebSocket] = {}  # user_id -> websocket
         self.user_presence: Dict[str, UserPresence] = {}  # user_id -> presence
@@ -83,7 +83,9 @@ class TripChatRoom:
         self.active_votes: Dict[str, Dict[str, Any]] = {}
         self.typing_users: Set[str] = set()
 
-    async def add_user(self, user_id: str, user_name: str, family_id: str, websocket: WebSocket):
+    async def add_user(
+        self, user_id: str, user_name: str, family_id: str, websocket: WebSocket
+    ) -> None:
         """Add a user to the chat room."""
         self.connections[user_id] = websocket
         self.user_presence[user_id] = UserPresence(
@@ -102,7 +104,7 @@ class TripChatRoom:
 
         logger.info(f"User {user_name} joined trip chat {self.trip_id}")
 
-    async def remove_user(self, user_id: str):
+    async def remove_user(self, user_id: str) -> None:
         """Remove a user from the chat room."""
         if user_id in self.connections:
             del self.connections[user_id]
@@ -116,7 +118,9 @@ class TripChatRoom:
 
             logger.info(f"User {user_name} left trip chat {self.trip_id}")
 
-    async def broadcast_message(self, message: ChatMessage, exclude_user: Optional[str] = None):
+    async def broadcast_message(
+        self, message: ChatMessage, exclude_user: Optional[str] = None
+    ) -> None:
         """Broadcast a message to all users in the room."""
         message_data = message.to_dict()
 
@@ -154,7 +158,7 @@ class TripChatRoom:
                 },
             )
 
-    async def send_message_history(self, user_id: str):
+    async def send_message_history(self, user_id: str) -> None:
         """Send recent message history to a specific user."""
         if user_id not in self.connections:
             return
@@ -174,7 +178,9 @@ class TripChatRoom:
         except Exception as e:
             logger.warning(f"Failed to send message history to user {user_id}: {e}")
 
-    async def broadcast_presence_update(self, user_id: str, action: str, user_name: str = None):
+    async def broadcast_presence_update(
+        self, user_id: str, action: str, user_name: Optional[str] = None
+    ) -> None:
         """Broadcast user presence updates."""
         if not user_name and user_id in self.user_presence:
             user_name = self.user_presence[user_id].user_name
@@ -207,7 +213,7 @@ class TripChatRoom:
         for uid in disconnected_users:
             await self.remove_user(uid)
 
-    async def handle_typing_indicator(self, user_id: str, is_typing: bool):
+    async def handle_typing_indicator(self, user_id: str, is_typing: bool) -> None:
         """Handle typing indicators."""
         if is_typing:
             self.typing_users.add(user_id)
@@ -283,7 +289,7 @@ class TripChatRoom:
 
         return vote_id
 
-    async def cast_vote(self, user_id: str, vote_id: str, option_index: int):
+    async def cast_vote(self, user_id: str, vote_id: str, option_index: int) -> None:
         """Cast a vote for a user."""
         if vote_id not in self.active_votes:
             return False
@@ -336,14 +342,14 @@ class TripChatRoom:
             "options": options,
             "vote_counts": vote_counts,
             "total_votes": len(votes),
-            "participants": list(votes.keys()),
+            "participants": List[Any](votes.keys()),
         }
 
 
 class EnhancedChatService:
     """Enhanced chat service for managing multiple trip chat rooms."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         # trip_id -> TripChatRoom
         self.chat_rooms: Dict[str, TripChatRoom] = {}
 
@@ -360,12 +366,12 @@ class EnhancedChatService:
         user_name: str,
         family_id: str,
         websocket: WebSocket,
-    ):
+    ) -> None:
         """Add a user to a trip's chat room."""
         room = self.get_or_create_room(trip_id)
         await room.add_user(user_id, user_name, family_id, websocket)
 
-    async def remove_user_from_trip(self, trip_id: str, user_id: str):
+    async def remove_user_from_trip(self, trip_id: str, user_id: str) -> None:
         """Remove a user from a trip's chat room."""
         if trip_id in self.chat_rooms:
             await self.chat_rooms[trip_id].remove_user(user_id)
@@ -381,7 +387,7 @@ class EnhancedChatService:
         message_type: MessageType,
         content: str,
         metadata: Optional[Dict[str, Any]] = None,
-    ):
+    ) -> None:
         """Send a message to a trip's chat room."""
         if trip_id not in self.chat_rooms:
             return False
@@ -407,7 +413,7 @@ class EnhancedChatService:
         await room.broadcast_message(message)
         return True
 
-    async def handle_typing_indicator(self, trip_id: str, user_id: str, is_typing: bool):
+    async def handle_typing_indicator(self, trip_id: str, user_id: str, is_typing: bool) -> None:
         """Handle typing indicators for a trip."""
         if trip_id in self.chat_rooms:
             await self.chat_rooms[trip_id].handle_typing_indicator(user_id, is_typing)

@@ -3,17 +3,17 @@ Load Testing for Performance Validation
 Simple load tests to validate system performance under stress.
 """
 
-import pytest
-import asyncio
-import time
 import concurrent.futures
-from typing import List, Dict, Any
 import statistics
+import time
+from typing import Any, Dict, List
+
+import pytest
 
 # Mock the test client for load testing
 try:
-    from fastapi.testclient import TestClient
     from app.main import app
+    from fastapi.testclient import TestClient
 
     TEST_APP_AVAILABLE = True
 except ImportError:

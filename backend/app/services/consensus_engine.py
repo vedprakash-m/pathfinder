@@ -334,14 +334,14 @@ class FamilyConsensusEngine:
 
         # For numeric values (e.g., budget amounts)
         if all(isinstance(v, (int, float)) for v in values):
-            weighted_sum = sum(v * w for v, w in zip(values, weights))
+            weighted_sum = sum(v * w for v, w in zip(values, weights, strict=False))
             total_weight = sum(weights)
             return weighted_sum / total_weight if total_weight > 0 else sum(values) / len(values)
 
         # For lists (e.g., activities)
         elif all(isinstance(v, list) for v in values):
             all_items = []
-            for val_list, weight in zip(values, weights):
+            for val_list, weight in zip(values, weights, strict=False):
                 # Add each item multiple times based on weight
                 weight_factor = max(1, int(weight * 10))
                 all_items.extend(val_list * weight_factor)
@@ -353,7 +353,7 @@ class FamilyConsensusEngine:
         # For categorical values (e.g., budget_level, travel_style)
         else:
             value_weights = {}
-            for value, weight in zip(values, weights):
+            for value, weight in zip(values, weights, strict=False):
                 value_str = str(value)
                 value_weights[value_str] = value_weights.get(value_str, 0) + weight
 

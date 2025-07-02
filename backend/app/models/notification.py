@@ -9,8 +9,9 @@ from uuid import UUID, uuid4
 
 from app.core.database import GUID, Base
 from pydantic import BaseModel, Field
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String, Text
+from sqlalchemy import Boolean, Column, DateTime
 from sqlalchemy import Enum as SQLEnum
+from sqlalchemy import ForeignKey, String, Text
 from sqlalchemy.orm import relationship
 
 

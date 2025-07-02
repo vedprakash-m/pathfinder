@@ -189,7 +189,7 @@ class MagicPollsService:
 
     async def _get_destination_insights(self, option: Dict[str, Any]) -> Dict[str, Any]:
         """Get AI insights for destination options"""
-        destination = option.get("value", "")
+        _destination = option.get("value", "")
 
         # Simplified insights - in production, this would call AI service
         return {
@@ -201,7 +201,7 @@ class MagicPollsService:
 
     async def _get_activity_insights(self, option: Dict[str, Any]) -> Dict[str, Any]:
         """Get AI insights for activity options"""
-        activity = option.get("value", "")
+        _activity = option.get("value", "")
 
         return {
             "duration": "2-3 hours",
@@ -212,7 +212,7 @@ class MagicPollsService:
 
     async def _get_budget_insights(self, option: Dict[str, Any]) -> Dict[str, Any]:
         """Get AI insights for budget options"""
-        budget_range = option.get("value", "")
+        _budget_range = option.get("value", "")
 
         return {
             "what_it_includes": ["accommodation", "meals", "activities"],

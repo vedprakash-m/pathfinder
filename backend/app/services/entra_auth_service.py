@@ -4,16 +4,15 @@ Unified Cosmos DB implementation per Tech Spec requirements.
 """
 
 import logging
-from typing import Optional, Dict, Any, List
+from datetime import datetime, timedelta
+from typing import Any, Dict, Optional
+
 import httpx
 import jwt
-from datetime import datetime, timedelta
-import asyncio
-from msal import ConfidentialClientApplication, PublicClientApplication
-
 from app.core.config import get_settings
 from app.core.database_unified import get_cosmos_repository
-from app.repositories.cosmos_unified import UserDocument, FamilyDocument
+from app.repositories.cosmos_unified import FamilyDocument, UserDocument
+from msal import ConfidentialClientApplication, PublicClientApplication
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -21,16 +20,19 @@ settings = get_settings()
 
 class EntraExternalIDError(Exception):
     """Base exception for Entra External ID authentication errors."""
+
     pass
 
 
 class TokenValidationError(EntraExternalIDError):
     """Exception raised when token validation fails."""
+
     pass
 
 
 class UserInfoError(EntraExternalIDError):
     """Exception raised when user info retrieval fails."""
+
     pass
 
 
@@ -42,29 +44,32 @@ class EntraAuthService:
 
     def __init__(self):
         # Use Vedprakash domain standard configuration
-        self.tenant_id = 'vedid.onmicrosoft.com'  # ✅ Fixed to Vedprakash domain
+        self.tenant_id = "vedid.onmicrosoft.com"  # ✅ Fixed to Vedprakash domain
         self.client_id = settings.ENTRA_EXTERNAL_CLIENT_ID
-        self.authority = 'https://login.microsoftonline.com/vedid.onmicrosoft.com'  # ✅ Fixed domain
-        self.client_secret = getattr(settings, 'ENTRA_EXTERNAL_CLIENT_SECRET', None)
-        
+        self.authority = (
+            "https://login.microsoftonline.com/vedid.onmicrosoft.com"  # ✅ Fixed domain
+        )
+        self.client_secret = getattr(settings, "ENTRA_EXTERNAL_CLIENT_SECRET", None)
+
         # Initialize MSAL client applications
         self._public_client = None
         self._confidential_client = None
         self._jwks_cache = {}
         self._jwks_cache_expiry = None
-        
+
         # Initialize unified Cosmos DB repository
         self.cosmos_repo = get_cosmos_repository()
-        
-        logger.info(f"EntraAuthService initialized with tenant: {self.tenant_id}, unified Cosmos DB")
+
+        logger.info(
+            f"EntraAuthService initialized with tenant: {self.tenant_id}, unified Cosmos DB"
+        )
 
     @property
     def public_client(self) -> PublicClientApplication:
         """Get or create public client application for token validation."""
         if self._public_client is None:
             self._public_client = PublicClientApplication(
-                client_id=self.client_id,
-                authority=self.authority
+                client_id=self.client_id, authority=self.authority
             )
         return self._public_client
 
@@ -75,7 +80,7 @@ class EntraAuthService:
             self._confidential_client = ConfidentialClientApplication(
                 client_id=self.client_id,
                 client_credential=self.client_secret,
-                authority=self.authority
+                authority=self.authority,
             )
         return self._confidential_client
 
@@ -86,24 +91,26 @@ class EntraAuthService:
         """
         try:
             # Check cache first
-            if (self._jwks_cache_expiry and 
-                datetime.utcnow() < self._jwks_cache_expiry and 
-                self._jwks_cache):
+            if (
+                self._jwks_cache_expiry
+                and datetime.utcnow() < self._jwks_cache_expiry
+                and self._jwks_cache
+            ):
                 return self._jwks_cache
 
             # Construct JWKS endpoint URL for Vedprakash domain
-            jwks_url = 'https://login.microsoftonline.com/vedid.onmicrosoft.com/discovery/v2.0/keys'
-            
+            jwks_url = "https://login.microsoftonline.com/vedid.onmicrosoft.com/discovery/v2.0/keys"
+
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.get(jwks_url)
                 response.raise_for_status()
-                
+
                 jwks_data = response.json()
-                
+
                 # Cache for 1 hour
                 self._jwks_cache = jwks_data
                 self._jwks_cache_expiry = datetime.utcnow() + timedelta(hours=1)
-                
+
                 logger.debug(f"Retrieved JWKS with {len(jwks_data.get('keys', []))} keys")
                 return jwks_data
 
@@ -122,11 +129,13 @@ class EntraAuthService:
                 try:
                     # Skip signature verification in test mode
                     payload = jwt.decode(
-                        token, 
+                        token,
                         options={"verify_signature": False, "verify_exp": False},
-                        algorithms=["RS256"]
+                        algorithms=["RS256"],
                     )
-                    logger.debug(f"Token validated in test mode for user: {payload.get('sub', 'unknown')}")
+                    logger.debug(
+                        f"Token validated in test mode for user: {payload.get('sub', 'unknown')}"
+                    )
                     return payload
                 except jwt.InvalidTokenError as e:
                     logger.warning(f"Token validation failed in test mode: {e}")
@@ -134,11 +143,7 @@ class EntraAuthService:
 
             # In production, implement proper JWKS validation
             # For now, return test payload for compatibility
-            return {
-                "sub": "test-entra-user-id",
-                "email": "test@example.com",
-                "name": "Test User"
-            }
+            return {"sub": "test-entra-user-id", "email": "test@example.com", "name": "Test User"}
 
         except Exception as e:
             logger.error(f"Token validation error: {e}")
@@ -162,9 +167,9 @@ class EntraAuthService:
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.get(
                     "https://graph.microsoft.com/v1.0/me",
-                    headers={"Authorization": f"Bearer {token}"}
+                    headers={"Authorization": f"Bearer {token}"},
                 )
-                
+
                 if response.status_code == 200:
                     return response.json()
                 return None
@@ -174,9 +179,7 @@ class EntraAuthService:
             return None
 
     async def create_user_from_entra(
-        self, 
-        user_info: Dict[str, Any], 
-        entra_id: str
+        self, user_info: Dict[str, Any], entra_id: str
     ) -> Optional[UserDocument]:
         """Create user from Entra External ID with auto-family creation using Cosmos DB."""
         try:
@@ -197,7 +200,7 @@ class EntraAuthService:
                 entra_id=entra_id,
                 is_active=True,
                 role="family_admin",  # Default role per PRD
-                family_ids=[family_id]
+                family_ids=[family_id],
             )
 
             # Create family document with user as admin
@@ -207,7 +210,7 @@ class EntraAuthService:
                 name=f"{name}'s Family",
                 admin_user_id=user_id,
                 member_ids=[user_id],
-                members_count=1
+                members_count=1,
             )
 
             # Save both documents to Cosmos DB
@@ -229,10 +232,7 @@ class EntraAuthService:
             logger.error(f"Error getting user by Entra ID: {e}")
             return None
 
-    async def process_entra_login(
-        self, 
-        access_token: str
-    ) -> Optional[tuple[UserDocument, str]]:
+    async def process_entra_login(self, access_token: str) -> Optional[tuple[UserDocument, str]]:
         """
         Process Entra External ID login and return user and our internal token.
         Creates user if doesn't exist (auto-family creation) using Cosmos DB.
@@ -251,14 +251,14 @@ class EntraAuthService:
 
             # Check if user exists
             user = await self.get_user_by_entra_id(entra_user_id)
-            
+
             if not user:
                 # Get user info from Graph API and create user
                 user_info = await self.get_user_info(access_token)
                 if not user_info:
                     logger.error("Failed to get user info from Graph API")
                     return None
-                
+
                 user = await self.create_user_from_entra(user_info, entra_user_id)
                 if not user:
                     logger.error("Failed to create user from Entra External ID")
@@ -266,9 +266,8 @@ class EntraAuthService:
 
             # Create internal access token for API usage
             from app.core.security import create_access_token
-            internal_token = create_access_token(
-                data={"sub": str(user.id), "email": user.email}
-            )
+
+            internal_token = create_access_token(data={"sub": str(user.id), "email": user.email})
 
             logger.info(f"Successfully processed Entra External ID login for: {user.email}")
             return user, internal_token
@@ -286,20 +285,17 @@ class EntraAuthService:
             auth_code_flow = self.public_client.initiate_auth_code_flow(
                 scopes=["openid", "profile", "email", "User.Read"],
                 redirect_uri=redirect_uri,
-                state=state
+                state=state,
             )
-            
+
             return auth_code_flow.get("auth_uri", "")
-            
+
         except Exception as e:
             logger.error(f"Error generating login URL: {e}")
             return ""
 
     async def exchange_code_for_token(
-        self, 
-        code: str, 
-        redirect_uri: str, 
-        state: str = None
+        self, code: str, redirect_uri: str, state: str = None
     ) -> Optional[Dict[str, Any]]:
         """
         Exchange authorization code for access token.
@@ -311,21 +307,22 @@ class EntraAuthService:
                 "code_verifier": None,
                 "nonce": None,
                 "state": state,
-                "redirect_uri": redirect_uri
+                "redirect_uri": redirect_uri,
             }
-            
+
             result = self.public_client.acquire_token_by_auth_code_flow(
-                auth_code_flow, 
-                {"code": code, "redirect_uri": redirect_uri}
+                auth_code_flow, {"code": code, "redirect_uri": redirect_uri}
             )
-            
+
             if "access_token" in result:
                 logger.debug("Successfully exchanged code for token")
                 return result
             else:
-                logger.warning(f"Token exchange failed: {result.get('error_description', 'Unknown error')}")
+                logger.warning(
+                    f"Token exchange failed: {result.get('error_description', 'Unknown error')}"
+                )
                 return None
-                
+
         except Exception as e:
             logger.error(f"Error exchanging code for token: {e}")
             return None
@@ -337,19 +334,19 @@ class EntraAuthService:
         try:
             # Test JWKS endpoint availability
             jwks = await self.get_jwks()
-            
+
             return {
                 "status": "healthy",
                 "tenant_id": self.tenant_id,
                 "client_id": self.client_id,
                 "authority": self.authority,
                 "jwks_keys_count": len(jwks.get("keys", [])),
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.utcnow().isoformat(),
             }
-            
+
         except Exception as e:
             return {
                 "status": "unhealthy",
                 "error": str(e),
-                "timestamp": datetime.utcnow().isoformat()
-            } 
+                "timestamp": datetime.utcnow().isoformat(),
+            }

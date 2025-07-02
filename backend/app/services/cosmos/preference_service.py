@@ -92,7 +92,7 @@ class PreferenceDocumentService:
         # If creating a new version
         if create_version:
             # Get the current document to link as previous version
-            current = await self.get_preference(preference.id, preference.entity_id)
+            _current = await self.get_preference(preference.id, preference.entity_id)
 
             # Create a new document with incremented version
             new_version = preference.model_copy(deep=True)
@@ -165,12 +165,12 @@ class PreferenceDocumentService:
             setattr(preference, parts[0], preference_value)
         else:
             # Nested attribute in a dictionary
-            current = preference.preferences
+            _current = preference.preferences
             for i, part in enumerate(parts[:-1]):
                 # Create nested dictionaries if they don't exist
                 if part not in current:
                     current[part] = {}
-                current = current[part]
+                _current = current[part]
 
             # Set the final value
             current[parts[-1]] = preference_value

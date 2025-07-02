@@ -2,12 +2,12 @@
 Debug authentication issues for trip endpoints.
 """
 
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
+from uuid import uuid4
+
+from app.core.security import VedUser
 from app.main import app
 from fastapi.testclient import TestClient
-from app.core.security import VedUser
-from uuid import uuid4
 
 
 def test_debug_auth_response(mock_current_user):
@@ -80,7 +80,7 @@ def test_direct_zero_trust_bypass():
         id=str(uuid4()),
         email="test@example.com",
         name="Test User",
-        givenName="Test", 
+        givenName="Test",
         familyName="User",
         permissions=["create:trips"],
     )

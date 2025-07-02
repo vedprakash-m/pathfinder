@@ -19,7 +19,6 @@ from ..services.real_time_feedback import (
     FeedbackType,
     RealTimeFeedbackService,
     get_feedback_dashboard_data,
-    submit_trip_feedback,
 )
 
 logger = logging.getLogger(__name__)
@@ -90,13 +89,13 @@ async def submit_feedback(
             "impact_analysis": {
                 "affected_elements": [feedback_request.target_element],
                 "estimated_impact": "moderate",
-                "complexity": "low"
+                "complexity": "low",
             },
             "next_steps": [
                 "Review feedback with family members",
                 "Evaluate suggested changes",
-                "Update trip plan if approved"
-            ]
+                "Update trip plan if approved",
+            ],
         }
 
         feedback_doc = await cosmos_repo.create_feedback(feedback_data)
@@ -391,7 +390,7 @@ def _calculate_time_since(created_at_iso: str) -> str:
             return f"{int(hours)} hours ago"
         else:
             return f"{int(hours / 24)} days ago"
-    except:
+    except Exception:
         return "Unknown"
 
 

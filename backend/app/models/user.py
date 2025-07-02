@@ -9,8 +9,9 @@ from uuid import uuid4
 
 from app.core.database import GUID, Base
 from pydantic import BaseModel, EmailStr
-from sqlalchemy import Boolean, Column, DateTime, String, Text, func
+from sqlalchemy import Boolean, Column, DateTime
 from sqlalchemy import Enum as SQLEnum
+from sqlalchemy import String, Text, func
 from sqlalchemy.orm import relationship
 
 
@@ -29,7 +30,9 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(GUID(), primary_key=True, default=uuid4)
-    auth0_id = Column(String(255), unique=True, index=True, nullable=True)  # Legacy field for migration
+    auth0_id = Column(
+        String(255), unique=True, index=True, nullable=True
+    )  # Legacy field for migration
     entra_id = Column(String(255), unique=True, index=True, nullable=True)  # New Entra External ID
     email = Column(String(255), unique=True, index=True, nullable=False)
     name = Column(String(255), nullable=True)

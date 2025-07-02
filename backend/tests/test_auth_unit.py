@@ -2,10 +2,10 @@
 Unit tests for authentication endpoints.
 """
 
-import pytest
-from unittest.mock import AsyncMock, patch
 from datetime import datetime
+from unittest.mock import AsyncMock, patch
 
+import pytest
 from app.main import app
 from fastapi import status
 from fastapi.testclient import TestClient
@@ -84,7 +84,7 @@ class TestAuthEndpoints:
         # FastAPI should return 422 for Pydantic validation errors
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
         assert "email" in str(response.json())
-        
+
     def test_register_user_invalid_email_format(self):
         """Test registration with invalid email format."""
         # Test with invalid email format

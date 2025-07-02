@@ -3,30 +3,28 @@ Test configuration and fixtures for Pathfinder backend tests.
 """
 
 import asyncio
-from unittest.mock import MagicMock, patch, AsyncMock
+from datetime import date, datetime, timedelta
+from unittest.mock import MagicMock, patch
 from uuid import uuid4
-import uuid as uuid_module
-import jwt
-from datetime import datetime, date, timedelta
 
+import jwt
 import pytest
 import pytest_asyncio
+from app.core.config import get_settings
 from app.core.database import Base, get_db
-from app.core.zero_trust import require_permissions
+from app.core.repositories.trip_repository import TripRepository
 from app.core.security import VedUser as SecurityUser
 from app.main import app
 
 # Import ALL models to ensure they're registered with Base metadata
 from app.models import *  # This imports all models including User, Trip, Family, etc.
-from app.models.user import User, UserRole
-from app.models.trip import Trip, TripParticipation, ParticipationStatus
 from app.models.family import Family
-from app.core.repositories.trip_repository import TripRepository
+from app.models.trip import ParticipationStatus, Trip, TripParticipation
+from app.models.user import User, UserRole
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
-from app.core.config import get_settings
 
 # Test database setup
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
@@ -38,9 +36,6 @@ def event_loop():
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
-
-
-import pytest_asyncio
 
 
 @pytest_asyncio.fixture
@@ -199,7 +194,14 @@ def mock_current_user():
         name="Test User",
         givenName="Test",
         familyName="User",
-        permissions=["create:trips", "read:trips", "update:trips", "delete:trips", "read:families", "create:families"],
+        permissions=[
+            "create:trips",
+            "read:trips",
+            "update:trips",
+            "delete:trips",
+            "read:families",
+            "create:families",
+        ],
     )
     return user
 
@@ -212,10 +214,19 @@ def create_test_jwt_token(user_data: dict, secret_key: str = "test-secret-key") 
         "exp": datetime.utcnow() + timedelta(hours=1),
         "iat": datetime.utcnow(),
         "https://pathfinder.app/roles": user_data.get("roles", ["user"]),
-        "https://pathfinder.app/permissions": user_data.get("permissions", [
-            "read:trips", "create:trips", "update:trips", "delete:trips",
-            "read:families", "create:families", "update:families", "delete:families"
-        ])
+        "https://pathfinder.app/permissions": user_data.get(
+            "permissions",
+            [
+                "read:trips",
+                "create:trips",
+                "update:trips",
+                "delete:trips",
+                "read:families",
+                "create:families",
+                "update:families",
+                "delete:families",
+            ],
+        ),
     }
     return jwt.encode(payload, secret_key, algorithm="HS256")
 
@@ -223,55 +234,66 @@ def create_test_jwt_token(user_data: dict, secret_key: str = "test-secret-key") 
 @pytest.fixture
 def test_jwt_token():
     """Create a valid test JWT token."""
-    return create_test_jwt_token({
-        "id": "test-user-123",
-        "email": "test@example.com",
-        "roles": ["user"],
-        "permissions": ["read:trips", "create:trips", "update:trips", "delete:trips"]
-    })
+    return create_test_jwt_token(
+        {
+            "id": "test-user-123",
+            "email": "test@example.com",
+            "roles": ["user"],
+            "permissions": ["read:trips", "create:trips", "update:trips", "delete:trips"],
+        }
+    )
 
 
 @pytest.fixture
 def admin_jwt_token():
     """Create a valid admin JWT token."""
-    return create_test_jwt_token({
-        "id": "admin-user-123", 
-        "email": "admin@example.com",
-        "roles": ["admin", "user"],
-        "permissions": [
-            "read:trips", "create:trips", "update:trips", "delete:trips",
-            "read:families", "create:families", "update:families", "delete:families",
-            "admin:users", "admin:system"
-        ]
-    })
+    return create_test_jwt_token(
+        {
+            "id": "admin-user-123",
+            "email": "admin@example.com",
+            "roles": ["admin", "user"],
+            "permissions": [
+                "read:trips",
+                "create:trips",
+                "update:trips",
+                "delete:trips",
+                "read:families",
+                "create:families",
+                "update:families",
+                "delete:families",
+                "admin:users",
+                "admin:system",
+            ],
+        }
+    )
 
 
 @pytest.fixture
 def auth_bypass_client():
     """Create a test client with complete auth bypass via dependency override."""
     from app.core.security import get_current_user
-    from fastapi.security import HTTPAuthorizationCredentials
     from app.core.zero_trust import security
-    
+    from fastapi.security import HTTPAuthorizationCredentials
+
     test_user = User(
         id="test-user-123",
-        email="test@example.com", 
+        email="test@example.com",
         roles=["user"],
-        permissions=["read:trips", "create:trips", "update:trips", "delete:trips"]
+        permissions=["read:trips", "create:trips", "update:trips", "delete:trips"],
     )
-    
+
     def mock_get_current_user():
         return test_user
-    
+
     def mock_security():
         return HTTPAuthorizationCredentials(scheme="Bearer", credentials="mock-token")
-    
+
     app.dependency_overrides[get_current_user] = mock_get_current_user
     app.dependency_overrides[security] = mock_security
-    
+
     client = TestClient(app)
     yield client
-    
+
     # Cleanup
     app.dependency_overrides.clear()
 
@@ -279,30 +301,31 @@ def auth_bypass_client():
 @pytest.fixture
 def jwt_auth_client(test_jwt_token):
     """Create a test client that uses valid JWT tokens for authentication."""
-    with patch('app.core.config.get_settings') as mock_settings:
+    with patch("app.core.config.get_settings") as mock_settings:
         settings = get_settings()
         settings.is_testing = True
         settings.SECRET_KEY = "test-secret-key"
         mock_settings.return_value = settings
-        
+
         client = TestClient(app)
         # Set default authorization header
         client.headers = {"Authorization": f"Bearer {test_jwt_token}"}
         yield client
 
 
-@pytest.fixture 
+@pytest.fixture
 def test_client_with_db(test_db):
     """Create test client with database override."""
+
     def get_test_db():
         return test_db
-    
+
     app.dependency_overrides[get_db] = get_test_db
-    
+
     client = TestClient(app)
-    
+
     yield client
-    
+
     # Cleanup
     app.dependency_overrides.clear()
 
@@ -311,25 +334,26 @@ def test_client_with_db(test_db):
 def bypass_auth_client():
     """Create a test client with all authentication bypassed via environment override."""
     import os
+
     from app.main import create_app
-    
+
     # Set environment to bypass auth
-    original_env = os.environ.get('TESTING_MODE')
-    os.environ['TESTING_MODE'] = 'true'
-    os.environ['BYPASS_AUTH'] = 'true'
-    
+    original_env = os.environ.get("TESTING_MODE")
+    os.environ["TESTING_MODE"] = "true"
+    os.environ["BYPASS_AUTH"] = "true"
+
     # Create fresh app instance
     test_app = create_app()
     client = TestClient(test_app)
-    
+
     yield client
-    
+
     # Cleanup environment
     if original_env:
-        os.environ['TESTING_MODE'] = original_env
+        os.environ["TESTING_MODE"] = original_env
     else:
-        os.environ.pop('TESTING_MODE', None)
-    os.environ.pop('BYPASS_AUTH', None)
+        os.environ.pop("TESTING_MODE", None)
+    os.environ.pop("BYPASS_AUTH", None)
 
 
 @pytest.fixture
@@ -352,7 +376,6 @@ def no_redis_startup():
 def authenticated_client(mock_current_user):
     """Create an authenticated test client with mocked dependencies."""
     from app.core.security import User
-    from app.core.zero_trust import require_permissions
 
     # Create a mock user with all permissions
     test_user = User(

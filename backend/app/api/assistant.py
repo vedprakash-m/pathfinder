@@ -2,16 +2,15 @@
 API endpoints for Pathfinder Assistant functionality - Unified Cosmos DB Implementation
 """
 
-import logging
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
-from ..core.database_unified import get_cosmos_repository
-from ..core.security import get_current_user
-from ..core.logging_config import get_logger
 from ..core.ai_cost_management import ai_cost_control
+from ..core.database_unified import get_cosmos_repository
+from ..core.logging_config import get_logger
+from ..core.security import get_current_user
 from ..models.user import User
 from ..repositories.cosmos_unified import UnifiedCosmosRepository
 from ..services.pathfinder_assistant import assistant_service
@@ -47,7 +46,7 @@ class SuggestionsRequest(BaseModel):
 
 
 @router.post("/mention")
-@ai_cost_control(model='gpt-4', max_tokens=2000)
+@ai_cost_control(model="gpt-4", max_tokens=2000)
 async def process_mention(
     request: MentionRequest,
     current_user: User = Depends(get_current_user),
@@ -68,7 +67,10 @@ async def process_mention(
 
         # Process the mention
         result = await assistant_service.process_mention(
-            message=request.message, user_id=current_user.id, context=context, cosmos_repo=cosmos_repo
+            message=request.message,
+            user_id=current_user.id,
+            context=context,
+            cosmos_repo=cosmos_repo,
         )
 
         if result.get("success"):
@@ -90,7 +92,7 @@ async def process_mention(
 
 
 @router.get("/suggestions")
-@ai_cost_control(model='gpt-3.5-turbo', max_tokens=1000)
+@ai_cost_control(model="gpt-3.5-turbo", max_tokens=1000)
 async def get_contextual_suggestions(
     page: Optional[str] = None,
     trip_id: Optional[str] = None,
@@ -168,7 +170,7 @@ async def get_interaction_history(
             limit=limit,
             offset=offset,
             trip_id=trip_id,
-            cosmos_repo=cosmos_repo
+            cosmos_repo=cosmos_repo,
         )
 
         return {
@@ -191,9 +193,7 @@ async def get_interaction_details(
     """Get details of a specific assistant interaction using unified Cosmos DB"""
     try:
         details = await assistant_service.get_interaction_details(
-            interaction_id=interaction_id,
-            user_id=current_user.id,
-            cosmos_repo=cosmos_repo
+            interaction_id=interaction_id, user_id=current_user.id, cosmos_repo=cosmos_repo
         )
 
         if details:
@@ -221,9 +221,7 @@ async def dismiss_response_card(
     """Dismiss a response card using unified Cosmos DB"""
     try:
         success = await assistant_service.dismiss_response_card(
-            card_id=card_id,
-            user_id=current_user.id,
-            cosmos_repo=cosmos_repo
+            card_id=card_id, user_id=current_user.id, cosmos_repo=cosmos_repo
         )
 
         if success:

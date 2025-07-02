@@ -2,25 +2,25 @@
 Final trip test with working dependency injection and authentication.
 """
 
-import pytest
-from unittest.mock import patch, AsyncMock
-from fastapi.testclient import TestClient
-from fastapi import status
-from app.main import app
-from app.core.security import VedUser, TokenData
-from app.application.trip_use_cases import CreateTripUseCase
+from unittest.mock import AsyncMock, patch
 from uuid import uuid4
+
+from app.application.trip_use_cases import CreateTripUseCase
+from app.core.security import TokenData, VedUser
+from app.main import app
+from fastapi.testclient import TestClient
 
 
 def test_create_trip_with_full_override():
     """Test trip creation by completely overriding the endpoint function."""
 
-    from app.models.trip import TripResponse, TripStatus
     from datetime import date
+
+    from app.models.trip import TripResponse, TripStatus
 
     # Create a test user
     test_user_id = str(uuid4())
-    test_user = VedUser(
+    _test_user = VedUser(
         id=test_user_id,
         email="test@example.com",
         name="Test User",
@@ -109,8 +109,9 @@ def test_create_trip_with_full_override():
 def test_create_trip_use_case_isolated():
     """Test the CreateTripUseCase in isolation."""
 
-    from app.models.trip import TripCreate, TripResponse, TripStatus
     from datetime import date
+
+    from app.models.trip import TripCreate, TripResponse, TripStatus
 
     # Create mock trip service
     mock_trip_service = AsyncMock()

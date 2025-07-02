@@ -27,7 +27,9 @@ logger = get_logger(__name__)
 class NotificationService:
     """Service for managing notifications."""
 
-    def __init__(self, db: AsyncSession, websocket_manager: Optional[ConnectionManager] = None):
+    def __init__(
+        self, db: AsyncSession, websocket_manager: Optional[ConnectionManager] = None
+    ) -> None:
         self.db = db
         self.websocket_manager = websocket_manager
 
@@ -66,14 +68,14 @@ class NotificationService:
             return False
 
     async def _get_admin_users(self) -> List[str]:
-        """Get list of admin user IDs. This is a placeholder - implement based on your auth system."""
+        """Get List[Any] of admin user IDs. This is a placeholder - implement based on your auth system."""
         # This would typically query your user roles/permissions system
-        # For now, return empty list - implement based on your specific auth setup
+        # For now, return empty List[Any] - implement based on your specific auth setup
         return []
 
     async def send_cost_threshold_alert(
         self, service: str, current_usage: float, threshold: float, percentage: float
-    ):
+    ) -> None:
         """Send cost threshold alerts to administrators."""
         alert_data = {
             "type": "cost_threshold_exceeded",
@@ -88,7 +90,7 @@ class NotificationService:
 
         return await self.send_admin_alert(alert_data)
 
-    async def send_system_health_alert(self, metric: str, value: float, threshold: float):
+    async def send_system_health_alert(self, metric: str, value: float, threshold: float) -> None:
         """Send system health alerts."""
         alert_data = {
             "type": "system_health_alert",
@@ -139,7 +141,7 @@ class NotificationService:
         except Exception as e:
             await self.db.rollback()
             logger.error(f"Error creating notification: {str(e)}")
-            raise ValueError(f"Failed to create notification: {str(e)}")
+            raise ValueError(f"Failed to create notification: {str(e)}") from e
 
     async def create_bulk_notifications(
         self, bulk_data: BulkNotificationCreate
@@ -182,7 +184,7 @@ class NotificationService:
         except Exception as e:
             await self.db.rollback()
             logger.error(f"Error creating bulk notifications: {str(e)}")
-            raise ValueError(f"Failed to create bulk notifications: {str(e)}")
+            raise ValueError(f"Failed to create bulk notifications: {str(e)}") from e
 
     async def get_user_notifications(
         self, user_id: str, skip: int = 0, limit: int = 50, unread_only: bool = False
@@ -193,7 +195,7 @@ class NotificationService:
 
             # Filter by read status if requested
             if unread_only:
-                query = query.where(Notification.is_read == False)
+                query = query.where(not Notification.is_read)
 
             # Filter out expired notifications
             query = query.where(
@@ -259,7 +261,7 @@ class NotificationService:
                 .where(
                     and_(
                         Notification.user_id == UUID(user_id),
-                        Notification.is_read == False,
+                        not Notification.is_read,
                     )
                 )
                 .values(is_read=True, read_at=datetime.now(timezone.utc))
@@ -311,7 +313,7 @@ class NotificationService:
                 select(func.count(Notification.id)).where(
                     and_(
                         Notification.user_id == UUID(user_id),
-                        Notification.is_read == False,
+                        not Notification.is_read,
                         or_(
                             Notification.expires_at.is_(None),
                             Notification.expires_at > datetime.now(timezone.utc),

@@ -2,14 +2,14 @@
 Test trip endpoints with proper CSRF and auth handling.
 """
 
-import pytest
-from unittest.mock import patch, AsyncMock
-from fastapi.testclient import TestClient
-from fastapi import status
-from app.main import app
-from app.core.security import VedUser
-from uuid import uuid4
 import os
+from unittest.mock import patch
+from uuid import uuid4
+
+import pytest
+from app.core.security import VedUser
+from app.main import app
+from fastapi.testclient import TestClient
 
 
 @pytest.fixture
@@ -98,7 +98,7 @@ def test_trips_with_csrf_token():
         test_user = VedUser(
             id=str(uuid4()),
             email="test@example.com",
-            name="Test User", 
+            name="Test User",
             givenName="Test",
             familyName="User",
             permissions=["create:trips"],

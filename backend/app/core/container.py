@@ -11,6 +11,8 @@ controllers thin and testable.
 
 from __future__ import annotations
 
+import os
+import sys
 from typing import AsyncGenerator
 
 from app.application.trip_use_cases import (
@@ -30,9 +32,6 @@ from app.core.database import get_db  # Existing dependency provider
 from app.core.repositories.trip_cosmos_repository import TripCosmosRepository
 from app.core.repositories.trip_repository import TripRepository
 from dependency_injector import containers, providers
-
-import sys
-import os
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 from domain.family import FamilyDomainService

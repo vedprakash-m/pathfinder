@@ -7,8 +7,8 @@ from uuid import UUID
 
 from app.core.database_unified import get_cosmos_repository
 from app.core.zero_trust import require_permissions
-from app.repositories.cosmos_unified import UnifiedCosmosRepository
 from app.models.user import User
+from app.repositories.cosmos_unified import UnifiedCosmosRepository
 from app.services.notification_service import (
     BulkNotificationCreate,
     NotificationCreate,
@@ -67,7 +67,7 @@ async def create_notification(
         notification = await notification_service.create_notification(notification_data)
         return notification
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from None
 
 
 @router.post("/bulk", response_model=List[NotificationResponse])
@@ -84,7 +84,7 @@ async def create_bulk_notifications(
         notifications = await notification_service.create_bulk_notifications(bulk_data)
         return notifications
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from None
 
 
 @router.put("/{notification_id}/read", response_model=NotificationResponse)

@@ -13,7 +13,7 @@ from app.core.database_unified import get_cosmos_repository
 from app.core.logging_config import get_logger
 from app.repositories.cosmos_unified import UnifiedCosmosRepository
 from app.services.email_service import email_service
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 router = APIRouter(
     prefix="/health",
@@ -121,7 +121,7 @@ async def detailed_health_check(
     try:
         if settings.COSMOS_DB_ENABLED:
             cosmos_start = time.time()
-            
+
             # Test Cosmos DB connection
             if cosmos_repo.container:
                 cosmos_time = round((time.time() - cosmos_start) * 1000, 2)
@@ -131,7 +131,7 @@ async def detailed_health_check(
                     "container": cosmos_repo.container_name,
                     "database": cosmos_repo.database_name,
                 }
-                
+
                 if cosmos_time > 1000:  # More than 1 second is concerning
                     details["cosmos_db"]["status"] = "slow"
                     if status == "healthy":
@@ -139,12 +139,12 @@ async def detailed_health_check(
             else:
                 details["cosmos_db"] = {
                     "status": "simulation_mode",
-                    "message": "Running in development simulation mode"
+                    "message": "Running in development simulation mode",
                 }
         else:
             details["cosmos_db"] = {
                 "status": "disabled",
-                "message": "Cosmos DB not enabled in configuration"
+                "message": "Cosmos DB not enabled in configuration",
             }
 
     except Exception as e:

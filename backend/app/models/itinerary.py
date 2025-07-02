@@ -14,6 +14,9 @@ from sqlalchemy import (
     Boolean,
     Column,
     DateTime,
+)
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy import (
     ForeignKey,
     Integer,
     Numeric,
@@ -21,7 +24,6 @@ from sqlalchemy import (
     Text,
     Time,
 )
-from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import relationship
 
 

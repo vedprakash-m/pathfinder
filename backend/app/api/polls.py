@@ -2,17 +2,15 @@
 API endpoints for Magic Polls functionality - Unified Cosmos DB Implementation
 """
 
-import logging
-from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from ..core.database_unified import get_cosmos_repository
-from ..core.security import get_current_user
-from ..core.logging_config import get_logger
 from ..core.ai_cost_management import ai_cost_control
+from ..core.database_unified import get_cosmos_repository
+from ..core.logging_config import get_logger
+from ..core.security import get_current_user
 from ..models.ai_integration import PollType
 from ..models.user import User
 from ..repositories.cosmos_unified import UnifiedCosmosRepository
@@ -60,7 +58,7 @@ class SubmitResponseRequest(BaseModel):
 
 
 @router.post("")
-@ai_cost_control(model='gpt-4', max_tokens=1500)
+@ai_cost_control(model="gpt-4", max_tokens=1500)
 async def create_poll(
     request: CreatePollRequest,
     current_user: User = Depends(get_current_user),
@@ -80,16 +78,15 @@ async def create_poll(
         trip = await cosmos_repo.get_trip_by_id(request.trip_id)
         if not trip:
             raise HTTPException(status_code=404, detail="Trip not found")
-        
+
         # Check if user is part of trip's family or trip organizer
         user_families = await cosmos_repo.get_user_families(str(current_user.id))
         user_family_ids = [f.id for f in user_families]
-        
-        has_access = (
-            trip.organizer_user_id == str(current_user.id) or
-            any(family_id in trip.participating_family_ids for family_id in user_family_ids)
+
+        has_access = trip.organizer_user_id == str(current_user.id) or any(
+            family_id in trip.participating_family_ids for family_id in user_family_ids
         )
-        
+
         if not has_access:
             raise HTTPException(status_code=403, detail="No access to this trip")
 
@@ -273,7 +270,7 @@ async def update_poll_status(
         else:
             raise HTTPException(
                 status_code=result.get("status_code", 400),
-                detail=result.get("error", "Failed to update poll status")
+                detail=result.get("error", "Failed to update poll status"),
             )
 
     except HTTPException:
@@ -331,14 +328,11 @@ async def get_poll_analytics(
         )
 
         if result.get("success"):
-            return {
-                "success": True,
-                "analytics": result["analytics"]
-            }
+            return {"success": True, "analytics": result["analytics"]}
         else:
             raise HTTPException(
                 status_code=result.get("status_code", 404),
-                detail=result.get("error", "Analytics not found")
+                detail=result.get("error", "Analytics not found"),
             )
 
     except HTTPException:

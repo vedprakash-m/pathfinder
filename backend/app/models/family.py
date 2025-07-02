@@ -13,13 +13,15 @@ from sqlalchemy import (
     Boolean,
     Column,
     DateTime,
+)
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
     Text,
     func,
 )
-from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import relationship
 
 

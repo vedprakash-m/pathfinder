@@ -9,8 +9,6 @@ from collections import Counter
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-import openai
-
 try:
     import tiktoken
 
@@ -567,7 +565,7 @@ class AIService:
             if not client:
                 logger.error("OpenAI client not available - API key not configured")
                 raise ValueError("AI service not configured - OpenAI API key required")
-            
+
             logger.info("Using direct OpenAI API call")
 
             max_tokens = getattr(settings, "OPENAI_MAX_TOKENS", 4000)
@@ -1099,81 +1097,83 @@ class AdvancedAIService:
     Advanced AI service with enhanced cost management and graceful degradation.
     This class provides the interface expected by validation scripts and external systems.
     """
-    
+
     def __init__(self):
         self.ai_service = ai_service
         self.cost_tracker = ai_service.cost_tracker
         self.fallback_responses = {
-            'assistant': {
-                'greeting': "Hello! I'm here to help with your trip planning. While our AI assistant is temporarily unavailable, I can still help you with basic planning tasks.",
-                'suggestions': [
+            "assistant": {
+                "greeting": "Hello! I'm here to help with your trip planning. While our AI assistant is temporarily unavailable, I can still help you with basic planning tasks.",
+                "suggestions": [
                     "Browse our trip templates",
-                    "Use manual itinerary builder", 
+                    "Use manual itinerary builder",
                     "Check out popular destinations",
-                    "View family-friendly activities"
-                ]
+                    "View family-friendly activities",
+                ],
             },
-            'polls': {
-                'message': "Voting features are temporarily unavailable. You can still view existing poll results and create basic polls manually.",
-                'alternatives': [
+            "polls": {
+                "message": "Voting features are temporarily unavailable. You can still view existing poll results and create basic polls manually.",
+                "alternatives": [
                     "Use group chat to discuss options",
                     "Create a simple yes/no vote",
-                    "Schedule a family call to decide"
-                ]
+                    "Schedule a family call to decide",
+                ],
             },
-            'consensus': {
-                'message': "AI consensus analysis is temporarily unavailable. Here are some manual approaches to reach group decisions:",
-                'strategies': [
+            "consensus": {
+                "message": "AI consensus analysis is temporarily unavailable. Here are some manual approaches to reach group decisions:",
+                "strategies": [
                     "List all options and vote",
                     "Use a ranking system (1-5 stars)",
                     "Discuss pros and cons together",
-                    "Try the 'elimination' method"
-                ]
+                    "Try the 'elimination' method",
+                ],
             },
-            'itinerary': {
-                'message': "AI itinerary generation is temporarily limited. Use our templates and manual tools:",
-                'tools': [
+            "itinerary": {
+                "message": "AI itinerary generation is temporarily limited. Use our templates and manual tools:",
+                "tools": [
                     "Pre-built destination templates",
-                    "Activity suggestion database", 
+                    "Activity suggestion database",
                     "Budget planning worksheets",
-                    "Timeline and logistics helpers"
-                ]
-            }
+                    "Timeline and logistics helpers",
+                ],
+            },
         }
-    
+
     def _get_fallback_response(self, context: str) -> Dict[str, Any]:
         """Get graceful fallback response when AI services are unavailable."""
-        
+
         # Determine the type of request from context
         context_lower = context.lower()
-        
-        if any(word in context_lower for word in ['assistant', 'help', 'question']):
-            fallback_type = 'assistant'
-        elif any(word in context_lower for word in ['poll', 'vote', 'decide']):
-            fallback_type = 'polls'
-        elif any(word in context_lower for word in ['consensus', 'agreement', 'group']):
-            fallback_type = 'consensus'
-        elif any(word in context_lower for word in ['itinerary', 'plan', 'schedule']):
-            fallback_type = 'itinerary'
+
+        if any(word in context_lower for word in ["assistant", "help", "question"]):
+            fallback_type = "assistant"
+        elif any(word in context_lower for word in ["poll", "vote", "decide"]):
+            fallback_type = "polls"
+        elif any(word in context_lower for word in ["consensus", "agreement", "group"]):
+            fallback_type = "consensus"
+        elif any(word in context_lower for word in ["itinerary", "plan", "schedule"]):
+            fallback_type = "itinerary"
         else:
-            fallback_type = 'assistant'
-        
-        base_response = self.fallback_responses.get(fallback_type, self.fallback_responses['assistant'])
-        
+            fallback_type = "assistant"
+
+        base_response = self.fallback_responses.get(
+            fallback_type, self.fallback_responses["assistant"]
+        )
+
         return {
-            'type': 'fallback_response',
-            'service': fallback_type,
-            'message': base_response.get('message', base_response.get('greeting', '')),
-            'suggestions': base_response.get('suggestions', []),
-            'alternatives': base_response.get('alternatives', []),
-            'strategies': base_response.get('strategies', []),
-            'tools': base_response.get('tools', []),
-            'available': True,
-            'ai_available': False,
-            'retry_suggestion': "You can try again later when AI services are restored.",
-            'estimated_retry_time': '15-30 minutes'
+            "type": "fallback_response",
+            "service": fallback_type,
+            "message": base_response.get("message", base_response.get("greeting", "")),
+            "suggestions": base_response.get("suggestions", []),
+            "alternatives": base_response.get("alternatives", []),
+            "strategies": base_response.get("strategies", []),
+            "tools": base_response.get("tools", []),
+            "available": True,
+            "ai_available": False,
+            "retry_suggestion": "You can try again later when AI services are restored.",
+            "estimated_retry_time": "15-30 minutes",
         }
-    
+
     async def generate_with_fallback(self, request_type: str, **kwargs) -> Dict[str, Any]:
         """Generate AI content with graceful fallback for errors."""
         try:
@@ -1181,25 +1181,25 @@ class AdvancedAIService:
             if not self.cost_tracker.check_budget_limit(request_type):
                 logger.warning(f"Budget limit exceeded for {request_type}, using fallback")
                 return self._get_fallback_response(request_type)
-            
+
             # Try the main AI service
-            if request_type == 'itinerary_generation':
+            if request_type == "itinerary_generation":
                 return await self.ai_service.generate_itinerary(**kwargs)
-            elif request_type == 'activity_enhancement':
+            elif request_type == "activity_enhancement":
                 return await self.ai_service.enhance_activity(**kwargs)
-            elif request_type == 'route_optimization':
+            elif request_type == "route_optimization":
                 return await self.ai_service.optimize_route(**kwargs)
-            elif request_type == 'budget_optimization':
+            elif request_type == "budget_optimization":
                 return await self.ai_service.optimize_budget_allocation(**kwargs)
-            elif request_type == 'activity_suggestions':
+            elif request_type == "activity_suggestions":
                 return await self.ai_service.get_activity_suggestions(**kwargs)
             else:
                 # Generic AI processing
-                context = kwargs.get('context', request_type)
+                context = kwargs.get("context", request_type)
                 return self._get_fallback_response(context)
-                
+
         except ValueError as e:
-            if 'budget' in str(e).lower():
+            if "budget" in str(e).lower():
                 logger.warning(f"Budget limit hit for {request_type}: {e}")
                 return self._get_fallback_response(request_type)
             else:
@@ -1208,26 +1208,26 @@ class AdvancedAIService:
         except Exception as e:
             logger.error(f"Unexpected error in AI service for {request_type}: {e}")
             return self._get_fallback_response(request_type)
-    
+
     def get_cost_status(self) -> Dict[str, Any]:
         """Get current cost and budget status."""
         usage_stats = self.ai_service.get_usage_stats()
-        today = usage_stats.get('today', {})
-        
+        today = usage_stats.get("today", {})
+
         return {
-            'daily_cost': today.get('cost', 0),
-            'daily_requests': today.get('requests', 0),
-            'budget_limit': usage_stats.get('budget_limit', 50.0),
-            'budget_remaining': usage_stats.get('budget_remaining', 50.0),
-            'models_available': usage_stats.get('models_available', []),
-            'budget_status': 'ok' if usage_stats.get('budget_remaining', 0) > 5 else 'warning',
-            'graceful_mode': usage_stats.get('budget_remaining', 0) <= 0
+            "daily_cost": today.get("cost", 0),
+            "daily_requests": today.get("requests", 0),
+            "budget_limit": usage_stats.get("budget_limit", 50.0),
+            "budget_remaining": usage_stats.get("budget_remaining", 50.0),
+            "models_available": usage_stats.get("models_available", []),
+            "budget_status": "ok" if usage_stats.get("budget_remaining", 0) > 5 else "warning",
+            "graceful_mode": usage_stats.get("budget_remaining", 0) <= 0,
         }
-    
-    def validate_request_budget(self, request_type: str = 'general') -> bool:
+
+    def validate_request_budget(self, request_type: str = "general") -> bool:
         """Validate if a request can be processed within budget."""
         return self.cost_tracker.check_budget_limit(request_type)
-    
+
     def get_optimization_suggestions(self) -> List[str]:
         """Get cost optimization suggestions."""
         return self.cost_tracker.get_optimization_suggestions()

@@ -20,17 +20,17 @@ from app.application.trip_use_cases import (
     UpdateTripUseCase,
 )
 from app.core.dependencies import (
+    get_add_participant_use_case,
     get_create_trip_use_case,
+    get_delete_trip_use_case,
+    get_get_participants_use_case,
+    get_get_trip_stats_use_case,
     get_get_trip_use_case,
     get_list_user_trips_use_case,
-    get_update_trip_use_case,
-    get_delete_trip_use_case,
-    get_get_trip_stats_use_case,
-    get_add_participant_use_case,
-    get_get_participants_use_case,
-    get_update_participation_use_case,
     get_remove_participant_use_case,
     get_send_invitation_use_case,
+    get_update_participation_use_case,
+    get_update_trip_use_case,
 )
 
 # from app.core.database import get_db
@@ -71,9 +71,11 @@ async def create_trip(
         result = await use_case(trip_data, current_user.id)
         return result
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from None
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        ) from None
 
 
 # --------------------------------------------------------------
@@ -82,7 +84,6 @@ async def create_trip(
 
 
 # NEW import (keep grouped at top if sorted)
-from datetime import date, timedelta
 
 
 @router.post("/sample", response_model=TripResponse, status_code=status.HTTP_201_CREATED)
@@ -271,7 +272,7 @@ async def update_trip(
     try:
         return await use_case(trip_id, trip_update, current_user.id)
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from None
     except PermissionError:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -291,7 +292,7 @@ async def delete_trip(
         await use_case(trip_id, current_user.id)
         return {"message": "Trip deleted successfully"}
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from None
     except PermissionError:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -328,7 +329,7 @@ async def add_participant(
     try:
         return await use_case(trip_id, participation_data, current_user.id)
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from None
 
 
 @router.get("/{trip_id}/participants", response_model=List[ParticipationResponse])
@@ -355,7 +356,7 @@ async def update_participation(
     try:
         return await use_case(participation_id, participation_update, current_user.id)
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from None
     except PermissionError:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -376,7 +377,7 @@ async def remove_participant(
         await use_case(participation_id, current_user.id)
         return {"message": "Participant removed successfully"}
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from None
     except PermissionError:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -400,7 +401,7 @@ async def send_invitation(
         await use_case(trip_id, invitation_data, current_user.id)
         return {"message": "Invitation sent successfully"}
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from None
 
 
 @router.get("/{trip_id}/messages")

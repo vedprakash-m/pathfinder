@@ -25,7 +25,7 @@ class TestTripIntegration:
                 "last_name": "Test",
             }
 
-            register_response = await client.post("/api/v1/auth/register", json=user_data)
+            _register_response = await client.post("/api/v1/auth/register", json=user_data)
             # May fail if user exists, which is okay for integration tests
 
             # Step 2: Login to get token
@@ -358,7 +358,7 @@ class TestDataConsistencyIntegration:
                 )
                 assert trip_details_response.status_code == status.HTTP_200_OK
 
-                trip_details = trip_details_response.json()
+                _trip_details = trip_details_response.json()
 
                 # Check if participants list includes the user's family
                 participants_response = await client.get(

@@ -5,9 +5,7 @@ Testing the JSONFormatter and get_logger function.
 
 import json
 import logging
-import pytest
-from datetime import datetime, timezone
-from unittest.mock import patch, MagicMock
+from datetime import datetime
 
 from app.core.logging_config import JSONFormatter, get_logger
 
@@ -24,18 +22,18 @@ class TestJSONFormatter:
         record = logging.LogRecord(
             name="test_logger",
             level=logging.INFO,
-            pathname="/test/path.py", 
+            pathname="/test/path.py",
             lineno=42,
             msg="Test message",
             args=(),
-            exc_info=None
+            exc_info=None,
         )
-        
+
         result = self.formatter.format(record)
-        
+
         # Should be valid JSON
         log_data = json.loads(result)
-        
+
         # Check required fields
         assert "timestamp" in log_data
         assert log_data["level"] == "INFO"
@@ -51,8 +49,9 @@ class TestJSONFormatter:
             raise ValueError("Test exception")
         except ValueError:
             import sys
+
             exc_info = sys.exc_info()
-            
+
             record = logging.LogRecord(
                 name="test_logger",
                 level=logging.ERROR,
@@ -60,12 +59,12 @@ class TestJSONFormatter:
                 lineno=42,
                 msg="Error occurred",
                 args=(),
-                exc_info=exc_info
+                exc_info=exc_info,
             )
-            
+
             result = self.formatter.format(record)
             log_data = json.loads(result)
-            
+
             assert "exception" in log_data
             assert "ValueError" in log_data["exception"]
             assert "Test exception" in log_data["exception"]
@@ -79,17 +78,17 @@ class TestJSONFormatter:
             lineno=42,
             msg="Test message",
             args=(),
-            exc_info=None
+            exc_info=None,
         )
-        
+
         # Add extra fields
         record.user_id = "user123"
         record.request_id = "req456"
         record.custom_field = "custom_value"
-        
+
         result = self.formatter.format(record)
         log_data = json.loads(result)
-        
+
         # Extra fields should be included
         assert log_data["user_id"] == "user123"
         assert log_data["request_id"] == "req456"
@@ -104,15 +103,15 @@ class TestJSONFormatter:
             lineno=42,
             msg="Test message",
             args=(),
-            exc_info=None
+            exc_info=None,
         )
-        
+
         result = self.formatter.format(record)
         log_data = json.loads(result)
-        
+
         # Should be valid ISO timestamp
         timestamp = log_data["timestamp"]
-        parsed_time = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+        parsed_time = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
         assert isinstance(parsed_time, datetime)
 
     def test_log_excludes_internal_fields(self):
@@ -124,19 +123,32 @@ class TestJSONFormatter:
             lineno=42,
             msg="Test message",
             args=(),
-            exc_info=None
+            exc_info=None,
         )
-        
+
         result = self.formatter.format(record)
         log_data = json.loads(result)
-        
+
         # Internal fields should not be included
         internal_fields = [
-            "name", "msg", "args", "levelno", "pathname", "filename",
-            "created", "msecs", "relativeCreated", "thread", "threadName",
-            "processName", "process", "getMessage", "exc_text", "stack_info"
+            "name",
+            "msg",
+            "args",
+            "levelno",
+            "pathname",
+            "filename",
+            "created",
+            "msecs",
+            "relativeCreated",
+            "thread",
+            "threadName",
+            "processName",
+            "process",
+            "getMessage",
+            "exc_text",
+            "stack_info",
         ]
-        
+
         for field in internal_fields:
             assert field not in log_data
 
@@ -149,12 +161,12 @@ class TestJSONFormatter:
             lineno=42,
             msg="Test message with %s and %d",
             args=("string_arg", 123),
-            exc_info=None
+            exc_info=None,
         )
-        
+
         result = self.formatter.format(record)
         log_data = json.loads(result)
-        
+
         assert log_data["message"] == "Test message with string_arg and 123"
 
 
@@ -175,7 +187,7 @@ class TestGetLogger:
         """Test that different module names create different loggers."""
         logger1 = get_logger("module1")
         logger2 = get_logger("module2")
-        
+
         assert logger1.name == "app.module1"
         assert logger2.name == "app.module2"
         assert logger1 is not logger2
@@ -184,7 +196,7 @@ class TestGetLogger:
         """Test that same module name returns the same logger instance."""
         logger1 = get_logger("test_module")
         logger2 = get_logger("test_module")
-        
+
         # Should be the same logger instance
         assert logger1 is logger2
 
@@ -206,26 +218,27 @@ class TestLoggingIntegration:
         """Test JSONFormatter integration with actual logging."""
         formatter = JSONFormatter()
         logger = logging.getLogger("test_integration")
-        
+
         # Create a handler with our formatter
         import io
+
         log_stream = io.StringIO()
         handler = logging.StreamHandler(log_stream)
         handler.setFormatter(formatter)
         logger.addHandler(handler)
         logger.setLevel(logging.INFO)
-        
+
         # Log a message
         logger.info("Integration test message")
-        
+
         # Get the formatted output
         log_output = log_stream.getvalue().strip()
-        
+
         # Should be valid JSON
         log_data = json.loads(log_output)
         assert log_data["message"] == "Integration test message"
         assert log_data["level"] == "INFO"
-        
+
         # Clean up
         logger.removeHandler(handler)
 
@@ -233,9 +246,11 @@ class TestLoggingIntegration:
         """Test that app loggers form proper hierarchy."""
         parent_logger = get_logger("parent")
         child_logger = get_logger("parent.child")
-        
+
         assert parent_logger.name == "app.parent"
         assert child_logger.name == "app.parent.child"
-        
+
         # Child should inherit from parent in logging hierarchy
-        assert child_logger.parent.name.startswith("app.parent") or child_logger.parent.name == "app" 
+        assert (
+            child_logger.parent.name.startswith("app.parent") or child_logger.parent.name == "app"
+        )

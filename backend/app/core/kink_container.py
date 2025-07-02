@@ -10,11 +10,11 @@ implementations.
 
 from __future__ import annotations
 
-import asyncio
+import os
+import sys
 from typing import AsyncGenerator
 
 import kink
-
 from app.application.trip_use_cases import (
     AddParticipantUseCase,
     CreateTripUseCase,
@@ -28,12 +28,9 @@ from app.application.trip_use_cases import (
     UpdateParticipationUseCase,
     UpdateTripUseCase,
 )
-from app.core.database import get_db, SessionLocal
+from app.core.database import SessionLocal
 from app.core.repositories.trip_cosmos_repository import TripCosmosRepository
 from app.core.repositories.trip_repository import TripRepository
-
-import sys
-import os
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 from domain.family import FamilyDomainService

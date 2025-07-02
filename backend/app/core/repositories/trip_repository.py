@@ -13,11 +13,11 @@ from uuid import UUID
 
 from app.core.logging_config import get_logger
 from app.models.trip import (
+    ParticipationStatus,
     Trip,
     TripCreate,
     TripParticipation,
     TripStatus,
-    ParticipationStatus,
 )
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession

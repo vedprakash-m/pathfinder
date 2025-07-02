@@ -14,11 +14,12 @@ from app.core.config import get_settings
 from app.core.database_unified import get_cosmos_service
 from app.core.logging_config import setup_logging
 
+# Import security middleware
+from app.core.middleware import setup_security_middleware
+
 # from app.core.telemetry import setup_opentelemetry  # Commented out - not used yet
 from app.services.websocket import websocket_manager
 from fastapi import FastAPI, Request, status
-# Import security middleware
-from app.core.middleware import setup_security_middleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 
@@ -166,9 +167,9 @@ if settings.ENVIRONMENT == "production":
         allowed_hosts=settings.allowed_hosts_list,
     )
 
+from app.core.auth_monitoring import AuthenticationMonitoringMiddleware
 from app.core.csrf import CSRFMiddleware
 from app.core.performance import PerformanceMonitoringMiddleware
-from app.core.auth_monitoring import AuthenticationMonitoringMiddleware
 
 # Import security middleware
 from app.core.rate_limiting import RateLimiter
@@ -288,24 +289,24 @@ app.include_router(health_router)
 
 def create_app(testing: bool = False) -> FastAPI:
     """Create FastAPI application instance - useful for testing."""
-    
+
     if testing:
         # Simplified lifespan for testing
         @asynccontextmanager
         async def test_lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             """Simplified lifespan for testing."""
             logger.info("Starting test application...")
-            
+
             # Minimal initialization for tests
             try:
                 await init_db()
             except Exception as e:
                 logger.warning(f"Test DB init failed: {e}")
-                
+
             yield
-            
+
             logger.info("Test application shutdown")
-        
+
         test_app = FastAPI(
             title="Pathfinder API (Test)",
             description="AI-Powered Group Trip Planner - Test Mode",
@@ -314,7 +315,7 @@ def create_app(testing: bool = False) -> FastAPI:
             redoc_url="/redoc",
             lifespan=test_lifespan,
         )
-        
+
         # Essential middleware for testing
         test_app.add_middleware(
             CORSMiddleware,
@@ -323,10 +324,10 @@ def create_app(testing: bool = False) -> FastAPI:
             allow_methods=["*"],
             allow_headers=["*"],
         )
-        
+
         # Add API router
         test_app.include_router(api_router, prefix="/api/v1")
-        
+
         return test_app
     else:
         # Return the main app instance

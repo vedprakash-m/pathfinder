@@ -13,7 +13,6 @@ from app.models.user import User
 from app.repositories.cosmos_unified import UnifiedCosmosRepository
 from app.services.export_service import DataExportService
 from app.tasks.export_tasks import bulk_export_trips, export_trip_data
-from ..core.database_unified import get_cosmos_repository
 from fastapi import (
     APIRouter,
     BackgroundTasks,
@@ -24,7 +23,8 @@ from fastapi import (
     status,
 )
 from pydantic import BaseModel
-from sqlalchemy.ext.asyncio import AsyncSession
+
+from ..core.database_unified import get_cosmos_repository
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -66,8 +66,7 @@ async def export_trip(
         user_trips = await cosmos_repo.get_user_trips(current_user["id"])
         if not any(t.id == str(trip_id) for t in user_trips):
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not authorized to export this trip"
+                status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to export this trip"
             )
 
         if export_request.async_processing:
@@ -77,11 +76,11 @@ async def export_trip(
                 "trip_id": str(trip_id),
                 "format": export_request.format,
                 "export_type": export_request.export_type,
-                "status": "pending"
+                "status": "pending",
             }
-            
+
             export_task = await cosmos_repo.create_export_task(export_data)
-            
+
             # Process export asynchronously
             task = export_trip_data.delay(
                 trip_id=str(trip_id),

@@ -431,7 +431,7 @@ class SmartCoordinationService:
         consensus_score = event.event_data.get("new_score", 1.0)
 
         if consensus_score < 0.6:  # Low consensus needs discussion
-            meeting_suggestion = await self.suggest_optimal_meeting_time(
+            _meeting_suggestion = await self.suggest_optimal_meeting_time(
                 event.trip_id, meeting_type="consensus"
             )
 
@@ -545,7 +545,7 @@ class SmartCoordinationService:
 
     async def _schedule_review_meeting(self, event: CoordinationEvent, rule: AutomationRule):
         """Schedule review meeting for generated itinerary."""
-        meeting_suggestion = await self.suggest_optimal_meeting_time(
+        _meeting_suggestion = await self.suggest_optimal_meeting_time(
             event.trip_id, meeting_type="review"
         )
         # Implementation would schedule the meeting

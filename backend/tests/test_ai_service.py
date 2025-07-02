@@ -8,8 +8,6 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from app.services.ai_service import AIService, CostTracker, ItineraryPrompts
-from app.services import ai_service
-from app.services import ai_service
 
 
 @pytest.mark.asyncio
@@ -171,7 +169,7 @@ async def test_ai_service_generate_itinerary(mock_openai_response):
         # Create a properly structured mock response
         mock_response = {
             "content": '{"overview": "Test itinerary", "daily_itinerary": [{"day": 1, "activities": ["Test activity"]}], "budget_summary": {"total": 1000}}',
-            "usage": {"prompt_tokens": 100, "completion_tokens": 200, "total_tokens": 300}
+            "usage": {"prompt_tokens": 100, "completion_tokens": 200, "total_tokens": 300},
         }
         mock_api_call.return_value = mock_response
 
@@ -218,7 +216,7 @@ async def test_ai_service_with_cost_tracking(mock_openai_response):
         # Create a properly structured mock response
         mock_response = {
             "content": '{"overview": "Test itinerary", "daily_itinerary": [{"day": 1, "activities": ["Test activity"]}], "budget_summary": {"total": 1000}}',
-            "usage": {"prompt_tokens": 100, "completion_tokens": 200, "total_tokens": 300}
+            "usage": {"prompt_tokens": 100, "completion_tokens": 200, "total_tokens": 300},
         }
         mock_api_call.return_value = mock_response
 

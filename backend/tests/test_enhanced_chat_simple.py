@@ -5,17 +5,17 @@ This module tests the enhanced chat service core functionality
 without complex dependencies.
 """
 
-import pytest
 from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 from uuid import uuid4
 
+import pytest
 from app.services.enhanced_chat import (
-    EnhancedChatService,
-    TripChatRoom,
     ChatMessage,
-    UserPresence,
+    EnhancedChatService,
     MessageType,
+    TripChatRoom,
+    UserPresence,
 )
 
 
@@ -73,7 +73,7 @@ class TestChatMessage:
             timestamp=datetime.utcnow(),
             metadata={"test": "data"},
         )
-        
+
         assert message.trip_id == sample_trip_id
         assert message.user_id == sample_user_id
         assert message.message_type == MessageType.CHAT
@@ -93,9 +93,9 @@ class TestChatMessage:
             content="Test message",
             timestamp=timestamp,
         )
-        
+
         result = message.to_dict()
-        
+
         assert result["id"] == "test-id"
         assert result["trip_id"] == sample_trip_id
         assert result["user_id"] == sample_user_id
@@ -106,7 +106,9 @@ class TestChatMessage:
         assert result["timestamp"] == timestamp.isoformat()
         assert result["metadata"] == {}
 
-    def test_chat_message_to_dict_with_metadata(self, sample_trip_id, sample_user_id, sample_family_id):
+    def test_chat_message_to_dict_with_metadata(
+        self, sample_trip_id, sample_user_id, sample_family_id
+    ):
         """Test converting chat message with metadata to dictionary."""
         message = ChatMessage(
             id="test-id",
@@ -119,9 +121,9 @@ class TestChatMessage:
             timestamp=datetime.utcnow(),
             metadata={"vote_id": "123", "options": ["A", "B"]},
         )
-        
+
         result = message.to_dict()
-        
+
         assert result["metadata"]["vote_id"] == "123"
         assert result["metadata"]["options"] == ["A", "B"]
 
@@ -140,7 +142,7 @@ class TestUserPresence:
             last_activity=timestamp,
             current_page="/trip/123",
         )
-        
+
         assert presence.user_id == sample_user_id
         assert presence.user_name == "Test User"
         assert presence.family_id == sample_family_id
@@ -157,7 +159,7 @@ class TestUserPresence:
             status="online",
             last_activity=datetime.utcnow(),
         )
-        
+
         assert presence.current_page is None
 
 
@@ -188,11 +190,11 @@ class TestTripChatRoom:
                 timestamp=datetime.utcnow(),
             )
             chat_room.message_history.append(message)
-            
+
             # Apply the same logic as in broadcast_message
             if len(chat_room.message_history) > 100:
                 chat_room.message_history = chat_room.message_history[-100:]
-        
+
         # Should only keep last 100
         assert len(chat_room.message_history) == 100
         assert chat_room.message_history[0].content == "Message 50"
@@ -208,8 +210,8 @@ class TestEnhancedChatService:
 
     def test_get_or_create_room_new(self, chat_service, sample_trip_id):
         """Test getting or creating new room."""
-        room = chat_service.get_or_create_room(sample_trip_id)
-        
+        _room = chat_service.get_or_create_room(sample_trip_id)
+
         assert isinstance(room, TripChatRoom)
         assert room.trip_id == sample_trip_id
         assert sample_trip_id in chat_service.chat_rooms
@@ -218,19 +220,19 @@ class TestEnhancedChatService:
         """Test getting existing room."""
         room1 = chat_service.get_or_create_room(sample_trip_id)
         room2 = chat_service.get_or_create_room(sample_trip_id)
-        
+
         assert room1 is room2
 
     def test_get_room_stats(self, chat_service, sample_trip_id):
         """Test getting room statistics."""
         # Create a room with some data
-        room = chat_service.get_or_create_room(sample_trip_id)
+        _room = chat_service.get_or_create_room(sample_trip_id)
         room.connections["user1"] = AsyncMock()
         room.connections["user2"] = AsyncMock()
         room.active_votes["vote1"] = {}
-        
+
         stats = chat_service.get_room_stats()
-        
+
         assert stats["total_rooms"] == 1
         assert stats["total_connections"] == 2
         assert sample_trip_id in stats["rooms"]
@@ -270,24 +272,24 @@ class TestEdgeCases:
             timestamp=datetime.utcnow(),
             metadata=None,
         )
-        
+
         result = message.to_dict()
         assert result["metadata"] == {}
 
     def test_empty_room_stats(self, chat_service):
         """Test room stats with no rooms."""
         stats = chat_service.get_room_stats()
-        
+
         assert stats["total_rooms"] == 0
         assert stats["total_connections"] == 0
         assert stats["rooms"] == {}
 
     def test_room_with_no_connections(self, chat_service, sample_trip_id):
         """Test room stats with room but no connections."""
-        room = chat_service.get_or_create_room(sample_trip_id)
-        
+        _room = chat_service.get_or_create_room(sample_trip_id)
+
         stats = chat_service.get_room_stats()
-        
+
         assert stats["total_rooms"] == 1
         assert stats["total_connections"] == 0
         assert stats["rooms"][sample_trip_id]["user_count"] == 0

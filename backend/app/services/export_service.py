@@ -22,11 +22,11 @@ logger = get_logger(__name__)
 class DataExportService:
     """Service for exporting trip data to various formats."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.blob_service_client = None
         self._setup_blob_client()
 
-    def _setup_blob_client(self):
+    def _setup_blob_client(self) -> None:
         """Setup Azure Blob Storage client."""
         if settings.AZURE_STORAGE_CONNECTION_STRING:
             try:
@@ -99,7 +99,7 @@ class DataExportService:
                 "success": True,
                 "format": "excel",
                 "file_size": len(excel_bytes),
-                "sheets": list(excel_data.keys()),
+                "sheets": List[Any](excel_data.keys()),
                 "generated_at": datetime.now().isoformat(),
                 "trip_id": trip_id,
                 "user_id": user_id,
@@ -207,7 +207,7 @@ class DataExportService:
                     "success": True,
                     "format": "csv_zip",
                     "file_size": len(zip_bytes),
-                    "files": list(csv_files.keys()),
+                    "files": List[Any](csv_files.keys()),
                     "generated_at": datetime.now().isoformat(),
                     "trip_id": trip_id,
                     "user_id": user_id,
@@ -267,7 +267,7 @@ class DataExportService:
 
             # Add preferences if available
             preferences = participation.get("preferences", {})
-            if isinstance(preferences, dict):
+            if isinstance(preferences, Dict[str, Any]):
                 for key, value in preferences.items():
                     participant[f"Preference_{key}"] = value
 

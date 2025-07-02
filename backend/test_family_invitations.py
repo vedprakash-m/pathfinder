@@ -105,7 +105,7 @@ async def test_email_service():
     try:
         from app.services.email_service import EmailService
 
-        email_service = EmailService()
+        _email_service = EmailService()
         print("✅ EmailService can be instantiated")
         return True
 

@@ -13,7 +13,7 @@ monolith.  The methods implemented are the subset required by the existing
 
 import json
 from datetime import datetime
-from typing import Any, List, Optional
+from typing import List, Optional
 from uuid import UUID
 
 from app.models.trip import (
@@ -43,6 +43,7 @@ class TripDomainService:  # pragma: no cover – thin façade for now
         unified_cosmos_repository=None,
     ):
         from app.repositories.cosmos_unified import unified_cosmos_repo
+
         self._cosmos_repo = unified_cosmos_repository or unified_cosmos_repo
 
     # ---------------------------------------------------------------------
@@ -53,7 +54,7 @@ class TripDomainService:  # pragma: no cover – thin façade for now
         """Create a new trip using unified Cosmos DB storage."""
         # Create trip document in Cosmos DB
         trip_doc = await self._cosmos_repo.create_trip(trip_data, creator_id)
-        
+
         # Convert to response format
         return TripResponse(
             id=trip_doc.id,
@@ -68,7 +69,7 @@ class TripDomainService:  # pragma: no cover – thin façade for now
             created_at=trip_doc.created_at,
             updated_at=trip_doc.updated_at,
             participant_count=len(trip_doc.participants) if trip_doc.participants else 0,
-            preferences=trip_doc.preferences
+            preferences=trip_doc.preferences,
         )
 
     async def get_trip_by_id(self, trip_id: UUID, user_id: str) -> Optional[TripDetail]:
@@ -95,7 +96,7 @@ class TripDomainService:  # pragma: no cover – thin façade for now
             created_at=trip_doc.created_at,
             updated_at=trip_doc.updated_at,
             participants=trip_doc.participants or [],
-            preferences=trip_doc.preferences or {}
+            preferences=trip_doc.preferences or {},
         )
 
     async def get_user_trips(
@@ -107,7 +108,7 @@ class TripDomainService:  # pragma: no cover – thin façade for now
     ) -> List[TripResponse]:
         """Get all trips for a user using unified Cosmos DB."""
         trip_docs = await self._cosmos_repo.get_user_trips(user_id, skip, limit, status_filter)
-        
+
         return [
             TripResponse(
                 id=trip.id,
@@ -122,7 +123,7 @@ class TripDomainService:  # pragma: no cover – thin façade for now
                 created_at=trip.created_at,
                 updated_at=trip.updated_at,
                 participant_count=len(trip.participants) if trip.participants else 0,
-                preferences=trip.preferences
+                preferences=trip.preferences,
             )
             for trip in trip_docs
         ]
@@ -153,7 +154,7 @@ class TripDomainService:  # pragma: no cover – thin façade for now
             created_at=updated_trip.created_at,
             updated_at=updated_trip.updated_at,
             participant_count=len(updated_trip.participants) if updated_trip.participants else 0,
-            preferences=updated_trip.preferences
+            preferences=updated_trip.preferences,
         )
 
     async def delete_trip(self, trip_id: UUID, user_id: str) -> None:
@@ -183,7 +184,7 @@ class TripDomainService:  # pragma: no cover – thin façade for now
         if trip_doc.creator_id != user_id and user_id not in (trip_doc.participants or []):
             return None
 
-        participants = trip_doc.participants or []
+        _participants = trip_doc.participants or []
         total_families = len(participations)
         confirmed_families = len(
             [p for p in participations if p.status == ParticipationStatus.CONFIRMED]

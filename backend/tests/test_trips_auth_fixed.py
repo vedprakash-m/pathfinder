@@ -2,7 +2,6 @@
 Updated unit tests for trip management functionality using proper authentication.
 """
 
-import pytest
 from app.main import app
 from fastapi import status
 from fastapi.testclient import TestClient

@@ -2,21 +2,20 @@
 Test with proper JWT tokens for authentication.
 """
 
-import pytest
 from unittest.mock import patch
-from fastapi.testclient import TestClient
-from fastapi import status
-from app.main import app
-from app.core.security import VedUser, create_access_token
-from app.core.config import get_settings
 from uuid import uuid4
-import jwt
+
+import pytest
+from app.core.config import get_settings
+from app.core.security import VedUser, create_access_token
+from app.main import app
+from fastapi.testclient import TestClient
 
 
 def test_trips_with_valid_jwt():
     """Test trip creation with a valid JWT token."""
 
-    settings = get_settings()
+    _settings = get_settings()
 
     # Create a test user
     test_user_id = str(uuid4())
@@ -136,9 +135,10 @@ def test_token_verification_directly():
     """Test token creation and verification directly."""
 
     import asyncio
+
     from app.core.security import verify_token
 
-    settings = get_settings()
+    _settings = get_settings()
 
     # Create a token
     token_data = {

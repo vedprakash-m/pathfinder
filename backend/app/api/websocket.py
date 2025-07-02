@@ -11,8 +11,8 @@ from uuid import UUID
 from app.core.container import Container
 from app.core.database_unified import get_cosmos_repository
 from app.core.security import get_current_user, get_current_user_websocket
-from app.repositories.cosmos_unified import UnifiedCosmosRepository
 from app.models.user import User
+from app.repositories.cosmos_unified import UnifiedCosmosRepository
 from app.services.websocket import handle_websocket_message, websocket_manager
 from fastapi import (
     APIRouter,
@@ -132,7 +132,7 @@ async def websocket_notifications_endpoint(
         await websocket.accept()
 
         # Add connection to notifications room
-        notifications_room = f"notifications_{user.id}"
+        _notifications_room = f"notifications_{user.id}"
         await websocket_manager.connect(websocket, user.id, None)
 
         # Send welcome message

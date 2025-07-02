@@ -41,7 +41,7 @@ class UnifiedSettings(BaseSettings):
     # ==================== CORS CONFIGURATION ====================
     CORS_ORIGINS: str = Field(
         default="http://localhost:3000,http://localhost:5173",
-        description="Comma-separated list of CORS origins",
+        description="Comma-separated List[Any] of CORS origins",
     )
     CORS_ALLOW_CREDENTIALS: bool = Field(default=True, description="Allow CORS credentials")
     CORS_ALLOW_METHODS: List[str] = Field(
@@ -74,16 +74,18 @@ class UnifiedSettings(BaseSettings):
     # Unified Cosmos DB approach per Tech Spec
     COSMOS_DB_ENABLED: bool = Field(
         default=False,  # Simplified: disabled by default for cost optimization
-        description="Enable unified Cosmos DB integration"
+        description="Enable unified Cosmos DB integration",
     )
     COSMOS_DB_URL: Optional[str] = Field(default=None, description="Cosmos DB endpoint URL")
     COSMOS_DB_KEY: Optional[str] = Field(default=None, description="Cosmos DB primary key")
     COSMOS_DB_DATABASE: str = Field(default="pathfinder", description="Cosmos DB database name")
-    COSMOS_DB_CONTAINER: str = Field(default="entities", description="Unified entities container name")
-    
+    COSMOS_DB_CONTAINER: str = Field(
+        default="entities", description="Unified entities container name"
+    )
+
     # Legacy SQL Database (to be deprecated)
     USE_SQL_DATABASE: bool = Field(default=False, description="Use SQL database (legacy)")
-    
+
     # Legacy container names (deprecated - will be removed after migration)
     COSMOS_DB_CONTAINER_ITINERARIES: str = Field(
         default="itineraries", description="Legacy: Itineraries container name"
@@ -112,7 +114,7 @@ class UnifiedSettings(BaseSettings):
     # ==================== AUTHENTICATION CONFIGURATION ====================
     # Microsoft Entra ID Configuration (Vedprakash Domain Standard)
     ENTRA_EXTERNAL_TENANT_ID: Optional[str] = Field(
-        default='vedid.onmicrosoft.com',  # ✅ Fixed to Vedprakash domain standard
+        default="vedid.onmicrosoft.com",  # ✅ Fixed to Vedprakash domain standard
         description="Microsoft Entra ID tenant ID - Vedprakash domain standard",
     )
     ENTRA_EXTERNAL_CLIENT_ID: Optional[str] = Field(
@@ -120,7 +122,7 @@ class UnifiedSettings(BaseSettings):
         description="Microsoft Entra ID application client ID",
     )
     ENTRA_EXTERNAL_AUTHORITY: Optional[str] = Field(
-        default='https://login.microsoftonline.com/vedid.onmicrosoft.com',  # ✅ Fixed to Vedprakash domain
+        default="https://login.microsoftonline.com/vedid.onmicrosoft.com",  # ✅ Fixed to Vedprakash domain
         description="Microsoft Entra ID authority URL - Vedprakash domain standard",
     )
     ENTRA_EXTERNAL_CLIENT_SECRET: Optional[str] = Field(
@@ -275,7 +277,7 @@ class UnifiedSettings(BaseSettings):
 
     @field_validator("DEBUG", mode="before")
     @classmethod
-    def validate_debug_mode(cls, v, info):
+    def validate_debug_mode(cls, v, info) -> None:
         """Ensure DEBUG is properly disabled in production."""
         environment = (
             info.data.get("ENVIRONMENT", "development") if hasattr(info, "data") else "development"
@@ -287,17 +289,17 @@ class UnifiedSettings(BaseSettings):
 
     @field_validator("ALLOWED_HOSTS", mode="before")
     @classmethod
-    def validate_allowed_hosts(cls, v, info):
+    def validate_allowed_hosts(cls, v, info) -> None:
         """Validate and secure allowed hosts configuration."""
         environment = (
             info.data.get("ENVIRONMENT", "development") if hasattr(info, "data") else "development"
         )
 
-        # Convert string to list if needed
+        # Convert string to List[Any] if needed
         if isinstance(v, str):
             hosts = [host.strip() for host in v.split(",") if host.strip()]
         else:
-            hosts = v if isinstance(v, list) else ["localhost", "127.0.0.1"]
+            hosts = v if isinstance(v, List[Any]) else ["localhost", "127.0.0.1"]
 
         # Security check for production
         if environment.lower() == "production" and "*" in hosts:
@@ -311,7 +313,7 @@ class UnifiedSettings(BaseSettings):
 
     @field_validator("ENTRA_EXTERNAL_AUTHORITY", mode="before")
     @classmethod
-    def set_entra_authority(cls, v, info):
+    def set_entra_authority(cls, v, info) -> None:
         """Set Entra External ID authority from tenant ID if not provided."""
         if v is None and hasattr(info, "data") and "ENTRA_EXTERNAL_TENANT_ID" in info.data:
             tenant_id = info.data["ENTRA_EXTERNAL_TENANT_ID"]
@@ -320,7 +322,7 @@ class UnifiedSettings(BaseSettings):
 
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
-    def validate_cors_origins(cls, v, info):
+    def validate_cors_origins(cls, v, info) -> None:
         """Validate CORS origins for security."""
         environment = (
             info.data.get("ENVIRONMENT", "development") if hasattr(info, "data") else "development"
@@ -336,7 +338,7 @@ class UnifiedSettings(BaseSettings):
         return v
 
     @model_validator(mode="after")
-    def validate_database_configuration(self):
+    def validate_database_configuration(self) -> None:
         """Validate database configuration consistency."""
         if self.COSMOS_DB_ENABLED:
             if not self.COSMOS_DB_URL or not self.COSMOS_DB_KEY:
@@ -356,7 +358,7 @@ class UnifiedSettings(BaseSettings):
         return self
 
     @model_validator(mode="after")
-    def validate_external_services(self):
+    def validate_external_services(self) -> None:
         """Validate external service configurations."""
         # Validate email configuration
         if self.SENDGRID_API_KEY and any([self.SMTP_HOST, self.SMTP_USERNAME]):
@@ -433,7 +435,7 @@ class UnifiedSettings(BaseSettings):
 
     @property
     def cors_origins_list(self) -> List[str]:
-        """Get CORS origins as a validated list."""
+        """Get CORS origins as a validated List[Any]."""
         if not self.CORS_ORIGINS:
             return ["http://localhost:3000", "http://localhost:5173"]
 
@@ -447,7 +449,7 @@ class UnifiedSettings(BaseSettings):
 
     @property
     def allowed_hosts_list(self) -> List[str]:
-        """Get allowed hosts as a validated list."""
+        """Get allowed hosts as a validated List[Any]."""
         if isinstance(self.ALLOWED_HOSTS, str):
             return [host.strip() for host in self.ALLOWED_HOSTS.split(",") if host.strip()]
         return self.ALLOWED_HOSTS
@@ -590,7 +592,7 @@ class UnifiedSettings(BaseSettings):
         for var in required_vars:
             if not getattr(self, var, None):
                 issues.append(f"Missing required environment variable: {var}")
-        
+
         # Optional services with warnings (not errors)
         if not self.OPENAI_API_KEY:
             warnings.append("OPENAI_API_KEY not set - using test defaults for AI features")

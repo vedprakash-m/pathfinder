@@ -156,7 +156,7 @@ class SQLiteCache:
                 if time.time() - timestamp < ttl:
                     try:
                         return pickle.loads(value_blob)
-                    except:
+                    except Exception:
                         return json.loads(value_blob.decode())
                 else:
                     conn.execute("DELETE FROM cache WHERE key = ?", (key,))
@@ -169,7 +169,7 @@ class SQLiteCache:
 
         try:
             value_blob = pickle.dumps(value)
-        except:
+        except Exception:
             value_blob = json.dumps(value).encode()
 
         with sqlite3.connect(self.db_path) as conn:

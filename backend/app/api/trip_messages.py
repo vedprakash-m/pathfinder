@@ -8,9 +8,9 @@ from uuid import UUID
 from app.core.config import get_settings
 from app.core.database_unified import get_cosmos_repository
 from app.core.zero_trust import require_permissions
-from app.repositories.cosmos_unified import UnifiedCosmosRepository
 from app.models.cosmos.message import MessageType
 from app.models.user import User
+from app.repositories.cosmos_unified import UnifiedCosmosRepository
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 settings = get_settings()
@@ -50,7 +50,7 @@ async def get_trip_messages(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve messages: {str(e)}",
-        )
+        ) from None
 
 
 @router.post("/{trip_id}/messages")
@@ -104,4 +104,4 @@ async def send_trip_message(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to send message: {str(e)}",
-        )
+        ) from None

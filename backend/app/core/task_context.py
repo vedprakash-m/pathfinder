@@ -1,6 +1,6 @@
-from functools import lru_cache
-import sys
 import os
+import sys
+from functools import lru_cache
 
 from app.core.container import Container
 

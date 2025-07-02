@@ -3,7 +3,6 @@ Tests for trip service functionality.
 """
 
 from datetime import date, datetime, timedelta
-from unittest.mock import AsyncMock
 
 import pytest
 from app.models.family import Family

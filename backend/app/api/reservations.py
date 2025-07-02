@@ -153,9 +153,10 @@ async def create_reservation(
             for family in trip_families:
                 family_members = await cosmos_repo.get_family_members(family.id)
                 trip_participant_ids.extend([member.id for member in family_members])
-            
+
             invalid_participants = [
-                str(p_id) for p_id in reservation_data.participants 
+                str(p_id)
+                for p_id in reservation_data.participants
                 if str(p_id) not in trip_participant_ids
             ]
 
@@ -172,7 +173,7 @@ async def create_reservation(
                 "trip_id": str(reservation_data.trip_id),
                 "created_by": current_user["id"],
                 "date": reservation_data.date.isoformat(),
-                "participants": [str(p) for p in (reservation_data.participants or [])]
+                "participants": [str(p) for p in (reservation_data.participants or [])],
             }
         )
 
@@ -194,7 +195,8 @@ async def create_reservation(
 
         # Prepare response
         response_data = {
-            "id": int(reservation_doc.id.split("-")[0], 16) % (10**9),  # Generate numeric ID for response
+            "id": int(reservation_doc.id.split("-")[0], 16)
+            % (10**9),  # Generate numeric ID for response
             "trip_id": int(reservation_data.trip_id),
             "type": reservation_data.type,
             "name": reservation_data.name,
@@ -268,17 +270,17 @@ async def get_trip_reservations(
 
         # Get reservations from Cosmos DB
         reservations = await cosmos_repo.get_trip_reservations(str(trip_id))
-        
+
         # Convert to response format
         result = []
         for reservation in reservations:
             # Apply filters
             if reservation_type and reservation.type != reservation_type:
                 continue
-                
+
             if status_filter and reservation.status != status_filter:
                 continue
-                
+
             # Parse date for filtering
             try:
                 res_date = date.fromisoformat(reservation.date)
@@ -286,21 +288,23 @@ async def get_trip_reservations(
                     continue
                 if date_to and res_date > date_to:
                     continue
-            except:
+            except Exception:
                 pass  # Skip date filtering if date format is invalid
-            
+
             # Get participant details
             participant_details = []
             if reservation.participants:
                 for user_id in reservation.participants:
                     user = await cosmos_repo.get_user_by_id(user_id)
                     if user:
-                        participant_details.append({
-                            "id": int(user_id),
-                            "name": user.name or f"User {user_id}",
-                            "email": user.email,
-                        })
-            
+                        participant_details.append(
+                            {
+                                "id": int(user_id),
+                                "name": user.name or f"User {user_id}",
+                                "email": user.email,
+                            }
+                        )
+
             response_data = {
                 "id": int(reservation.id.split("-")[0], 16) % (10**9),
                 "trip_id": trip_id,
@@ -354,12 +358,11 @@ async def get_reservation(
         # Convert numeric ID to string format for document lookup
         # This is a simple implementation - in production you'd want a better ID mapping
         reservation_uuid = f"{reservation_id:08x}-0000-0000-0000-000000000000"
-        
+
         reservation_doc = await cosmos_repo._get_document_by_id(reservation_uuid)
         if not reservation_doc or reservation_doc.get("entity_type") != "reservation":
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Reservation not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Reservation not found"
             )
 
         # Verify user has access to the trip
@@ -377,11 +380,13 @@ async def get_reservation(
             for user_id in reservation_doc["participants"]:
                 user = await cosmos_repo.get_user_by_id(user_id)
                 if user:
-                    participant_details.append({
-                        "id": int(user_id),
-                        "name": user.name or f"User {user_id}",
-                        "email": user.email,
-                    })
+                    participant_details.append(
+                        {
+                            "id": int(user_id),
+                            "name": user.name or f"User {user_id}",
+                            "email": user.email,
+                        }
+                    )
 
         response_data = {
             "id": reservation_id,

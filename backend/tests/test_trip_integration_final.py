@@ -3,14 +3,12 @@ Final integration test for trip creation endpoint.
 Tests that authentication, business logic, and response structure all work correctly.
 """
 
-import pytest
 from unittest.mock import patch
 from uuid import uuid4
-from fastapi.testclient import TestClient
 
-from app.main import app
-from app.models.user import User
 from app.core.security import TokenData
+from app.main import app
+from fastapi.testclient import TestClient
 
 
 def test_trip_creation_end_to_end():
@@ -70,7 +68,7 @@ def test_trip_creation_end_to_end():
             assert response_data["start_date"] == "2025-08-01"
             assert response_data["end_date"] == "2025-08-15"
             assert response_data["budget_total"] is None or response_data["budget_total"] == 3000.0
-            assert response_data["is_public"] == False
+            assert not response_data["is_public"]
             assert response_data["status"] == "planning"
             assert response_data["creator_id"] == test_user_id
             assert "created_at" in response_data

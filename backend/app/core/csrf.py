@@ -150,7 +150,7 @@ class CSRFMiddleware(BaseHTTPMiddleware):
                 try:
                     form_data = await request.form()
                     request_token = form_data.get(self.token_name)
-                except:
+                except Exception:
                     pass
 
         # Validate token exists and matches expected value

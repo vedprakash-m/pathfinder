@@ -4,12 +4,14 @@ Unified Cosmos DB implementation per Tech Spec.
 """
 
 from datetime import datetime
-from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, EmailStr, Field
+from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel, EmailStr
 
 
 class UserCreate(BaseModel):
     """Schema for creating a new user."""
+
     email: EmailStr
     name: Optional[str] = None
     phone: Optional[str] = None
@@ -18,6 +20,7 @@ class UserCreate(BaseModel):
 
 class UserUpdate(BaseModel):
     """Schema for updating user information."""
+
     name: Optional[str] = None
     phone: Optional[str] = None
     preferences: Optional[Dict[str, Any]] = None
@@ -26,6 +29,7 @@ class UserUpdate(BaseModel):
 
 class UserProfile(BaseModel):
     """Schema for user profile response."""
+
     id: str
     email: str
     name: Optional[str] = None
@@ -44,6 +48,7 @@ class UserProfile(BaseModel):
 
 class UserResponse(BaseModel):
     """Schema for basic user response."""
+
     id: str
     email: str
     name: Optional[str] = None
@@ -56,11 +61,13 @@ class UserResponse(BaseModel):
 
 class LoginRequest(BaseModel):
     """Schema for login request."""
+
     access_token: str
 
 
 class LoginResponse(BaseModel):
     """Schema for login response."""
+
     access_token: str
     token_type: str = "bearer"
     user: UserProfile
@@ -68,6 +75,7 @@ class LoginResponse(BaseModel):
 
 class RegisterRequest(BaseModel):
     """Schema for registration request."""
+
     email: EmailStr
     name: str
     phone: Optional[str] = None
@@ -76,6 +84,7 @@ class RegisterRequest(BaseModel):
 
 class TokenResponse(BaseModel):
     """Schema for token response."""
+
     access_token: str
     token_type: str = "bearer"
     expires_in: int
@@ -83,5 +92,6 @@ class TokenResponse(BaseModel):
 
 class AuthStatusResponse(BaseModel):
     """Schema for authentication status response."""
+
     authenticated: bool
     user: Optional[UserProfile] = None

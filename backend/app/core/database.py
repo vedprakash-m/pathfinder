@@ -132,7 +132,7 @@ async def get_cosmos_client():
 
 async def get_cosmos_container():
     """Get Cosmos DB container."""
-    client = await get_cosmos_client()
+    _client = await get_cosmos_client()
     database = client.get_database_client(settings.COSMOS_DB_DATABASE)
     return database.get_container_client(settings.COSMOS_DB_CONTAINER)
 
@@ -173,7 +173,7 @@ class DatabaseManager:
 
         try:
             # Check Cosmos DB
-            client = await get_cosmos_client()
+            _client = await get_cosmos_client()
             container = await get_cosmos_container()
             await container.read_item("health-check", "health-check")
         except Exception:

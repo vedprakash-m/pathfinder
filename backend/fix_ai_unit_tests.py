@@ -4,24 +4,22 @@ Comprehensive script to fix all AI service test files with proper mocking.
 This ensures all tests can run without requiring an OpenAI API key.
 """
 
-import re
-import os
 
 def fix_ai_service_unit_tests():
     """Fix the AI service unit tests to use proper mocking."""
-    
+
     file_path = "/Users/vedprakashmishra/pathfinder/backend/tests/test_ai_service_unit.py"
-    
-    with open(file_path, 'r') as f:
-        content = f.read()
-    
+
+    with open(file_path, "r") as f:
+        _content = f.read()
+
     # The pattern we need to replace: all occurrences of @patch("asyncio.to_thread")
     # and related test patterns
-    
+
     # 1. Replace the test_generate_itinerary_success test
-    old_test_pattern = r'    @pytest\.mark\.asyncio\s+async def test_generate_itinerary_success\(\s+self, ai_service, sample_trip_data, sample_preferences\s+\):\s+"""Test successful itinerary generation\."""\s+with patch\("asyncio\.to_thread"\) as mock_to_thread:\s+# Mock OpenAI response\s+mock_response = MagicMock\(\).*?mock_to_thread\.assert_called_once\(\)'
-    
-    new_test_content = '''    @pytest.mark.asyncio
+    _old_test_pattern = r'    @pytest\.mark\.asyncio\s+async def test_generate_itinerary_success\(\s+self, ai_service, sample_trip_data, sample_preferences\s+\):\s+"""Test successful itinerary generation\."""\s+with patch\("asyncio\.to_thread"\) as mock_to_thread:\s+# Mock OpenAI response\s+mock_response = MagicMock\(\).*?mock_to_thread\.assert_called_once\(\)'
+
+    _new_test_content = '''    @pytest.mark.asyncio
     async def test_generate_itinerary_success(
         self, ai_service, sample_trip_data, sample_preferences
     ):
@@ -85,10 +83,10 @@ def fix_ai_service_unit_tests():
             assert "budget_summary" in result
             assert len(result["daily_itinerary"]) > 0
             assert "metadata" in result'''
-    
+
     # For now, let's do a simpler approach - replace the entire file with a fixed version
     # since the patterns are complex and numerous
-    
+
     fixed_content = '''"""
 Unit tests for AI service functionality.
 """
@@ -608,11 +606,11 @@ class TestAIServiceCostMonitoring:
             assert "metadata" in result
             assert result["metadata"]["cost"] == 0.05
 '''
-    
+
     # Write the fixed content
-    with open(file_path, 'w') as f:
+    with open(file_path, "w") as f:
         f.write(fixed_content)
-    
+
     print(f"✅ Fixed {file_path}")
 
 

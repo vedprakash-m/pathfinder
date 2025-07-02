@@ -5,9 +5,9 @@ Runs comprehensive checks including dependency installation fixes,
 AI service tests, and basic integration validations.
 """
 
+import os
 import subprocess
 import sys
-import os
 from pathlib import Path
 
 
@@ -176,7 +176,7 @@ def main():
     )
     results.append(("Local Configuration Test", success))
 
-    # 9b. Test CI/CD-like environment configuration 
+    # 9b. Test CI/CD-like environment configuration
     success, result = run_command(
         "ENVIRONMENT=testing DATABASE_URL='sqlite+aiosqlite:///:memory:' OPENAI_API_KEY='sk-test-key-for-testing' GOOGLE_MAPS_API_KEY='test-maps-key-for-testing' /Users/vedprakashmishra/pathfinder/backend/venv/bin/python -c \"from app.core.config import get_settings; s = get_settings(); print(f'✅ CI/CD Config loaded: COSMOS_DB_ENABLED={s.COSMOS_DB_ENABLED}')\"",
         "Testing CI/CD-like environment configuration",

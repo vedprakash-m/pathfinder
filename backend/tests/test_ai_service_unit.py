@@ -4,7 +4,7 @@ Unit tests for AI service functionality.
 
 import json
 from datetime import date
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from app.services.ai_service import AIService
@@ -68,39 +68,41 @@ class TestAIServiceItineraryGeneration:
         """Test successful itinerary generation."""
         # Mock the _make_api_call method directly
         mock_response = {
-            "content": json.dumps({
-                "overview": {
-                    "destination": "San Francisco",
-                    "duration": "7 days",
-                    "total_cost": 1200.50,
-                    "highlights": ["Golden Gate Bridge", "Alcatraz Island"],
-                },
-                "daily_itinerary": [
-                    {
-                        "day": 1,
-                        "date": "2025-07-01",
-                        "location": "San Francisco",
-                        "activities": [
-                            {
-                                "time": "09:00",
-                                "title": "Golden Gate Bridge Visit",
-                                "description": "Iconic bridge with stunning views",
-                                "duration": 120,
-                                "cost_estimate": 0,
-                            }
-                        ],
-                    }
-                ],
-                "budget_summary": {
-                    "total_estimated_cost": 1200.50,
-                    "daily_breakdown": [85.50],
-                    "categories": {
-                        "accommodation": 600.0,
-                        "food": 400.0,
-                        "activities": 200.50,
+            "content": json.dumps(
+                {
+                    "overview": {
+                        "destination": "San Francisco",
+                        "duration": "7 days",
+                        "total_cost": 1200.50,
+                        "highlights": ["Golden Gate Bridge", "Alcatraz Island"],
                     },
-                },
-            }),
+                    "daily_itinerary": [
+                        {
+                            "day": 1,
+                            "date": "2025-07-01",
+                            "location": "San Francisco",
+                            "activities": [
+                                {
+                                    "time": "09:00",
+                                    "title": "Golden Gate Bridge Visit",
+                                    "description": "Iconic bridge with stunning views",
+                                    "duration": 120,
+                                    "cost_estimate": 0,
+                                }
+                            ],
+                        }
+                    ],
+                    "budget_summary": {
+                        "total_estimated_cost": 1200.50,
+                        "daily_breakdown": [85.50],
+                        "categories": {
+                            "accommodation": 600.0,
+                            "food": 400.0,
+                            "activities": 200.50,
+                        },
+                    },
+                }
+            ),
             "model": "gpt-4o-mini",
             "provider": "openai",
             "input_tokens": 406,
@@ -109,7 +111,7 @@ class TestAIServiceItineraryGeneration:
             "source": "direct_openai",
         }
 
-        with patch.object(ai_service, '_make_api_call', return_value=mock_response):
+        with patch.object(ai_service, "_make_api_call", return_value=mock_response):
             # Generate itinerary
             result = await ai_service.generate_itinerary(
                 destination="San Francisco",
@@ -132,7 +134,7 @@ class TestAIServiceItineraryGeneration:
     ):
         """Test itinerary generation with API error."""
         # Mock the _make_api_call method to raise an exception
-        with patch.object(ai_service, '_make_api_call', side_effect=Exception("API Error")):
+        with patch.object(ai_service, "_make_api_call", side_effect=Exception("API Error")):
             # Extract parameters from trip data
             destination = sample_trip_data["destinations"][0]
             duration_days = (sample_trip_data["end_date"] - sample_trip_data["start_date"]).days
@@ -160,7 +162,7 @@ class TestAIServiceItineraryGeneration:
             "source": "direct_openai",
         }
 
-        with patch.object(ai_service, '_make_api_call', return_value=mock_response):
+        with patch.object(ai_service, "_make_api_call", return_value=mock_response):
             # Extract parameters from trip data
             destination = sample_trip_data["destinations"][0]
             duration_days = (sample_trip_data["end_date"] - sample_trip_data["start_date"]).days
@@ -185,30 +187,32 @@ class TestAIServiceRecommendations:
         """Test activity recommendations generation."""
         # Mock response
         mock_response = {
-            "content": json.dumps({
-                "recommendations": [
-                    {
-                        "title": "Alcatraz Island Tour",
-                        "description": "Historic prison island with audio tours",
-                        "category": "historical",
-                        "duration": 180,
-                        "cost_estimate": 45.0,
-                        "rating": 4.5,
-                        "family_friendly": True,
-                        "accessibility": "Limited mobility access",
-                    },
-                    {
-                        "title": "Fisherman's Wharf",
-                        "description": "Waterfront area with shops and restaurants",
-                        "category": "entertainment",
-                        "duration": 120,
-                        "cost_estimate": 30.0,
-                        "rating": 4.2,
-                        "family_friendly": True,
-                        "accessibility": "Fully accessible",
-                    },
-                ]
-            }),
+            "content": json.dumps(
+                {
+                    "recommendations": [
+                        {
+                            "title": "Alcatraz Island Tour",
+                            "description": "Historic prison island with audio tours",
+                            "category": "historical",
+                            "duration": 180,
+                            "cost_estimate": 45.0,
+                            "rating": 4.5,
+                            "family_friendly": True,
+                            "accessibility": "Limited mobility access",
+                        },
+                        {
+                            "title": "Fisherman's Wharf",
+                            "description": "Waterfront area with shops and restaurants",
+                            "category": "entertainment",
+                            "duration": 120,
+                            "cost_estimate": 30.0,
+                            "rating": 4.2,
+                            "family_friendly": True,
+                            "accessibility": "Fully accessible",
+                        },
+                    ]
+                }
+            ),
             "model": "gpt-4o-mini",
             "provider": "openai",
             "input_tokens": 175,
@@ -217,7 +221,7 @@ class TestAIServiceRecommendations:
             "source": "direct_openai",
         }
 
-        with patch.object(ai_service, '_make_api_call', return_value=mock_response):
+        with patch.object(ai_service, "_make_api_call", return_value=mock_response):
             # Get recommendations
             location = "San Francisco"
             preferences = ["museums", "family_friendly", "accessible"]
@@ -235,27 +239,29 @@ class TestAIServiceRecommendations:
     async def test_get_restaurant_recommendations(self, ai_service):
         """Test restaurant recommendations generation."""
         mock_response = {
-            "content": json.dumps({
-                "restaurants": [
-                    {
-                        "name": "Green's Restaurant",
-                        "cuisine": "Vegetarian Fine Dining",
-                        "price_range": "$$$$",
-                        "rating": 4.7,
-                        "address": "Building A, Fort Mason",
-                        "dietary_accommodations": [
-                            "vegetarian",
-                            "vegan",
-                            "gluten-free",
-                        ],
-                        "accessibility": "wheelchair_accessible",
-                        "recommended_dishes": [
-                            "Seasonal Vegetable Tasting",
-                            "Wild Mushroom Risotto",
-                        ],
-                    }
-                ]
-            }),
+            "content": json.dumps(
+                {
+                    "restaurants": [
+                        {
+                            "name": "Green's Restaurant",
+                            "cuisine": "Vegetarian Fine Dining",
+                            "price_range": "$$$$",
+                            "rating": 4.7,
+                            "address": "Building A, Fort Mason",
+                            "dietary_accommodations": [
+                                "vegetarian",
+                                "vegan",
+                                "gluten-free",
+                            ],
+                            "accessibility": "wheelchair_accessible",
+                            "recommended_dishes": [
+                                "Seasonal Vegetable Tasting",
+                                "Wild Mushroom Risotto",
+                            ],
+                        }
+                    ]
+                }
+            ),
             "model": "gpt-4o-mini",
             "provider": "openai",
             "input_tokens": 170,
@@ -264,7 +270,7 @@ class TestAIServiceRecommendations:
             "source": "direct_openai",
         }
 
-        with patch.object(ai_service, '_make_api_call', return_value=mock_response):
+        with patch.object(ai_service, "_make_api_call", return_value=mock_response):
             # Get restaurant recommendations
             location = "San Francisco"
             dietary_restrictions = ["vegetarian"]
@@ -293,31 +299,33 @@ class TestAIServiceOptimization:
     async def test_optimize_route(self, ai_service):
         """Test route optimization."""
         mock_response = {
-            "content": json.dumps({
-                "optimized_route": {
-                    "total_distance": 450.2,
-                    "total_drive_time": 360,  # minutes
-                    "route_segments": [
-                        {
-                            "from": "San Francisco",
-                            "to": "Monterey",
-                            "distance": 120.5,
-                            "drive_time": 135,
-                            "scenic_route": True,
-                            "ev_charging_stops": ["Gilroy", "Salinas"],
-                        },
-                        {
-                            "from": "Monterey",
-                            "to": "Los Angeles",
-                            "distance": 329.7,
-                            "drive_time": 225,
-                            "scenic_route": False,
-                            "ev_charging_stops": ["San Luis Obispo", "Santa Barbara"],
-                        },
-                    ],
-                    "total_cost_estimate": 85.50,
+            "content": json.dumps(
+                {
+                    "optimized_route": {
+                        "total_distance": 450.2,
+                        "total_drive_time": 360,  # minutes
+                        "route_segments": [
+                            {
+                                "from": "San Francisco",
+                                "to": "Monterey",
+                                "distance": 120.5,
+                                "drive_time": 135,
+                                "scenic_route": True,
+                                "ev_charging_stops": ["Gilroy", "Salinas"],
+                            },
+                            {
+                                "from": "Monterey",
+                                "to": "Los Angeles",
+                                "distance": 329.7,
+                                "drive_time": 225,
+                                "scenic_route": False,
+                                "ev_charging_stops": ["San Luis Obispo", "Santa Barbara"],
+                            },
+                        ],
+                        "total_cost_estimate": 85.50,
+                    }
                 }
-            }),
+            ),
             "model": "gpt-4o-mini",
             "provider": "openai",
             "input_tokens": 224,
@@ -326,7 +334,7 @@ class TestAIServiceOptimization:
             "source": "direct_openai",
         }
 
-        with patch.object(ai_service, '_make_api_call', return_value=mock_response):
+        with patch.object(ai_service, "_make_api_call", return_value=mock_response):
             # Optimize route
             destinations = ["San Francisco", "Monterey", "Los Angeles"]
             vehicle_constraints = {
@@ -348,43 +356,45 @@ class TestAIServiceOptimization:
     async def test_optimize_budget_allocation(self, ai_service):
         """Test budget optimization."""
         mock_response = {
-            "content": json.dumps({
-                "budget_allocation": {
-                    "total_budget": 5000.0,
-                    "categories": {
-                        "accommodation": {
-                            "amount": 2000.0,
-                            "percentage": 40.0,
-                            "recommendations": "Mid-range hotels and vacation rentals",
+            "content": json.dumps(
+                {
+                    "budget_allocation": {
+                        "total_budget": 5000.0,
+                        "categories": {
+                            "accommodation": {
+                                "amount": 2000.0,
+                                "percentage": 40.0,
+                                "recommendations": "Mid-range hotels and vacation rentals",
+                            },
+                            "food": {
+                                "amount": 1250.0,
+                                "percentage": 25.0,
+                                "recommendations": "Mix of restaurants and grocery shopping",
+                            },
+                            "activities": {
+                                "amount": 1000.0,
+                                "percentage": 20.0,
+                                "recommendations": "Entry fees, tours, and experiences",
+                            },
+                            "transportation": {
+                                "amount": 500.0,
+                                "percentage": 10.0,
+                                "recommendations": "Gas, parking, and local transport",
+                            },
+                            "emergency": {
+                                "amount": 250.0,
+                                "percentage": 5.0,
+                                "recommendations": "Unexpected expenses buffer",
+                            },
                         },
-                        "food": {
-                            "amount": 1250.0,
-                            "percentage": 25.0,
-                            "recommendations": "Mix of restaurants and grocery shopping",
-                        },
-                        "activities": {
-                            "amount": 1000.0,
-                            "percentage": 20.0,
-                            "recommendations": "Entry fees, tours, and experiences",
-                        },
-                        "transportation": {
-                            "amount": 500.0,
-                            "percentage": 10.0,
-                            "recommendations": "Gas, parking, and local transport",
-                        },
-                        "emergency": {
-                            "amount": 250.0,
-                            "percentage": 5.0,
-                            "recommendations": "Unexpected expenses buffer",
-                        },
-                    },
-                    "daily_budget": 333.33,
-                    "savings_opportunities": [
-                        "Book accommodations early for discounts",
-                        "Look for family packages at attractions",
-                    ],
+                        "daily_budget": 333.33,
+                        "savings_opportunities": [
+                            "Book accommodations early for discounts",
+                            "Look for family packages at attractions",
+                        ],
+                    }
                 }
-            }),
+            ),
             "model": "gpt-4o-mini",
             "provider": "openai",
             "input_tokens": 270,
@@ -393,7 +403,7 @@ class TestAIServiceOptimization:
             "source": "direct_openai",
         }
 
-        with patch.object(ai_service, '_make_api_call', return_value=mock_response):
+        with patch.object(ai_service, "_make_api_call", return_value=mock_response):
             # Optimize budget
             total_budget = 5000.0
             trip_duration = 15  # days
@@ -435,7 +445,7 @@ class TestAIServiceErrorHandling:
         # Mock the _make_api_call method to raise an exception with timeout in the message
         # Need to ensure both primary and fallback models fail
         mock_side_effect = Exception("Connection timeout occurred")
-        with patch.object(ai_service, '_make_api_call', side_effect=mock_side_effect):
+        with patch.object(ai_service, "_make_api_call", side_effect=mock_side_effect):
             with pytest.raises(Exception, match="Connection timeout occurred"):
                 await ai_service.generate_itinerary(
                     "Paris", 3, [{"id": "family1"}], {"interests": ["culture"]}
@@ -447,7 +457,7 @@ class TestAIServiceErrorHandling:
         # Mock the _make_api_call method to raise an exception with rate limit in the message
         # Need to ensure both primary and fallback models fail
         mock_side_effect = Exception("Rate limit exceeded for requests")
-        with patch.object(ai_service, '_make_api_call', side_effect=mock_side_effect):
+        with patch.object(ai_service, "_make_api_call", side_effect=mock_side_effect):
             with pytest.raises(Exception, match="Rate limit exceeded for requests"):
                 await ai_service.generate_itinerary(
                     "Paris", 3, [{"id": "family1"}], {"interests": ["culture"]}
@@ -466,36 +476,38 @@ class TestAIServiceCostMonitoring:
         """Test that API calls work with cost tracking."""
         # Mock response with proper format
         mock_response = {
-            "content": json.dumps({
-                "overview": {
-                    "destination": "Paris",
-                    "duration": "3 days",
-                    "group_size": 2,
-                    "total_budget": "$1000",
-                },
-                "daily_itinerary": [
-                    {
-                        "day": 1,
-                        "date": "2024-01-01",
-                        "activities": [
-                            {
-                                "name": "Test Activity",
-                                "time": "10:00",
-                                "description": "Test description",
-                            }
-                        ],
-                    }
-                ],
-                "budget_summary": {
-                    "total_cost": "$1000",
-                    "breakdown": {
-                        "accommodation": "$300",
-                        "food": "$300",
-                        "activities": "$300",
-                        "transport": "$100",
+            "content": json.dumps(
+                {
+                    "overview": {
+                        "destination": "Paris",
+                        "duration": "3 days",
+                        "group_size": 2,
+                        "total_budget": "$1000",
                     },
-                },
-            }),
+                    "daily_itinerary": [
+                        {
+                            "day": 1,
+                            "date": "2024-01-01",
+                            "activities": [
+                                {
+                                    "name": "Test Activity",
+                                    "time": "10:00",
+                                    "description": "Test description",
+                                }
+                            ],
+                        }
+                    ],
+                    "budget_summary": {
+                        "total_cost": "$1000",
+                        "breakdown": {
+                            "accommodation": "$300",
+                            "food": "$300",
+                            "activities": "$300",
+                            "transport": "$100",
+                        },
+                    },
+                }
+            ),
             "model": "gpt-4o-mini",
             "provider": "openai",
             "input_tokens": 486,
@@ -504,7 +516,7 @@ class TestAIServiceCostMonitoring:
             "source": "direct_openai",
         }
 
-        with patch.object(ai_service, '_make_api_call', return_value=mock_response):
+        with patch.object(ai_service, "_make_api_call", return_value=mock_response):
             # Make API call
             result = await ai_service.generate_itinerary(
                 "Paris", 3, [{"id": "family1", "size": 2}], {"interests": ["culture"]}

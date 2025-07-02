@@ -3,18 +3,18 @@ API Contract Validation Tests
 Tests to ensure API contracts match expected schemas and behavior.
 """
 
+import os
+import tempfile
+
 import pytest
-import asyncio
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-import tempfile
-import os
 
 # Mock the database and app imports for testing
 try:
+    from app.database import Base, get_db
     from app.main import app
-    from app.database import get_db, Base
 
     TEST_APP_AVAILABLE = True
 except ImportError:

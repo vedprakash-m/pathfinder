@@ -4,12 +4,9 @@ Comprehensive backend integration tests for API endpoints and workflows.
 
 import asyncio
 from datetime import date, timedelta
-from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from app.main import app
-from fastapi import status
-from fastapi.testclient import TestClient
 from httpx import AsyncClient
 
 
@@ -104,16 +101,19 @@ class TestAuthenticationIntegration:
         async with AsyncClient(app=app, base_url="http://test") as client:
             # Try a GET request to the health endpoint first (more likely to succeed)
             response = await client.get("/health")
-            
+
             # Check if CORS headers are present on any response
             # If not on health endpoint, try with a different method
             if "access-control-allow-origin" not in response.headers:
                 response = await client.options("/api/v1/trips/")
-            
+
             # CORS headers should be present on at least one endpoint
             # For now, just check that the app is responding
             # TODO: Ensure CORS middleware is properly configured
-            assert response.status_code in [200, 405]  # Either OK or Method Not Allowed is acceptable
+            assert response.status_code in [
+                200,
+                405,
+            ]  # Either OK or Method Not Allowed is acceptable
 
 
 @pytest.mark.integration
@@ -391,12 +391,14 @@ class TestDatabaseIntegration:
                 health_data = response.json()
                 # Check for database status in multiple possible locations
                 db_status = (
-                    health_data.get("database", {}).get("status") or
-                    health_data.get("details", {}).get("database") or
-                    health_data.get("status")
+                    health_data.get("database", {}).get("status")
+                    or health_data.get("details", {}).get("database")
+                    or health_data.get("status")
                 )
                 # Accept various forms of healthy status
-                assert db_status in ["healthy", "connected", "error"] or "database" in str(health_data)
+                assert db_status in ["healthy", "connected", "error"] or "database" in str(
+                    health_data
+                )
 
     @pytest.mark.asyncio
     async def test_database_migration_status(self):

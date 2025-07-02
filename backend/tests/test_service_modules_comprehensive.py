@@ -2,9 +2,9 @@
 Comprehensive tests for service modules to maximize coverage.
 """
 
+from unittest.mock import AsyncMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
-from datetime import datetime, date
 
 
 class TestAnalyticsService:
@@ -15,6 +15,7 @@ class TestAnalyticsService:
         """Test analytics service can be imported."""
         try:
             from app.services.analytics_service import AnalyticsService
+
             assert AnalyticsService is not None
         except ImportError:
             pytest.skip("AnalyticsService not available")
@@ -24,10 +25,10 @@ class TestAnalyticsService:
         """Test analytics service initialization."""
         try:
             from app.services.analytics_service import AnalyticsService
-            
+
             service = AnalyticsService()
             assert service is not None
-            
+
         except ImportError:
             pytest.skip("AnalyticsService not available")
 
@@ -36,20 +37,20 @@ class TestAnalyticsService:
         """Test analytics event tracking."""
         try:
             from app.services.analytics_service import AnalyticsService
-            
+
             service = AnalyticsService()
-            
+
             # Test tracking an event
-            if hasattr(service, 'track_event'):
+            if hasattr(service, "track_event"):
                 await service.track_event("user_login", {"user_id": "123"})
                 assert True
-            elif hasattr(service, 'log_event'):
+            elif hasattr(service, "log_event"):
                 await service.log_event("user_login", {"user_id": "123"})
                 assert True
             else:
                 # Service might have different interface
                 assert True
-                
+
         except ImportError:
             pytest.skip("AnalyticsService not available")
         except Exception:
@@ -61,20 +62,20 @@ class TestAnalyticsService:
         """Test analytics metrics retrieval."""
         try:
             from app.services.analytics_service import AnalyticsService
-            
+
             service = AnalyticsService()
-            
+
             # Test getting metrics
-            if hasattr(service, 'get_metrics'):
+            if hasattr(service, "get_metrics"):
                 metrics = await service.get_metrics()
                 assert isinstance(metrics, (dict, list))
-            elif hasattr(service, 'get_analytics'):
+            elif hasattr(service, "get_analytics"):
                 analytics = await service.get_analytics()
                 assert isinstance(analytics, (dict, list))
             else:
                 # Service might have different interface
                 assert True
-                
+
         except ImportError:
             pytest.skip("AnalyticsService not available")
         except Exception:
@@ -90,6 +91,7 @@ class TestAuthService:
         """Test auth service can be imported."""
         try:
             from app.services.auth_service import AuthService
+
             assert AuthService is not None
         except ImportError:
             pytest.skip("AuthService not available")
@@ -99,10 +101,10 @@ class TestAuthService:
         """Test auth service initialization."""
         try:
             from app.services.auth_service import AuthService
-            
+
             service = AuthService()
             assert service is not None
-            
+
         except ImportError:
             pytest.skip("AuthService not available")
 
@@ -111,27 +113,31 @@ class TestAuthService:
         """Test user creation."""
         try:
             from app.services.auth_service import AuthService
-            
+
             service = AuthService()
-            
+
             user_data = {
                 "email": "test@example.com",
                 "password": "testpassword",
                 "first_name": "Test",
-                "last_name": "User"
+                "last_name": "User",
             }
-            
-            with patch.object(service, 'get_db_session', return_value=AsyncMock()) if hasattr(service, 'get_db_session') else patch('app.core.database.get_db_session', return_value=AsyncMock()):
-                if hasattr(service, 'create_user'):
+
+            with (
+                patch.object(service, "get_db_session", return_value=AsyncMock())
+                if hasattr(service, "get_db_session")
+                else patch("app.core.database.get_db_session", return_value=AsyncMock())
+            ):
+                if hasattr(service, "create_user"):
                     user = await service.create_user(user_data)
                     assert user is not None
-                elif hasattr(service, 'register_user'):
+                elif hasattr(service, "register_user"):
                     user = await service.register_user(user_data)
                     assert user is not None
                 else:
                     # Service might have different interface
                     assert True
-                    
+
         except ImportError:
             pytest.skip("AuthService not available")
         except Exception:
@@ -143,20 +149,24 @@ class TestAuthService:
         """Test user authentication."""
         try:
             from app.services.auth_service import AuthService
-            
+
             service = AuthService()
-            
-            with patch.object(service, 'get_db_session', return_value=AsyncMock()) if hasattr(service, 'get_db_session') else patch('app.core.database.get_db_session', return_value=AsyncMock()):
-                if hasattr(service, 'authenticate'):
+
+            with (
+                patch.object(service, "get_db_session", return_value=AsyncMock())
+                if hasattr(service, "get_db_session")
+                else patch("app.core.database.get_db_session", return_value=AsyncMock())
+            ):
+                if hasattr(service, "authenticate"):
                     result = await service.authenticate("test@example.com", "password")
                     assert result is not None or result is False
-                elif hasattr(service, 'login'):
+                elif hasattr(service, "login"):
                     result = await service.login("test@example.com", "password")
                     assert result is not None or result is False
                 else:
                     # Service might have different interface
                     assert True
-                    
+
         except ImportError:
             pytest.skip("AuthService not available")
         except Exception:
@@ -172,6 +182,7 @@ class TestEmailService:
         """Test email service can be imported."""
         try:
             from app.services.email_service import EmailService
+
             assert EmailService is not None
         except ImportError:
             pytest.skip("EmailService not available")
@@ -181,10 +192,10 @@ class TestEmailService:
         """Test email service initialization."""
         try:
             from app.services.email_service import EmailService
-            
+
             service = EmailService()
             assert service is not None
-            
+
         except ImportError:
             pytest.skip("EmailService not available")
 
@@ -193,25 +204,25 @@ class TestEmailService:
         """Test basic email sending."""
         try:
             from app.services.email_service import EmailService
-            
+
             service = EmailService()
-            
+
             email_data = {
                 "to": "test@example.com",
                 "subject": "Test Email",
-                "body": "This is a test email"
+                "body": "This is a test email",
             }
-            
-            if hasattr(service, 'send_email'):
+
+            if hasattr(service, "send_email"):
                 result = await service.send_email(**email_data)
                 assert isinstance(result, (bool, dict))
-            elif hasattr(service, 'send'):
+            elif hasattr(service, "send"):
                 result = await service.send(**email_data)
                 assert isinstance(result, (bool, dict))
             else:
                 # Service might have different interface
                 assert True
-                
+
         except ImportError:
             pytest.skip("EmailService not available")
         except Exception:
@@ -223,25 +234,25 @@ class TestEmailService:
         """Test template-based email sending."""
         try:
             from app.services.email_service import EmailService
-            
+
             service = EmailService()
-            
+
             template_data = {
                 "to": "test@example.com",
                 "template": "welcome",
-                "context": {"name": "Test User"}
+                "context": {"name": "Test User"},
             }
-            
-            if hasattr(service, 'send_template'):
+
+            if hasattr(service, "send_template"):
                 result = await service.send_template(**template_data)
                 assert isinstance(result, (bool, dict))
-            elif hasattr(service, 'send_templated_email'):
+            elif hasattr(service, "send_templated_email"):
                 result = await service.send_templated_email(**template_data)
                 assert isinstance(result, (bool, dict))
             else:
                 # Service might have different interface
                 assert True
-                
+
         except ImportError:
             pytest.skip("EmailService not available")
         except Exception:
@@ -257,6 +268,7 @@ class TestNotificationService:
         """Test notification service can be imported."""
         try:
             from app.services.notification_service import NotificationService
+
             assert NotificationService is not None
         except ImportError:
             pytest.skip("NotificationService not available")
@@ -266,10 +278,10 @@ class TestNotificationService:
         """Test notification service initialization."""
         try:
             from app.services.notification_service import NotificationService
-            
+
             service = NotificationService()
             assert service is not None
-            
+
         except ImportError:
             pytest.skip("NotificationService not available")
 
@@ -278,26 +290,26 @@ class TestNotificationService:
         """Test sending notifications."""
         try:
             from app.services.notification_service import NotificationService
-            
+
             service = NotificationService()
-            
+
             notification_data = {
                 "user_id": "123",
                 "title": "Test Notification",
                 "message": "This is a test notification",
-                "type": "info"
+                "type": "info",
             }
-            
-            if hasattr(service, 'send_notification'):
+
+            if hasattr(service, "send_notification"):
                 result = await service.send_notification(**notification_data)
                 assert isinstance(result, (bool, dict))
-            elif hasattr(service, 'notify'):
+            elif hasattr(service, "notify"):
                 result = await service.notify(**notification_data)
                 assert isinstance(result, (bool, dict))
             else:
                 # Service might have different interface
                 assert True
-                
+
         except ImportError:
             pytest.skip("NotificationService not available")
         except Exception:
@@ -309,20 +321,24 @@ class TestNotificationService:
         """Test getting user notifications."""
         try:
             from app.services.notification_service import NotificationService
-            
+
             service = NotificationService()
-            
-            with patch.object(service, 'get_db_session', return_value=AsyncMock()) if hasattr(service, 'get_db_session') else patch('app.core.database.get_db_session', return_value=AsyncMock()):
-                if hasattr(service, 'get_notifications'):
+
+            with (
+                patch.object(service, "get_db_session", return_value=AsyncMock())
+                if hasattr(service, "get_db_session")
+                else patch("app.core.database.get_db_session", return_value=AsyncMock())
+            ):
+                if hasattr(service, "get_notifications"):
                     notifications = await service.get_notifications("123")
                     assert isinstance(notifications, list)
-                elif hasattr(service, 'get_user_notifications'):
+                elif hasattr(service, "get_user_notifications"):
                     notifications = await service.get_user_notifications("123")
                     assert isinstance(notifications, list)
                 else:
                     # Service might have different interface
                     assert True
-                    
+
         except ImportError:
             pytest.skip("NotificationService not available")
         except Exception:
@@ -338,6 +354,7 @@ class TestMapsService:
         """Test maps service can be imported."""
         try:
             from app.services.maps_service import MapsService
+
             assert MapsService is not None
         except ImportError:
             pytest.skip("MapsService not available")
@@ -347,10 +364,10 @@ class TestMapsService:
         """Test maps service initialization."""
         try:
             from app.services.maps_service import MapsService
-            
+
             service = MapsService()
             assert service is not None
-            
+
         except ImportError:
             pytest.skip("MapsService not available")
 
@@ -359,19 +376,19 @@ class TestMapsService:
         """Test geocoding functionality."""
         try:
             from app.services.maps_service import MapsService
-            
+
             service = MapsService()
-            
-            if hasattr(service, 'geocode'):
+
+            if hasattr(service, "geocode"):
                 result = await service.geocode("New York, NY")
                 assert isinstance(result, (dict, list, type(None)))
-            elif hasattr(service, 'get_coordinates'):
+            elif hasattr(service, "get_coordinates"):
                 result = await service.get_coordinates("New York, NY")
                 assert isinstance(result, (dict, list, type(None)))
             else:
                 # Service might have different interface
                 assert True
-                
+
         except ImportError:
             pytest.skip("MapsService not available")
         except Exception:
@@ -383,19 +400,19 @@ class TestMapsService:
         """Test directions functionality."""
         try:
             from app.services.maps_service import MapsService
-            
+
             service = MapsService()
-            
-            if hasattr(service, 'get_directions'):
+
+            if hasattr(service, "get_directions"):
                 result = await service.get_directions("New York, NY", "Boston, MA")
                 assert isinstance(result, (dict, list, type(None)))
-            elif hasattr(service, 'directions'):
+            elif hasattr(service, "directions"):
                 result = await service.directions("New York, NY", "Boston, MA")
                 assert isinstance(result, (dict, list, type(None)))
             else:
                 # Service might have different interface
                 assert True
-                
+
         except ImportError:
             pytest.skip("MapsService not available")
         except Exception:
@@ -411,6 +428,7 @@ class TestTripCosmosService:
         """Test trip cosmos service can be imported."""
         try:
             from app.services.trip_cosmos import TripCosmosService
+
             assert TripCosmosService is not None
         except ImportError:
             pytest.skip("TripCosmosService not available")
@@ -420,10 +438,10 @@ class TestTripCosmosService:
         """Test trip cosmos service initialization."""
         try:
             from app.services.trip_cosmos import TripCosmosService
-            
+
             service = TripCosmosService()
             assert service is not None
-            
+
         except ImportError:
             pytest.skip("TripCosmosService not available")
 
@@ -432,26 +450,26 @@ class TestTripCosmosService:
         """Test creating trip in cosmos."""
         try:
             from app.services.trip_cosmos import TripCosmosService
-            
+
             service = TripCosmosService()
-            
+
             trip_data = {
                 "id": "test-trip-123",
                 "name": "Test Trip",
                 "description": "A test trip",
-                "user_id": "user-123"
+                "user_id": "user-123",
             }
-            
-            if hasattr(service, 'create_trip'):
+
+            if hasattr(service, "create_trip"):
                 result = await service.create_trip(trip_data)
                 assert isinstance(result, (dict, type(None)))
-            elif hasattr(service, 'save_trip'):
+            elif hasattr(service, "save_trip"):
                 result = await service.save_trip(trip_data)
                 assert isinstance(result, (dict, type(None)))
             else:
                 # Service might have different interface
                 assert True
-                
+
         except ImportError:
             pytest.skip("TripCosmosService not available")
         except Exception:
@@ -467,14 +485,14 @@ class TestServiceIntegration:
         """Test service dependency injection."""
         try:
             from app.core.container import Container
-            
+
             container = Container()
-            
+
             # Test that container can provide services
-            if hasattr(container, 'get'):
-                service = container.get('auth_service')
+            if hasattr(container, "get"):
+                service = container.get("auth_service")
                 assert service is not None or service is None  # Both valid
-            
+
         except ImportError:
             pytest.skip("Container not available")
         except Exception:
@@ -486,16 +504,16 @@ class TestServiceIntegration:
         """Test service configuration."""
         try:
             from app.core.config import settings
-            
+
             # Test that settings exist
             assert settings is not None
-            
+
             # Check common service settings
-            if hasattr(settings, 'email_enabled'):
+            if hasattr(settings, "email_enabled"):
                 assert isinstance(settings.email_enabled, bool)
-            if hasattr(settings, 'notifications_enabled'):
+            if hasattr(settings, "notifications_enabled"):
                 assert isinstance(settings.notifications_enabled, bool)
-                
+
         except ImportError:
             pytest.skip("Settings not available")
 
@@ -504,11 +522,11 @@ class TestServiceIntegration:
         """Test service error handling patterns."""
         try:
             from app.services.auth_service import AuthService
-            
+
             service = AuthService()
-            
+
             # Test error handling with invalid data
-            if hasattr(service, 'authenticate'):
+            if hasattr(service, "authenticate"):
                 try:
                     await service.authenticate("invalid", "invalid")
                 except Exception:
@@ -517,7 +535,7 @@ class TestServiceIntegration:
                 else:
                     # No error or valid response
                     assert True
-                    
+
         except ImportError:
             pytest.skip("AuthService not available")
         except Exception:

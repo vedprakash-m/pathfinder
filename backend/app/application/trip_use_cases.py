@@ -6,6 +6,8 @@ infrastructure concerns via injected ports (services, repositories, etc.).
 
 from __future__ import annotations
 
+import os
+import sys
 from uuid import UUID
 
 from app.models.trip import (
@@ -19,9 +21,6 @@ from app.models.trip import (
     TripStats,
     TripUpdate,
 )
-
-import sys
-import os
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 from domain.trip import TripDomainService as TripService

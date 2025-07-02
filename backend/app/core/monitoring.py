@@ -507,7 +507,7 @@ class HealthChecker:
         tasks = [self.run_check(name) for name in self.checks.keys()]
         check_results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        for name, result in zip(self.checks.keys(), check_results):
+        for name, result in zip(self.checks.keys(), check_results, strict=False):
             if isinstance(result, Exception):
                 results[name] = {
                     "status": "error",

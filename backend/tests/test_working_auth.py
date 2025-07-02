@@ -2,26 +2,24 @@
 Working authentication test with proper dependency injection mocking.
 """
 
-import pytest
-from unittest.mock import patch, AsyncMock
-from fastapi.testclient import TestClient
-from fastapi import status
-from app.main import app
-from app.core.security import VedUser, TokenData
+from unittest.mock import AsyncMock, patch
 from uuid import uuid4
+
+from app.core.security import TokenData, VedUser
+from app.main import app
+from fastapi.testclient import TestClient
 
 
 def test_trips_with_complete_mocking():
     """Test trip creation with complete dependency injection mocking."""
 
-    from app.models.trip import TripResponse
     from datetime import date
-    from app.core.kink_container import get_container
-    import kink
+
+    from app.models.trip import TripResponse
 
     # Create a test user
     test_user_id = str(uuid4())
-    test_user = VedUser(
+    _test_user = VedUser(
         id=test_user_id,
         email="test@example.com",
         name="Test User",

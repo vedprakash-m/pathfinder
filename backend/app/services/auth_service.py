@@ -11,14 +11,10 @@ This module handles:
 import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional
-from urllib.parse import urlencode
 
-import httpx
-from app.core.config import settings
 from app.core.security import create_access_token
 from app.models.user import User, UserCreate, UserUpdate
-from app.services.entra_auth_service import EntraAuthService, EntraExternalIDError
-from jose import JWTError, jwt
+from app.services.entra_auth_service import EntraAuthService
 from passlib.context import CryptContext
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -38,7 +34,7 @@ class AuthService:
     def __init__(self):
         # Initialize Entra External ID service
         self.entra_service = EntraAuthService()
-        
+
         logger.info("AuthService initialized with Entra External ID support")
 
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
@@ -70,6 +66,7 @@ class AuthService:
         """Create a new user with automatic Family Admin role and family setup."""
         try:
             from uuid import uuid4
+
             from app.models.family import Family, FamilyMember, FamilyRole
 
             # Create user record with Entra ID support
@@ -79,9 +76,7 @@ class AuthService:
                 entra_id=user_data.entra_id,  # Primary field for Entra ID
                 picture=None,
                 phone=user_data.phone,
-                preferences=(
-                    str(user_data.preferences) if user_data.preferences else None
-                ),
+                preferences=(str(user_data.preferences) if user_data.preferences else None),
                 is_active=True,
                 created_at=datetime.utcnow(),
                 updated_at=datetime.utcnow(),
@@ -237,7 +232,7 @@ class AuthService:
                 user, internal_token = result
                 logger.info(f"Successful Entra External ID login for: {user.email}")
                 return user, internal_token
-            
+
             return None
 
         except Exception as e:
@@ -253,9 +248,9 @@ class AuthService:
         New implementations should use process_entra_login.
         """
         logger.warning("process_auth0_login is deprecated. Use process_entra_login instead.")
-        
+
         # Convert to AsyncSession and delegate to Entra login
-        if hasattr(db, 'execute'):  # Check if it's already an AsyncSession
+        if hasattr(db, "execute"):  # Check if it's already an AsyncSession
             return await self.process_entra_login(db, access_token)
         else:
             logger.error("Legacy Auth0 login requires session conversion")
@@ -321,19 +316,19 @@ class AuthService:
         """
         try:
             entra_health = await self.entra_service.health_check()
-            
+
             return {
                 "status": "healthy" if entra_health.get("status") == "healthy" else "degraded",
                 "provider": "Microsoft Entra External ID",
                 "legacy_support": self.auth0_domain is not None,
                 "entra_service": entra_health,
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.utcnow().isoformat(),
             }
         except Exception as e:
             return {
                 "status": "unhealthy",
                 "error": str(e),
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.utcnow().isoformat(),
             }
 
 

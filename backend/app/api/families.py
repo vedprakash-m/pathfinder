@@ -13,14 +13,10 @@ from ..core.database_unified import get_cosmos_repository
 from ..core.logging_config import get_logger
 from ..core.security import get_current_user
 from ..core.zero_trust import require_permissions
-from ..repositories.cosmos_unified import UnifiedCosmosRepository
 from ..models.family import (
-    Family,
     FamilyCreate,
     FamilyInvitationCreate,
-    FamilyInvitationModel,
     FamilyInvitationResponse,
-    FamilyMember,
     FamilyMemberCreate,
     FamilyMemberResponse,
     FamilyMemberUpdate,
@@ -30,6 +26,7 @@ from ..models.family import (
     InvitationStatus,
 )
 from ..models.user import User
+from ..repositories.cosmos_unified import UnifiedCosmosRepository
 
 router = APIRouter(tags=["families"])
 logger = get_logger(__name__)
@@ -46,9 +43,7 @@ async def create_family(
     try:
         # Check if user already has a family with the same name
         user_families = await cosmos_repo.get_user_families(str(current_user.id))
-        existing_family = next(
-            (f for f in user_families if f.name == family_data.name), None
-        )
+        existing_family = next((f for f in user_families if f.name == family_data.name), None)
 
         if existing_family:
             raise HTTPException(
@@ -58,18 +53,20 @@ async def create_family(
 
         # Create family document
         family_data_dict = family_data.dict()
-        family_data_dict.update({
-            "admin_user_id": str(current_user.id),
-            "member_ids": [str(current_user.id)]  # Creator is first member
-        })
-        
+        family_data_dict.update(
+            {
+                "admin_user_id": str(current_user.id),
+                "member_ids": [str(current_user.id)],  # Creator is first member
+            }
+        )
+
         family_doc = await cosmos_repo.create_family(family_data_dict)
-        
+
         # Add user to family's member list
         await cosmos_repo.add_user_to_family(str(current_user.id), family_doc.id)
 
         logger.info(f"Family created: {family_doc.id} by user: {current_user.id}")
-        
+
         # Convert Cosmos document to response model
         return FamilyResponse(
             id=family_doc.id,
@@ -78,7 +75,7 @@ async def create_family(
             admin_user_id=family_doc.admin_user_id,
             members_count=family_doc.members_count,
             created_at=family_doc.created_at,
-            updated_at=family_doc.updated_at
+            updated_at=family_doc.updated_at,
         )
 
     except Exception as e:
@@ -100,10 +97,10 @@ async def get_user_families(
     """Get all families for the current user."""
     try:
         families = await cosmos_repo.get_user_families(str(current_user.id))
-        
+
         # Apply pagination
-        paginated_families = families[skip:skip + limit] if limit > 0 else families[skip:]
-        
+        paginated_families = families[skip : skip + limit] if limit > 0 else families[skip:]
+
         # Convert to response models
         return [
             FamilyResponse(
@@ -113,7 +110,7 @@ async def get_user_families(
                 admin_user_id=family.admin_user_id,
                 members_count=family.members_count,
                 created_at=family.created_at,
-                updated_at=family.updated_at
+                updated_at=family.updated_at,
             )
             for family in paginated_families
         ]
@@ -156,7 +153,7 @@ async def get_family(
             admin_user_id=family.admin_user_id,
             members_count=family.members_count,
             created_at=family.created_at,
-            updated_at=family.updated_at
+            updated_at=family.updated_at,
         )
 
     except HTTPException:
@@ -203,7 +200,7 @@ async def update_family(
         updated_family = await cosmos_repo.update_family(family_id, update_data)
 
         logger.info(f"Family updated: {family_id} by user: {current_user.id}")
-        
+
         return FamilyResponse(
             id=updated_family.id,
             name=updated_family.name,
@@ -211,7 +208,7 @@ async def update_family(
             admin_user_id=updated_family.admin_user_id,
             members_count=updated_family.members_count,
             created_at=updated_family.created_at,
-            updated_at=updated_family.updated_at
+            updated_at=updated_family.updated_at,
         )
 
     except HTTPException:
@@ -304,14 +301,14 @@ async def add_family_member(
         await cosmos_repo.add_user_to_family(str(member_data.user_id), family_id)
 
         logger.info(f"Family member added: {member_data.user_id} to family: {family_id}")
-        
+
         # Return member response
         return FamilyMemberResponse(
             id=str(member_data.user_id),
             user_id=str(member_data.user_id),
             family_id=family_id,
             role=member_data.role or FamilyRole.MEMBER,
-            joined_at=datetime.utcnow()
+            joined_at=datetime.utcnow(),
         )
 
     except HTTPException:
@@ -353,13 +350,15 @@ async def get_family_members(
             user = await cosmos_repo.get_user(member_id)
             if user:
                 role = FamilyRole.ADMIN if member_id == family.admin_user_id else FamilyRole.MEMBER
-                members.append(FamilyMemberResponse(
-                    id=member_id,
-                    user_id=member_id,
-                    family_id=family_id,
-                    role=role,
-                    joined_at=family.created_at  # Simplified for now
-                ))
+                members.append(
+                    FamilyMemberResponse(
+                        id=member_id,
+                        user_id=member_id,
+                        family_id=family_id,
+                        role=role,
+                        joined_at=family.created_at,  # Simplified for now
+                    )
+                )
 
         return members
 
@@ -406,14 +405,14 @@ async def update_family_member(
         # For simplified unified Cosmos approach, we can mainly update roles
         # Other member-specific data could be stored in user documents
         update_data = member_data.dict(exclude_unset=True)
-        
+
         # If updating role and user is admin
         if "role" in update_data and is_admin:
             if update_data["role"] == FamilyRole.ADMIN:
                 # Transfer admin role
                 await cosmos_repo.update_family(family_id, {"admin_user_id": member_id})
             # Note: In simplified approach, role is derived from admin_user_id
-        
+
         # For now, return the updated member info
         user = await cosmos_repo.get_user(member_id)
         if not user:
@@ -422,13 +421,13 @@ async def update_family_member(
         role = FamilyRole.ADMIN if member_id == family.admin_user_id else FamilyRole.MEMBER
 
         logger.info(f"Family member updated: {member_id} by user: {current_user.id}")
-        
+
         return FamilyMemberResponse(
             id=member_id,
             user_id=member_id,
             family_id=family_id,
             role=role,
-            joined_at=family.created_at  # Simplified for now
+            joined_at=family.created_at,  # Simplified for now
         )
 
     except HTTPException:
@@ -539,8 +538,10 @@ async def invite_family_member(
         # Check if there's already a pending invitation
         existing_invitations = await cosmos_repo.get_family_invitations(family_id)
         for invitation in existing_invitations:
-            if (invitation.email == invitation_data.email and 
-                invitation.status == InvitationStatus.PENDING):
+            if (
+                invitation.email == invitation_data.email
+                and invitation.status == InvitationStatus.PENDING
+            ):
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
                     detail="Invitation already pending for this email",
@@ -637,8 +638,8 @@ async def accept_family_invitation(
         if existing_member:
             # Update invitation status and return success
             await cosmos_repo.update_family_invitation(
-                invitation.id, 
-                {"status": InvitationStatus.ACCEPTED, "accepted_at": datetime.utcnow()}
+                invitation.id,
+                {"status": InvitationStatus.ACCEPTED, "accepted_at": datetime.utcnow()},
             )
             return {"message": "Already a member of this family"}
 
@@ -654,8 +655,7 @@ async def accept_family_invitation(
 
         # Update invitation status
         await cosmos_repo.update_family_invitation(
-            invitation.id,
-            {"status": InvitationStatus.ACCEPTED, "accepted_at": datetime.utcnow()}
+            invitation.id, {"status": InvitationStatus.ACCEPTED, "accepted_at": datetime.utcnow()}
         )
 
         logger.info(f"Family invitation accepted: {invitation.id} by user: {current_user.id}")
@@ -745,7 +745,7 @@ async def get_family_invitations(
 
         # Get invitations
         invitations = await cosmos_repo.get_family_invitations(family_id)
-        
+
         # Sort by created_at descending
         invitations.sort(key=lambda x: x.created_at, reverse=True)
 

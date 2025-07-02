@@ -5,7 +5,6 @@ Performance and load testing suite for Pathfinder backend.
 import asyncio
 import time
 from datetime import datetime
-from unittest.mock import AsyncMock
 
 import pytest
 from app.main import app
@@ -64,8 +63,9 @@ class TestAPIPerformance:
     @pytest.mark.asyncio
     async def test_memory_usage_during_load(self):
         """Test memory usage doesn't grow excessively under load."""
-        import psutil
         import os
+
+        import psutil
 
         process = psutil.Process(os.getpid())
         initial_memory = process.memory_info().rss / 1024 / 1024  # MB
@@ -337,7 +337,7 @@ class TestEndToEndPerformance:
             assert total_stress_time < 30.0  # Complete stress test under 30 seconds
             assert avg_user_time < 10.0  # Average user experience under 10 seconds
 
-            print(f"Stress test results:")
+            print("Stress test results:")
             print(f"  Concurrent users: {concurrent_users}")
             print(f"  Requests per user: {requests_per_user}")
             print(f"  Total requests: {total_requests}")

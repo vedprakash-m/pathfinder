@@ -2,10 +2,10 @@
 Unit tests for authentication endpoints.
 """
 
-import pytest
-from unittest.mock import AsyncMock, patch
 from datetime import datetime
+from unittest.mock import AsyncMock, patch
 
+import pytest
 from app.main import app
 from fastapi import status
 from fastapi.testclient import TestClient
@@ -83,7 +83,10 @@ class TestAuthEndpoints:
         # FastAPI should return 422 for validation errors (Pydantic validation)
         # If we get 400, it means the request reached the service layer
         # Both are acceptable for "invalid data" - 422 is more specific
-        assert response.status_code in [status.HTTP_400_BAD_REQUEST, status.HTTP_422_UNPROCESSABLE_ENTITY]
+        assert response.status_code in [
+            status.HTTP_400_BAD_REQUEST,
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+        ]
 
     def test_validate_token_success(self):
         """Test successful token validation."""

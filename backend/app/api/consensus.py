@@ -4,7 +4,6 @@ API endpoints for Family Consensus Engine.
 Solves the #1 pain point: "Lack of mechanism to achieve consensus on optimal plans across families"
 """
 
-import json
 import logging
 from dataclasses import asdict
 from typing import Any, Dict, List, Optional
@@ -12,11 +11,11 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
+from ..core.ai_cost_management import ai_cost_control
 from ..core.database_unified import get_cosmos_repository
 from ..core.zero_trust import require_permissions
-from ..core.ai_cost_management import ai_cost_control
-from ..repositories.cosmos_unified import UnifiedCosmosRepository
 from ..models.user import User
+from ..repositories.cosmos_unified import UnifiedCosmosRepository
 from ..services.consensus_engine import FamilyConsensusEngine, analyze_trip_consensus
 
 logger = logging.getLogger(__name__)
@@ -53,7 +52,7 @@ class ConsensusResponse(BaseModel):
 
 
 @router.post("/analyze/{trip_id}", response_model=ConsensusResponse)
-@ai_cost_control(model='gpt-4', max_tokens=2500)
+@ai_cost_control(model="gpt-4", max_tokens=2500)
 async def analyze_consensus(
     trip_id: str,
     request: Request,
@@ -91,11 +90,14 @@ async def analyze_consensus(
         for family in families:
             # Get family members from Cosmos DB
             family_members = await cosmos_repo.get_family_members(family.id)
-            
+
             family_data = {
                 "id": family.id,
                 "name": family.name,
-                "members": [{"id": str(member.id), "name": member.name or "Unknown"} for member in family_members],
+                "members": [
+                    {"id": str(member.id), "name": member.name or "Unknown"}
+                    for member in family_members
+                ],
                 "preferences": family.settings or {},
                 "budget_allocation": 0.0,  # TODO: Get from trip participation data
                 "is_trip_admin": trip.creator_id == family.admin_user_id,
@@ -158,11 +160,14 @@ async def get_consensus_dashboard(
         for family in families:
             # Get family members from Cosmos DB
             family_members = await cosmos_repo.get_family_members(family.id)
-            
+
             family_data = {
                 "id": family.id,
                 "name": family.name,
-                "members": [{"id": str(member.id), "name": member.name or "Unknown"} for member in family_members],
+                "members": [
+                    {"id": str(member.id), "name": member.name or "Unknown"}
+                    for member in family_members
+                ],
                 "preferences": family.settings or {},
                 "budget_allocation": 0.0,  # TODO: Get from trip participation data
                 "is_trip_admin": trip.creator_id == family.admin_user_id,
@@ -255,7 +260,7 @@ async def submit_family_vote(
 
 
 @router.get("/recommendations/{trip_id}")
-@ai_cost_control(model='gpt-3.5-turbo', max_tokens=1500)
+@ai_cost_control(model="gpt-3.5-turbo", max_tokens=1500)
 async def get_consensus_recommendations(
     trip_id: str,
     cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
@@ -292,11 +297,14 @@ async def get_consensus_recommendations(
         for family in families:
             # Get family members from Cosmos DB
             family_members = await cosmos_repo.get_family_members(family.id)
-            
+
             family_data = {
                 "id": family.id,
                 "name": family.name,
-                "members": [{"id": str(member.id), "name": member.name or "Unknown"} for member in family_members],
+                "members": [
+                    {"id": str(member.id), "name": member.name or "Unknown"}
+                    for member in family_members
+                ],
                 "preferences": family.settings or {},
                 "budget_allocation": 0.0,  # TODO: Get from trip participation data
             }
@@ -338,16 +346,16 @@ async def _check_trip_access_cosmos(
         # Get user's families
         user_families = await cosmos_repo.get_user_families(user_id)
         user_family_ids = [family.id for family in user_families]
-        
+
         # Get trip
         trip = await cosmos_repo.get_trip(trip_id)
         if not trip:
             return False
-        
+
         # Check if user is trip creator
         if trip.creator_id == user_id:
             return True
-        
+
         # Check if any user family is participating in the trip
         participating_families = trip.participating_family_ids
         return any(family_id in participating_families for family_id in user_family_ids)
@@ -364,18 +372,18 @@ async def _get_user_family_for_trip_cosmos(
     try:
         # Get user's families
         user_families = await cosmos_repo.get_user_families(user_id)
-        
+
         # Get trip
         trip = await cosmos_repo.get_trip(trip_id)
         if not trip:
             return None
-        
+
         # Find which family is participating in this trip
         participating_families = trip.participating_family_ids
         for family in user_families:
             if family.id in participating_families:
                 return family.id
-                
+
         return None
 
     except Exception as e:

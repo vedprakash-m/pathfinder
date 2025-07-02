@@ -2,13 +2,13 @@
 Comprehensive integration tests for trip management workflow.
 """
 
-import pytest
 from datetime import date, timedelta
+
+import pytest
+from app.main import app
+from app.models.trip import TripStatus
 from fastapi import status
 from httpx import AsyncClient
-from app.main import app
-from app.models.trip import TripCreate, TripStatus
-from app.models.family import FamilyCreate
 
 
 class TestTripManagementIntegration:

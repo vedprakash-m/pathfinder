@@ -4,12 +4,9 @@ This module provides dependency injection functions that work directly with Fast
 dependency system, using our unified Cosmos DB approach per Tech Spec.
 """
 
-from typing import AsyncGenerator
+import os
+import sys
 
-from fastapi import Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.repositories.trip_repository import TripRepository
-from app.core.repositories.trip_cosmos_repository import TripCosmosRepository
 from app.application.trip_use_cases import (
     AddParticipantUseCase,
     CreateTripUseCase,
@@ -24,17 +21,17 @@ from app.application.trip_use_cases import (
     UpdateTripUseCase,
 )
 from app.core.database_unified import get_cosmos_service
+from app.core.repositories.trip_cosmos_repository import TripCosmosRepository
+from app.core.repositories.trip_repository import TripRepository
 from app.repositories.cosmos_unified import UnifiedCosmosRepository
 from domain.trip import TripDomainService
-
-import sys
-import os
+from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 from domain.family import FamilyDomainService
 from domain.messaging import MessagingDomainService
 from domain.reservation import ReservationDomainService
-from domain.trip import TripDomainService
 
 
 # Repository providers
@@ -54,7 +51,7 @@ def get_trip_cosmos_repository() -> TripCosmosRepository:
 
 # Domain service providers
 async def get_trip_domain_service(
-    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_service)
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_service),
 ) -> TripDomainService:
     """Get TripDomainService instance with unified Cosmos DB repository."""
     return TripDomainService(

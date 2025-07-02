@@ -20,12 +20,12 @@ class TestCompleteUserJourney:
         """Test complete journey from user registration to trip completion."""
         # Use test database fixture
         from app.core.database import get_db
-        
+
         def get_test_db():
             return test_db
-        
+
         app.dependency_overrides[get_db] = get_test_db
-        
+
         try:
             async with AsyncClient(app=app, base_url="http://test") as client:
                 # 1. User Registration
@@ -74,13 +74,13 @@ class TestCompleteUserJourney:
                 )
                 if family_response.status_code == 201:
                     family = family_response.json()
-                    family_id = family["id"]
+                    _family_id = family["id"]
                 else:
                     # Family might be auto-created, get user's family
                     profile_response = await client.get("/api/v1/auth/profile", headers=headers)
                     if profile_response.status_code == 200:
                         profile = profile_response.json()
-                        family_id = profile.get("family_id")
+                        _family_id = profile.get("family_id")
 
                 # 4. Trip Creation
                 trip_data = {
@@ -164,7 +164,7 @@ class TestCompleteUserJourney:
                     assert "days" in itinerary
                     assert len(itinerary["days"]) > 0
 
-                    itinerary_id = itinerary.get("id")
+                    _itinerary_id = itinerary.get("id")
 
                     # 7. Itinerary Review and Modification
                     modification_request = {
@@ -190,7 +190,9 @@ class TestCompleteUserJourney:
 
                     # Modification endpoint might not exist
                     if modify_response.status_code not in [200, 404]:
-                        pytest.fail(f"Unexpected modification response: {modify_response.status_code}")
+                        pytest.fail(
+                            f"Unexpected modification response: {modify_response.status_code}"
+                        )
 
                 elif itinerary_response.status_code not in [400, 404, 500, 503]:
                     pytest.fail(
@@ -257,7 +259,9 @@ class TestCompleteUserJourney:
 
                 if archive_response.status_code not in [200, 404]:
                     # Try delete instead
-                    delete_response = await client.delete(f"/api/v1/trips/{trip_id}", headers=headers)
+                    delete_response = await client.delete(
+                        f"/api/v1/trips/{trip_id}", headers=headers
+                    )
                     assert delete_response.status_code in [200, 204, 404]
         finally:
             # Clean up dependency override

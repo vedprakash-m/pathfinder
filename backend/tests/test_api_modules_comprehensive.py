@@ -2,10 +2,10 @@
 Comprehensive tests for API modules to boost coverage.
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 from fastapi import HTTPException
-from datetime import datetime
 
 
 class TestAPIHealthChecks:
@@ -16,6 +16,7 @@ class TestAPIHealthChecks:
         """Test health module can be imported."""
         try:
             from app.api.health import router
+
             assert router is not None
         except ImportError:
             pytest.skip("Health API not available")
@@ -24,7 +25,8 @@ class TestAPIHealthChecks:
     async def test_health_endpoint_functions(self):
         """Test health check functions exist."""
         try:
-            from app.api.health import get_health, get_detailed_health
+            from app.api.health import get_detailed_health, get_health
+
             assert get_health is not None
             assert get_detailed_health is not None
         except ImportError:
@@ -35,11 +37,11 @@ class TestAPIHealthChecks:
         """Test basic health check response."""
         try:
             from app.api.health import get_health
-            
+
             result = await get_health()
             assert isinstance(result, dict)
             assert "status" in result
-            
+
         except ImportError:
             pytest.skip("get_health not available")
         except Exception:
@@ -51,14 +53,14 @@ class TestAPIHealthChecks:
         """Test detailed health check response."""
         try:
             from app.api.health import get_detailed_health
-            
+
             # Mock dependencies
-            with patch('app.api.health.get_db_session') as mock_db:
+            with patch("app.api.health.get_db_session") as mock_db:
                 mock_db.return_value = MagicMock()
-                
+
                 result = await get_detailed_health()
                 assert isinstance(result, dict)
-                
+
         except ImportError:
             pytest.skip("get_detailed_health not available")
         except Exception:
@@ -73,6 +75,7 @@ class TestAPIRouter:
         """Test router can be imported."""
         try:
             from app.api.router import api_router
+
             assert api_router is not None
         except ImportError:
             pytest.skip("API router not available")
@@ -81,11 +84,11 @@ class TestAPIRouter:
         """Test router includes other routers."""
         try:
             from app.api.router import api_router
-            
+
             # Check if router has routes
-            assert hasattr(api_router, 'routes')
+            assert hasattr(api_router, "routes")
             assert len(api_router.routes) > 0
-            
+
         except ImportError:
             pytest.skip("API router not available")
 
@@ -93,13 +96,13 @@ class TestAPIRouter:
         """Test router configuration."""
         try:
             from app.api.router import api_router
-            
+
             # Check basic router properties
-            if hasattr(api_router, 'prefix'):
+            if hasattr(api_router, "prefix"):
                 assert api_router.prefix is not None or api_router.prefix == ""
-            
+
             assert True
-            
+
         except ImportError:
             pytest.skip("API router not available")
 
@@ -112,6 +115,7 @@ class TestAPIAuthentication:
         """Test auth module can be imported."""
         try:
             from app.api.auth import router
+
             assert router is not None
         except ImportError:
             pytest.skip("Auth API not available")
@@ -121,6 +125,7 @@ class TestAPIAuthentication:
         """Test auth functions exist."""
         try:
             from app.api.auth import login, logout
+
             assert login is not None
             assert logout is not None
         except ImportError:
@@ -131,23 +136,22 @@ class TestAPIAuthentication:
         """Test login endpoint basic structure."""
         try:
             from app.api.auth import login
-            
+
             # Mock request data
-            login_data = {
-                "username": "test@example.com",
-                "password": "testpassword"
-            }
-            
+            login_data = {"username": "test@example.com", "password": "testpassword"}
+
             # Mock dependencies
-            with patch('app.api.auth.authenticate_user') as mock_auth, \
-                 patch('app.api.auth.create_access_token') as mock_token:
-                
+            with (
+                patch("app.api.auth.authenticate_user") as mock_auth,
+                patch("app.api.auth.create_access_token") as mock_token,
+            ):
+
                 mock_auth.return_value = {"id": "123", "email": "test@example.com"}
                 mock_token.return_value = "test_token"
-                
+
                 result = await login(login_data)
                 assert isinstance(result, dict)
-                
+
         except ImportError:
             pytest.skip("Login function not available")
         except Exception:
@@ -159,13 +163,13 @@ class TestAPIAuthentication:
         """Test logout endpoint."""
         try:
             from app.api.auth import logout
-            
+
             # Mock user session
             mock_user = {"id": "123", "email": "test@example.com"}
-            
+
             result = await logout(mock_user)
             assert isinstance(result, dict)
-            
+
         except ImportError:
             pytest.skip("Logout function not available")
         except Exception:
@@ -181,6 +185,7 @@ class TestAPITrips:
         """Test trips module can be imported."""
         try:
             from app.api.trips import router
+
             assert router is not None
         except ImportError:
             pytest.skip("Trips API not available")
@@ -189,7 +194,8 @@ class TestAPITrips:
     async def test_trips_functions_exist(self):
         """Test trips functions exist."""
         try:
-            from app.api.trips import create_trip, get_trips, get_trip
+            from app.api.trips import create_trip, get_trip, get_trips
+
             assert create_trip is not None
             assert get_trips is not None
             assert get_trip is not None
@@ -201,24 +207,24 @@ class TestAPITrips:
         """Test create trip endpoint structure."""
         try:
             from app.api.trips import create_trip
-            
+
             # Mock trip data
             trip_data = {
                 "name": "Test Trip",
                 "description": "A test trip",
                 "start_date": "2024-07-01",
-                "end_date": "2024-07-07"
+                "end_date": "2024-07-07",
             }
-            
+
             # Mock user and dependencies
             mock_user = {"id": "123", "email": "test@example.com"}
-            
-            with patch('app.api.trips.get_db_session') as mock_db:
+
+            with patch("app.api.trips.get_db_session") as mock_db:
                 mock_db.return_value = AsyncMock()
-                
+
                 result = await create_trip(trip_data, mock_user)
                 assert isinstance(result, dict)
-                
+
         except ImportError:
             pytest.skip("create_trip not available")
         except Exception:
@@ -230,16 +236,16 @@ class TestAPITrips:
         """Test get trips endpoint structure."""
         try:
             from app.api.trips import get_trips
-            
+
             # Mock user
             mock_user = {"id": "123", "email": "test@example.com"}
-            
-            with patch('app.api.trips.get_db_session') as mock_db:
+
+            with patch("app.api.trips.get_db_session") as mock_db:
                 mock_db.return_value = AsyncMock()
-                
+
                 result = await get_trips(mock_user)
                 assert isinstance(result, (list, dict))
-                
+
         except ImportError:
             pytest.skip("get_trips not available")
         except Exception:
@@ -255,6 +261,7 @@ class TestAPINotifications:
         """Test notifications module can be imported."""
         try:
             from app.api.notifications import router
+
             assert router is not None
         except ImportError:
             pytest.skip("Notifications API not available")
@@ -264,6 +271,7 @@ class TestAPINotifications:
         """Test notification functions exist."""
         try:
             from app.api.notifications import get_notifications, mark_read
+
             assert get_notifications is not None
             assert mark_read is not None
         except ImportError:
@@ -274,16 +282,16 @@ class TestAPINotifications:
         """Test get notifications endpoint."""
         try:
             from app.api.notifications import get_notifications
-            
+
             # Mock user
             mock_user = {"id": "123", "email": "test@example.com"}
-            
-            with patch('app.api.notifications.get_db_session') as mock_db:
+
+            with patch("app.api.notifications.get_db_session") as mock_db:
                 mock_db.return_value = AsyncMock()
-                
+
                 result = await get_notifications(mock_user)
                 assert isinstance(result, (list, dict))
-                
+
         except ImportError:
             pytest.skip("get_notifications not available")
         except Exception:
@@ -299,6 +307,7 @@ class TestAPIAdmin:
         """Test admin module can be imported."""
         try:
             from app.api.admin import router
+
             assert router is not None
         except ImportError:
             pytest.skip("Admin API not available")
@@ -308,6 +317,7 @@ class TestAPIAdmin:
         """Test admin functions exist."""
         try:
             from app.api.admin import get_system_stats, get_users
+
             assert get_system_stats is not None
             assert get_users is not None
         except ImportError:
@@ -318,16 +328,16 @@ class TestAPIAdmin:
         """Test admin stats endpoint."""
         try:
             from app.api.admin import get_system_stats
-            
+
             # Mock admin user
             mock_user = {"id": "123", "role": "admin"}
-            
-            with patch('app.api.admin.get_db_session') as mock_db:
+
+            with patch("app.api.admin.get_db_session") as mock_db:
                 mock_db.return_value = AsyncMock()
-                
+
                 result = await get_system_stats(mock_user)
                 assert isinstance(result, dict)
-                
+
         except ImportError:
             pytest.skip("get_system_stats not available")
         except Exception:
@@ -343,18 +353,18 @@ class TestAPIErrorHandling:
         """Test HTTP exception handling in endpoints."""
         try:
             from app.api.trips import get_trip
-            
+
             # Mock user and non-existent trip
             mock_user = {"id": "123", "email": "test@example.com"}
-            
-            with patch('app.api.trips.get_db_session') as mock_db:
+
+            with patch("app.api.trips.get_db_session") as mock_db:
                 mock_session = AsyncMock()
                 mock_db.return_value = mock_session
                 mock_session.get.return_value = None  # Trip not found
-                
+
                 with pytest.raises(HTTPException):
                     await get_trip("nonexistent-id", mock_user)
-                    
+
         except ImportError:
             pytest.skip("get_trip not available")
         except Exception:
@@ -366,13 +376,13 @@ class TestAPIErrorHandling:
         """Test validation error handling."""
         try:
             from app.api.auth import login
-            
+
             # Invalid login data
             invalid_data = {"invalid": "data"}
-            
+
             with pytest.raises(Exception):  # Could be validation error or other
                 await login(invalid_data)
-                
+
         except ImportError:
             pytest.skip("login not available")
         except Exception:
@@ -388,11 +398,11 @@ class TestAPIIntegration:
         """Test API dependency injection patterns."""
         try:
             from app.api.dependencies import get_current_user, get_db_session
-            
+
             # Test that dependencies are callable
             assert callable(get_current_user)
             assert callable(get_db_session)
-            
+
         except ImportError:
             pytest.skip("API dependencies not available")
 
@@ -402,27 +412,25 @@ class TestAPIIntegration:
         try:
             from app.api.router import api_router
             from fastapi import FastAPI
-            
+
             # Create test app
             app = FastAPI()
             app.include_router(api_router)
-            
+
             # Check that router was included
             assert len(app.routes) > 0
-            
+
         except ImportError:
             pytest.skip("API router integration not available")
 
     def test_api_module_structure(self):
         """Test API module structure consistency."""
-        api_modules = [
-            'auth', 'trips', 'notifications', 'admin', 'health'
-        ]
-        
+        api_modules = ["auth", "trips", "notifications", "admin", "health"]
+
         for module_name in api_modules:
             try:
-                module = __import__(f'app.api.{module_name}', fromlist=['router'])
-                assert hasattr(module, 'router')
+                module = __import__(f"app.api.{module_name}", fromlist=["router"])
+                assert hasattr(module, "router")
             except ImportError:
                 # Module might not exist, that's okay
                 continue

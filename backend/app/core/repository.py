@@ -508,7 +508,7 @@ def with_caching(cache_key_prefix: str, ttl: int = 3600):
     def decorator(repository_method):
         async def wrapper(self, *args, **kwargs):
             # Generate cache key
-            cache_key = (
+            _cache_key = (
                 f"{cache_key_prefix}:{repository_method.__name__}:{hash(str(args) + str(kwargs))}"
             )
 

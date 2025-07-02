@@ -20,7 +20,7 @@ settings = get_settings()
 class FileService:
     """Service for managing file uploads and downloads with Azure Blob Storage."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.client = None
         if settings.AZURE_STORAGE_CONNECTION_STRING:
             self.client = BlobServiceClient.from_connection_string(
@@ -28,7 +28,7 @@ class FileService:
             )
         self.container_name = settings.AZURE_STORAGE_CONTAINER
 
-    async def ensure_container_exists(self):
+    async def ensure_container_exists(self) -> None:
         """Ensure the storage container exists."""
         if not self.client:
             raise RuntimeError("Azure Blob Storage not configured")
@@ -46,7 +46,7 @@ class FileService:
         filename: str,
         content_type: str = "application/octet-stream",
         folder: str = "uploads",
-    ) -> dict:
+    ) -> Dict[str, Any]:
         """
         Upload a file to Azure Blob Storage.
 
@@ -57,7 +57,7 @@ class FileService:
             folder: Folder/prefix for organization
 
         Returns:
-            dict: File metadata including blob_name and url
+            Dict[str, Any]: File metadata including blob_name and url
         """
         if not self.client:
             raise RuntimeError("Azure Blob Storage not configured")
@@ -106,7 +106,7 @@ class FileService:
             logger.error(f"Failed to upload file {filename}: {e}")
             raise
 
-    async def download_file(self, blob_name: str) -> tuple[bytes, dict]:
+    async def download_file(self, blob_name: str) -> tuple[bytes, Dict[str, Any]]:
         """
         Download a file from Azure Blob Storage.
 
@@ -199,7 +199,7 @@ class FileService:
         blob_url = f"https://{settings.AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/{self.container_name}/{blob_name}?{sas_token}"
         return blob_url
 
-    async def list_files(self, folder: str = None) -> List[dict]:
+    async def list_files(self, folder: Optional[str] = None) -> List[Dict[str, Any]]:
         """
         List files in a folder or container.
 
@@ -207,7 +207,7 @@ class FileService:
             folder: Optional folder prefix to filter by
 
         Returns:
-            List[dict]: List of file metadata
+            List[Dict[str, Any]]: List of file metadata
         """
         if not self.client:
             raise RuntimeError("Azure Blob Storage not configured")
@@ -239,10 +239,10 @@ class FileService:
             return files
 
         except Exception as e:
-            logger.error(f"Failed to list files: {e}")
+            logger.error(f"Failed to List[Any] files: {e}")
             raise
 
-    async def get_file_info(self, blob_name: str) -> dict:
+    async def get_file_info(self, blob_name: str) -> Dict[str, Any]:
         """
         Get metadata for a specific file.
 
@@ -250,7 +250,7 @@ class FileService:
             blob_name: Name of the blob
 
         Returns:
-            dict: File metadata
+            Dict[str, Any]: File metadata
         """
         if not self.client:
             raise RuntimeError("Azure Blob Storage not configured")
@@ -282,7 +282,7 @@ class FileService:
 # Utility functions for common file operations
 
 
-async def upload_user_avatar(file_data: bytes, user_id: str, filename: str) -> dict:
+async def upload_user_avatar(file_data: bytes, user_id: str, filename: str) -> Dict[str, Any]:
     """Upload user avatar image."""
     file_service = FileService()
     return await file_service.upload_file(
@@ -292,7 +292,7 @@ async def upload_user_avatar(file_data: bytes, user_id: str, filename: str) -> d
 
 async def upload_trip_document(
     file_data: bytes, trip_id: str, filename: str, content_type: str
-) -> dict:
+) -> Dict[str, Any]:
     """Upload trip-related document."""
     file_service = FileService()
     return await file_service.upload_file(
@@ -303,7 +303,7 @@ async def upload_trip_document(
     )
 
 
-async def upload_itinerary_pdf(file_data: bytes, trip_id: str, filename: str) -> dict:
+async def upload_itinerary_pdf(file_data: bytes, trip_id: str, filename: str) -> Dict[str, Any]:
     """Upload generated itinerary PDF."""
     file_service = FileService()
     return await file_service.upload_file(

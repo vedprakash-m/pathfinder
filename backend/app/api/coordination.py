@@ -12,8 +12,8 @@ from pydantic import BaseModel
 
 from ..core.database_unified import get_cosmos_repository
 from ..core.zero_trust import require_permissions
-from ..repositories.cosmos_unified import UnifiedCosmosRepository
 from ..models.user import User
+from ..repositories.cosmos_unified import UnifiedCosmosRepository
 from ..services.smart_notifications import (
     NotificationTrigger,
     SmartNotificationService,
@@ -153,7 +153,7 @@ async def send_smart_notification(
             raise HTTPException(status_code=400, detail="Failed to send notification")
 
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=f"Invalid trigger type: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Invalid trigger type: {str(e)}") from None
     except Exception as e:
         logger.error(f"Error sending smart notification: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to send smart notification")

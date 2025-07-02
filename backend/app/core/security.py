@@ -48,7 +48,7 @@ class VedUser(BaseModel):
         "profileId": "",
         "subscriptionTier": "free",
         "appsEnrolled": ["pathfinder"],
-        "preferences": {}
+        "preferences": {},
     }
 
 
@@ -82,31 +82,33 @@ async def verify_token(token: str) -> TokenData:
     try:
         # Get fresh settings instead of using cached module-level settings
         current_settings = get_settings()
-        
+
         # Check if we're in test mode for simplified validation
         if current_settings.is_testing or current_settings.ENVIRONMENT.lower() in [
-            "test", "testing"
+            "test",
+            "testing",
         ]:
             # For test tokens, use simple verification with our secret key
             payload = jwt.decode(token, current_settings.SECRET_KEY, algorithms=["HS256"])
         else:
             # Production: Use proper Entra ID token validation
             from app.core.token_validator import token_validator
+
             user_data = await token_validator.validate_token(token)
-            
+
             if not user_data:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Token validation failed",
                     headers={"WWW-Authenticate": "Bearer"},
                 )
-            
+
             # Convert to TokenData format for compatibility
             return TokenData(
-                sub=user_data['id'],
-                email=user_data['email'],
+                sub=user_data["id"],
+                email=user_data["email"],
                 roles=[],  # Will be populated from permissions
-                permissions=user_data['permissions']
+                permissions=user_data["permissions"],
             )
 
         email: str = payload.get("email")
@@ -149,15 +151,13 @@ async def verify_token(token: str) -> TokenData:
 
     except jwt.ExpiredSignatureError:
         from app.core.auth_errors import TokenInvalidError, handle_auth_error
-        raise handle_auth_error(
-            TokenInvalidError({'reason': 'Token has expired'})
-        )
+
+        raise handle_auth_error(TokenInvalidError({"reason": "Token has expired"}))
     except PyJWTError as e:
         from app.core.auth_errors import TokenInvalidError, handle_auth_error
+
         logger.error(f"JWT verification failed: {e}")
-        raise handle_auth_error(
-            TokenInvalidError({'reason': f'Token validation failed: {str(e)}'})
-        )
+        raise handle_auth_error(TokenInvalidError({"reason": f"Token validation failed: {str(e)}"}))
 
 
 async def get_current_user(
@@ -167,33 +167,33 @@ async def get_current_user(
     token_data = await verify_token(credentials.credentials)
 
     # Create standard VedUser object from token data
-    if hasattr(token_data, 'user_data'):
+    if hasattr(token_data, "user_data"):
         # If we have user_data from production validation
         user_data = token_data.user_data
         user = VedUser(
-            id=user_data['id'],
-            email=user_data['email'],
-            name=user_data['name'],
-            givenName=user_data['givenName'],
-            familyName=user_data['familyName'],
-            permissions=user_data['permissions'],
-            vedProfile=user_data['vedProfile']
+            id=user_data["id"],
+            email=user_data["email"],
+            name=user_data["name"],
+            givenName=user_data["givenName"],
+            familyName=user_data["familyName"],
+            permissions=user_data["permissions"],
+            vedProfile=user_data["vedProfile"],
         )
     else:
         # Fallback for test tokens
         user = VedUser(
             id=token_data.sub,
             email=token_data.email,
-            name=token_data.email.split('@')[0],
-            givenName='',
-            familyName='',
+            name=token_data.email.split("@")[0],
+            givenName="",
+            familyName="",
             permissions=token_data.permissions,
             vedProfile={
                 "profileId": token_data.sub,
                 "subscriptionTier": "free",
                 "appsEnrolled": ["pathfinder"],
-                "preferences": {}
-            }
+                "preferences": {},
+            },
         )
 
     return user
@@ -205,31 +205,31 @@ async def get_current_user_websocket(token: str) -> Optional[VedUser]:
         token_data = await verify_token(token)
 
         # Create standard VedUser object from token data
-        if hasattr(token_data, 'user_data'):
+        if hasattr(token_data, "user_data"):
             user_data = token_data.user_data
             user = VedUser(
-                id=user_data['id'],
-                email=user_data['email'],
-                name=user_data['name'],
-                givenName=user_data['givenName'],
-                familyName=user_data['familyName'],
-                permissions=user_data['permissions'],
-                vedProfile=user_data['vedProfile']
+                id=user_data["id"],
+                email=user_data["email"],
+                name=user_data["name"],
+                givenName=user_data["givenName"],
+                familyName=user_data["familyName"],
+                permissions=user_data["permissions"],
+                vedProfile=user_data["vedProfile"],
             )
         else:
             user = VedUser(
                 id=token_data.sub,
                 email=token_data.email,
-                name=token_data.email.split('@')[0],
-                givenName='',
-                familyName='',
+                name=token_data.email.split("@")[0],
+                givenName="",
+                familyName="",
                 permissions=token_data.permissions,
                 vedProfile={
                     "profileId": token_data.sub,
                     "subscriptionTier": "free",
                     "appsEnrolled": ["pathfinder"],
-                    "preferences": {}
-                }
+                    "preferences": {},
+                },
             )
 
         return user
@@ -269,14 +269,13 @@ def require_role(role: str):
         role_permission_map = {
             "admin": "admin:all",
             "family_admin": "admin:family",
-            "user": "user:basic"
+            "user": "user:basic",
         }
         required_permission = role_permission_map.get(role, f"role:{role}")
-        
+
         if required_permission not in current_user.permissions:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, 
-                detail=f"Role '{role}' required"
+                status_code=status.HTTP_403_FORBIDDEN, detail=f"Role '{role}' required"
             )
         return current_user
 
@@ -317,14 +316,14 @@ class RateLimiter:
 # Global rate limiter instance - use lazy initialization
 rate_limiter = None
 
+
 def get_rate_limiter():
     """Get rate limiter instance with fresh settings."""
     global rate_limiter
     if rate_limiter is None:
         current_settings = get_settings()
         rate_limiter = RateLimiter(
-            requests=current_settings.RATE_LIMIT_REQUESTS, 
-            window=current_settings.RATE_LIMIT_WINDOW
+            requests=current_settings.RATE_LIMIT_REQUESTS, window=current_settings.RATE_LIMIT_WINDOW
         )
     return rate_limiter
 
@@ -365,9 +364,9 @@ def require_permissions(*permissions):
     """
     # Handle both require_permissions("perm1", "perm2") and require_permissions(["perm1", "perm2"])
     if len(permissions) == 1 and isinstance(permissions[0], list):
-        permission_list = permissions[0]
+        _permission_list = permissions[0]
     else:
-        permission_list = list(permissions)
+        _permission_list = list(permissions)
 
     def permission_checker(user: UserModel = Depends(get_current_user)):
         # For now, we'll implement a basic permission check
