@@ -85,7 +85,10 @@ async def test_auth_service_register_user(db_session):
     # Arrange
     auth_service = AuthService()
     user_data = UserCreate(
-        email="newuser@example.com", auth0_id="auth0|newuser123", name="New User"
+        email="newuser@example.com", 
+        entra_id="entra|newuser123",  # Required for Microsoft Entra External ID
+        auth0_id="auth0|newuser123",  # Optional for legacy compatibility
+        name="New User"
     )
 
     # Act
@@ -95,7 +98,7 @@ async def test_auth_service_register_user(db_session):
     assert user is not None
     assert user.email == "newuser@example.com"
     assert user.name == "New User"
-    assert user.auth0_id == "auth0|newuser123"
+    assert user.entra_id == "entra|newuser123"  # Check the required field we added
 
 
 @pytest.mark.asyncio

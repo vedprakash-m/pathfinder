@@ -17,11 +17,13 @@ def test_user_create_model():
     """Test User creation with valid data."""
     user_data = {
         "email": "test@example.com",
+        "entra_id": "entra|testuser123",  # Required for Microsoft Entra External ID
         "name": "John Doe",
         "role": UserRole.FAMILY_ADMIN
     }
     user_create = UserCreate(**user_data)
     assert user_create.email == "test@example.com"
+    assert user_create.entra_id == "entra|testuser123"
     assert user_create.name == "John Doe"
     assert user_create.role == UserRole.FAMILY_ADMIN
 
