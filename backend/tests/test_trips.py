@@ -5,14 +5,9 @@ Tests for trip service functionality.
 from datetime import date, datetime, timedelta
 
 import pytest
-from app.models.family import Family
-from app.models.trip import (
-    ParticipationStatus,
-    TripCreate,
-    TripStatus,
-    TripUpdate,
-)
-from app.models.user import User
+# SQL Family model removed - use Cosmos FamilyDocument
+from app.models.trip import ParticipationStatus, TripCreate, TripStatus, TripUpdate
+# SQL User model removed - use Cosmos UserDocument
 
 
 @pytest.mark.asyncio

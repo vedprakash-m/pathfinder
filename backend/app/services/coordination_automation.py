@@ -19,7 +19,6 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from ..models.trip import Trip, TripParticipation
 from ..services.consensus_engine import FamilyConsensusEngine, analyze_trip_consensus
 from ..services.notifications import NotificationService
 

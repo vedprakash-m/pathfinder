@@ -18,8 +18,9 @@ from typing import Dict, Optional
 import jwt
 from app.core.config import get_settings
 from app.core.context_validator import context_validator
+from app.repositories.cosmos_unified import UserDocument
 from app.core.security import verify_token
-from app.models.user import User
+# SQL User model removed - use Cosmos UserDocument
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt.exceptions import PyJWTError
@@ -70,7 +71,7 @@ class ZeroTrustSecurity:
 
     async def verify_access(
         self,
-        user: User,
+        user: UserDocument,
         resource_type: str,
         resource_id: str,
         action: str,
@@ -127,7 +128,7 @@ class ZeroTrustSecurity:
 
         return True
 
-    async def _check_permission(self, user: User, resource_type: str, action: str) -> bool:
+    async def _check_permission(self, user: UserDocument, resource_type: str, action: str) -> bool:
         """Check if user has permission for the action on the resource type."""
         # Map of resource types to required permissions
         permission_map = {
@@ -167,7 +168,7 @@ class ZeroTrustSecurity:
         return False
 
     async def _check_resource_access(
-        self, user: User, resource_type: str, resource_id: str
+        self, user: UserDocument, resource_type: str, resource_id: str
     ) -> bool:
         """
         Check if user has access to the specific resource instance.

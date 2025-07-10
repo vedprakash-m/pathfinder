@@ -6,7 +6,8 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
-from app.models.itinerary import ActivityType, DifficultyLevel, ItineraryStatus
+# Removed SQL import: from app.models.cosmos.enums import ActivityType, DifficultyLevel, ItineraryStatus
+from app.models.cosmos.enums import ActivityType, DifficultyLevel, ItineraryStatus
 from pydantic import BaseModel
 
 

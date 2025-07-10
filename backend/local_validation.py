@@ -215,7 +215,7 @@ def check_schema_compatibility():
 
         sys.path.append("/Users/vedprakashmishra/pathfinder/backend")
 
-        from app.models.user import UserCreate
+        # SQL User model removed - use Cosmos UserDocumentCreate
 
         # Get UserCreate field requirements
         user_create_fields = UserCreate.model_fields
@@ -287,7 +287,7 @@ def check_schema_compatibility():
                 content = f.read()
 
             # Check if importing from correct location
-            if "from app.models.user import UserCreate" in content:
+            if "# SQL User model removed - use Cosmos UserDocumentCreate" in content:
                 print(f"   ✅ {test_file}: Correct UserCreate import")
             elif "from app.schemas.auth import UserCreate" in content:
                 print(f"   ⚠️  {test_file}: Using schemas.auth.UserCreate (may be outdated)")
@@ -324,7 +324,7 @@ import sys
 sys.path.append('/Users/vedprakashmishra/pathfinder/backend')
 
 try:
-    from app.models.user import UserCreate
+    # SQL User model removed - use Cosmos UserDocumentCreate
     
     # Test the exact data from failing test
     test_data = {

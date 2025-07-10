@@ -9,7 +9,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { UserRole, UserProfile } from '@/types';
 import { useAuthStore } from '@/store';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { useAuth0BackendIntegration } from '@/services/authIntegration';
 import { authService } from '@/services/auth';
 
 // Re-export UserRole for convenience
@@ -32,7 +31,6 @@ export const RoleBasedRoute: React.FC<RoleBasedRouteProps> = ({
 }) => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const authStore = useAuthStore();
-  const { syncWithBackend } = useAuth0BackendIntegration();
   const [backendUser, setBackendUser] = useState<UserProfile | null>(null);
   const [backendLoading, setBackendLoading] = useState(true);
 
@@ -48,10 +46,10 @@ export const RoleBasedRoute: React.FC<RoleBasedRouteProps> = ({
         setBackendLoading(true);
         
         // Use the Auth Integration Service to sync with backend
-        const userProfile = await syncWithBackend();
-        if (userProfile) {
-          setBackendUser(userProfile);
-          console.log('✅ Backend sync successful:', userProfile.email, 'Role:', userProfile.role);
+        const response = await authService.getCurrentUser();
+        if (response && response.data) {
+          setBackendUser(response.data);
+          console.log('✅ Backend sync successful:', response.data.email, 'Role:', response.data.role);
         } else {
           console.warn('⚠️ Backend sync returned null');
         }
@@ -64,7 +62,7 @@ export const RoleBasedRoute: React.FC<RoleBasedRouteProps> = ({
     };
 
     syncUserWithBackend();
-  }, [isAuthenticated, authLoading, authStore, syncWithBackend]);
+  }, [isAuthenticated, authLoading, authStore]);
 
   // Show loading spinner while checking authentication and syncing with backend
   if (authLoading || backendLoading) {

@@ -9,7 +9,7 @@ from typing import Any, Dict, Optional
 
 import structlog
 from core.gateway import LLMGateway
-from core.types import (
+from core.llm_types import (
     LLMBudgetExceededError,
     LLMOrchestrationError,
     LLMProvider,

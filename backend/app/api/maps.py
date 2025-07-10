@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 Maps API endpoints for location services.
 Provides endpoints for geocoding, route planning, and place search.
@@ -7,7 +8,7 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from app.core.zero_trust import require_permissions
-from app.models.user import User
+from app.models.cosmos.user import UserDocument as User
 from app.services.maps_service import Location, Place, maps_service
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
@@ -19,13 +20,11 @@ router = APIRouter()
 
 class LocationRequest(BaseModel):
     """Request model for location operations."""
-
     address: str = Field(..., description="Address to geocode")
 
 
 class LocationResponse(BaseModel):
     """Response model for location data."""
-
     lat: float
     lng: float
     address: str
@@ -35,33 +34,30 @@ class LocationResponse(BaseModel):
 
 class PlaceResponse(BaseModel):
     """Response model for place data."""
-
     place_id: str
     name: str
     address: str
     location: LocationResponse
     rating: Optional[float] = None
     price_level: Optional[int] = None
-    types: List[str] = []
-    opening_hours: Optional[Dict[str, Any]] = None
-    photos: List[str] = []
+    types: list[str] = []
+    opening_hours: Optional[dict[str, Any]] = None
+    photos: list[str] = []
     phone_number: Optional[str] = None
     website: Optional[str] = None
 
 
 class RouteRequest(BaseModel):
     """Request model for route planning."""
-
     origin: str = Field(..., description="Starting location")
     destination: str = Field(..., description="Ending location")
-    waypoints: Optional[List[str]] = Field(None, description="Optional waypoints")
+    waypoints: Optional[list[str]] = Field(None, description="Optional waypoints")
     mode: str = Field("driving", description="Travel mode")
     optimize_waypoints: bool = Field(False, description="Optimize waypoint order")
 
 
 class RouteStepResponse(BaseModel):
     """Response model for route steps."""
-
     instruction: str
     distance: str
     duration: str
@@ -71,10 +67,9 @@ class RouteStepResponse(BaseModel):
 
 class RouteResponse(BaseModel):
     """Response model for route data."""
-
     distance: str
     duration: str
-    steps: List[RouteStepResponse]
+    steps: list[RouteStepResponse]
     polyline: str
     start_address: str
     end_address: str
@@ -82,7 +77,6 @@ class RouteResponse(BaseModel):
 
 class PlaceSearchRequest(BaseModel):
     """Request model for place search."""
-
     query: str = Field(..., description="Search query")
     location: Optional[LocationResponse] = Field(None, description="Center location")
     radius: int = Field(50000, description="Search radius in meters")
@@ -123,29 +117,20 @@ async def geocode_address(
     request: Request,
     current_user: User = Depends(require_permissions("maps", "read")),
 ):
-    """
-    Geocode an address to get coordinates.
-
-    Args:
-        request: Location request with address
-        current_user: Authenticated user
-
-    Returns:
-        Location with coordinates
-    """
+    """Geocode an address to get coordinates."""
     try:
         location = await maps_service.geocode(request_data.address)
 
         if not location:
             raise HTTPException(
                 status_code=404,
-                detail=f"Location not found for address: {request.address}",
+                detail=f"Location not found for address: {request_data.address}",
             )
 
         return _convert_location_to_response(location)
 
     except Exception as e:
-        logger.error(f"Error geocoding address {request.address}: {e}")
+        logger.error(f"Error geocoding address {request_data.address}: {e}")
         raise HTTPException(status_code=500, detail="Error geocoding address")
 
 
@@ -154,19 +139,9 @@ async def reverse_geocode_coordinates(
     request: Request,
     lat: float = Query(..., description="Latitude"),
     lng: float = Query(..., description="Longitude"),
-    current_user: User = Depends(require_permissions("maps", "read")),
+    current_user: User = Depends(require_permissions("maps", "read"))
 ):
-    """
-    Reverse geocode coordinates to get address.
-
-    Args:
-        lat: Latitude
-        lng: Longitude
-        current_user: Authenticated user
-
-    Returns:
-        Location with address
-    """
+    """Reverse geocode coordinates to get address."""
     try:
         location = await maps_service.reverse_geocode(lat, lng)
 
@@ -187,18 +162,9 @@ async def reverse_geocode_coordinates(
 async def get_route(
     request_data: RouteRequest,
     request: Request,
-    current_user: User = Depends(require_permissions("maps", "read")),
+    current_user: User = Depends(require_permissions("maps", "read"))
 ):
-    """
-    Get route between locations.
-
-    Args:
-        request: Route request with origin, destination, and options
-        current_user: Authenticated user
-
-    Returns:
-        Route information with steps and directions
-    """
+    """Get route between locations."""
     try:
         route = await maps_service.get_route(
             origin=request_data.origin,
@@ -236,26 +202,17 @@ async def get_route(
         )
 
     except Exception as e:
-        logger.error(f"Error getting route from {request.origin} to {request.destination}: {e}")
+        logger.error(f"Error getting route from {request_data.origin} to {request_data.destination}: {e}")
         raise HTTPException(status_code=500, detail="Error getting route")
 
 
-@router.post("/search-places", response_model=List[PlaceResponse])
+@router.post("/search-places", response_model=list[PlaceResponse])
 async def search_places(
     request_data: PlaceSearchRequest,
     request: Request,
-    current_user: User = Depends(require_permissions("maps", "read")),
+    current_user: User = Depends(require_permissions("maps", "read"))
 ):
-    """
-    Search for places using Google Places API.
-
-    Args:
-        request: Place search request
-        current_user: Authenticated user
-
-    Returns:
-        List of places matching the search criteria
-    """
+    """Search for places using Google Places API."""
     try:
         # Convert location if provided
         location = None
@@ -286,18 +243,9 @@ async def search_places(
 async def get_place_details(
     place_id: str,
     request: Request,
-    current_user: User = Depends(require_permissions("maps", "read")),
+    current_user: User = Depends(require_permissions("maps", "read"))
 ):
-    """
-    Get detailed information about a specific place.
-
-    Args:
-        place_id: Google Places place ID
-        current_user: Authenticated user
-
-    Returns:
-        Detailed place information
-    """
+    """Get detailed information about a specific place."""
     try:
         place = await maps_service.get_place_details(place_id)
 
@@ -317,20 +265,9 @@ async def get_distance_matrix(
     origins: str = Query(..., description="Comma-separated list of origin locations"),
     destinations: str = Query(..., description="Comma-separated list of destination locations"),
     mode: str = Query("driving", description="Travel mode"),
-    current_user: User = Depends(require_permissions("maps", "read")),
+    current_user: User = Depends(require_permissions("maps", "read"))
 ):
-    """
-    Get distance and duration matrix between multiple origins and destinations.
-
-    Args:
-        origins: Comma-separated origin locations
-        destinations: Comma-separated destination locations
-        mode: Travel mode
-        current_user: Authenticated user
-
-    Returns:
-        Distance matrix data
-    """
+    """Get distance and duration matrix between multiple origins and destinations."""
     try:
         origins_list = [origin.strip() for origin in origins.split(",")]
         destinations_list = [dest.strip() for dest in destinations.split(",")]
@@ -349,26 +286,15 @@ async def get_distance_matrix(
         raise HTTPException(status_code=500, detail="Error getting distance matrix")
 
 
-@router.get("/nearby-attractions", response_model=List[PlaceResponse])
+@router.get("/nearby-attractions", response_model=list[PlaceResponse])
 async def find_nearby_attractions(
     request: Request,
     lat: float = Query(..., description="Latitude"),
     lng: float = Query(..., description="Longitude"),
     radius: int = Query(25000, description="Search radius in meters"),
-    current_user: User = Depends(require_permissions("maps", "read")),
+    current_user: User = Depends(require_permissions("maps", "read"))
 ):
-    """
-    Find tourist attractions near a location.
-
-    Args:
-        lat: Latitude
-        lng: Longitude
-        radius: Search radius in meters
-        current_user: Authenticated user
-
-    Returns:
-        List of nearby attractions
-    """
+    """Find tourist attractions near a location."""
     try:
         location = Location(lat=lat, lng=lng, address="")
 

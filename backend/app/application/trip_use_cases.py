@@ -10,20 +10,20 @@ import os
 import sys
 from uuid import UUID
 
-from app.models.trip import (
+from app.schemas.trip import (
+    TripCreate,
+    TripResponse,
+    TripUpdate,
+    TripDetail,
+    TripStats,
     ParticipationCreate,
     ParticipationResponse,
     ParticipationUpdate,
-    TripCreate,
-    TripDetail,
     TripInvitation,
-    TripResponse,
-    TripStats,
-    TripUpdate,
 )
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
-from domain.trip import TripDomainService as TripService
+from app.services.trip_cosmos import TripCosmosOperations as TripService
 
 
 class CreateTripUseCase:

@@ -16,7 +16,7 @@ def test_create_trip_with_full_override():
 
     from datetime import date
 
-    from app.models.trip import TripResponse, TripStatus
+    # SQL Trip model removed - use Cosmos TripDocumentResponse, TripStatus
 
     # Create a test user
     test_user_id = str(uuid4())
@@ -111,7 +111,7 @@ def test_create_trip_use_case_isolated():
 
     from datetime import date
 
-    from app.models.trip import TripCreate, TripResponse, TripStatus
+    # SQL Trip model removed - use Cosmos TripDocumentCreate, TripResponse, TripStatus
 
     # Create mock trip service
     mock_trip_service = AsyncMock()

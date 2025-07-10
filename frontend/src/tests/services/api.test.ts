@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { apiService } from '../../services/api';
 import { tripService } from '../../services/tripService';
 import { familyService } from '../../services/familyService';
+import { TripFilters, InviteFamilyMemberRequest } from '../../types';
 
 // Mock axios
 vi.mock('axios', () => ({
@@ -49,6 +50,7 @@ describe('API Service Integration', () => {
           page: 1,
           pageSize: 10,
         },
+        success: true,
       };
 
       // Mock the underlying axios instance
@@ -71,10 +73,10 @@ describe('API Service Integration', () => {
         title: 'New Trip',
         description: 'A new adventure',
         destination: 'Tokyo',
-        startDate: '2025-09-01',
-        endDate: '2025-09-10',
-        budgetTotal: 8000,
-        maxParticipants: 8,
+        start_date: '2025-09-01',
+        end_date: '2025-09-10',
+        budget: 8000,
+        family_id: 'fam-123',
       };
 
       const mockResponse = {
@@ -84,6 +86,7 @@ describe('API Service Integration', () => {
           status: 'planning',
           createdBy: 'user123',
         },
+        success: true,
       };
 
       vi.spyOn(apiService, 'post').mockResolvedValue(mockResponse);
@@ -109,6 +112,7 @@ describe('API Service Integration', () => {
           ...updateData,
           status: 'planning',
         },
+        success: true,
       };
 
       vi.spyOn(apiService, 'put').mockResolvedValue(mockResponse);
@@ -122,8 +126,8 @@ describe('API Service Integration', () => {
     });
 
     it('filters trips by status', async () => {
-      const filters = {
-        status: ['active', 'planning'],
+      const filters: TripFilters = {
+        status: ['confirmed', 'planning'],
         destination: 'Paris',
       };
 
@@ -132,6 +136,7 @@ describe('API Service Integration', () => {
           items: [{ id: '1', title: 'Filtered Trip', status: 'active' }],
           total: 1,
         },
+        success: true,
       };
 
       vi.spyOn(apiService, 'get').mockResolvedValue(mockResponse);
@@ -162,6 +167,7 @@ describe('API Service Integration', () => {
             members: [{ id: 'user3', name: 'Bob Johnson', role: 'admin' }],
           },
         ],
+        success: true,
       };
 
       vi.spyOn(apiService, 'get').mockResolvedValue(mockFamilies);
@@ -169,7 +175,7 @@ describe('API Service Integration', () => {
       const result = await familyService.getFamilies();
 
       expect(result.data).toHaveLength(2);
-      expect(result.data[0].name).toBe('Smith Family');
+      expect(result.data.items[0].name).toBe('Smith Family');
       expect(apiService.get).toHaveBeenCalledWith('/families/');
     });
 
@@ -190,6 +196,7 @@ describe('API Service Integration', () => {
           ...newFamily,
           members: [],
         },
+        success: true,
       };
 
       vi.spyOn(apiService, 'post').mockResolvedValue(mockResponse);
@@ -197,17 +204,17 @@ describe('API Service Integration', () => {
       const result = await familyService.createFamily(newFamily);
 
       expect(result.data.name).toBe('New Family');
-      expect(result.data.preferences.activities).toContain('hiking');
+      expect(result.data.description).toBe('A new family group');
       expect(apiService.post).toHaveBeenCalledWith('/families/', newFamily, {
         invalidateUrlPatterns: ['families'],
       });
     });
 
     it('invites family member', async () => {
-      const invitation = {
+      const invitation: InviteFamilyMemberRequest = {
         email: 'newmember@example.com',
-        message: 'Join our family!',
         role: 'member',
+        permissions: ['read:family', 'read:trips'],
       };
 
       const mockResponse = {
@@ -217,6 +224,7 @@ describe('API Service Integration', () => {
           ...invitation,
           status: 'pending',
         },
+        success: true,
       };
 
       vi.spyOn(apiService, 'post').mockResolvedValue(mockResponse);
@@ -268,7 +276,7 @@ describe('API Service Integration', () => {
       try {
         await tripService.getTrips();
       } catch (error) {
-        expect(error.message).toBe('Network Error');
+        expect((error as any).message).toBe('Network Error');
       }
     });
 
@@ -289,16 +297,16 @@ describe('API Service Integration', () => {
       try {
         await tripService.getTrips();
       } catch (error) {
-        expect(error.response.data.message).toBe('Internal Server Error');
-        expect(error.response.data.code).toBe('SERVER_ERROR');
-        expect(error.response.data.details.timestamp).toBe('2025-06-20T10:00:00Z');
+        expect((error as any).response.data.message).toBe('Internal Server Error');
+        expect((error as any).response.data.code).toBe('SERVER_ERROR');
+        expect((error as any).response.data.details.timestamp).toBe('2025-06-20T10:00:00Z');
       }
     });
   });
 
   describe('Caching', () => {
     it('caches GET requests by default', async () => {
-      const mockResponse = { data: { items: [] } };
+      const mockResponse = { data: { items: [] }, success: true };
 
       vi.spyOn(apiService, 'get').mockResolvedValue(mockResponse);
 
@@ -312,7 +320,7 @@ describe('API Service Integration', () => {
     });
 
     it('bypasses cache when requested', async () => {
-      const mockResponse = { data: { items: [] } };
+      const mockResponse = { data: { items: [] }, success: true };
 
       vi.spyOn(apiService, 'get').mockResolvedValue(mockResponse);
 
@@ -328,6 +336,7 @@ describe('API Service Integration', () => {
           id: 'new-trip',
           title: 'New Trip',
         },
+        success: true,
       };
 
       vi.spyOn(apiService, 'post').mockResolvedValue(mockTrip);
@@ -337,10 +346,10 @@ describe('API Service Integration', () => {
         title: 'New Trip',
         description: 'Test',
         destination: 'Test',
-        startDate: '2025-01-01',
-        endDate: '2025-01-10',
-        budgetTotal: 1000,
-        maxParticipants: 5,
+        start_date: '2025-01-01',
+        end_date: '2025-01-10',
+        budget: 1000,
+        family_id: 'fam-123',
       });
 
       expect(apiService.post).toHaveBeenCalledWith(

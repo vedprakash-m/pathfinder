@@ -64,32 +64,6 @@ const mockAccount = {
   }
 };
 
-// Create a mock MSAL instance with all required methods
-const mockMsalInstance = {
-  getActiveAccount: vi.fn(() => mockAccount),
-  acquireTokenSilent: vi.fn(() => Promise.resolve({ accessToken: 'mock-token' })),
-  loginPopup: vi.fn(() => Promise.resolve({ account: mockAccount })),
-  logoutPopup: vi.fn(() => Promise.resolve()),
-  getLogger: vi.fn(() => ({
-    info: vi.fn(),
-    error: vi.fn(),
-    warning: vi.fn(),
-    debug: vi.fn(),
-  })),
-  getAllAccounts: vi.fn(() => [mockAccount]),
-  getAccountByLocalId: vi.fn(() => mockAccount),
-  getAccountByHomeId: vi.fn(() => mockAccount),
-  getAccountByUsername: vi.fn(() => mockAccount),
-  addEventCallback: vi.fn(),
-  removeEventCallback: vi.fn(),
-  getConfiguration: vi.fn(() => ({
-    auth: {
-      clientId: 'test-client-id',
-      authority: 'https://login.microsoftonline.com/vedid.onmicrosoft.com'
-    }
-  }))
-};
-
 // Create a custom render function that includes providers
 const queryClient = new QueryClient({
   defaultOptions: {

@@ -1,3 +1,4 @@
+from __future__ import annotations
 """Simple dependency injection providers for FastAPI - Unified Cosmos DB Implementation.
 
 This module provides dependency injection functions that work directly with FastAPI's
@@ -9,16 +10,16 @@ import sys
 
 from app.application.trip_use_cases import (
     AddParticipantUseCase,
-    CreateTripUseCase,
-    DeleteTripUseCase,
-    GetParticipantsUseCase,
-    GetTripStatsUseCase,
-    GetTripUseCase,
-    ListUserTripsUseCase,
-    RemoveParticipantUseCase,
-    SendInvitationUseCase,
-    UpdateParticipationUseCase,
-    UpdateTripUseCase,
+CreateTripUseCase,
+DeleteTripUseCase,
+GetParticipantsUseCase,
+GetTripStatsUseCase,
+GetTripUseCase,
+ListUserTripsUseCase,
+RemoveParticipantUseCase,
+SendInvitationUseCase,
+UpdateParticipationUseCase,
+UpdateTripUseCase,
 )
 from app.core.database_unified import get_cosmos_service
 from app.core.repositories.trip_cosmos_repository import TripCosmosRepository

@@ -295,11 +295,11 @@ class UnifiedSettings(BaseSettings):
             info.data.get("ENVIRONMENT", "development") if hasattr(info, "data") else "development"
         )
 
-        # Convert string to List[Any] if needed
+        # Convert string to list if needed
         if isinstance(v, str):
             hosts = [host.strip() for host in v.split(",") if host.strip()]
         else:
-            hosts = v if isinstance(v, List[Any]) else ["localhost", "127.0.0.1"]
+            hosts = v if isinstance(v, list) else ["localhost", "127.0.0.1"]
 
         # Security check for production
         if environment.lower() == "production" and "*" in hosts:

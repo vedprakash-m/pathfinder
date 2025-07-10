@@ -13,7 +13,7 @@ from typing import Any, Dict, Optional
 import structlog
 
 try:
-    from core.types import LLMConfigurationError, LLMRequest, LLMResponse
+    from core.llm_types import LLMConfigurationError, LLMRequest, LLMResponse
 except ImportError:
     # Fallback for development/testing
     class LLMRequest:

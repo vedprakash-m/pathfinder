@@ -6,7 +6,7 @@ Supports multiple pricing models and real-time cost tracking
 from typing import Any, Dict, Optional
 
 import structlog
-from core.types import LLMProviderType, LLMRequest, LLMResponse, TaskType
+from core.llm_types import LLMProviderType, LLMRequest, LLMResponse, TaskType
 
 logger = structlog.get_logger(__name__)
 

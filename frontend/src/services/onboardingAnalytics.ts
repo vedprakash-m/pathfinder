@@ -327,6 +327,7 @@ export const useOnboardingAnalytics = () => {
     trackTripTypeSelection: (tripType: string) => onboardingAnalytics.trackTripTypeSelection(tripType),
     trackSampleTripGeneration: (templateId: string) => onboardingAnalytics.trackSampleTripGeneration(templateId),
     trackTripRegeneration: (templateId: string) => onboardingAnalytics.trackTripRegeneration(templateId),
+    trackApiIntegration: (endpoint: string, success: boolean, error?: string) => onboardingAnalytics.trackApiIntegration(endpoint, success, error),
     trackCompletion: () => onboardingAnalytics.trackCompletion(),
     trackDropOff: (reason?: string) => onboardingAnalytics.trackDropOff(reason),
     getCurrentAnalytics: () => onboardingAnalytics.getCurrentAnalytics(),

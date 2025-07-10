@@ -10,7 +10,7 @@ from typing import Any, AsyncGenerator, Dict, Optional
 
 import httpx
 import structlog
-from core.types import (
+from core.llm_types import (
     LLMAuthenticationError,
     LLMProvider,
     LLMRateLimitError,

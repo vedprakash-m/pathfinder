@@ -1,4 +1,15 @@
+from __future__ import annotations
 """
+from app.repositories.cosmos_unified import UnifiedCosmosRepository, UserDocument
+from app.core.database_unified import get_cosmos_service
+from app.core.security import get_current_user
+from app.schemas.auth import UserResponse
+from app.schemas.common import ErrorResponse, SuccessResponse
+from app.repositories.cosmos_unified import UnifiedCosmosRepository, UserDocument
+from app.core.database_unified import get_cosmos_service
+from app.core.security import get_current_user
+from app.schemas.auth import UserResponse
+from app.schemas.common import ErrorResponse, SuccessResponse
 Itinerary management API endpoints.
 Handles AI-generated itinerary creation, customization, and management.
 """
@@ -10,7 +21,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from ..core.database_unified import get_cosmos_repository
 from ..core.logging_config import get_logger
 from ..core.zero_trust import require_permissions
-from ..models.user import User
+# SQL User model removed - use Cosmos UserDocument
 from ..repositories.cosmos_unified import UnifiedCosmosRepository
 from ..services.ai_service import AIService
 
@@ -27,59 +38,59 @@ from pydantic import BaseModel
 
 class ItineraryType(str, Enum):
     FULL_TRIP = "full_trip"
-    DAILY = "daily"
-    ACTIVITY = "activity"
+DAILY = "daily"
+ACTIVITY = "activity"
 
 
 class ItineraryRequest(BaseModel):
     trip_id: int
-    itinerary_type: ItineraryType = ItineraryType.FULL_TRIP
-    preferences: Optional[Dict[str, Any]] = None
-    regenerate: bool = False
+itinerary_type: ItineraryType = ItineraryType.FULL_TRIP
+preferences: Optional[dict[str, Any]] = None
+regenerate: bool = False
 
 
 class ItineraryCustomization(BaseModel):
-    activity_preferences: Optional[List[str]] = None
-    budget_constraints: Optional[Dict[str, float]] = None
-    accessibility_needs: Optional[List[str]] = None
-    dietary_restrictions: Optional[List[str]] = None
-    transportation_preferences: Optional[List[str]] = None
-    accommodation_preferences: Optional[List[str]] = None
+    activity_preferences: Optional[list[str]] = None
+budget_constraints: Optional[dict[str, float]] = None
+accessibility_needs: Optional[list[str]] = None
+dietary_restrictions: Optional[list[str]] = None
+transportation_preferences: Optional[list[str]] = None
+accommodation_preferences: Optional[list[str]] = None
 
 
 class ItineraryDay(BaseModel):
     date: date
-    activities: List[Dict[str, Any]]
-    estimated_cost: Optional[float] = None
-    transportation: Optional[Dict[str, Any]] = None
+activities: list[dict[str, Any]]
+estimated_cost: Optional[float] = None
+transportation: Optional[dict[str, Any]] = None
 
 
 class GeneratedItinerary(BaseModel):
     id: Optional[str] = None
-    trip_id: int
-    title: str
-    description: Optional[str] = None
-    days: List[ItineraryDay]
-    total_estimated_cost: Optional[float] = None
-    generated_at: datetime
-    customizations: Optional[ItineraryCustomization] = None
-    ai_confidence_score: Optional[float] = None
+trip_id: int
+title: str
+description: Optional[str] = None
+days: list[ItineraryDay]
+total_estimated_cost: Optional[float] = None
+generated_at: datetime
+customizations: Optional[ItineraryCustomization] = None
+ai_confidence_score: Optional[float] = None
 
 
 class ItineraryResponse(BaseModel):
     itinerary: GeneratedItinerary
-    alternatives: Optional[List[Dict[str, Any]]] = None
-    optimization_suggestions: Optional[List[str]] = None
+alternatives: Optional[list[dict[str, Any]]] = None
+optimization_suggestions: Optional[list[str]] = None
 
 
 @router.post("/{trip_id}/generate", response_model=ItineraryResponse)
 async def generate_itinerary(
     trip_id: int,
-    request_data: ItineraryRequest,
-    request: Request,
-    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
-    current_user: dict = Depends(require_permissions("itineraries", "create")),
-    ai_service: AIService = Depends(lambda: AIService()),
+request_data: ItineraryRequest,
+request: Request,
+cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
+current_user: dict = Depends(require_permissions("itineraries", "create")),
+ai_service: AIService = Depends(lambda: AIService()),  # noqa: B008
 ):
     """Generate an AI-powered itinerary for a trip."""
     try:
@@ -148,17 +159,15 @@ async def generate_itinerary(
             }
 
         # Generate itinerary using AI service with correct parameters
-        logger.info(f"Generating itinerary for trip {trip_id} by user {current_user.id}")
+        logger.info(f"Generating itinerary for trip {trip_id} by user {current_user['id']}")
         itinerary_data = await ai_service.generate_itinerary(
             destination=str(trip.destination),
             duration_days=duration_days,
             families_data=families_data,
             preferences=preferences,
             budget_total=float(trip.budget_total) if trip.budget_total else None,
-            user_id=str(current_user.id),
-        )
-
-        # Create itinerary response
+            user_id=str(current_user["id"]),
+        )        # Create itinerary response
         itinerary = GeneratedItinerary(
             trip_id=trip_id,
             title=itinerary_data.get("title", f"Itinerary for {trip.destination}"),
@@ -199,32 +208,23 @@ async def generate_itinerary(
 @router.post("/{trip_id}/customize", response_model=ItineraryResponse)
 async def customize_itinerary(
     trip_id: int,
-    customization: ItineraryCustomization,
-    request: Request,
-    base_itinerary: Optional[Dict[str, Any]] = None,
-    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
-    current_user: User = Depends(require_permissions("itineraries", "update")),
-    ai_service: AIService = Depends(lambda: AIService()),
+customization: ItineraryCustomization,
+request: Request,
+base_itinerary: Optional[dict[str, Any]] = None,
+cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
+current_user: User = Depends(require_permissions("itineraries", "update")),
+ai_service: AIService = Depends(lambda: AIService()),  # noqa: B008
 ):
     """Customize an existing itinerary based on user preferences."""
     try:
         # Verify trip access
-        trip = db.query(Trip).filter(Trip.id == trip_id).first()
+        trip = await cosmos_repo.get_trip_by_id(str(trip_id))
         if not trip:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
 
-        participation = (
-            db.query(TripParticipation)
-            .filter(
-                and_(
-                    TripParticipation.trip_id == trip_id,
-                    TripParticipation.user_id == current_user.id,
-                )
-            )
-            .first()
-        )
-
-        if not participation:
+        # Check if user has access to trip
+        user_trips = await cosmos_repo.get_user_trips(current_user["id"])
+        if not any(t.id == str(trip_id) for t in user_trips):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not authorized to access this trip",
@@ -233,13 +233,13 @@ async def customize_itinerary(
         # Prepare customization context
         customization_context = {
             "trip_id": trip_id,
-            "destination": trip.destination,
-            "customizations": customization.dict(exclude_none=True),
-            "base_itinerary": base_itinerary,
-        }
+"destination": trip.destination,
+"customizations": customization.dict(exclude_none=True),
+"base_itinerary": base_itinerary,
+}
 
         # Generate customized itinerary
-        logger.info(f"Customizing itinerary for trip {trip_id} by user {current_user.id}")
+        logger.info(f"Customizing itinerary for trip {trip_id} by user {current_user['id']}")
         itinerary_data = await ai_service.customize_itinerary(customization_context)
 
         # Create response
@@ -284,33 +284,24 @@ async def customize_itinerary(
 @router.get("/{trip_id}/suggestions")
 async def get_activity_suggestions(
     trip_id: int,
-    request: Request,
-    activity_type: Optional[str] = Query(None, description="Type of activity to suggest"),
-    location: Optional[str] = Query(None, description="Specific location within trip destination"),
-    budget_range: Optional[str] = Query(None, description="Budget range (low, medium, high)"),
-    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
-    current_user: User = Depends(require_permissions("itineraries", "read")),
-    ai_service: AIService = Depends(lambda: AIService()),
+request: Request,
+activity_type: Optional[str] = Query(None, description="Type of activity to suggest"),
+location: Optional[str] = Query(None, description="Specific location within trip destination"),
+budget_range: Optional[str] = Query(None, description="Budget range (low, medium, high)"),
+cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
+current_user: User = Depends(require_permissions("itineraries", "read")),
+ai_service: AIService = Depends(lambda: AIService()),  # noqa: B008
 ):
     """Get AI-powered activity suggestions for a trip."""
     try:
         # Verify trip access
-        trip = db.query(Trip).filter(Trip.id == trip_id).first()
+        trip = await cosmos_repo.get_trip_by_id(str(trip_id))
         if not trip:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
 
-        participation = (
-            db.query(TripParticipation)
-            .filter(
-                and_(
-                    TripParticipation.trip_id == trip_id,
-                    TripParticipation.user_id == current_user.id,
-                )
-            )
-            .first()
-        )
-
-        if not participation:
+        # Check if user has access to trip
+        user_trips = await cosmos_repo.get_user_trips(current_user["id"])
+        if not any(t.id == str(trip_id) for t in user_trips):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not authorized to access this trip",
@@ -348,32 +339,23 @@ async def get_activity_suggestions(
 @router.post("/{trip_id}/optimize")
 async def optimize_itinerary(
     trip_id: int,
-    itinerary: Dict[str, Any],
-    request: Request,
-    optimization_criteria: Optional[List[str]] = Query(None, description="Optimization criteria"),
-    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
-    current_user: User = Depends(require_permissions("itineraries", "update")),
-    ai_service: AIService = Depends(lambda: AIService()),
+itinerary: dict[str, Any],
+request: Request,
+optimization_criteria: Optional[list[str]] = Query(None, description="Optimization criteria"),
+cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
+current_user: User = Depends(require_permissions("itineraries", "update")),
+ai_service: AIService = Depends(lambda: AIService()),  # noqa: B008
 ):
     """Optimize an existing itinerary for better efficiency, cost, or experience."""
     try:
         # Verify trip access
-        trip = db.query(Trip).filter(Trip.id == trip_id).first()
+        trip = await cosmos_repo.get_trip_by_id(str(trip_id))
         if not trip:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
 
-        participation = (
-            db.query(TripParticipation)
-            .filter(
-                and_(
-                    TripParticipation.trip_id == trip_id,
-                    TripParticipation.user_id == current_user.id,
-                )
-            )
-            .first()
-        )
-
-        if not participation:
+        # Check if user has access to trip
+        user_trips = await cosmos_repo.get_user_trips(current_user["id"])
+        if not any(t.id == str(trip_id) for t in user_trips):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not authorized to access this trip",
@@ -389,7 +371,7 @@ async def optimize_itinerary(
         }
 
         # Optimize itinerary
-        logger.info(f"Optimizing itinerary for trip {trip_id} by user {current_user.id}")
+        logger.info(f"Optimizing itinerary for trip {trip_id} by user {current_user['id']}")
         optimized_data = await ai_service.optimize_itinerary(optimization_context)
 
         # Create response
@@ -433,33 +415,24 @@ async def optimize_itinerary(
 async def get_itinerary_alternatives(
     trip_id: int,
     request: Request,
-    current_itinerary: Optional[Dict[str, Any]] = None,
+    current_itinerary: Optional[dict[str, Any]] = None,
     variation_type: Optional[str] = Query(
         "budget", description="Type of variation (budget, activity, timeline)"
     ),
     cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
     current_user: User = Depends(require_permissions("itineraries", "read")),
-    ai_service: AIService = Depends(lambda: AIService()),
+    ai_service: AIService = Depends(lambda: AIService()),  # noqa: B008
 ):
     """Get alternative itinerary options for a trip."""
     try:
         # Verify trip access
-        trip = db.query(Trip).filter(Trip.id == trip_id).first()
+        trip = await cosmos_repo.get_trip_by_id(str(trip_id))
         if not trip:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
 
-        participation = (
-            db.query(TripParticipation)
-            .filter(
-                and_(
-                    TripParticipation.trip_id == trip_id,
-                    TripParticipation.user_id == current_user.id,
-                )
-            )
-            .first()
-        )
-
-        if not participation:
+        # Check if user has access to trip
+        user_trips = await cosmos_repo.get_user_trips(current_user["id"])
+        if not any(t.id == str(trip_id) for t in user_trips):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not authorized to access this trip",

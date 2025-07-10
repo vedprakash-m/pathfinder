@@ -5,12 +5,12 @@ Simple unit tests for model classes to ensure they are exercised in test coverag
 import uuid
 from datetime import date, datetime, timezone
 
-from app.models.family import Family, FamilyRole
+# SQL Family model removed - use Cosmos FamilyDocument, FamilyRole
 from app.models.notification import NotificationType
-from app.models.trip import Trip, TripStatus
+# SQL Trip model removed - use Cosmos TripDocument, TripStatus
 
 # User model tests
-from app.models.user import User, UserCreate, UserResponse, UserRole
+# SQL User model removed - use Cosmos UserDocument, UserCreate, UserResponse, UserRole
 
 
 def test_user_create_model():

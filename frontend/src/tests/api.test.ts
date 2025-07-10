@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { apiService } from '../services/api';
 
 // Mock fetch globally
 const mockFetch = vi.fn();
@@ -31,7 +30,7 @@ describe('API Client', () => {
     });
 
     // Mock the API client call (implementation will vary based on actual structure)
-    const response = await fetch('/api/test', {
+    await fetch('/api/test', {
       headers: {
         'Authorization': 'Bearer mock-token',
         'Content-Type': 'application/json',
@@ -52,7 +51,7 @@ describe('API Client', () => {
     try {
       await fetch('/api/test');
     } catch (error) {
-      expect(error.message).toBe('Network error');
+      expect((error as Error).message).toBe('Network error');
     }
   });
 
@@ -342,7 +341,7 @@ describe('Error Handling', () => {
     try {
       await fetch('/api/slow-endpoint');
     } catch (error) {
-      expect(error.message).toBe('Request timeout');
+      expect((error as Error).message).toBe('Request timeout');
     }
   });
 
@@ -355,7 +354,7 @@ describe('Error Handling', () => {
     try {
       await fetch('/api/test').then(r => r.json());
     } catch (error) {
-      expect(error.message).toBe('Invalid JSON');
+      expect((error as Error).message).toBe('Invalid JSON');
     }
   });
 
@@ -365,7 +364,7 @@ describe('Error Handling', () => {
     try {
       await fetch('/api/test');
     } catch (error) {
-      expect(error.message).toBe('Failed to fetch');
+      expect((error as Error).message).toBe('Failed to fetch');
     }
   });
 });

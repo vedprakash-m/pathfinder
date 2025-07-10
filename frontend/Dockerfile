@@ -66,12 +66,12 @@ RUN addgroup -g 1001 -S nodejs && \
 # Switch to non-root user
 USER nextjs
 
-# Expose port
-EXPOSE 8080
+# Expose port - standardized to 80 for production alignment
+EXPOSE 80
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:8080/ || exit 1
+  CMD curl -f http://localhost:80/ || exit 1
 
 # Use custom entrypoint that handles runtime environment variable replacement
 ENTRYPOINT ["/entrypoint.sh"]

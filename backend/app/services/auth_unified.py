@@ -13,7 +13,7 @@ from uuid import uuid4
 from app.core.config import get_settings
 from app.core.database_unified import get_cosmos_repository
 from app.repositories.cosmos_unified import FamilyDocument, UserDocument
-from app.services.entra_auth_service import EntraAuthService
+from app.services.entra_auth_service import AuthService
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
@@ -32,7 +32,7 @@ class UnifiedAuthService:
     def __init__(self, cosmos_repo=None):
         """Initialize the unified auth service."""
         self.cosmos_repo = cosmos_repo or get_cosmos_repository()
-        self.entra_service = EntraAuthService()
+        self.entra_service = AuthService()
         logger.info("Unified AuthService initialized with Cosmos DB")
 
     async def get_or_create_user_from_token(self, token_payload: Dict[str, Any]) -> UserDocument:

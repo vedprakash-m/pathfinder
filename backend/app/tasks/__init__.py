@@ -3,15 +3,8 @@ Background tasks module for Pathfinder application.
 Contains Celery tasks for AI processing, PDF generation, notifications, and exports.
 """
 
-from app.tasks.ai_tasks import (
-    generate_daily_cost_report,
-    generate_itinerary_async,
-)
-from app.tasks.export_tasks import (
-    bulk_export_trips,
-    cleanup_old_exports,
-    export_trip_data,
-)
+from app.tasks.ai_tasks import generate_daily_cost_report, generate_itinerary_async
+from app.tasks.export_tasks import bulk_export_trips, cleanup_old_exports, export_trip_data
 from app.tasks.notification_tasks import (
     cleanup_expired_notifications,
     process_system_alerts,

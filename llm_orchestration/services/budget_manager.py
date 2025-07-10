@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
 import structlog
-from core.types import BudgetStatus, LLMBudgetExceededError, LLMConfigurationError
+from core.llm_types import BudgetStatus, LLMBudgetExceededError, LLMConfigurationError
 from services.config_manager import get_config_manager
 
 logger = structlog.get_logger(__name__)

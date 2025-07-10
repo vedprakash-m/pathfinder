@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.36.1.42791",
-      "templateHash": "14487083222010761914"
+      "templateHash": "5727098241496138333"
     }
   },
   "parameters": {
@@ -42,25 +42,18 @@
         "description": "OpenAI API key"
       }
     },
-    "azureTenantId": {
-      "type": "securestring",
+    "entraTenantId": {
+      "type": "string",
       "defaultValue": "",
       "metadata": {
-        "description": "Azure Tenant ID"
+        "description": "Microsoft Entra External ID tenant ID"
       }
     },
-    "azureClientId": {
-      "type": "securestring",
+    "entraClientId": {
+      "type": "string",
       "defaultValue": "",
       "metadata": {
-        "description": "Azure Client ID"
-      }
-    },
-    "azureClientSecret": {
-      "type": "securestring",
-      "defaultValue": "",
-      "metadata": {
-        "description": "Azure Client Secret"
+        "description": "Microsoft Entra External ID client ID (application ID)"
       }
     }
   },
@@ -76,13 +69,13 @@
       "containerAppsEnv": "[format('{0}-env', parameters('appName'))]",
       "backendApp": "[format('{0}-backend', parameters('appName'))]",
       "frontendApp": "[format('{0}-frontend', parameters('appName'))]",
-      "cosmosAccount": "[format('{0}-cosmos', parameters('appName'))]",
+      "cosmosAccount": "[format('{0}-cosmos-{1}', parameters('appName'), uniqueString(resourceGroup().id))]",
       "sqlServer": "[format('{0}-sql', parameters('appName'))]",
       "sqlDatabase": "[format('{0}-db', parameters('appName'))]",
       "logAnalytics": "[format('{0}-logs', parameters('appName'))]",
       "appInsights": "[format('{0}-insights', parameters('appName'))]",
-      "storageAccount": "[replace(format('{0}storage', parameters('appName')), '-', '')]",
-      "keyVault": "[format('{0}-kv', parameters('appName'))]",
+      "storageAccount": "[format('pf{0}', uniqueString(resourceGroup().id))]",
+      "keyVault": "[format('pf-kv-{0}', uniqueString(resourceGroup().id))]",
       "containerRegistry": "pathfinderdevregistry"
     }
   },
@@ -348,6 +341,18 @@
                   "value": ""
                 },
                 {
+                  "name": "ENTRA_EXTERNAL_TENANT_ID",
+                  "value": "[parameters('entraTenantId')]"
+                },
+                {
+                  "name": "ENTRA_EXTERNAL_CLIENT_ID",
+                  "value": "[parameters('entraClientId')]"
+                },
+                {
+                  "name": "ENTRA_EXTERNAL_AUTHORITY",
+                  "value": "[if(not(empty(parameters('entraTenantId'))), format('https://{0}.ciamlogin.com/{1}.onmicrosoft.com', parameters('entraTenantId'), parameters('entraTenantId')), '')]"
+                },
+                {
                   "name": "ENVIRONMENT",
                   "value": "production"
                 },
@@ -399,16 +404,12 @@
           },
           "secrets": [
             {
-              "name": "azure-tenant-id",
-              "value": "[if(not(empty(parameters('azureTenantId'))), parameters('azureTenantId'), 'vedid.onmicrosoft.com')]"
+              "name": "entra-tenant-id",
+              "value": "[if(not(empty(parameters('entraTenantId'))), parameters('entraTenantId'), 'test-tenant-id')]"
             },
             {
-              "name": "azure-client-id",
-              "value": "[if(not(empty(parameters('azureClientId'))), parameters('azureClientId'), 'your-client-id')]"
-            },
-            {
-              "name": "azure-client-secret",
-              "value": "[if(not(empty(parameters('azureClientSecret'))), parameters('azureClientSecret'), 'your-client-secret')]"
+              "name": "entra-client-id",
+              "value": "[if(not(empty(parameters('entraClientId'))), parameters('entraClientId'), 'test-client-id')]"
             }
           ]
         },
@@ -431,16 +432,12 @@
                   "value": "[format('https://{0}', reference(resourceId('Microsoft.App/containerApps', variables('resourceNames').backendApp), '2023-05-01').configuration.ingress.fqdn)]"
                 },
                 {
-                  "name": "VITE_AZURE_TENANT_ID",
-                  "secretRef": "azure-tenant-id"
+                  "name": "VITE_ENTRA_EXTERNAL_TENANT_ID",
+                  "secretRef": "entra-tenant-id"
                 },
                 {
-                  "name": "VITE_AZURE_CLIENT_ID",
-                  "secretRef": "azure-client-id"
-                },
-                {
-                  "name": "VITE_AZURE_REDIRECT_URI",
-                  "value": "[format('https://{0}', reference(resourceId('Microsoft.App/containerApps', variables('resourceNames').frontendApp), '2023-05-01').configuration.ingress.fqdn)]"
+                  "name": "VITE_ENTRA_EXTERNAL_CLIENT_ID",
+                  "secretRef": "entra-client-id"
                 },
                 {
                   "name": "ENVIRONMENT",

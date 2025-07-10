@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 import structlog
-from core.types import LLMRequest, LLMResponse, TenantInfo
+from core.llm_types import LLMRequest, LLMResponse, TenantInfo
 
 logger = structlog.get_logger(__name__)
 

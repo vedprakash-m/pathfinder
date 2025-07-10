@@ -8,7 +8,7 @@ import time
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from app.models.ai_integration import (
+from app.schemas.assistant import (
     AIResponseCard,
     AssistantInteraction,
     ContextType,

@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 Health check endpoints for the Pathfinder API - Unified Cosmos DB Implementation.
 """
@@ -17,7 +18,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 router = APIRouter(
     prefix="/health",
-    tags=["health"],
+tags=["health"],
 )
 
 logger = get_logger(__name__)
@@ -42,8 +43,8 @@ async def health_check() -> Dict:
 
 @router.get("/ready")
 async def readiness_check(
-    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
-) -> Dict:
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),  # noqa: B008:
+    ) -> Dict:
     """
     Readiness check that verifies database connections using unified Cosmos DB.
     Returns status OK if the API is ready to serve traffic.
@@ -82,8 +83,8 @@ async def liveness_check() -> Dict:
 
 @router.get("/detailed")
 async def detailed_health_check(
-    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
-) -> Dict:
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),  # noqa: B008:
+    ) -> Dict:
     """
     Detailed health check endpoint that provides comprehensive system status using unified Cosmos DB.
     """
@@ -97,7 +98,7 @@ async def detailed_health_check(
         cpu_percent = psutil.cpu_percent(interval=0.1)
         memory = psutil.virtual_memory()
         disk = psutil.disk_usage("/")
-
+        
         details["system"] = {
             "status": "healthy",
             "cpu_percent": round(cpu_percent, 2),
@@ -115,9 +116,7 @@ async def detailed_health_check(
 
     except Exception as e:
         details["system"] = {"status": "error", "error": str(e)}
-        status = "degraded"
-
-    # Check Cosmos DB connection
+        status = "degraded"    # Check Cosmos DB connection
     try:
         if settings.COSMOS_DB_ENABLED:
             cosmos_start = time.time()
@@ -150,9 +149,7 @@ async def detailed_health_check(
     except Exception as e:
         status = "degraded"
         details["cosmos_db"] = {"status": "error", "error": str(e)}
-        logger.error(f"Cosmos DB connection error: {e}")
-
-    # Check email service
+        logger.error(f"Cosmos DB connection error: {e}")    # Check email service
     try:
         email_status = (
             "configured"
@@ -171,9 +168,7 @@ async def detailed_health_check(
             "templates_loaded": bool(email_service.template_env),
         }
     except Exception as e:
-        details["email_service"] = {"status": "error", "error": str(e)}
-
-    # Check AI service availability
+        details["email_service"] = {"status": "error", "error": str(e)}    # Check AI service availability
     try:
         ai_status = "configured" if settings.OPENAI_API_KEY else "not_configured"
         details["ai_service"] = {

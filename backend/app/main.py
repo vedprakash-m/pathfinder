@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 FastAPI application entry point for Pathfinder AI-Powered Trip Planner.
 Updated to use unified Cosmos DB per Tech Spec requirements.
@@ -9,7 +10,7 @@ from datetime import datetime, timezone
 from typing import AsyncGenerator
 
 import uvicorn
-from app.api.router import api_router
+from app.api.router_full import api_router  # Use full router after Phase 4 completion
 from app.core.config import get_settings
 from app.core.database_unified import get_cosmos_service
 from app.core.logging_config import setup_logging
@@ -18,7 +19,8 @@ from app.core.logging_config import setup_logging
 from app.core.middleware import setup_security_middleware
 
 # from app.core.telemetry import setup_opentelemetry  # Commented out - not used yet
-from app.services.websocket import websocket_manager
+# TODO: Re-enable after fixing service layer dependencies
+# from app.services.websocket import websocket_manager
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
@@ -44,8 +46,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         logger.error(f"Failed to initialize Cosmos DB: {e}")
         # Continue startup - app can work with basic functionality
 
+    # TODO: Re-enable websockets after fixing dependencies
     # Initialize WebSocket manager
-    await websocket_manager.startup()
+    # await websocket_manager.startup()
 
     # Initialize cache
     from app.core.cache import cache
@@ -59,76 +62,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     app.state.get_performance_metrics = get_performance_metrics
     logger.info("Performance monitoring initialized")
 
-    # Initialize Cosmos DB (if enabled)
-    if settings.COSMOS_DB_ENABLED:
-        logger.info("Initializing Cosmos DB connections")
-        # Create CosmosDB containers if they don't exist
-        from azure.cosmos.aio import CosmosClient
-        from azure.cosmos.exceptions import CosmosResourceExistsError
-
-        try:
-            # Connect to Azure Cosmos DB
-            cosmos_client = CosmosClient(
-                url=settings.COSMOS_DB_URL, credential=settings.COSMOS_DB_KEY
-            )
-
-            # Get or create database
-            database = cosmos_client.get_database_client(settings.COSMOS_DB_DATABASE)
-
-            # Initialize or confirm containers
-            try:
-                await database.create_container(
-                    id=settings.COSMOS_DB_CONTAINER_ITINERARIES,
-                    partition_key="/trip_id",
-                )
-                logger.info(f"Created container: {settings.COSMOS_DB_CONTAINER_ITINERARIES}")
-            except CosmosResourceExistsError:
-                logger.info(
-                    f"Container already exists: " f"{settings.COSMOS_DB_CONTAINER_ITINERARIES}"
-                )
-
-            try:
-                await database.create_container(
-                    id=settings.COSMOS_DB_CONTAINER_MESSAGES, partition_key="/trip_id"
-                )
-                logger.info(f"Created container: {settings.COSMOS_DB_CONTAINER_MESSAGES}")
-            except CosmosResourceExistsError:
-                logger.info(
-                    f"Container already exists: " f"{settings.COSMOS_DB_CONTAINER_MESSAGES}"
-                )
-
-            try:
-                await database.create_container(
-                    id=settings.COSMOS_DB_CONTAINER_PREFERENCES,
-                    partition_key="/entity_id",
-                )
-                logger.info(f"Created container: {settings.COSMOS_DB_CONTAINER_PREFERENCES}")
-            except CosmosResourceExistsError:
-                logger.info(
-                    f"Container already exists: " f"{settings.COSMOS_DB_CONTAINER_PREFERENCES}"
-                )
-
-            logger.info("Cosmos DB initialization complete")
-
-        except Exception as e:
-            logger.error(f"Failed to initialize Cosmos DB: {str(e)}")
-            if settings.ENVIRONMENT != "production":
-                logger.warning("Continuing without Cosmos DB in development mode")
-            else:
-                raise
-    logger.info("Application startup complete")
-
-    # Initialize cache service (Redis-free alternatives)
-    try:
-        from app.core.cache_service import cache_service
-
-        app.state.cache_service = cache_service
-        logger.info("Cache service initialized (Redis-free for cost optimization)")
-    except Exception as e:
-        logger.error(f"Failed to initialize cache service: {e}")
-        if settings.ENVIRONMENT == "production":
-            raise
-
     # Initialize dependency-injector container
     from app.core.container import Container
 
@@ -141,7 +74,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Cleanup
     logger.info("Shutting down application...")
-    await websocket_manager.shutdown()
+    # TODO: Re-enable websockets
+    # await websocket_manager.shutdown()
 
     # Close cache service connections
     if hasattr(app.state, "cache_service") and app.state.cache_service:
@@ -153,19 +87,19 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 # Create FastAPI application
 app = FastAPI(
     title="Pathfinder API",
-    description="AI-Powered Group Trip Planner",
-    version="1.0.0",
-    docs_url="/docs" if settings.ENVIRONMENT != "production" else None,
-    redoc_url="/redoc" if settings.ENVIRONMENT != "production" else None,
-    lifespan=lifespan,
+description="AI-Powered Group Trip Planner",
+version="1.0.0",
+docs_url="/docs" if settings.ENVIRONMENT != "production" else None,
+redoc_url="/redoc" if settings.ENVIRONMENT != "production" else None,
+lifespan=lifespan,
 )
 
 # Security middleware
 if settings.ENVIRONMENT == "production":
     app.add_middleware(
         TrustedHostMiddleware,
-        allowed_hosts=settings.allowed_hosts_list,
-    )
+allowed_hosts=settings.allowed_hosts_list,
+)
 
 from app.core.auth_monitoring import AuthenticationMonitoringMiddleware
 from app.core.csrf import CSRFMiddleware
@@ -183,37 +117,37 @@ app.add_middleware(PerformanceMonitoringMiddleware)
 # Rate limiting middleware
 app.add_middleware(
     RateLimiter,
-    window_size=60,  # 1 minute window
-    default_limit=500,  # Default 500 requests per minute
-    api_limit=2000,  # API endpoints 2000 requests per minute
-    public_limit=500,  # Public endpoints 500 requests per minute
-    endpoint_limits={
+window_size=60,  # 1 minute window
+default_limit=500,  # Default 500 requests per minute
+api_limit=2000,  # API endpoints 2000 requests per minute
+public_limit=500,  # Public endpoints 500 requests per minute
+endpoint_limits={
         "POST:/api/v1/auth/login": 20,  # Limit login attempts (increased)
-        "POST:/api/v1/auth/register": 10,  # Limit registration (increased)
-        "GET:/api/v1/auth/me": 1000,  # Allow frequent auth checks (increased)
-        "GET:/api/v1/auth/user/onboarding-status": 500,  # Onboarding checks
-        "GET:/api/v1/trips/": 500,  # Allow frequent trips checks
-    },
+"POST:/api/v1/auth/register": 10,  # Limit registration (increased)
+"GET:/api/v1/auth/me": 1000,  # Allow frequent auth checks (increased)
+"GET:/api/v1/auth/user/onboarding-status": 500,  # Onboarding checks
+"GET:/api/v1/trips/": 500,  # Allow frequent trips checks
+},
 )
 
 # CSRF protection middleware with CORS compatibility
 if settings.ENVIRONMENT == "production":
     app.add_middleware(
         CSRFMiddleware,
-        secret_key=settings.SECRET_KEY,
-        cookie_secure=True,
-        exempt_urls=[
-            "/health",
-            "/health/ready",
-            "/health/live",
-            "/health/detailed",
-            "/docs",
-            "/redoc",
-            "/openapi.json",
-            "/api/v1/test/health",
-        ],
-        cors_enabled=True,  # Enable CORS compatibility mode
-    )
+secret_key=settings.SECRET_KEY,
+cookie_secure=True,
+exempt_urls=[
+"/health",
+"/health/ready",
+"/health/live",
+"/health/detailed",
+"/docs",
+"/redoc",
+"/openapi.json",
+"/api/v1/test/health",
+],
+cors_enabled=True,  # Enable CORS compatibility mode
+)
 elif settings.ENVIRONMENT != "testing":
     # In development, we still use CSRF but with less strict settings
     app.add_middleware(
@@ -281,10 +215,10 @@ async def health_check():
 # Include API routes
 app.include_router(api_router, prefix="/api/v1")
 
+# TODO: Re-enable after architectural repair
 # Include health routes (in addition to the basic /health endpoint above)
-from app.api.health import router as health_router
-
-app.include_router(health_router)
+# from app.api.health import router as health_router
+# app.include_router(health_router)
 
 
 def create_app(testing: bool = False) -> FastAPI:
@@ -299,7 +233,9 @@ def create_app(testing: bool = False) -> FastAPI:
 
             # Minimal initialization for tests
             try:
-                await init_db()
+                # Initialize basic cosmos service for testing
+                cosmos_service = get_cosmos_service()
+                await cosmos_service.get_repository().initialize_container()
             except Exception as e:
                 logger.warning(f"Test DB init failed: {e}")
 
@@ -317,6 +253,7 @@ def create_app(testing: bool = False) -> FastAPI:
         )
 
         # Essential middleware for testing
+        from fastapi.middleware.cors import CORSMiddleware
         test_app.add_middleware(
             CORSMiddleware,
             allow_origins=["*"],
@@ -337,8 +274,8 @@ def create_app(testing: bool = False) -> FastAPI:
 if __name__ == "__main__":
     uvicorn.run(
         "app.main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=settings.DEBUG,
-        log_level="info" if not settings.DEBUG else "debug",
-    )
+host="0.0.0.0",
+port=8000,
+reload=settings.DEBUG,
+log_level="info" if not settings.DEBUG else "debug",
+)

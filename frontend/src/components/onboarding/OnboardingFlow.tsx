@@ -265,6 +265,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
             </motion.div>
           )}
         </AnimatePresence>
+        </main>
       </div>
     </div>
   );

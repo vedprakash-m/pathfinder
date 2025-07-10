@@ -1,4 +1,15 @@
+from __future__ import annotations
 """
+from app.repositories.cosmos_unified import UnifiedCosmosRepository, UserDocument
+from app.core.database_unified import get_cosmos_service
+from app.core.security import get_current_user
+from app.schemas.auth import UserResponse
+from app.schemas.common import ErrorResponse, SuccessResponse
+from app.repositories.cosmos_unified import UnifiedCosmosRepository, UserDocument
+from app.core.database_unified import get_cosmos_service
+from app.core.security import get_current_user
+from app.schemas.auth import UserResponse
+from app.schemas.common import ErrorResponse, SuccessResponse
 WebSocket API endpoints for real-time communication.
 Provides WebSocket connections for real-time trip collaboration.
 """
@@ -11,17 +22,10 @@ from uuid import UUID
 from app.core.container import Container
 from app.core.database_unified import get_cosmos_repository
 from app.core.security import get_current_user, get_current_user_websocket
-from app.models.user import User
+# SQL User model removed - use Cosmos UserDocument
 from app.repositories.cosmos_unified import UnifiedCosmosRepository
 from app.services.websocket import handle_websocket_message, websocket_manager
-from fastapi import (
-    APIRouter,
-    Depends,
-    HTTPException,
-    Query,
-    WebSocket,
-    WebSocketDisconnect,
-)
+from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
 
 logger = logging.getLogger(__name__)
 
@@ -33,10 +37,10 @@ async def websocket_trip_endpoint(
     websocket: WebSocket,
     trip_id: UUID,
     token: str = Query(..., description="Authentication token"),
-    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository)
 ):
     """
-    WebSocket endpoint for real-time trip collaboration.
+WebSocket endpoint for real-time trip collaboration.
 
     Args:
         websocket: WebSocket connection
@@ -114,13 +118,7 @@ async def websocket_trip_endpoint(
 async def websocket_notifications_endpoint(
     websocket: WebSocket, token: str = Query(..., description="Authentication token")
 ):
-    """
-    WebSocket endpoint for real-time notifications.
-
-    Args:
-        websocket: WebSocket connection
-        token: Authentication token
-    """
+    """WebSocket endpoint for real-time notifications."""
     try:
         # Authenticate user from token
         user = await get_current_user_websocket(token)
@@ -194,19 +192,9 @@ async def websocket_notifications_endpoint(
 async def get_trip_connections(
     trip_id: UUID,
     current_user: User = Depends(get_current_user),
-    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository)
 ):
-    """
-    Get active connections for a trip using unified Cosmos DB.
-
-    Args:
-        trip_id: Trip ID
-        current_user: Authenticated user
-        cosmos_repo: Unified Cosmos DB repository
-
-    Returns:
-        List of active connection information
-    """
+    """Get active connections for a trip using unified Cosmos DB."""
     trip_service = Container().trip_domain_service()
     try:
         # Check if user has access to the trip
@@ -236,20 +224,9 @@ async def broadcast_to_trip(
     trip_id: UUID,
     message: dict,
     current_user: User = Depends(get_current_user),
-    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository)
 ):
-    """
-    Broadcast a message to all users in a trip using unified Cosmos DB.
-
-    Args:
-        trip_id: Trip ID
-        message: Message to broadcast
-        current_user: Authenticated user
-        cosmos_repo: Unified Cosmos DB repository
-
-    Returns:
-        Success confirmation
-    """
+    """Broadcast a message to all users in a trip using unified Cosmos DB."""
     trip_service = Container().trip_domain_service()
     try:
         # Check if user has access to the trip

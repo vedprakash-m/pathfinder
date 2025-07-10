@@ -30,7 +30,7 @@ async def test_db_setup():
 
     print("Importing models...")
     # Ensure all models are imported before creating tables
-    from app.models.user import User
+    # SQL User model removed - use Cosmos UserDocument
 
     print("Creating tables...")
     # Create all tables

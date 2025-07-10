@@ -15,7 +15,7 @@ def test_schema_validation():
 
     # Create a temporary test file with the problematic schema
     test_content = '''
-from app.models.user import UserCreate
+# SQL User model removed - use Cosmos UserDocumentCreate
 
 def test_broken_user_create():
     """This should fail schema validation"""
@@ -40,7 +40,7 @@ def test_broken_user_create():
                 """
 import sys
 sys.path.append("/Users/vedprakashmishra/pathfinder/backend")
-from app.models.user import UserCreate
+# SQL User model removed - use Cosmos UserDocumentCreate
 
 try:
     # This should fail
@@ -70,7 +70,7 @@ except Exception as e:
                 """
 import sys
 sys.path.append("/Users/vedprakashmishra/pathfinder/backend")
-from app.models.user import UserCreate
+# SQL User model removed - use Cosmos UserDocumentCreate
 
 try:
     # This should work

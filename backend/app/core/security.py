@@ -9,7 +9,8 @@ from typing import Optional
 
 import jwt
 from app.core.config import get_settings
-from app.models.user import User as UserModel
+# SQL User model removed - use Cosmos UserDocument as UserModel
+from app.repositories.cosmos_unified import UserDocument as UserModel
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt.exceptions import PyJWTError

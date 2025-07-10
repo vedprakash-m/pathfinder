@@ -9,7 +9,7 @@ from enum import Enum
 from typing import Any, Dict
 
 import structlog
-from core.types import LLMProviderType
+from core.llm_types import LLMProviderType
 
 logger = structlog.get_logger(__name__)
 

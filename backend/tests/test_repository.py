@@ -13,7 +13,7 @@ from app.core.repository import (
     with_error_handling,
     with_performance_monitoring,
 )
-from app.models.user import User
+# SQL User model removed - use Cosmos UserDocument
 from azure.cosmos.aio import ContainerProxy
 from azure.cosmos.exceptions import CosmosResourceNotFoundError
 from sqlalchemy import Column, MetaData, String, Table

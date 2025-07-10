@@ -19,7 +19,7 @@ try:
         get_ai_usage_stats,
     )
     from app.core.config import get_settings
-    from app.models.user import User
+    # SQL User model removed - use Cosmos UserDocument
     from app.repositories.cosmos_unified import UnifiedCosmosRepository
 
     print("✅ AI cost management imports successful")

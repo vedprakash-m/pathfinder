@@ -20,7 +20,7 @@ from app.models.family import (
     FamilyRole,
     InvitationStatus,
 )
-from app.models.user import User
+# SQL User model removed - use Cosmos UserDocument
 from app.services.email_service import email_service
 from sqlalchemy.orm import Session
 

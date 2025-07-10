@@ -14,7 +14,7 @@ from app.models.cosmos.itinerary import (
     ItineraryDayDocument,
     ItineraryDocument,
 )
-from app.models.itinerary import ItineraryStatus
+from app.models.cosmos.enums import ItineraryStatus
 
 settings = get_settings()
 logger = logging.getLogger(__name__)

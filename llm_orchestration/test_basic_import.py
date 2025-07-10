@@ -7,7 +7,7 @@ Basic import test to verify core functionality
 def test_core_types():
     """Test that core types can be imported"""
     try:
-        from core.types import LLMProvider
+        from core.llm_types import LLMProvider
 
         print("✅ Core types imported successfully")
 

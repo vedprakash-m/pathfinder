@@ -43,7 +43,7 @@ var resourceNames = {
   logAnalytics: '${appName}-logs'
   appInsights: '${appName}-insights'
   storageAccount: 'pf${uniqueString(resourceGroup().id)}'
-  keyVault: '${appName}-kv-${uniqueString(resourceGroup().id)}'
+  keyVault: 'pf-kv-${uniqueString(resourceGroup().id)}'
   containerRegistry: 'pathfinderdevregistry'
 }
 
@@ -338,7 +338,7 @@ resource frontendApp 'Microsoft.App/containerApps@2023-05-01' = {
     configuration: {
       ingress: {
         external: true
-        targetPort: 8080
+        targetPort: 80
         transport: 'http'
       }
       secrets: [

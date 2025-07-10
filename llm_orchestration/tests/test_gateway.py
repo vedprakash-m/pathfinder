@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 from core.gateway import LLMGateway
-from core.types import LLMRequest, LLMResponse, RequestPriority, TaskType, TokenUsage
+from core.llm_types import LLMRequest, LLMResponse, RequestPriority, TaskType, TokenUsage
 
 
 @pytest.fixture

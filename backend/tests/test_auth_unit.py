@@ -20,7 +20,7 @@ class TestAuthEndpoints:
     def test_register_user_success(self, mock_auth_service_class):
         """Test successful user registration."""
         # Create a mock user object that behaves like the User model
-        from app.models.user import User
+        # SQL User model removed - use Cosmos UserDocument
 
         mock_user = User(
             id="test-user-id",  # String instead of UUID
@@ -167,7 +167,7 @@ class TestEmailValidation:
 
         for email in valid_emails:
             # Create a mock user object that behaves like the User model
-            from app.models.user import User
+            # SQL User model removed - use Cosmos UserDocument
 
             mock_user = User(
                 id="test-user-id",

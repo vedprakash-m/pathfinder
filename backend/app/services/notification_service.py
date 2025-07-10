@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from app.core.logging_config import get_logger
-from app.models.notification import (
+from app.schemas.notification import (
     BulkNotificationCreate,
     Notification,
     NotificationCreate,
@@ -461,7 +461,6 @@ class NotificationService:
         # This would typically query your user table
         # For now, return a placeholder - implement based on your specific user setup
         try:
-            from app.models.user import User
 
             result = await self.db.execute(select(User).where(User.id == UUID(user_id)))
             user = result.scalar_one_or_none()
@@ -473,7 +472,6 @@ class NotificationService:
     async def _get_user_name(self, user_id: str) -> str:
         """Get user name. This is a placeholder - implement based on your user system."""
         try:
-            from app.models.user import User
 
             result = await self.db.execute(select(User).where(User.id == UUID(user_id)))
             user = result.scalar_one_or_none()

@@ -6,7 +6,7 @@ from datetime import date, timedelta
 
 import pytest
 from app.main import app
-from app.models.trip import TripStatus
+# SQL Trip model removed - use Cosmos TripDocumentStatus
 from fastapi import status
 from httpx import AsyncClient
 

@@ -478,7 +478,7 @@ class Day4SecurityAuditTest:
 
             # Test VedUser interface compliance
             try:
-                from app.models.user import User
+                # SQL User model removed - use Cosmos UserDocument
 
                 user_model_available = True
                 self.log_result(

@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from app.core.security import create_access_token, verify_token
-from app.models.user import UserCreate, UserUpdate
+# SQL User model removed - use Cosmos UserDocumentCreate, UserUpdate
 from app.services.auth_service import AuthService
 from fastapi import HTTPException
 from jose import jwt

@@ -382,8 +382,8 @@ For commercial use without AGPLv3 obligations, **dual licensing** options are av
 - Custom licensing terms for enterprise customers
 
 ### 📞 Contact & Support
-- **Maintainer:** Vedprakash Mishra
-- **Repository:** [github.com/vedprakashmishra/pathfinder](https://github.com/vedprakashmishra/pathfinder)
+- **Maintainer:** Ved Prakash
+- **Repository:** [github.com/vedprakash-m/pathfinder](https://github.com/vedprakash-m/pathfinder)
 - **Issues:** Report bugs and feature requests via GitHub Issues
 - **Security:** Follow responsible disclosure guidelines in [`docs/metadata.md`](docs/metadata.md)
 

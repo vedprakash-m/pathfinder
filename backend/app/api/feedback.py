@@ -1,4 +1,15 @@
+from __future__ import annotations
 """
+from app.repositories.cosmos_unified import UnifiedCosmosRepository, UserDocument
+from app.core.database_unified import get_cosmos_service
+from app.core.security import get_current_user
+from app.schemas.auth import UserResponse
+from app.schemas.common import ErrorResponse, SuccessResponse
+from app.repositories.cosmos_unified import UnifiedCosmosRepository, UserDocument
+from app.core.database_unified import get_cosmos_service
+from app.core.security import get_current_user
+from app.schemas.auth import UserResponse
+from app.schemas.common import ErrorResponse, SuccessResponse
 API endpoints for Real-Time Feedback Integration.
 
 Solves Pain Point #3: "No effective way to gather and incorporate changes/feedback during planning process"
@@ -12,13 +23,13 @@ from pydantic import BaseModel
 
 from ..core.database_unified import get_cosmos_repository
 from ..core.zero_trust import require_permissions
-from ..models.user import User
+# SQL User model removed - use Cosmos UserDocument
 from ..repositories.cosmos_unified import UnifiedCosmosRepository
 from ..services.real_time_feedback import (
     FeedbackStatus,
-    FeedbackType,
-    RealTimeFeedbackService,
-    get_feedback_dashboard_data,
+FeedbackType,
+RealTimeFeedbackService,
+get_feedback_dashboard_data,
 )
 
 logger = logging.getLogger(__name__)
@@ -29,27 +40,27 @@ router = APIRouter(prefix="/api/v1/feedback", tags=["feedback"])
 class FeedbackSubmissionRequest(BaseModel):
     """Request model for submitting feedback."""
 
-    feedback_type: str
-    target_element: str  # What they're providing feedback on
-    content: str
-    suggested_change: Optional[str] = None
+feedback_type: str
+target_element: str  # What they're providing feedback on
+content: str
+suggested_change: Optional[str] = None
 
 
 class FeedbackResponseRequest(BaseModel):
     """Request model for responding to feedback."""
 
-    response_content: str
-    new_status: Optional[str] = None
-    decision: Optional[str] = None  # "approve", "reject", "modify"
+response_content: str
+new_status: Optional[str] = None
+decision: Optional[str] = None  # "approve", "reject", "modify"
 
 
 class LiveChangeRequest(BaseModel):
     """Request model for live collaborative changes."""
 
-    element_id: str
-    change_type: str  # "modify", "add", "delete"
-    change_data: Dict[str, Any]
-    description: str
+element_id: str
+change_type: str  # "modify", "add", "delete"
+change_data: dict[str, Any]
+description: str
 
 
 @router.post("/submit/{trip_id}")
@@ -57,7 +68,7 @@ async def submit_feedback(
     trip_id: str,
     feedback_request: FeedbackSubmissionRequest,
     cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
-    current_user: dict = Depends(require_permissions("trips", "read")),
+    current_user: dict = Depends(require_permissions("trips", "read"))
 ):
     """
     Submit feedback for a trip element.
@@ -120,7 +131,7 @@ async def submit_feedback(
 async def get_feedback_dashboard(
     trip_id: str,
     cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
-    current_user: dict = Depends(require_permissions("trips", "read")),
+    current_user: dict = Depends(require_permissions("trips", "read"))
 ):
     """
     Get comprehensive feedback dashboard data for a trip.
@@ -131,26 +142,24 @@ async def get_feedback_dashboard(
         dashboard_data = await get_feedback_dashboard_data(cosmos_repo, trip_id)
 
         # Add real-time collaboration metrics
-        dashboard_data.update(
-            {
-                "collaboration_health": {
-                    "feedback_velocity": "3.2 items/day",  # Rate of feedback submission
-                    "response_rate": f"{dashboard_data['response_rate'] * 100:.0f}%",
-                    "average_resolution_time": f"{dashboard_data['average_resolution_time_hours']:.1f} hours",
-                    "active_discussions": 2,
-                },
-                "quick_actions": [
-                    "Review pending feedback",
-                    "Respond to family concerns",
-                    "Approve suggested changes",
-                ],
-                "feedback_trends": {
-                    "most_common_type": "suggestion",
-                    "peak_feedback_time": "Evening (7-9 PM)",
-                    "family_participation": "4 out of 5 families active",
-                },
-            }
-        )
+        dashboard_data.update({
+            "collaboration_health": {
+                "feedback_velocity": "3.2 items/day",  # Rate of feedback submission
+                "response_rate": f"{dashboard_data['response_rate'] * 100:.0f}%",
+                "average_resolution_time": f"{dashboard_data['average_resolution_time_hours']:.1f} hours",
+                "active_discussions": 2,
+            },
+            "quick_actions": [
+                "Review pending feedback",
+                "Respond to family concerns",
+                "Approve suggested changes",
+            ],
+            "feedback_trends": {
+                "most_common_type": "suggestion",
+                "peak_feedback_time": "Evening (7-9 PM)",
+                "family_participation": "4 out of 5 families active",
+            },
+        })
 
         logger.info(f"Feedback dashboard data retrieved for trip {trip_id}")
         return dashboard_data
@@ -166,7 +175,7 @@ async def get_trip_feedback(
     status: Optional[str] = None,
     feedback_type: Optional[str] = None,
     cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
-    current_user: dict = Depends(require_permissions("trips", "read")),
+    current_user: dict = Depends(require_permissions("trips", "read"))
 ):
     """
     Get all feedback for a trip with optional filtering.
@@ -222,7 +231,7 @@ async def respond_to_feedback(
     feedback_id: str,
     response_request: FeedbackResponseRequest,
     cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
-    current_user: dict = Depends(require_permissions("trips", "update")),
+    current_user: dict = Depends(require_permissions("trips", "update"))
 ):
     """
     Respond to a feedback item.
@@ -273,7 +282,7 @@ async def submit_live_change(
     trip_id: str,
     change_request: LiveChangeRequest,
     cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
-    current_user: dict = Depends(require_permissions("trips", "update")),
+    current_user: dict = Depends(require_permissions("trips", "update"))
 ):
     """
     Submit a live collaborative change during trip planning.
@@ -326,7 +335,7 @@ async def submit_live_change(
 async def get_collaboration_status(
     trip_id: str,
     cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
-    current_user: User = Depends(require_permissions("trips", "read")),
+    current_user: User = Depends(require_permissions("trips", "read"))
 ):
     """
     Get real-time collaboration status for a trip.
@@ -394,7 +403,7 @@ def _calculate_time_since(created_at_iso: str) -> str:
         return "Unknown"
 
 
-def _calculate_urgency(feedback: Dict[str, Any]) -> str:
+def _calculate_urgency(feedback: dict[str, Any]) -> str:
     """Calculate urgency level based on feedback content and impact."""
     if feedback.get("impact_analysis"):
         impact_level = feedback["impact_analysis"].get("impact_level", "low")

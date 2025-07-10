@@ -16,10 +16,7 @@ def test_imports():
 
     try:
         # Test family models
-        from app.models.family import (
-            FamilyRole,
-            InvitationStatus,
-        )
+        # SQL Family model removed - use Cosmos FamilyDocumentRole, InvitationStatus
 
         print("✅ Family models imported successfully")
 

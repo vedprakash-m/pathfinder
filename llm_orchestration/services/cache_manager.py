@@ -9,7 +9,7 @@ from typing import Any, Dict, Optional
 
 import redis.asyncio as redis
 import structlog
-from core.types import LLMConfigurationError, LLMRequest, LLMResponse
+from core.llm_types import LLMConfigurationError, LLMRequest, LLMResponse
 
 logger = structlog.get_logger(__name__)
 

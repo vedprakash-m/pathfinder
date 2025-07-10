@@ -1,4 +1,15 @@
+from __future__ import annotations
 """
+from app.repositories.cosmos_unified import UnifiedCosmosRepository, UserDocument
+from app.core.database_unified import get_cosmos_service
+from app.core.security import get_current_user
+from app.schemas.auth import UserResponse
+from app.schemas.common import ErrorResponse, SuccessResponse
+from app.repositories.cosmos_unified import UnifiedCosmosRepository, UserDocument
+from app.core.database_unified import get_cosmos_service
+from app.core.security import get_current_user
+from app.schemas.auth import UserResponse
+from app.schemas.common import ErrorResponse, SuccessResponse
 Admin endpoints for managing the application.
 
 These endpoints are accessible only to users with administrative privileges.
@@ -17,17 +28,19 @@ settings = get_settings()
 class PerformanceMetricsResponse(BaseModel):
     """Performance metrics response model."""
 
-    timestamp: str
-    endpoint_average_times: dict
-    query_average_times: dict
-    api_request_counts: dict
-    slowest_queries: list
-    memory_usage: float
-    cpu_percent: float
+timestamp: str
+endpoint_average_times: dict
+query_average_times: dict
+api_request_counts: dict
+slowest_queries: list
+memory_usage: float
+cpu_percent: float
 
 
 @router.get("/performance", response_model=PerformanceMetricsResponse)
-async def get_app_performance(current_user=Depends(require_role("admin"))):
+async def get_app_performance(
+    current_user=Depends(require_role("admin")),
+):  # noqa: B008
     """
     Get application performance metrics.
 
@@ -43,27 +56,8 @@ async def get_app_performance(current_user=Depends(require_role("admin"))):
     return metrics
 
 
-@router.post("/clear-cache")
-async def clear_cache(current_user=Depends(require_role("admin"))):
-    """
-    Clear all cache entries.
-
-    Available only to administrators.
-    """
-    from app.core.cache import cache
-
-    success = await cache.clear()
-    if not success:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to clear cache",
-        )
-
-    return {"message": "Cache cleared successfully"}
-
-
 @router.get("/config")
-async def get_app_config(current_user=Depends(require_role("admin"))):
+async def get_app_config(current_user=Depends(require_role("admin"))):  # noqa: B008
     """
     Get selected application configuration.
 

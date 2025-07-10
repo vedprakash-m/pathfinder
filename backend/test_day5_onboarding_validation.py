@@ -26,8 +26,8 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "."))
 try:
     from app.core.config import get_settings
     from app.core.database_unified import DatabaseService
-    from app.models.trip import TripCreate, TripResponse
-    from app.models.user import User, UserCreate
+    # SQL Trip model removed - use Cosmos TripDocumentCreate, TripResponse
+    # SQL User model removed - use Cosmos UserDocument, UserCreate
     from app.repositories.cosmos_unified import CosmosUnifiedRepository
 
     print("✅ Backend imports successful")

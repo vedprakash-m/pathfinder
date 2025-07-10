@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { render } from './utils';
 import { DashboardPage } from '../pages/DashboardPage';
 
@@ -12,8 +11,6 @@ vi.mock('../services/tripService', () => ({
 }));
 
 describe('DashboardPage', () => {
-  const user = userEvent.setup();
-
   beforeEach(() => {
     vi.clearAllMocks();
   });

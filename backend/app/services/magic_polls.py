@@ -7,7 +7,6 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 import requests
-from app.models.ai_integration import MagicPoll, PollStatus, PollType, create_magic_poll
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)

@@ -76,9 +76,9 @@ export const TripCard: React.FC<TripCardProps> = ({
         header={
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <Title3 as={Link} to={`/trips/${trip.id}`} className="hover:underline">
-                {trip.title}
-              </Title3>
+              <Link to={`/trips/${trip.id}`} className="hover:underline">
+                <Title3>{trip.title}</Title3>
+              </Link>
               <StatusBadge status={trip.status} />
             </div>
           </div>
@@ -116,8 +116,8 @@ export const TripCard: React.FC<TripCardProps> = ({
           <div className="flex items-center gap-2">
             <UsersIcon className="w-4 h-4 text-gray-500" />
             <Caption1 className="text-gray-700">
-              {trip.families?.length || 0} families
-              {trip.max_participants && ` / ${trip.max_participants} max`}
+              {trip.family_count || 0} families
+              {trip.participants && ` / ${trip.participants.length} participants`}
             </Caption1>
           </div>
 
@@ -134,9 +134,11 @@ export const TripCard: React.FC<TripCardProps> = ({
 
         {/* Actions */}
         <div className="flex gap-2 mt-4">
-          <Button as={Link} to={`/trips/${trip.id}`} appearance="primary" size="small">
-            View Details
-          </Button>
+          <Link to={`/trips/${trip.id}`}>
+            <Button appearance="primary" size="small">
+              View Details
+            </Button>
+          </Link>
           
           {onJoin && trip.status === 'planning' && (
             <Button 

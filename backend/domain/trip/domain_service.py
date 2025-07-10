@@ -16,16 +16,18 @@ from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
 
-from app.models.trip import (
+from app.models.cosmos.trip import (
+    TripDocument as Trip,
+    TripParticipation,
+)
+from app.models.cosmos.enums import ParticipationStatus
+from app.schemas.trip import (
     ParticipationCreate,
     ParticipationResponse,
-    ParticipationStatus,
     ParticipationUpdate,
-    Trip,
     TripCreate,
     TripDetail,
     TripInvitation,
-    TripParticipation,
     TripResponse,
     TripStats,
     TripUpdate,

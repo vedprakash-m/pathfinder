@@ -8,49 +8,20 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, List
 
-try:
-    from reportlab.lib import colors
-    from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
-    from reportlab.lib.pagesizes import A4, letter
-    from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
-    from reportlab.lib.units import inch
-    from reportlab.pdfgen import canvas
-    from reportlab.platypus import (
-        Image,
-        Paragraph,
-        SimpleDocTemplate,
-        Spacer,
-        Table,
-        TableStyle,
-    )
-    from reportlab.platypus.tableofcontents import TableOfContents
-except ImportError:
-    logger = logging.getLogger(__name__)
-    logger.error("ReportLab not installed. PDF generation will not work.")
+from app.schemas.trip import TripDetail
+from app.models.cosmos.itinerary import ItineraryDocument as Itinerary, ItineraryActivityDocument as ItineraryActivity, ItineraryDayDocument as ItineraryDay
+from app.repositories.cosmos_unified import FamilyDocument as Family
+from typing import Dict as Reservation  # Temporary alias until proper Reservation model is created
 
-    # Mock classes for when reportlab is not available
-    class SimpleDocTemplate:
-        def __init__(self, *args, **kwargs):
-            pass
+from reportlab.lib import colors
+from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+from reportlab.lib.pagesizes import A4, letter
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.lib.units import inch
+from reportlab.pdfgen import canvas
+from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from reportlab.platypus.tableofcontents import TableOfContents
 
-        def build(self, *args, **kwargs):
-            pass
-
-    class Paragraph:
-        def __init__(self, *args, **kwargs):
-            pass
-
-    class Spacer:
-        def __init__(self, *args, **kwargs):
-            pass
-
-    letter = A4 = (612, 792)
-    inch = 72
-
-from app.models.family import Family
-from app.models.itinerary import Itinerary, ItineraryActivity, ItineraryDay
-from app.models.reservation import Reservation
-from app.models.trip import TripDetail
 
 logger = logging.getLogger(__name__)
 

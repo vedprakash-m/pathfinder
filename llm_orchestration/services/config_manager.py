@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional
 
 import structlog
 import yaml
-from core.types import LLMConfigurationError, LLMProvider
+from core.llm_types import LLMConfigurationError, LLMProvider
 from pydantic import BaseModel, Field, validator
 
 logger = structlog.get_logger(__name__)

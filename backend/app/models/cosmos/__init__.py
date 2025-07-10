@@ -1,22 +1,12 @@
 """
-Cosmos DB document models package initialization.
+Cosmos DB model definitions.
+These models are used for all database operations in the unified architecture.
 """
 
-from app.models.cosmos.itinerary import (
-    ItineraryActivityDocument,
-    ItineraryDayDocument,
-    ItineraryDocument,
-)
-from app.models.cosmos.message import MessageDocument, MessageStatus, MessageType
-from app.models.cosmos.preference import PreferenceDocument, PreferenceType
+from app.models.cosmos.enums import ActivityType, DifficultyLevel, ItineraryStatus
 
 __all__ = [
-    "ItineraryDocument",
-    "ItineraryDayDocument",
-    "ItineraryActivityDocument",
-    "MessageDocument",
-    "MessageType",
-    "MessageStatus",
-    "PreferenceDocument",
-    "PreferenceType",
+    "ActivityType",
+    "DifficultyLevel", 
+    "ItineraryStatus",
 ]

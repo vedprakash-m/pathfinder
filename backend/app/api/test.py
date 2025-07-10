@@ -1,4 +1,15 @@
+from __future__ import annotations
 """
+from app.repositories.cosmos_unified import UnifiedCosmosRepository, UserDocument
+from app.core.database_unified import get_cosmos_service
+from app.core.security import get_current_user
+from app.schemas.auth import UserResponse
+from app.schemas.common import ErrorResponse, SuccessResponse
+from app.repositories.cosmos_unified import UnifiedCosmosRepository, UserDocument
+from app.core.database_unified import get_cosmos_service
+from app.core.security import get_current_user
+from app.schemas.auth import UserResponse
+from app.schemas.common import ErrorResponse, SuccessResponse
 Test endpoints for validating AI service functionality.
 """
 
@@ -9,7 +20,7 @@ from pydantic import BaseModel
 
 from ..core.logging_config import get_logger
 from ..core.zero_trust import require_permissions
-from ..models.user import User
+# SQL User model removed - use Cosmos UserDocument
 from ..services.ai_service import AIService
 
 router = APIRouter(prefix="/test", tags=["testing"])
@@ -26,13 +37,13 @@ class AITestResponse(BaseModel):
     status: str
     message: str
     test_passed: bool
-    details: Optional[Dict[str, Any]] = None
+    details: Optional[dict[str, Any]] = None
 
 
 @router.post("/ai", response_model=AITestResponse)
 async def test_ai_service(
     request: AITestRequest,
-    current_user: User = Depends(require_permissions("test", "execute")),
+    current_user: User = Depends(require_permissions("test", "execute"))
 ):
     """Test the AI service with a simple itinerary generation request."""
     try:

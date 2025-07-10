@@ -10,7 +10,7 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "app"))
 
 from app.core.database import SessionLocal
-from app.models.family import FamilyInvitationModel, InvitationStatus
+# SQL Family model removed - use Cosmos FamilyDocumentInvitationModel, InvitationStatus
 from sqlalchemy import text
 
 

@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 API endpoints for AI Cost Management functionality
 """
@@ -10,7 +11,7 @@ from pydantic import BaseModel, Field
 from ..core.ai_cost_management import ai_cost_tracker, get_ai_usage_stats
 from ..core.logging_config import get_logger
 from ..core.security import get_current_user
-from ..models.user import User
+# SQL User model removed - use Cosmos UserDocument
 from ..services.ai_service import advanced_ai_service
 
 logger = get_logger(__name__)
@@ -21,26 +22,26 @@ router = APIRouter(prefix="/api/ai", tags=["ai-cost"])
 class CostStatusResponse(BaseModel):
     """Response model for AI cost status"""
 
-    budgetUsed: float = Field(..., description="Amount of budget used today")
-    budgetLimit: float = Field(..., description="Daily budget limit")
-    remainingQuota: float = Field(..., description="Remaining budget quota")
-    currentTier: str = Field(..., description="Current usage tier")
-    gracefulMode: bool = Field(..., description="Whether in graceful degradation mode")
-    dailyRequests: int = Field(default=0, description="Number of requests today")
-    averageCostPerRequest: float = Field(default=0.0, description="Average cost per request")
-    modelUsage: Dict[str, Any] = Field(default_factory=dict, description="Usage by model")
+budgetUsed: float = Field(..., description="Amount of budget used today")
+budgetLimit: float = Field(..., description="Daily budget limit")
+remainingQuota: float = Field(..., description="Remaining budget quota")
+currentTier: str = Field(..., description="Current usage tier")
+gracefulMode: bool = Field(..., description="Whether in graceful degradation mode")
+dailyRequests: int = Field(default=0, description="Number of requests today")
+averageCostPerRequest: float = Field(default=0.0, description="Average cost per request")
+modelUsage: dict[str, Any] = Field(default_factory=dict, description="Usage by model")
 
 
 class UsageStatsResponse(BaseModel):
     """Response model for detailed usage statistics"""
 
-    daily_stats: Dict[str, Any] = Field(default_factory=dict, description="Daily usage statistics")
-    user_stats: Optional[Dict[str, Any]] = Field(None, description="User-specific statistics")
-    limits: Dict[str, float] = Field(default_factory=dict, description="Cost limits")
-    remaining: Dict[str, float] = Field(default_factory=dict, description="Remaining budget")
-    optimization_suggestions: list = Field(
+daily_stats: dict[str, Any] = Field(default_factory=dict, description="Daily usage statistics")
+user_stats: Optional[dict[str, Any]] = Field(None, description="User-specific statistics")
+limits: dict[str, float] = Field(default_factory=dict, description="Cost limits")
+remaining: dict[str, float] = Field(default_factory=dict, description="Remaining budget")
+optimization_suggestions: list = Field(
         default_factory=list, description="Cost optimization suggestions"
-    )
+)
 
 
 @router.get("/cost/status", response_model=CostStatusResponse)
@@ -92,10 +93,10 @@ async def get_cost_status(current_user: User = Depends(get_current_user)) -> Cos
             remainingQuota=50.0,
             currentTier="basic",
             gracefulMode=False,
-            dailyRequests=0,
-            averageCostPerRequest=0.0,
-            modelUsage={},
-        )
+dailyRequests=0,
+averageCostPerRequest=0.0,
+modelUsage={},
+)
 
 
 @router.get("/usage/stats", response_model=UsageStatsResponse)
@@ -126,7 +127,7 @@ async def get_usage_stats(current_user: User = Depends(get_current_user)) -> Usa
 
 
 @router.get("/budget/status")
-async def get_budget_status(current_user: User = Depends(get_current_user)) -> Dict[str, Any]:
+async def get_budget_status(current_user: User = Depends(get_current_user)) -> dict[str, Any]:
     """
     Get budget status with detailed breakdown.
     """
@@ -156,8 +157,8 @@ async def get_budget_status(current_user: User = Depends(get_current_user)) -> D
 
 @router.post("/budget/validate")
 async def validate_request_budget(
-    request_data: Dict[str, Any], current_user: User = Depends(get_current_user)
-) -> Dict[str, Any]:
+    request_data: dict[str, Any], current_user: User = Depends(get_current_user)
+) -> dict[str, Any]:
     """
     Validate if a request can be processed within budget limits.
     """
@@ -185,7 +186,7 @@ async def validate_request_budget(
 
 
 @router.get("/health")
-async def get_ai_health() -> Dict[str, Any]:
+async def get_ai_health() -> dict[str, Any]:
     """
     Get AI service health status including cost management system.
     """

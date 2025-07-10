@@ -17,7 +17,7 @@ try:
     from app.api.polls import router as polls_router
     from app.core.ai_cost_management import get_ai_usage_stats
     from app.core.database_unified import get_cosmos_repository
-    from app.models.user import User
+    # SQL User model removed - use Cosmos UserDocument
     from app.repositories.cosmos_unified import UnifiedCosmosRepository
     from app.services.consensus_engine import analyze_trip_consensus
     from app.services.magic_polls import magic_polls_service

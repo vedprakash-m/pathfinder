@@ -118,11 +118,15 @@ const SampleTripDemo: React.FC<SampleTripDemoProps> = ({ tripType, onComplete })
         
         // Fallback to template service if API fails
         if (!template) {
-          template = TripTemplateService.getRandomTemplate(tripType);
+          const fallbackTemplate = TripTemplateService.getRandomTemplate(tripType);
+          template = fallbackTemplate || null;
         }
         
         if (template) {
           setCurrentTemplate(template);
+          setIsGenerating(false);
+        } else {
+          setCurrentTemplate(null);
           setIsGenerating(false);
         }
       } catch (error) {

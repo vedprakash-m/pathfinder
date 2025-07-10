@@ -14,8 +14,8 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Set
 
-from app.models.cosmos.message import MessageStatus, MessageType
 from app.services.trip_cosmos import TripCosmosOperations
+from app.models.cosmos.message import MessageType
 from fastapi import WebSocket, WebSocketDisconnect
 
 logger = logging.getLogger(__name__)

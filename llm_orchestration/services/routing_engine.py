@@ -6,7 +6,7 @@ Handles context-aware routing, fallback tiers, and A/B testing
 from typing import Any, Dict, List, Optional, Tuple
 
 import structlog
-from core.types import (
+from core.llm_types import (
     LLMConfigurationError,
     LLMProvider,
     LLMRequest,

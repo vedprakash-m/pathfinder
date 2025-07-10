@@ -18,9 +18,9 @@ from app.main import app
 
 # Import ALL models to ensure they're registered with Base metadata
 from app.models import *  # This imports all models including User, Trip, Family, etc.
-from app.models.family import Family
+# SQL Family model removed - use Cosmos FamilyDocument
 from app.models.trip import ParticipationStatus, Trip, TripParticipation
-from app.models.user import User, UserRole
+# SQL User model removed - use Cosmos UserDocument, UserRole
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker

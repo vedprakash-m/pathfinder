@@ -364,7 +364,12 @@ export class AIService {
   }> {
     try {
       const response = await apiService.get(`/ai/itinerary/status/${taskId}`);
-      return response.data;
+      return response.data as {
+        status: 'pending' | 'processing' | 'completed' | 'failed';
+        progress?: number;
+        result?: GeneratedItinerary;
+        error?: string;
+      };
     } catch (error) {
       console.error('Failed to get itinerary status:', error);
       throw new Error('Failed to get generation status');
@@ -383,7 +388,13 @@ export class AIService {
   }> {
     try {
       const response = await apiService.get('/ai/cost/status');
-      return response.data;
+      return response.data as {
+        budgetUsed: number;
+        budgetLimit: number;
+        remainingQuota: number;
+        currentTier: string;
+        gracefulMode: boolean;
+      };
     } catch (error) {
       console.error('Failed to get AI cost status:', error);
       return {

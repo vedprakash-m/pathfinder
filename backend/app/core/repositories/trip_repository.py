@@ -12,13 +12,9 @@ from typing import List, Optional
 from uuid import UUID
 
 from app.core.logging_config import get_logger
-from app.models.trip import (
-    ParticipationStatus,
-    Trip,
-    TripCreate,
-    TripParticipation,
-    TripStatus,
-)
+from app.models.cosmos.trip import TripDocument as Trip, TripParticipation
+from app.models.cosmos.enums import ParticipationStatus, TripStatus
+from app.schemas.trip import TripCreate
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload

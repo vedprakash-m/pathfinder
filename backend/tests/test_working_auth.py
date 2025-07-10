@@ -15,7 +15,7 @@ def test_trips_with_complete_mocking():
 
     from datetime import date
 
-    from app.models.trip import TripResponse
+    # SQL Trip model removed - use Cosmos TripDocumentResponse
 
     # Create a test user
     test_user_id = str(uuid4())
@@ -37,7 +37,7 @@ def test_trips_with_complete_mocking():
     )
 
     # Create mock trip response
-    from app.models.trip import TripStatus
+    # SQL Trip model removed - use Cosmos TripDocumentStatus
 
     mock_trip_response = TripResponse(
         id="trip-123",
