@@ -7,6 +7,6 @@ from app.models.cosmos.enums import ActivityType, DifficultyLevel, ItineraryStat
 
 __all__ = [
     "ActivityType",
-    "DifficultyLevel", 
+    "DifficultyLevel",
     "ItineraryStatus",
 ]

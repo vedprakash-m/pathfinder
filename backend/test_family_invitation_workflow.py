@@ -20,6 +20,7 @@ from app.models.family import (
     FamilyRole,
     InvitationStatus,
 )
+
 # SQL User model removed - use Cosmos UserDocument
 from app.services.email_service import email_service
 from sqlalchemy.orm import Session
@@ -63,7 +64,9 @@ async def test_family_invitation_workflow():
         else:
             admin_user = existing_admin
 
-        existing_invited = db.query(User).filter(User.email == "invited@test.com").first()
+        existing_invited = (
+            db.query(User).filter(User.email == "invited@test.com").first()
+        )
         if not existing_invited:
             db.add(invited_user)
         else:
@@ -81,7 +84,9 @@ async def test_family_invitation_workflow():
         )
 
         # Check if family exists
-        existing_family = db.query(Family).filter(Family.id == "test-family-789").first()
+        existing_family = (
+            db.query(Family).filter(Family.id == "test-family-789").first()
+        )
         if not existing_family:
             db.add(family)
             db.commit()
@@ -94,7 +99,10 @@ async def test_family_invitation_workflow():
         print("\n📝 Step 3: Adding admin as family member...")
         admin_member = (
             db.query(FamilyMember)
-            .filter(FamilyMember.family_id == family.id, FamilyMember.user_id == admin_user.id)
+            .filter(
+                FamilyMember.family_id == family.id,
+                FamilyMember.user_id == admin_user.id,
+            )
             .first()
         )
 
@@ -180,7 +188,9 @@ async def test_family_invitation_workflow():
             raise Exception("Invitation not found in database")
 
         if stored_invitation.status != InvitationStatus.PENDING:
-            raise Exception(f"Invitation status is {stored_invitation.status}, expected PENDING")
+            raise Exception(
+                f"Invitation status is {stored_invitation.status}, expected PENDING"
+            )
 
         if stored_invitation.expires_at < datetime.utcnow():
             raise Exception("Invitation has expired")
@@ -190,7 +200,10 @@ async def test_family_invitation_workflow():
         # Check if user is already a family member
         existing_member = (
             db.query(FamilyMember)
-            .filter(FamilyMember.family_id == family.id, FamilyMember.user_id == invited_user.id)
+            .filter(
+                FamilyMember.family_id == family.id,
+                FamilyMember.user_id == invited_user.id,
+            )
             .first()
         )
 
@@ -218,7 +231,9 @@ async def test_family_invitation_workflow():
         print("\n📝 Step 7: Verifying final state...")
 
         # Check family members
-        family_members = db.query(FamilyMember).filter(FamilyMember.family_id == family.id).all()
+        family_members = (
+            db.query(FamilyMember).filter(FamilyMember.family_id == family.id).all()
+        )
 
         print(f"✅ Family has {len(family_members)} members:")
         for member in family_members:
@@ -276,13 +291,17 @@ async def cleanup_test_data():
         ).delete()
 
         # Remove test family members
-        db.query(FamilyMember).filter(FamilyMember.family_id == "test-family-789").delete()
+        db.query(FamilyMember).filter(
+            FamilyMember.family_id == "test-family-789"
+        ).delete()
 
         # Remove test family
         db.query(Family).filter(Family.id == "test-family-789").delete()
 
         # Remove test users
-        db.query(User).filter(User.email.in_(["admin@test.com", "invited@test.com"])).delete()
+        db.query(User).filter(
+            User.email.in_(["admin@test.com", "invited@test.com"])
+        ).delete()
 
         db.commit()
         print("✅ Test data cleaned up")

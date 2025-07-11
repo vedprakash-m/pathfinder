@@ -27,8 +27,12 @@ def fix_ai_service_tests():
 
     # Fix the mocking pattern to mock the service's _make_api_call method instead
     # This is more robust than trying to mock the global client
-    old_pattern = r'with patch\.object\(client\.chat\.completions, "create"\) as mock_create:'
-    new_pattern = 'with patch.object(ai_service.AIService, "_make_api_call") as mock_api_call:'
+    old_pattern = (
+        r'with patch\.object\(client\.chat\.completions, "create"\) as mock_create:'
+    )
+    new_pattern = (
+        'with patch.object(ai_service.AIService, "_make_api_call") as mock_api_call:'
+    )
 
     content = re.sub(old_pattern, new_pattern, content)
 

@@ -121,7 +121,9 @@ class DataExportService:
             return result
 
         except Exception as e:
-            logger.error(f"Failed to export Excel data: {e}", trip_id=trip_id, user_id=user_id)
+            logger.error(
+                f"Failed to export Excel data: {e}", trip_id=trip_id, user_id=user_id
+            )
             raise
 
     async def export_trip_data_csv(
@@ -178,9 +180,9 @@ class DataExportService:
                 if blob_url:
                     result["download_url"] = blob_url
                 else:
-                    result["file_data"] = base64.b64encode(csv_content.encode("utf-8")).decode(
-                        "utf-8"
-                    )
+                    result["file_data"] = base64.b64encode(
+                        csv_content.encode("utf-8")
+                    ).decode("utf-8")
 
                 return result
 
@@ -221,10 +223,14 @@ class DataExportService:
                 return result
 
         except Exception as e:
-            logger.error(f"Failed to export CSV data: {e}", trip_id=trip_id, user_id=user_id)
+            logger.error(
+                f"Failed to export CSV data: {e}", trip_id=trip_id, user_id=user_id
+            )
             raise
 
-    def _prepare_trip_overview_data(self, trip_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _prepare_trip_overview_data(
+        self, trip_data: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
         """Prepare trip overview data for export."""
         overview = [
             {"Field": "Trip ID", "Value": trip_data.get("id", "")},
@@ -275,7 +281,9 @@ class DataExportService:
 
         return participants
 
-    def _prepare_itinerary_data(self, itinerary_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _prepare_itinerary_data(
+        self, itinerary_data: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
         """Prepare itinerary data for export."""
         itinerary_rows = []
 
@@ -425,7 +433,9 @@ class DataExportService:
 
         return output.getvalue()
 
-    async def _upload_to_blob_storage(self, file_data: bytes, blob_name: str) -> Optional[str]:
+    async def _upload_to_blob_storage(
+        self, file_data: bytes, blob_name: str
+    ) -> Optional[str]:
         """Upload file to Azure Blob Storage."""
         if not self.blob_service_client:
             return None
@@ -517,9 +527,13 @@ class DataExportService:
             if blob_url:
                 result["download_url"] = blob_url
             else:
-                result["file_data"] = base64.b64encode(csv_content.encode("utf-8")).decode("utf-8")
+                result["file_data"] = base64.b64encode(
+                    csv_content.encode("utf-8")
+                ).decode("utf-8")
 
-            logger.info("Activity summary exported", trip_id=trip_id, activities=len(activities))
+            logger.info(
+                "Activity summary exported", trip_id=trip_id, activities=len(activities)
+            )
             return result
 
         except Exception as e:

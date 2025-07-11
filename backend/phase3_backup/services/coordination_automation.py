@@ -191,7 +191,9 @@ class SmartCoordinationService:
                 for action in rule.actions:
                     try:
                         await self._execute_action(action, event, rule)
-                        executed_actions.append(f"{action} (rule: {rule.event_type.value})")
+                        executed_actions.append(
+                            f"{action} (rule: {rule.event_type.value})"
+                        )
                         logger.info(
                             f"Executed coordination action: {action} for event {event.event_type.value}"
                         )
@@ -201,10 +203,14 @@ class SmartCoordinationService:
             return executed_actions
 
         except Exception as e:
-            logger.error(f"Error processing coordination event {event.event_type.value}: {str(e)}")
+            logger.error(
+                f"Error processing coordination event {event.event_type.value}: {str(e)}"
+            )
             return []
 
-    def _check_conditions(self, conditions: Dict[str, Any], event: CoordinationEvent) -> bool:
+    def _check_conditions(
+        self, conditions: Dict[str, Any], event: CoordinationEvent
+    ) -> bool:
         """Check if event meets rule conditions."""
         if not conditions:
             return True
@@ -216,7 +222,9 @@ class SmartCoordinationService:
             event_value = event.event_data[condition_key]
 
             # Handle comparison operators
-            if isinstance(condition_value, str) and condition_value.startswith((">", "<", "=")):
+            if isinstance(condition_value, str) and condition_value.startswith(
+                (">", "<", "=")
+            ):
                 operator = condition_value[0]
                 threshold = float(condition_value.split()[1])
 
@@ -232,7 +240,9 @@ class SmartCoordinationService:
 
         return True
 
-    async def _execute_action(self, action: str, event: CoordinationEvent, rule: AutomationRule):
+    async def _execute_action(
+        self, action: str, event: CoordinationEvent, rule: AutomationRule
+    ):
         """Execute a specific coordination action."""
         action_map = {
             "send_welcome_package": self._send_welcome_package,
@@ -262,7 +272,9 @@ class SmartCoordinationService:
 
     # Action implementations
 
-    async def _send_welcome_package(self, event: CoordinationEvent, rule: AutomationRule):
+    async def _send_welcome_package(
+        self, event: CoordinationEvent, rule: AutomationRule
+    ):
         """Send welcome package to newly joined family."""
         trip = await self._get_trip(event.trip_id)
         if not trip:
@@ -293,7 +305,9 @@ class SmartCoordinationService:
                 event.family_id, welcome_message, NotificationPriority.HIGH.value
             )
 
-    async def _trigger_preference_collection(self, event: CoordinationEvent, rule: AutomationRule):
+    async def _trigger_preference_collection(
+        self, event: CoordinationEvent, rule: AutomationRule
+    ):
         """Trigger preference collection for a family."""
         # Implementation would trigger preference collection workflow
         logger.info(f"Triggering preference collection for family {event.family_id}")
@@ -317,7 +331,9 @@ class SmartCoordinationService:
         except Exception as e:
             logger.error(f"Failed to update consensus: {str(e)}")
 
-    async def _analyze_consensus_impact(self, event: CoordinationEvent, rule: AutomationRule):
+    async def _analyze_consensus_impact(
+        self, event: CoordinationEvent, rule: AutomationRule
+    ):
         """Analyze how preference changes impact consensus."""
         try:
             # Get current consensus
@@ -355,7 +371,9 @@ class SmartCoordinationService:
         except Exception as e:
             logger.error(f"Failed to analyze consensus impact: {str(e)}")
 
-    async def _notify_if_conflicts(self, event: CoordinationEvent, rule: AutomationRule):
+    async def _notify_if_conflicts(
+        self, event: CoordinationEvent, rule: AutomationRule
+    ):
         """Notify families if new conflicts are detected."""
         try:
             families_data = await self._get_families_data(event.trip_id)
@@ -369,7 +387,9 @@ class SmartCoordinationService:
 
                 # Check for critical conflicts
                 critical_conflicts = [
-                    c for c in consensus_result.conflicts if c.severity.value == "critical"
+                    c
+                    for c in consensus_result.conflicts
+                    if c.severity.value == "critical"
                 ]
 
                 if critical_conflicts:
@@ -426,7 +446,9 @@ class SmartCoordinationService:
         # Implementation would analyze situation and suggest actions
         logger.info(f"Generating next steps suggestions for trip {event.trip_id}")
 
-    async def _schedule_meeting_if_needed(self, event: CoordinationEvent, rule: AutomationRule):
+    async def _schedule_meeting_if_needed(
+        self, event: CoordinationEvent, rule: AutomationRule
+    ):
         """Schedule coordination meeting if consensus is low."""
         consensus_score = event.event_data.get("new_score", 1.0)
 
@@ -467,7 +489,9 @@ class SmartCoordinationService:
                             NotificationPriority.MEDIUM.value,
                         )
 
-    async def _urgent_notification(self, event: CoordinationEvent, rule: AutomationRule):
+    async def _urgent_notification(
+        self, event: CoordinationEvent, rule: AutomationRule
+    ):
         """Send urgent notification for critical issues."""
         trip = await self._get_trip(event.trip_id)
         if not trip:
@@ -502,16 +526,22 @@ class SmartCoordinationService:
     async def _suggest_resolution(self, event: CoordinationEvent, rule: AutomationRule):
         """Suggest conflict resolution approaches."""
         # Implementation would provide AI-powered resolution suggestions
-        logger.info(f"Generating conflict resolution suggestions for trip {event.trip_id}")
+        logger.info(
+            f"Generating conflict resolution suggestions for trip {event.trip_id}"
+        )
 
-    async def _pause_itinerary_generation(self, event: CoordinationEvent, rule: AutomationRule):
+    async def _pause_itinerary_generation(
+        self, event: CoordinationEvent, rule: AutomationRule
+    ):
         """Pause itinerary generation until conflicts are resolved."""
         # Implementation would set a flag to prevent AI generation
         logger.info(
             f"Pausing itinerary generation for trip {event.trip_id} due to critical conflicts"
         )
 
-    async def _congratulate_families(self, event: CoordinationEvent, rule: AutomationRule):
+    async def _congratulate_families(
+        self, event: CoordinationEvent, rule: AutomationRule
+    ):
         """Congratulate families on reaching consensus."""
         trip = await self._get_trip(event.trip_id)
         if not trip:
@@ -538,12 +568,16 @@ class SmartCoordinationService:
                 family_data["id"], celebration_message, NotificationPriority.HIGH.value
             )
 
-    async def _auto_generate_itinerary(self, event: CoordinationEvent, rule: AutomationRule):
+    async def _auto_generate_itinerary(
+        self, event: CoordinationEvent, rule: AutomationRule
+    ):
         """Automatically trigger itinerary generation when consensus is high."""
         # Implementation would trigger AI itinerary generation
         logger.info(f"Auto-triggering itinerary generation for trip {event.trip_id}")
 
-    async def _schedule_review_meeting(self, event: CoordinationEvent, rule: AutomationRule):
+    async def _schedule_review_meeting(
+        self, event: CoordinationEvent, rule: AutomationRule
+    ):
         """Schedule review meeting for generated itinerary."""
         _meeting_suggestion = await self.suggest_optimal_meeting_time(
             event.trip_id, meeting_type="review"
@@ -551,7 +585,9 @@ class SmartCoordinationService:
         # Implementation would schedule the meeting
         logger.info(f"Scheduling review meeting for trip {event.trip_id}")
 
-    async def _send_deadline_reminder(self, event: CoordinationEvent, rule: AutomationRule):
+    async def _send_deadline_reminder(
+        self, event: CoordinationEvent, rule: AutomationRule
+    ):
         """Send deadline reminder to families."""
         days_until = event.event_data.get("days_until", 0)
 
@@ -598,7 +634,9 @@ class SmartCoordinationService:
             # For now, suggest a reasonable default time
             # In production, this would analyze family time zones and preferences
 
-            suggested_time = datetime.now(timezone.utc) + timedelta(days=2)  # 2 days from now
+            suggested_time = datetime.now(timezone.utc) + timedelta(
+                days=2
+            )  # 2 days from now
             suggested_time = suggested_time.replace(
                 hour=19, minute=0, second=0, microsecond=0
             )  # 7 PM UTC
@@ -658,7 +696,11 @@ class SmartCoordinationService:
         try:
             stmt = (
                 select(Trip)
-                .options(selectinload(Trip.participations).selectinload(TripParticipation.family))
+                .options(
+                    selectinload(Trip.participations).selectinload(
+                        TripParticipation.family
+                    )
+                )
                 .where(Trip.id == trip_id)
             )
 
@@ -689,7 +731,9 @@ class SmartCoordinationService:
 
                 if participation.preferences:
                     try:
-                        family_data["preferences"] = json.loads(participation.preferences)
+                        family_data["preferences"] = json.loads(
+                            participation.preferences
+                        )
                     except (json.JSONDecodeError, TypeError):
                         family_data["preferences"] = {}
 

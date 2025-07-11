@@ -106,7 +106,9 @@ class SmartNotificationService:
             logger.error(f"Failed to send smart notification: {str(e)}")
             return False
 
-    def _get_template_key(self, trigger: NotificationTrigger, context_data: Dict[str, Any]) -> str:
+    def _get_template_key(
+        self, trigger: NotificationTrigger, context_data: Dict[str, Any]
+    ) -> str:
         """Determine template based on trigger and context."""
         if trigger == NotificationTrigger.FAMILY_JOINED:
             return "family_joined_welcome"
@@ -124,7 +126,9 @@ async def notify_family_joined(trip_name: str, trip_id: str, family_id: str) -> 
     """Send notification when family joins trip."""
     service = SmartNotificationService()
     context = {"trip_name": trip_name, "trip_id": trip_id, "family_id": family_id}
-    return await service.send_smart_notification(NotificationTrigger.FAMILY_JOINED, context)
+    return await service.send_smart_notification(
+        NotificationTrigger.FAMILY_JOINED, context
+    )
 
 
 async def notify_consensus_update(
@@ -137,7 +141,9 @@ async def notify_consensus_update(
         "consensus_score": int(consensus_score * 100),
         "score_change": score_change,
     }
-    return await service.send_smart_notification(NotificationTrigger.CONSENSUS_UPDATED, context)
+    return await service.send_smart_notification(
+        NotificationTrigger.CONSENSUS_UPDATED, context
+    )
 
 
 async def notify_critical_conflict(
@@ -154,4 +160,6 @@ async def notify_critical_conflict(
         "all_families": all_families,
     }
 
-    return await service.send_smart_notification(NotificationTrigger.CONFLICT_DETECTED, context)
+    return await service.send_smart_notification(
+        NotificationTrigger.CONFLICT_DETECTED, context
+    )

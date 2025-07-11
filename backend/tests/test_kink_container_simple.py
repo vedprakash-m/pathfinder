@@ -243,7 +243,6 @@ class TestKinkContainerIntegration:
                 patch("app.core.database.get_db_session") as mock_db,
                 patch("app.services.auth_service.AuthService") as mock_auth,
             ):
-
                 mock_db.return_value = MagicMock()
                 mock_auth.return_value = MagicMock()
 

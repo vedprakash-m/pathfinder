@@ -84,7 +84,9 @@ async def init_db():
         if settings.COSMOS_DB_ENABLED:
             logger.info("Initializing Cosmos DB...")
             # Initialize Cosmos DB client
-            cosmos_client = cosmos.CosmosClient(settings.COSMOS_DB_URL, settings.COSMOS_DB_KEY)
+            cosmos_client = cosmos.CosmosClient(
+                settings.COSMOS_DB_URL, settings.COSMOS_DB_KEY
+            )
 
             # Ensure database and container exist
             database = await cosmos_client.create_database_if_not_exists(

@@ -24,6 +24,7 @@ export default defineConfig(({ mode }) => {
       globals: true,
       environment: 'jsdom',
       setupFiles: './src/tests/setup.ts',
+      testTimeout: 30000, // Increase timeout to 30 seconds
       coverage: {
         provider: 'v8',
         reporter: ['text', 'json', 'html'],

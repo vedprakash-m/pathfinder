@@ -1,0 +1,8 @@
+{
+  "timestamp": "2025-07-11T02:27:40.632655",
+  "status": "READY",
+  "passed": 7,
+  "failed": 0,
+  "success_rate": 100.0,
+  "base_url": "http://localhost:8000"
+}

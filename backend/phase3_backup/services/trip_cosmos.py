@@ -59,7 +59,9 @@ class TripCosmosOperations:
             logger.error(f"Error saving trip preferences to Cosmos DB: {str(e)}")
             return False
 
-    async def get_trip_preferences_from_cosmos(self, trip_id: str) -> Optional[Dict[str, Any]]:
+    async def get_trip_preferences_from_cosmos(
+        self, trip_id: str
+    ) -> Optional[Dict[str, Any]]:
         """
         Get trip preferences from Cosmos DB.
 
@@ -189,7 +191,9 @@ class TripCosmosOperations:
             logger.error(f"Error getting trip messages: {str(e)}")
             return []
 
-    async def get_current_itinerary_from_cosmos(self, trip_id: str) -> Optional[ItineraryDocument]:
+    async def get_current_itinerary_from_cosmos(
+        self, trip_id: str
+    ) -> Optional[ItineraryDocument]:
         """
         Get the current itinerary for a trip from Cosmos DB.
 

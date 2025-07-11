@@ -10,6 +10,7 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "app"))
 
 from app.core.database import SessionLocal
+
 # SQL Family model removed - use Cosmos FamilyDocumentInvitationModel, InvitationStatus
 from sqlalchemy import text
 
@@ -32,7 +33,9 @@ async def test_family_invitation_models():
 
         # Check if family_invitations table exists
         result = db.execute(
-            text("SELECT name FROM sqlite_master WHERE type='table' AND name='family_invitations'")
+            text(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='family_invitations'"
+            )
         )
         table_exists = result.fetchone()
 

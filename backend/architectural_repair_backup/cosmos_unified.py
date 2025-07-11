@@ -23,10 +23,14 @@ class CosmosDocument(BaseModel):
 
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     pk: str = Field(..., description="Partition key for the document")
-    entity_type: str = Field(..., description="Type of entity (user, family, trip, etc.)")
+    entity_type: str = Field(
+        ..., description="Type of entity (user, family, trip, etc.)"
+    )
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
-    version: int = Field(default=1, description="Document version for optimistic concurrency")
+    version: int = Field(
+        default=1, description="Document version for optimistic concurrency"
+    )
 
 
 class UserDocument(CosmosDocument):
@@ -246,7 +250,11 @@ class UnifiedCosmosRepository:
         self.database_name = settings.COSMOS_DB_DATABASE
 
         # Initialize Cosmos client
-        if settings.COSMOS_DB_ENABLED and settings.COSMOS_DB_URL and settings.COSMOS_DB_KEY:
+        if (
+            settings.COSMOS_DB_ENABLED
+            and settings.COSMOS_DB_URL
+            and settings.COSMOS_DB_KEY
+        ):
             try:
                 self.client = CosmosClient(
                     settings.COSMOS_DB_URL, credential=settings.COSMOS_DB_KEY
@@ -257,7 +265,9 @@ class UnifiedCosmosRepository:
                 self._ensure_container_exists()
 
                 self.container = self.database.get_container_client(self.container_name)
-                logger.info(f"Connected to unified Cosmos DB container: {self.container_name}")
+                logger.info(
+                    f"Connected to unified Cosmos DB container: {self.container_name}"
+                )
 
             except Exception as e:
                 logger.error(f"Failed to connect to Cosmos DB: {str(e)}")
@@ -303,7 +313,9 @@ class UnifiedCosmosRepository:
             self.database.create_container_if_not_exists(
                 body=container_definition, offer_throughput=None  # Use serverless
             )
-            logger.info(f"Ensured container '{self.container_name}' exists with proper indexing")
+            logger.info(
+                f"Ensured container '{self.container_name}' exists with proper indexing"
+            )
 
         except Exception as e:
             logger.error(f"Failed to ensure container exists: {str(e)}")
@@ -314,7 +326,9 @@ class UnifiedCosmosRepository:
         try:
             # Check if in simulation mode
             if self.client is None:
-                logger.info("Cosmos DB in simulation mode - skipping container initialization")
+                logger.info(
+                    "Cosmos DB in simulation mode - skipping container initialization"
+                )
                 return
 
             # Ensure database exists
@@ -346,7 +360,9 @@ class UnifiedCosmosRepository:
                 body=container_properties, offer_throughput=None  # Serverless mode
             )
 
-            logger.info(f"Cosmos DB container '{self.container_name}' initialized successfully")
+            logger.info(
+                f"Cosmos DB container '{self.container_name}' initialized successfully"
+            )
 
         except Exception as e:
             logger.error(f"Failed to initialize Cosmos DB container: {e}")
@@ -375,7 +391,9 @@ class UnifiedCosmosRepository:
 
     async def get_user_by_entra_id(self, entra_id: str) -> Optional[UserDocument]:
         """Get user by Entra ID."""
-        query = "SELECT * FROM c WHERE c.entity_type = 'user' AND c.entra_id = @entra_id"
+        query = (
+            "SELECT * FROM c WHERE c.entity_type = 'user' AND c.entra_id = @entra_id"
+        )
         params = [{"name": "@entra_id", "value": entra_id}]
 
         results = await self._query_documents(query, params)
@@ -383,7 +401,9 @@ class UnifiedCosmosRepository:
             return UserDocument(**results[0])
         return None
 
-    async def update_user(self, user_id: str, update_data: Dict[str, Any]) -> UserDocument:
+    async def update_user(
+        self, user_id: str, update_data: Dict[str, Any]
+    ) -> UserDocument:
         """Update user document."""
         user_doc = await self.get_user_by_id(user_id)
         if not user_doc:
@@ -402,13 +422,17 @@ class UnifiedCosmosRepository:
     async def create_family(self, family_data: Dict[str, Any]) -> FamilyDocument:
         """Create a new family document."""
         family_id = str(uuid.uuid4())
-        family_doc = FamilyDocument(id=family_id, pk=f"family_{family_id}", **family_data)
+        family_doc = FamilyDocument(
+            id=family_id, pk=f"family_{family_id}", **family_data
+        )
 
         return await self._create_document(family_doc)
 
     async def get_family_by_id(self, family_id: str) -> Optional[FamilyDocument]:
         """Get family by ID."""
-        return await self._get_document(f"family_{family_id}", family_id, FamilyDocument)
+        return await self._get_document(
+            f"family_{family_id}", family_id, FamilyDocument
+        )
 
     async def get_user_families(self, user_id: str) -> List[FamilyDocument]:
         """Get all families for a user."""
@@ -426,7 +450,9 @@ class UnifiedCosmosRepository:
         """Get family by ID (alias for consistency)."""
         return await self.get_family_by_id(family_id)
 
-    async def update_family(self, family_id: str, update_data: Dict[str, Any]) -> FamilyDocument:
+    async def update_family(
+        self, family_id: str, update_data: Dict[str, Any]
+    ) -> FamilyDocument:
         """Update family data."""
         family_doc = await self.get_family_by_id(family_id)
         if not family_doc:
@@ -520,7 +546,9 @@ class UnifiedCosmosRepository:
 
         return await self._create_document(message_doc)
 
-    async def get_trip_messages(self, trip_id: str, limit: int = 50) -> List[MessageDocument]:
+    async def get_trip_messages(
+        self, trip_id: str, limit: int = 50
+    ) -> List[MessageDocument]:
         """Get messages for a trip."""
         query = """
         SELECT * FROM c 
@@ -529,13 +557,20 @@ class UnifiedCosmosRepository:
         ORDER BY c.created_at DESC
         OFFSET 0 LIMIT @limit
         """
-        params = [{"name": "@trip_id", "value": trip_id}, {"name": "@limit", "value": limit}]
+        params = [
+            {"name": "@trip_id", "value": trip_id},
+            {"name": "@limit", "value": limit},
+        ]
 
         results = await self._query_documents(query, params)
         return [MessageDocument(**doc) for doc in results]
 
     async def get_user_trips(
-        self, user_id: str, skip: int = 0, limit: int = 100, status_filter: Optional[str] = None
+        self,
+        user_id: str,
+        skip: int = 0,
+        limit: int = 100,
+        status_filter: Optional[str] = None,
     ) -> List[TripDocument]:
         """Get all trips for a user (creator or participant)."""
         query = (
@@ -572,7 +607,9 @@ class UnifiedCosmosRepository:
 
         # Apply updates
         update_data = (
-            trip_update.dict(exclude_unset=True) if hasattr(trip_update, "dict") else trip_update
+            trip_update.dict(exclude_unset=True)
+            if hasattr(trip_update, "dict")
+            else trip_update
         )
         for field, value in update_data.items():
             if hasattr(existing_trip, field):
@@ -589,7 +626,9 @@ class UnifiedCosmosRepository:
         """Delete a trip and related documents."""
         try:
             # Delete the trip document
-            await self.container.delete_item(item=trip_id, partition_key=f"trip_{trip_id}")
+            await self.container.delete_item(
+                item=trip_id, partition_key=f"trip_{trip_id}"
+            )
 
             # Delete related messages
             messages_query = """
@@ -639,11 +678,11 @@ class UnifiedCosmosRepository:
             return FamilyInvitationDocument(**results[0])
         return None
 
-    async def get_family_invitations(self, family_id: str) -> List[FamilyInvitationDocument]:
+    async def get_family_invitations(
+        self, family_id: str
+    ) -> List[FamilyInvitationDocument]:
         """Get all invitations for a family."""
-        query = (
-            "SELECT * FROM c WHERE c.entity_type = 'family_invitation' AND c.family_id = @family_id"
-        )
+        query = "SELECT * FROM c WHERE c.entity_type = 'family_invitation' AND c.family_id = @family_id"
         parameters = [{"name": "@family_id", "value": family_id}]
 
         results = await self._query_documents(query, parameters)
@@ -654,7 +693,9 @@ class UnifiedCosmosRepository:
     ) -> Optional[FamilyInvitationDocument]:
         """Update a family invitation."""
         # First get the invitation to know the partition key
-        query = "SELECT * FROM c WHERE c.entity_type = 'family_invitation' AND c.id = @id"
+        query = (
+            "SELECT * FROM c WHERE c.entity_type = 'family_invitation' AND c.id = @id"
+        )
         parameters = [{"name": "@id", "value": invitation_id}]
 
         results = await self._query_documents(query, parameters)
@@ -679,7 +720,9 @@ class UnifiedCosmosRepository:
         self, trip_id: str, room_id: Optional[str] = None, limit: int = 50
     ) -> List[MessageDocument]:
         """Get messages for a trip."""
-        query = "SELECT * FROM c WHERE c.entity_type = 'message' AND c.trip_id = @trip_id"
+        query = (
+            "SELECT * FROM c WHERE c.entity_type = 'message' AND c.trip_id = @trip_id"
+        )
         parameters = [{"name": "@trip_id", "value": trip_id}]
 
         if room_id:
@@ -719,7 +762,9 @@ class UnifiedCosmosRepository:
         return message_doc
 
     # Reservation Management
-    async def create_reservation(self, reservation_data: Dict[str, Any]) -> ReservationDocument:
+    async def create_reservation(
+        self, reservation_data: Dict[str, Any]
+    ) -> ReservationDocument:
         """Create a new reservation."""
         reservation_doc = ReservationDocument(
             pk=f"trip_{reservation_data['trip_id']}", **reservation_data
@@ -766,10 +811,14 @@ class UnifiedCosmosRepository:
     # Feedback Management
     async def create_feedback(self, feedback_data: Dict[str, Any]) -> FeedbackDocument:
         """Create new feedback."""
-        feedback_doc = FeedbackDocument(pk=f"trip_{feedback_data['trip_id']}", **feedback_data)
+        feedback_doc = FeedbackDocument(
+            pk=f"trip_{feedback_data['trip_id']}", **feedback_data
+        )
 
         await self._create_document(feedback_doc)
-        logger.info(f"Created feedback: {feedback_doc.id} for trip: {feedback_data['trip_id']}")
+        logger.info(
+            f"Created feedback: {feedback_doc.id} for trip: {feedback_data['trip_id']}"
+        )
         return feedback_doc
 
     async def get_trip_feedback(
@@ -806,7 +855,9 @@ class UnifiedCosmosRepository:
         export_doc = ExportDocument(pk=f"user_{export_data['user_id']}", **export_data)
 
         await self._create_document(export_doc)
-        logger.info(f"Created export task: {export_doc.id} for user: {export_data['user_id']}")
+        logger.info(
+            f"Created export task: {export_doc.id} for user: {export_data['user_id']}"
+        )
         return export_doc
 
     async def get_user_exports(
@@ -838,12 +889,18 @@ class UnifiedCosmosRepository:
         return ExportDocument(**updated_doc) if updated_doc else None
 
     # Itinerary Management
-    async def create_itinerary(self, itinerary_data: Dict[str, Any]) -> ItineraryDocument:
+    async def create_itinerary(
+        self, itinerary_data: Dict[str, Any]
+    ) -> ItineraryDocument:
         """Create a new itinerary."""
-        itinerary_doc = ItineraryDocument(pk=f"trip_{itinerary_data['trip_id']}", **itinerary_data)
+        itinerary_doc = ItineraryDocument(
+            pk=f"trip_{itinerary_data['trip_id']}", **itinerary_data
+        )
 
         await self._create_document(itinerary_doc)
-        logger.info(f"Created itinerary: {itinerary_doc.id} for trip: {itinerary_data['trip_id']}")
+        logger.info(
+            f"Created itinerary: {itinerary_doc.id} for trip: {itinerary_data['trip_id']}"
+        )
         return itinerary_doc
 
     async def get_trip_itineraries(
@@ -990,7 +1047,9 @@ class UnifiedCosmosRepository:
         try:
             query_spec = {"query": query, "parameters": parameters or []}
             results = list(
-                self.container.query_items(query=query_spec, enable_cross_partition_query=True)
+                self.container.query_items(
+                    query=query_spec, enable_cross_partition_query=True
+                )
             )
             return results
         except Exception as e:

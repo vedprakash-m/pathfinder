@@ -87,7 +87,9 @@ class MagicPollsService:
 
             # Remove existing response from this user if it exists
             poll.responses["user_responses"] = [
-                r for r in poll.responses["user_responses"] if r.get("user_id") != user_id
+                r
+                for r in poll.responses["user_responses"]
+                if r.get("user_id") != user_id
             ]
 
             # Add new response
@@ -115,7 +117,9 @@ class MagicPollsService:
             logger.error(f"Error submitting poll response: {str(e)}")
             return {"success": False, "error": str(e)}
 
-    async def get_poll_results(self, poll_id: str, user_id: str, db: Session) -> Dict[str, Any]:
+    async def get_poll_results(
+        self, poll_id: str, user_id: str, db: Session
+    ) -> Dict[str, Any]:
         """Get poll results with AI analysis"""
         try:
             poll = db.query(MagicPoll).filter(MagicPoll.id == poll_id).first()
@@ -144,7 +148,9 @@ class MagicPollsService:
             logger.error(f"Error getting poll results: {str(e)}")
             return {"success": False, "error": str(e)}
 
-    async def get_trip_polls(self, trip_id: str, user_id: str, db: Session) -> List[Dict[str, Any]]:
+    async def get_trip_polls(
+        self, trip_id: str, user_id: str, db: Session
+    ) -> List[Dict[str, Any]]:
         """Get all polls for a trip"""
         try:
             polls = (
@@ -173,11 +179,17 @@ class MagicPollsService:
 
                 # Add AI enhancement based on poll type
                 if poll_type == PollType.DESTINATION_CHOICE.value:
-                    enhanced_option["ai_insights"] = await self._get_destination_insights(option)
+                    enhanced_option[
+                        "ai_insights"
+                    ] = await self._get_destination_insights(option)
                 elif poll_type == PollType.ACTIVITY_PREFERENCE.value:
-                    enhanced_option["ai_insights"] = await self._get_activity_insights(option)
+                    enhanced_option["ai_insights"] = await self._get_activity_insights(
+                        option
+                    )
                 elif poll_type == PollType.BUDGET_RANGE.value:
-                    enhanced_option["ai_insights"] = await self._get_budget_insights(option)
+                    enhanced_option["ai_insights"] = await self._get_budget_insights(
+                        option
+                    )
 
                 enhanced_options.append(enhanced_option)
 
@@ -240,7 +252,9 @@ class MagicPollsService:
             ai_analysis = await self._generate_ai_analysis(analysis_data)
 
             # Generate consensus recommendation
-            consensus = await self._generate_consensus_recommendation(analysis_data, ai_analysis)
+            consensus = await self._generate_consensus_recommendation(
+                analysis_data, ai_analysis
+            )
 
             # Update poll with analysis
             poll.ai_analysis = ai_analysis
@@ -250,7 +264,9 @@ class MagicPollsService:
         except Exception as e:
             logger.error(f"Error analyzing poll responses: {str(e)}")
 
-    async def _generate_ai_analysis(self, analysis_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def _generate_ai_analysis(
+        self, analysis_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Generate AI analysis of poll responses"""
         try:
             # Prepare prompt for AI analysis
@@ -311,9 +327,7 @@ class MagicPollsService:
         for i, response in enumerate(responses):
             prompt += f"Response {i+1}: {response.get('response', {})}\n"
 
-        prompt += (
-            "\nProvide insights about group preferences, consensus level, and recommendations."
-        )
+        prompt += "\nProvide insights about group preferences, consensus level, and recommendations."
 
         return prompt
 
@@ -344,9 +358,13 @@ class MagicPollsService:
                     "confidence": (
                         "high"
                         if consensus_strength > 0.7
-                        else "moderate" if consensus_strength > 0.5 else "low"
+                        else "moderate"
+                        if consensus_strength > 0.5
+                        else "low"
                     ),
-                    "rationale": ai_analysis.get("summary", "Based on group preferences"),
+                    "rationale": ai_analysis.get(
+                        "summary", "Based on group preferences"
+                    ),
                     "generated_at": datetime.utcnow().isoformat(),
                 }
 
@@ -371,7 +389,9 @@ class MagicPollsService:
 
         return patterns
 
-    def _identify_conflicts(self, analysis_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _identify_conflicts(
+        self, analysis_data: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
         """Identify conflicts in poll responses"""
         conflicts = []
         responses = analysis_data["responses"]

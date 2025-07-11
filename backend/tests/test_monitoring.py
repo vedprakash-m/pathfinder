@@ -108,7 +108,9 @@ class TestPerformanceThresholds:
 
     def test_custom_thresholds(self):
         """Test custom threshold values."""
-        thresholds = PerformanceThresholds(api_response_warning=2.0, database_query_warning=1.0)
+        thresholds = PerformanceThresholds(
+            api_response_warning=2.0, database_query_warning=1.0
+        )
 
         assert thresholds.api_response_warning == 2.0
         assert thresholds.database_query_warning == 1.0
@@ -170,7 +172,11 @@ class TestStructuredLogger:
         with patch.object(logger.logger, "info") as mock_info:
             logger.log_api_call("/api/test", "GET", 200, 125.0)
             mock_info.assert_called_once_with(
-                "API call", endpoint="/api/test", method="GET", status_code=200, duration_ms=125.0
+                "API call",
+                endpoint="/api/test",
+                method="GET",
+                status_code=200,
+                duration_ms=125.0,
             )
 
     def test_log_performance_alert(self, logger):

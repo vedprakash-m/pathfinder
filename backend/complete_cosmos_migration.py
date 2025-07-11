@@ -19,7 +19,9 @@ def migrate_file_to_cosmos(filepath):
 
     # Replace get_db dependency with get_cosmos_repository
     pattern1 = r"db: (AsyncSession|Session) = Depends\(get_db\)"
-    replacement1 = r"cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository)"
+    replacement1 = (
+        r"cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository)"
+    )
     content = re.sub(pattern1, replacement1, content)
 
     # Replace service instantiations that use db parameter
@@ -49,7 +51,9 @@ def migrate_file_to_cosmos(filepath):
             )
         else:
             # Add the import
-            core_import_pattern = r"(from \.\.core\.database_unified import get_cosmos_repository)"
+            core_import_pattern = (
+                r"(from \.\.core\.database_unified import get_cosmos_repository)"
+            )
             if re.search(core_import_pattern, content):
                 content = re.sub(
                     core_import_pattern,

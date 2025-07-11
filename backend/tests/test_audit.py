@@ -164,7 +164,10 @@ class TestAuditLogger:
         """Test logging access event."""
         with patch("app.core.audit.logger") as mock_logger:
             event_id = await logger.log_access_event(
-                user_id="user456", resource_type="trip", resource_id="trip789", action="read"
+                user_id="user456",
+                resource_type="trip",
+                resource_id="trip789",
+                action="read",
             )
 
             assert event_id is not None
@@ -194,7 +197,9 @@ class TestAuditLogger:
         """Test logging security event."""
         with patch("app.core.audit.logger") as mock_logger:
             event_id = await logger.log_security_event(
-                event="suspicious_activity", user_id="user999", details={"threat_level": "medium"}
+                event="suspicious_activity",
+                user_id="user999",
+                details={"threat_level": "medium"},
             )
 
             assert event_id is not None
@@ -233,7 +238,9 @@ class TestGlobalAuditLogger:
     async def test_global_audit_logger_usage(self):
         """Test using the global audit logger."""
         with patch("app.core.audit.logger") as mock_logger:
-            event_id = await audit_logger.log_event(event_type="global_test", user_id="global_user")
+            event_id = await audit_logger.log_event(
+                event_type="global_test", user_id="global_user"
+            )
 
             assert event_id is not None
             mock_logger.info.assert_called_once()

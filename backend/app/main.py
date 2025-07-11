@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """
 FastAPI application entry point for Pathfinder AI-Powered Trip Planner.
 Updated to use unified Cosmos DB per Tech Spec requirements.
@@ -10,7 +11,7 @@ from datetime import datetime, timezone
 from typing import AsyncGenerator
 
 import uvicorn
-from app.api.router_full import api_router  # Use full router after Phase 4 completion
+from app.api.router_minimal import api_router  # Use minimal router for production stability
 from app.core.config import get_settings
 from app.core.database_unified import get_cosmos_service
 from app.core.logging_config import setup_logging
@@ -62,13 +63,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     app.state.get_performance_metrics = get_performance_metrics
     logger.info("Performance monitoring initialized")
 
+    # TODO: Re-enable dependency injection after fixing module imports
     # Initialize dependency-injector container
-    from app.core.container import Container
-
-    container = Container()
-    container.init_resources()
-    container.wire(packages=("app.api",))
-    app.state.container = container
+    # from app.core.container import Container
+    # container = Container()
+    # container.init_resources()
+    # container.wire(packages=("app.api",))
+    # app.state.container = container
 
     yield
 
@@ -87,19 +88,19 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 # Create FastAPI application
 app = FastAPI(
     title="Pathfinder API",
-description="AI-Powered Group Trip Planner",
-version="1.0.0",
-docs_url="/docs" if settings.ENVIRONMENT != "production" else None,
-redoc_url="/redoc" if settings.ENVIRONMENT != "production" else None,
-lifespan=lifespan,
+    description="AI-Powered Group Trip Planner",
+    version="1.0.0",
+    docs_url="/docs" if settings.ENVIRONMENT != "production" else None,
+    redoc_url="/redoc" if settings.ENVIRONMENT != "production" else None,
+    lifespan=lifespan,
 )
 
 # Security middleware
 if settings.ENVIRONMENT == "production":
     app.add_middleware(
         TrustedHostMiddleware,
-allowed_hosts=settings.allowed_hosts_list,
-)
+        allowed_hosts=settings.allowed_hosts_list,
+    )
 
 from app.core.auth_monitoring import AuthenticationMonitoringMiddleware
 from app.core.csrf import CSRFMiddleware
@@ -117,37 +118,37 @@ app.add_middleware(PerformanceMonitoringMiddleware)
 # Rate limiting middleware
 app.add_middleware(
     RateLimiter,
-window_size=60,  # 1 minute window
-default_limit=500,  # Default 500 requests per minute
-api_limit=2000,  # API endpoints 2000 requests per minute
-public_limit=500,  # Public endpoints 500 requests per minute
-endpoint_limits={
+    window_size=60,  # 1 minute window
+    default_limit=500,  # Default 500 requests per minute
+    api_limit=2000,  # API endpoints 2000 requests per minute
+    public_limit=500,  # Public endpoints 500 requests per minute
+    endpoint_limits={
         "POST:/api/v1/auth/login": 20,  # Limit login attempts (increased)
-"POST:/api/v1/auth/register": 10,  # Limit registration (increased)
-"GET:/api/v1/auth/me": 1000,  # Allow frequent auth checks (increased)
-"GET:/api/v1/auth/user/onboarding-status": 500,  # Onboarding checks
-"GET:/api/v1/trips/": 500,  # Allow frequent trips checks
-},
+        "POST:/api/v1/auth/register": 10,  # Limit registration (increased)
+        "GET:/api/v1/auth/me": 1000,  # Allow frequent auth checks (increased)
+        "GET:/api/v1/auth/user/onboarding-status": 500,  # Onboarding checks
+        "GET:/api/v1/trips/": 500,  # Allow frequent trips checks
+    },
 )
 
 # CSRF protection middleware with CORS compatibility
 if settings.ENVIRONMENT == "production":
     app.add_middleware(
         CSRFMiddleware,
-secret_key=settings.SECRET_KEY,
-cookie_secure=True,
-exempt_urls=[
-"/health",
-"/health/ready",
-"/health/live",
-"/health/detailed",
-"/docs",
-"/redoc",
-"/openapi.json",
-"/api/v1/test/health",
-],
-cors_enabled=True,  # Enable CORS compatibility mode
-)
+        secret_key=settings.SECRET_KEY,
+        cookie_secure=True,
+        exempt_urls=[
+            "/health",
+            "/health/ready",
+            "/health/live",
+            "/health/detailed",
+            "/docs",
+            "/redoc",
+            "/openapi.json",
+            "/api/v1/test/health",
+        ],
+        cors_enabled=True,  # Enable CORS compatibility mode
+    )
 elif settings.ENVIRONMENT != "testing":
     # In development, we still use CSRF but with less strict settings
     app.add_middleware(
@@ -189,7 +190,9 @@ async def global_exception_handler(request: Request, exc: Exception):
 async def health_check():
     """Health check endpoint for monitoring."""
     # Check cache service
-    cache_status = "connected" if hasattr(app.state, "cache_service") else "not_initialized"
+    cache_status = (
+        "connected" if hasattr(app.state, "cache_service") else "not_initialized"
+    )
 
     # Check database
     db_status = "connected"
@@ -254,6 +257,7 @@ def create_app(testing: bool = False) -> FastAPI:
 
         # Essential middleware for testing
         from fastapi.middleware.cors import CORSMiddleware
+
         test_app.add_middleware(
             CORSMiddleware,
             allow_origins=["*"],
@@ -274,8 +278,8 @@ def create_app(testing: bool = False) -> FastAPI:
 if __name__ == "__main__":
     uvicorn.run(
         "app.main:app",
-host="0.0.0.0",
-port=8000,
-reload=settings.DEBUG,
-log_level="info" if not settings.DEBUG else "debug",
-)
+        host="0.0.0.0",
+        port=8000,
+        reload=settings.DEBUG,
+        log_level="info" if not settings.DEBUG else "debug",
+    )

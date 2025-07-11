@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """
 from app.repositories.cosmos_unified import UnifiedCosmosRepository, UserDocument
 from app.core.database_unified import get_cosmos_service
@@ -22,10 +23,18 @@ from uuid import UUID
 from app.core.container import Container
 from app.core.database_unified import get_cosmos_repository
 from app.core.security import get_current_user, get_current_user_websocket
+
 # SQL User model removed - use Cosmos UserDocument
 from app.repositories.cosmos_unified import UnifiedCosmosRepository
 from app.services.websocket import handle_websocket_message, websocket_manager
-from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Query,
+    WebSocket,
+    WebSocketDisconnect,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -37,16 +46,16 @@ async def websocket_trip_endpoint(
     websocket: WebSocket,
     trip_id: UUID,
     token: str = Query(..., description="Authentication token"),
-    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository)
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
 ):
     """
-WebSocket endpoint for real-time trip collaboration.
+    WebSocket endpoint for real-time trip collaboration.
 
-    Args:
-        websocket: WebSocket connection
-        trip_id: Trip ID to connect to
-        token: Authentication token
-        cosmos_repo: Unified Cosmos DB repository
+        Args:
+            websocket: WebSocket connection
+            trip_id: Trip ID to connect to
+            token: Authentication token
+            cosmos_repo: Unified Cosmos DB repository
     """
     trip_service = Container().trip_domain_service()
     try:
@@ -192,7 +201,7 @@ async def websocket_notifications_endpoint(
 async def get_trip_connections(
     trip_id: UUID,
     current_user: User = Depends(get_current_user),
-    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository)
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
 ):
     """Get active connections for a trip using unified Cosmos DB."""
     trip_service = Container().trip_domain_service()
@@ -216,7 +225,9 @@ async def get_trip_connections(
         raise
     except Exception as e:
         logger.error(f"Error getting trip connections: {e}")
-        raise HTTPException(status_code=500, detail="Error retrieving connection information")
+        raise HTTPException(
+            status_code=500, detail="Error retrieving connection information"
+        )
 
 
 @router.post("/broadcast/trip/{trip_id}")
@@ -224,7 +235,7 @@ async def broadcast_to_trip(
     trip_id: UUID,
     message: dict,
     current_user: User = Depends(get_current_user),
-    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository)
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
 ):
     """Broadcast a message to all users in a trip using unified Cosmos DB."""
     trip_service = Container().trip_domain_service()

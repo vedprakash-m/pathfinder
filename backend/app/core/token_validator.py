@@ -62,12 +62,16 @@ class ProductionTokenValidator:
                 self._jwks_cache = jwks_data
                 self._jwks_cache_expiry = datetime.utcnow() + timedelta(hours=1)
 
-                logger.info(f"JWKS refreshed with {len(jwks_data.get('keys', []))} keys")
+                logger.info(
+                    f"JWKS refreshed with {len(jwks_data.get('keys', []))} keys"
+                )
                 return jwks_data
 
         except Exception as e:
             logger.error(f"Failed to retrieve JWKS: {e}")
-            raise AuthServiceUnavailableError({"reason": f"JWKS retrieval failed: {str(e)}"})
+            raise AuthServiceUnavailableError(
+                {"reason": f"JWKS retrieval failed: {str(e)}"}
+            )
 
     async def validate_token(self, token: str) -> Dict[str, Any]:
         """
@@ -102,7 +106,9 @@ class ProductionTokenValidator:
                     break
 
             if not rsa_key:
-                raise TokenInvalidError({"reason": f"No matching key found for kid: {kid}"})
+                raise TokenInvalidError(
+                    {"reason": f"No matching key found for kid: {kid}"}
+                )
 
             # ✅ REQUIRED: Proper signature verification with all security checks
             payload = jwt.decode(
@@ -173,7 +179,9 @@ class ProductionTokenValidator:
         cache_hit_rate = (
             self._validation_metrics["cache_hits"]
             / max(
-                self._validation_metrics["cache_hits"] + self._validation_metrics["cache_misses"], 1
+                self._validation_metrics["cache_hits"]
+                + self._validation_metrics["cache_misses"],
+                1,
             )
             * 100
         )
@@ -184,7 +192,8 @@ class ProductionTokenValidator:
             "cache_hit_rate_percent": round(cache_hit_rate, 2),
             "jwks_cache_status": (
                 "valid"
-                if self._jwks_cache_expiry and datetime.utcnow() < self._jwks_cache_expiry
+                if self._jwks_cache_expiry
+                and datetime.utcnow() < self._jwks_cache_expiry
                 else "expired"
             ),
         }

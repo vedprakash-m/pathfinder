@@ -6,7 +6,12 @@ Testing password hashing and rate limiting functionality.
 import time
 from datetime import datetime
 
-from app.core.security import RateLimiter, get_password_hash, pwd_context, verify_password
+from app.core.security import (
+    RateLimiter,
+    get_password_hash,
+    pwd_context,
+    verify_password,
+)
 
 
 class TestPasswordHashing:

@@ -63,7 +63,9 @@ class TestFileServiceBasic:
                 service.container_client.get_blob_client.return_value = mock_blob_client
                 mock_blob_client.upload_blob = AsyncMock()
 
-                with patch.object(service, "ensure_container_exists", new_callable=AsyncMock):
+                with patch.object(
+                    service, "ensure_container_exists", new_callable=AsyncMock
+                ):
                     result = await service.upload_file(b"test data", "test.txt")
                     assert isinstance(result, dict)
 

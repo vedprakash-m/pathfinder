@@ -252,5 +252,6 @@ class TestLoggingIntegration:
 
         # Child should inherit from parent in logging hierarchy
         assert (
-            child_logger.parent.name.startswith("app.parent") or child_logger.parent.name == "app"
+            child_logger.parent.name.startswith("app.parent")
+            or child_logger.parent.name == "app"
         )

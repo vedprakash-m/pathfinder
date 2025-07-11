@@ -123,7 +123,9 @@ def generate_trip_pdf(self, trip_id: str, user_id: str, pdf_type: str = "itinera
                         }
                     )
                 except Exception as notify_error:
-                    logger.error(f"Failed to send PDF error notification: {notify_error}")
+                    logger.error(
+                        f"Failed to send PDF error notification: {notify_error}"
+                    )
 
                 raise
 
@@ -134,7 +136,9 @@ def generate_trip_pdf(self, trip_id: str, user_id: str, pdf_type: str = "itinera
 
 
 @conditional_task(bind=True, name="app.tasks.pdf_tasks.generate_bulk_pdfs")
-def generate_bulk_pdfs(self, trip_id: str, participant_user_ids: list, pdf_type: str = "itinerary"):
+def generate_bulk_pdfs(
+    self, trip_id: str, participant_user_ids: list, pdf_type: str = "itinerary"
+):
     """Generate PDFs for multiple trip participants."""
 
     async def _generate_bulk():
@@ -153,13 +157,19 @@ def generate_bulk_pdfs(self, trip_id: str, participant_user_ids: list, pdf_type:
                 )
 
                 # Generate PDF for this participant
-                result = generate_trip_pdf.apply(args=[trip_id, user_id, pdf_type]).get()
+                result = generate_trip_pdf.apply(
+                    args=[trip_id, user_id, pdf_type]
+                ).get()
 
-                results.append({"user_id": user_id, "status": "SUCCESS", "result": result})
+                results.append(
+                    {"user_id": user_id, "status": "SUCCESS", "result": result}
+                )
 
             except Exception as e:
                 logger.error(f"Failed to generate PDF for user {user_id}: {e}")
-                results.append({"user_id": user_id, "status": "FAILED", "error": str(e)})
+                results.append(
+                    {"user_id": user_id, "status": "FAILED", "error": str(e)}
+                )
 
         logger.info(
             f"Bulk PDF generation completed for trip {trip_id}: {len(results)} PDFs processed"

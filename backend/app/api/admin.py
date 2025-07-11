@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """
 from app.repositories.cosmos_unified import UnifiedCosmosRepository, UserDocument
 from app.core.database_unified import get_cosmos_service
@@ -27,6 +28,7 @@ settings = get_settings()
 
 class PerformanceMetricsResponse(BaseModel):
     """Performance metrics response model."""
+
 
 timestamp: str
 endpoint_average_times: dict

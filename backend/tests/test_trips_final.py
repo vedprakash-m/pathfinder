@@ -66,7 +66,6 @@ def test_create_trip_with_full_override():
         with patch("app.core.security.verify_token", return_value=mock_token_data):
             # Override the entire endpoint function
             with patch("app.api.trips.create_trip", new=mock_create_trip_endpoint):
-
                 client = TestClient(app)
 
                 # Get CSRF token first

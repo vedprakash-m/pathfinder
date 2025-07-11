@@ -35,7 +35,9 @@ class UnifiedAuthService:
         self.entra_service = AuthService()
         logger.info("Unified AuthService initialized with Cosmos DB")
 
-    async def get_or_create_user_from_token(self, token_payload: Dict[str, Any]) -> UserDocument:
+    async def get_or_create_user_from_token(
+        self, token_payload: Dict[str, Any]
+    ) -> UserDocument:
         """
         Get or create user from Entra ID token payload.
 
@@ -53,7 +55,9 @@ class UnifiedAuthService:
 
         if user:
             # Update last login
-            await self.cosmos_repo.update_user(user.id, {"updated_at": datetime.utcnow()})
+            await self.cosmos_repo.update_user(
+                user.id, {"updated_at": datetime.utcnow()}
+            )
             logger.info(f"Existing user logged in: {user.email}")
             return user
 
@@ -69,10 +73,16 @@ class UnifiedAuthService:
             return user
 
         # Create new user with auto-family creation
-        return await self._create_new_user_with_family(entra_id, email, name, token_payload)
+        return await self._create_new_user_with_family(
+            entra_id, email, name, token_payload
+        )
 
     async def _create_new_user_with_family(
-        self, entra_id: str, email: str, name: Optional[str], token_payload: Dict[str, Any]
+        self,
+        entra_id: str,
+        email: str,
+        name: Optional[str],
+        token_payload: Dict[str, Any],
     ) -> UserDocument:
         """
         Create new user with automatic family creation per Tech Spec.
@@ -169,7 +179,9 @@ class UnifiedAuthService:
             email=user_data.email,
             name=user_data.name,
             phone=user_data.phone if hasattr(user_data, "phone") else None,
-            preferences=user_data.preferences if hasattr(user_data, "preferences") else None,
+            preferences=user_data.preferences
+            if hasattr(user_data, "preferences")
+            else None,
             role="family_admin",  # Default role per PRD
             is_active=True,
             family_ids=[family_id],

@@ -23,7 +23,11 @@ async def test_unified_migration():
         print("✅ Unified repository initialized successfully")
 
         # Test user operations
-        user_data = {"email": "test@example.com", "entra_id": "test-entra-id", "name": "Test User"}
+        user_data = {
+            "email": "test@example.com",
+            "entra_id": "test-entra-id",
+            "name": "Test User",
+        }
         user = await repo.create_user(user_data)
         print(f"✅ User creation: {user.id}")
 

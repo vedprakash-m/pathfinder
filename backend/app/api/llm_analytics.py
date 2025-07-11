@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """
 LLM Analytics API endpoints
 Provides monitoring and analytics for LLM usage and orchestration service
@@ -11,7 +12,7 @@ from app.core.security import get_current_user
 from app.services.ai_service import ai_service
 from app.services.llm_orchestration_client import (
     LLMOrchestrationClient,
-get_llm_orchestration_client,
+    get_llm_orchestration_client,
 )
 from fastapi import APIRouter, Depends, HTTPException, status
 
@@ -22,7 +23,7 @@ router = APIRouter(prefix="/api/v1/llm", tags=["LLM Analytics"])
 @router.get("/health")
 async def get_llm_health(
     current_user: dict = Depends(get_current_user),
-llm_client: LLMOrchestrationClient = Depends(get_llm_orchestration_client),
+    llm_client: LLMOrchestrationClient = Depends(get_llm_orchestration_client),
 ) -> dict[str, Any]:
     """Get LLM orchestration service health status."""
 
@@ -44,7 +45,9 @@ llm_client: LLMOrchestrationClient = Depends(get_llm_orchestration_client),
             "usage_stats": usage_stats,
             "services": {
                 "direct_openai": "available",
-                "llm_orchestration": "available" if orchestration_healthy else "unavailable",
+                "llm_orchestration": "available"
+                if orchestration_healthy
+                else "unavailable",
             },
         }
 
@@ -68,7 +71,9 @@ async def get_llm_analytics(
         # Get analytics from orchestration service if available
         orchestration_analytics = {}
         if llm_client.enabled:
-            orchestration_analytics = await llm_client.get_analytics(hours=hours)        # Get local usage stats
+            orchestration_analytics = await llm_client.get_analytics(
+                hours=hours
+            )  # Get local usage stats
         usage_stats = ai_service.get_usage_stats()
 
         # Get cost optimization suggestions

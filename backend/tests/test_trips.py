@@ -5,8 +5,10 @@ Tests for trip service functionality.
 from datetime import date, datetime, timedelta
 
 import pytest
+
 # SQL Family model removed - use Cosmos FamilyDocument
 from app.models.trip import ParticipationStatus, TripCreate, TripStatus, TripUpdate
+
 # SQL User model removed - use Cosmos UserDocument
 
 
@@ -75,7 +77,9 @@ async def test_update_trip(trip_service, test_user, test_trip):
     # Arrange
     user_id = str(test_user.id)
     trip_id = test_trip.id
-    trip_update = TripUpdate(name="Updated Trip Name", description="Updated description")
+    trip_update = TripUpdate(
+        name="Updated Trip Name", description="Updated description"
+    )
 
     # Act
     updated_trip = await trip_service.update_trip(trip_id, trip_update, user_id)
@@ -102,7 +106,9 @@ async def test_delete_trip(trip_service, test_user, test_trip):
 
 
 @pytest.mark.asyncio
-async def test_get_trip_stats(trip_service, test_user, test_trip, test_trip_participation):
+async def test_get_trip_stats(
+    trip_service, test_user, test_trip, test_trip_participation
+):
     """Test retrieving trip statistics."""
     # Arrange
     user_id = str(test_user.id)
@@ -152,7 +158,9 @@ async def test_add_family_to_trip(trip_service, test_user, test_trip, db_session
 
 
 @pytest.mark.asyncio
-async def test_cannot_update_trip_without_permission(trip_service, test_trip, db_session):
+async def test_cannot_update_trip_without_permission(
+    trip_service, test_trip, db_session
+):
     """Test that a non-creator cannot update a trip."""
     # Arrange
     # Create another user
@@ -177,7 +185,9 @@ async def test_cannot_update_trip_without_permission(trip_service, test_trip, db
 
 
 @pytest.mark.asyncio
-async def test_cannot_delete_trip_without_permission(trip_service, test_trip, db_session):
+async def test_cannot_delete_trip_without_permission(
+    trip_service, test_trip, db_session
+):
     """Test that a non-creator cannot delete a trip."""
     # Arrange
     # Create another user

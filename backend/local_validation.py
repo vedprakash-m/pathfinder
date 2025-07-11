@@ -92,7 +92,9 @@ else:
     print(f'   - Core modules tested: {{len(core_modules)}}')
 """
 
-    result = subprocess.run(["python3", "-c", import_script], capture_output=True, text=True)
+    result = subprocess.run(
+        ["python3", "-c", import_script], capture_output=True, text=True
+    )
 
     if result.returncode == 0:
         print_colored("✅ Critical imports - PASSED", "green")
@@ -183,7 +185,9 @@ else:
     print(f'\\n✅ All detected dependencies are declared in requirements.txt')
 """
 
-    result = subprocess.run(["python3", "-c", import_script], capture_output=True, text=True)
+    result = subprocess.run(
+        ["python3", "-c", import_script], capture_output=True, text=True
+    )
 
     if result.returncode == 0:
         print_colored("✅ Dependency isolation check - PASSED", "green")
@@ -248,7 +252,9 @@ def check_schema_compatibility():
             import re
 
             user_create_patterns = re.findall(
-                r"UserCreate\s*\(\s*\*\*([^)]+)\)|UserCreate\s*\(\s*([^)]+)\)", content, re.DOTALL
+                r"UserCreate\s*\(\s*\*\*([^)]+)\)|UserCreate\s*\(\s*([^)]+)\)",
+                content,
+                re.DOTALL,
             )
 
             for i, pattern_match in enumerate(user_create_patterns):
@@ -273,7 +279,9 @@ def check_schema_compatibility():
                         ),
                     }
                     schema_issues.append(issue)
-                    print(f"   ❌ {test_file}: UserCreate instance {i+1} missing: {missing_fields}")
+                    print(
+                        f"   ❌ {test_file}: UserCreate instance {i+1} missing: {missing_fields}"
+                    )
                 else:
                     print(f"   ✅ {test_file}: UserCreate instance {i+1} valid")
 
@@ -290,7 +298,9 @@ def check_schema_compatibility():
             if "# SQL User model removed - use Cosmos UserDocumentCreate" in content:
                 print(f"   ✅ {test_file}: Correct UserCreate import")
             elif "from app.schemas.auth import UserCreate" in content:
-                print(f"   ⚠️  {test_file}: Using schemas.auth.UserCreate (may be outdated)")
+                print(
+                    f"   ⚠️  {test_file}: Using schemas.auth.UserCreate (may be outdated)"
+                )
             elif "UserCreate" in content:
                 print(f"   ❌ {test_file}: UserCreate used but import not found")
 
@@ -306,7 +316,9 @@ def check_schema_compatibility():
         return False
     else:
         print_colored("\n✅ Schema compatibility check - PASSED", "green")
-        print(f"Checked {test_files_checked} test files - all UserCreate usage is compatible")
+        print(
+            f"Checked {test_files_checked} test files - all UserCreate usage is compatible"
+        )
         return True
 
 
@@ -358,7 +370,9 @@ except Exception as e:
         print(f"   ❌ Even corrected data failed: {e2}")
 """
 
-    result = subprocess.run(["python3", "-c", test_script], capture_output=True, text=True)
+    result = subprocess.run(
+        ["python3", "-c", test_script], capture_output=True, text=True
+    )
 
     print(result.stdout.strip())
 
@@ -417,7 +431,9 @@ for test_file in test_files:
 print('\\n✅ All critical test files can be collected successfully')
 """
 
-    result = subprocess.run(["python3", "-c", marker_check_script], capture_output=True, text=True)
+    result = subprocess.run(
+        ["python3", "-c", marker_check_script], capture_output=True, text=True
+    )
 
     if result.returncode == 0:
         print_colored("✅ CI/CD environment parity check - PASSED", "green")
@@ -446,7 +462,9 @@ def main():
     if not import_success:
         print_colored("\n🚨 CRITICAL: Import failures detected!", "red")
         print_colored("Fix import errors before running other tests", "yellow")
-        print_colored("Run: python comprehensive_e2e_validation.py for detailed analysis", "blue")
+        print_colored(
+            "Run: python comprehensive_e2e_validation.py for detailed analysis", "blue"
+        )
         return 1
 
     # Dependency isolation check
@@ -455,7 +473,9 @@ def main():
     if not dependency_isolation_success:
         print_colored("\n🚨 CRITICAL: Dependency isolation issues detected!", "red")
         print_colored("Fix dependency issues before running other tests", "yellow")
-        print_colored("Run: python comprehensive_e2e_validation.py for detailed analysis", "blue")
+        print_colored(
+            "Run: python comprehensive_e2e_validation.py for detailed analysis", "blue"
+        )
         return 1
 
     # Schema compatibility check (NEW - addresses current CI/CD failure)
@@ -470,7 +490,9 @@ def main():
     if not ci_cd_parity_success:
         print_colored("\n🚨 CRITICAL: CI/CD environment parity issues detected!", "red")
         print_colored("Fix environment issues before running other tests", "yellow")
-        print_colored("Run: python comprehensive_e2e_validation.py for detailed analysis", "blue")
+        print_colored(
+            "Run: python comprehensive_e2e_validation.py for detailed analysis", "blue"
+        )
         return 1
 
     # Check for schema compatibility issues that cause CI/CD failures
@@ -536,7 +558,14 @@ def main():
         ),
         # 8. Run broader AI tests
         (
-            ["python3", "-m", "pytest", "tests/test_ai_service*.py", "-v", "--tb=short"],
+            [
+                "python3",
+                "-m",
+                "pytest",
+                "tests/test_ai_service*.py",
+                "-v",
+                "--tb=short",
+            ],
             "Running all AI service related tests",
         ),
     ]
@@ -550,7 +579,8 @@ def main():
         # If a critical step fails, note it but continue
         if not success and "specific CI/CD failing test" in description:
             print_colored(
-                "⚠️  Critical test failed, but continuing to identify all issues...", "yellow"
+                "⚠️  Critical test failed, but continuing to identify all issues...",
+                "yellow",
             )
 
     # Summary
@@ -575,7 +605,9 @@ def main():
         print_colored("🎉 All validations passed! Ready for CI/CD", "green")
         return 0
     else:
-        print_colored("🚨 Some validations failed. Fix issues before pushing to CI/CD", "red")
+        print_colored(
+            "🚨 Some validations failed. Fix issues before pushing to CI/CD", "red"
+        )
         print_colored("\n💡 For comprehensive analysis, run:", "blue")
         print_colored("   python comprehensive_e2e_validation.py", "blue")
         return 1

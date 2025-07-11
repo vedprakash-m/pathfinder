@@ -8,7 +8,9 @@ This ensures all tests can run without requiring an OpenAI API key.
 def fix_ai_service_unit_tests():
     """Fix the AI service unit tests to use proper mocking."""
 
-    file_path = "/Users/vedprakashmishra/pathfinder/backend/tests/test_ai_service_unit.py"
+    file_path = (
+        "/Users/vedprakashmishra/pathfinder/backend/tests/test_ai_service_unit.py"
+    )
 
     with open(file_path, "r") as f:
         _content = f.read()

@@ -33,7 +33,9 @@ class User(Base):
     auth0_id = Column(
         String(255), unique=True, index=True, nullable=True
     )  # Legacy field for migration
-    entra_id = Column(String(255), unique=True, index=True, nullable=True)  # New Entra External ID
+    entra_id = Column(
+        String(255), unique=True, index=True, nullable=True
+    )  # New Entra External ID
     email = Column(String(255), unique=True, index=True, nullable=False)
     name = Column(String(255), nullable=True)
     role = Column(

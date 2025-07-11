@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """
 from app.repositories.cosmos_unified import UnifiedCosmosRepository, UserDocument
 from app.core.database_unified import get_cosmos_service
@@ -20,6 +21,7 @@ from pydantic import BaseModel
 
 from ..core.logging_config import get_logger
 from ..core.zero_trust import require_permissions
+
 # SQL User model removed - use Cosmos UserDocument
 from ..services.ai_service import AIService
 
@@ -43,7 +45,7 @@ class AITestResponse(BaseModel):
 @router.post("/ai", response_model=AITestResponse)
 async def test_ai_service(
     request: AITestRequest,
-    current_user: User = Depends(require_permissions("test", "execute"))
+    current_user: User = Depends(require_permissions("test", "execute")),
 ):
     """Test the AI service with a simple itinerary generation request."""
     try:

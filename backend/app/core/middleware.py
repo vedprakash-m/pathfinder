@@ -74,7 +74,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             self._apply_security_headers(response, request)
 
             # Log security header application for monitoring
-            logger.debug(f"Security headers applied to {request.method} {request.url.path}")
+            logger.debug(
+                f"Security headers applied to {request.method} {request.url.path}"
+            )
 
             return response
 
@@ -91,10 +93,13 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
         # HTTP Strict Transport Security (HSTS)
         # Only apply in production over HTTPS
-        if request.url.scheme == "https" or request.headers.get("x-forwarded-proto") == "https":
-            response.headers["Strict-Transport-Security"] = (
-                "max-age=31536000; includeSubDomains; preload"
-            )
+        if (
+            request.url.scheme == "https"
+            or request.headers.get("x-forwarded-proto") == "https"
+        ):
+            response.headers[
+                "Strict-Transport-Security"
+            ] = "max-age=31536000; includeSubDomains; preload"
 
         # X-Frame-Options - Prevent clickjacking
         response.headers["X-Frame-Options"] = "SAMEORIGIN"
@@ -132,22 +137,33 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
 
         # Server header removal for security
-        response.headers.pop("Server", None)
+        if "Server" in response.headers:
+            del response.headers["Server"]
 
         # Cache control for sensitive pages
         if self._is_sensitive_path(request.url.path):
-            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, private"
+            response.headers[
+                "Cache-Control"
+            ] = "no-store, no-cache, must-revalidate, private"
             response.headers["Pragma"] = "no-cache"
             response.headers["Expires"] = "0"
 
     def _is_sensitive_path(self, path: str) -> bool:
         """Check if the path contains sensitive information."""
-        sensitive_paths = ["/api/auth/", "/api/me", "/api/admin/", "/api/families/", "/api/trips/"]
+        sensitive_paths = [
+            "/api/auth/",
+            "/api/me",
+            "/api/admin/",
+            "/api/families/",
+            "/api/trips/",
+        ]
         return any(path.startswith(sensitive) for sensitive in sensitive_paths)
 
     def _create_secure_error_response(self) -> JSONResponse:
         """Create a secure error response with proper headers."""
-        response = JSONResponse(status_code=500, content={"error": "Internal server error"})
+        response = JSONResponse(
+            status_code=500, content={"error": "Internal server error"}
+        )
 
         # Apply minimal security headers even for error responses
         response.headers["X-Content-Type-Options"] = "nosniff"
@@ -186,9 +202,9 @@ class CORSSecurityMiddleware(BaseHTTPMiddleware):
         if origin and self._is_origin_allowed(origin):
             response.headers["Access-Control-Allow-Origin"] = origin
             response.headers["Access-Control-Allow-Credentials"] = "true"
-            response.headers["Access-Control-Allow-Methods"] = (
-                "GET, POST, PUT, DELETE, OPTIONS, PATCH"
-            )
+            response.headers[
+                "Access-Control-Allow-Methods"
+            ] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
             response.headers["Access-Control-Allow-Headers"] = (
                 "Content-Type, Authorization, X-Requested-With, Accept, "
                 "Cache-Control, Pragma, X-CSRFToken"

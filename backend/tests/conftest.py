@@ -18,8 +18,10 @@ from app.main import app
 
 # Import ALL models to ensure they're registered with Base metadata
 from app.models import *  # This imports all models including User, Trip, Family, etc.
+
 # SQL Family model removed - use Cosmos FamilyDocument
 from app.models.trip import ParticipationStatus, Trip, TripParticipation
+
 # SQL User model removed - use Cosmos UserDocument, UserRole
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
@@ -50,7 +52,9 @@ async def test_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    TestingSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    TestingSessionLocal = sessionmaker(
+        engine, class_=AsyncSession, expire_on_commit=False
+    )
 
     async with TestingSessionLocal() as session:
         yield session
@@ -70,7 +74,9 @@ async def db_session():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    TestingSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    TestingSessionLocal = sessionmaker(
+        engine, class_=AsyncSession, expire_on_commit=False
+    )
 
     async with TestingSessionLocal() as session:
         yield session
@@ -239,7 +245,12 @@ def test_jwt_token():
             "id": "test-user-123",
             "email": "test@example.com",
             "roles": ["user"],
-            "permissions": ["read:trips", "create:trips", "update:trips", "delete:trips"],
+            "permissions": [
+                "read:trips",
+                "create:trips",
+                "update:trips",
+                "delete:trips",
+            ],
         }
     )
 
@@ -406,7 +417,11 @@ def authenticated_client(mock_current_user):
         return mock_permission_checker
 
     # Patch the require_permissions function
-    with patch("app.core.zero_trust.require_permissions", side_effect=mock_require_permissions):
-        with patch("app.api.trips.require_permissions", side_effect=mock_require_permissions):
+    with patch(
+        "app.core.zero_trust.require_permissions", side_effect=mock_require_permissions
+    ):
+        with patch(
+            "app.api.trips.require_permissions", side_effect=mock_require_permissions
+        ):
             client = TestClient(app)
             yield client

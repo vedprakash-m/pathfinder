@@ -9,6 +9,7 @@ from typing import Optional
 
 import jwt
 from app.core.config import get_settings
+
 # SQL User model removed - use Cosmos UserDocument as UserModel
 from app.repositories.cosmos_unified import UserDocument as UserModel
 from fastapi import Depends, HTTPException, Request, status
@@ -90,7 +91,9 @@ async def verify_token(token: str) -> TokenData:
             "testing",
         ]:
             # For test tokens, use simple verification with our secret key
-            payload = jwt.decode(token, current_settings.SECRET_KEY, algorithms=["HS256"])
+            payload = jwt.decode(
+                token, current_settings.SECRET_KEY, algorithms=["HS256"]
+            )
         else:
             # Production: Use proper Entra ID token validation
             from app.core.token_validator import token_validator
@@ -158,7 +161,9 @@ async def verify_token(token: str) -> TokenData:
         from app.core.auth_errors import TokenInvalidError, handle_auth_error
 
         logger.error(f"JWT verification failed: {e}")
-        raise handle_auth_error(TokenInvalidError({"reason": f"Token validation failed: {str(e)}"}))
+        raise handle_auth_error(
+            TokenInvalidError({"reason": f"Token validation failed: {str(e)}"})
+        )
 
 
 async def get_current_user(
@@ -324,7 +329,8 @@ def get_rate_limiter():
     if rate_limiter is None:
         current_settings = get_settings()
         rate_limiter = RateLimiter(
-            requests=current_settings.RATE_LIMIT_REQUESTS, window=current_settings.RATE_LIMIT_WINDOW
+            requests=current_settings.RATE_LIMIT_REQUESTS,
+            window=current_settings.RATE_LIMIT_WINDOW,
         )
     return rate_limiter
 
@@ -373,7 +379,9 @@ def require_permissions(*permissions):
         # For now, we'll implement a basic permission check
         # In a full implementation, this would check user roles and permissions
         if not user.is_active:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Inactive user")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Inactive user"
+            )
         return user
 
     return permission_checker

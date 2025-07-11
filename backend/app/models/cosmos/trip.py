@@ -14,7 +14,7 @@ from app.models.cosmos.enums import TripStatus, ParticipationStatus
 
 class TripDocument(BaseModel):
     """Trip document for Cosmos DB storage."""
-    
+
     id: str = Field(..., description="Unique trip identifier")
     title: str = Field(..., description="Trip title")
     description: Optional[str] = Field(None, description="Trip description")
@@ -24,26 +24,37 @@ class TripDocument(BaseModel):
     status: TripStatus = Field(TripStatus.DRAFT, description="Trip status")
     budget: Optional[float] = Field(None, description="Trip budget")
     organizer_user_id: str = Field(..., description="User ID of trip organizer")
-    participating_family_ids: List[str] = Field(default_factory=list, description="List of participating family IDs")
-    created_at: datetime = Field(default_factory=datetime.now, description="Creation timestamp")
-    updated_at: datetime = Field(default_factory=datetime.now, description="Last update timestamp")
-    
+    participating_family_ids: List[str] = Field(
+        default_factory=list, description="List of participating family IDs"
+    )
+    created_at: datetime = Field(
+        default_factory=datetime.now, description="Creation timestamp"
+    )
+    updated_at: datetime = Field(
+        default_factory=datetime.now, description="Last update timestamp"
+    )
+
     class Config:
         """Pydantic configuration."""
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+
+        json_encoders = {datetime: lambda v: v.isoformat()}
 
 
 class TripParticipation(BaseModel):
     """Trip participation model."""
-    
+
     id: str = Field(..., description="Participation ID")
     trip_id: str = Field(..., description="Trip ID")
     user_id: str = Field(..., description="User ID")
-    status: ParticipationStatus = Field(ParticipationStatus.INVITED, description="Participation status")
-    created_at: datetime = Field(default_factory=datetime.now, description="Creation timestamp")
-    updated_at: datetime = Field(default_factory=datetime.now, description="Last update timestamp")
+    status: ParticipationStatus = Field(
+        ParticipationStatus.INVITED, description="Participation status"
+    )
+    created_at: datetime = Field(
+        default_factory=datetime.now, description="Creation timestamp"
+    )
+    updated_at: datetime = Field(
+        default_factory=datetime.now, description="Last update timestamp"
+    )
 
 
 # Aliases for backward compatibility

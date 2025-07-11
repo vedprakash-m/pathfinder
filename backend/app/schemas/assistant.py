@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 class ContextType(str, Enum):
     """Types of context for assistant interactions."""
+
     GENERAL = "general"
     TRIP = "trip"
     FAMILY = "family"
@@ -17,6 +18,7 @@ class ContextType(str, Enum):
 
 class ResponseCardType(str, Enum):
     """Types of response cards."""
+
     MAIN = "main"
     BUDGET = "budget"
     ACTIVITY = "activity"
@@ -26,6 +28,7 @@ class ResponseCardType(str, Enum):
 
 class AIResponseCard(BaseModel):
     """Schema for AI response card."""
+
     type: ResponseCardType
     title: str
     content: str
@@ -35,6 +38,7 @@ class AIResponseCard(BaseModel):
 
 class AssistantInteraction(BaseModel):
     """Schema for assistant interaction."""
+
     id: Optional[str] = None
     user_id: str
     message: str
@@ -49,14 +53,20 @@ class AssistantInteraction(BaseModel):
 
 class MentionRequest(BaseModel):
     """Request model for @pathfinder mentions"""
+
     message: str = Field(..., description="The message containing @pathfinder mention")
-    context: dict[str, Any] = Field(default_factory=dict, description="Current context information")
+    context: dict[str, Any] = Field(
+        default_factory=dict, description="Current context information"
+    )
     trip_id: Optional[str] = Field(None, description="Current trip ID if applicable")
-    family_id: Optional[str] = Field(None, description="Current family ID if applicable")
+    family_id: Optional[str] = Field(
+        None, description="Current family ID if applicable"
+    )
 
 
 class FeedbackRequest(BaseModel):
     """Request model for assistant feedback"""
+
     interaction_id: str = Field(..., description="ID of the assistant interaction")
     rating: int = Field(..., ge=1, le=5, description="Rating from 1-5 stars")
     feedback_text: Optional[str] = Field(None, description="Optional feedback text")
@@ -64,7 +74,10 @@ class FeedbackRequest(BaseModel):
 
 class SuggestionsRequest(BaseModel):
     """Request model for contextual suggestions"""
-    context: dict[str, Any] = Field(default_factory=dict, description="Current context information")
+
+    context: dict[str, Any] = Field(
+        default_factory=dict, description="Current context information"
+    )
     page: Optional[str] = Field(None, description="Current page/route")
     trip_id: Optional[str] = Field(None, description="Current trip ID if applicable")
 

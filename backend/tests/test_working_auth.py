@@ -65,9 +65,9 @@ def test_trips_with_complete_mocking():
     with patch("app.core.zero_trust.verify_token", return_value=mock_token_data):
         with patch("app.core.security.verify_token", return_value=mock_token_data):
             # Override the dependency injection
-            app.dependency_overrides[Provide[Container.create_trip_use_case]] = (
-                mock_create_trip_dependency
-            )
+            app.dependency_overrides[
+                Provide[Container.create_trip_use_case]
+            ] = mock_create_trip_dependency
 
             try:
                 client = TestClient(app)
@@ -126,12 +126,16 @@ def test_ai_service_with_proper_mocking():
             "duration": 5,
             "estimated_cost_per_person": 1000.0,
         },
-        "daily_itinerary": [{"day": 1, "date": "2025-07-01", "activities": ["Visit Eiffel Tower"]}],
+        "daily_itinerary": [
+            {"day": 1, "date": "2025-07-01", "activities": ["Visit Eiffel Tower"]}
+        ],
         "budget_summary": {"total": 5000.0, "breakdown": {}},
     }
 
     # Test the AI service generate_itinerary method
-    with patch.object(ai_service, "generate_itinerary", new_callable=AsyncMock) as mock_generate:
+    with patch.object(
+        ai_service, "generate_itinerary", new_callable=AsyncMock
+    ) as mock_generate:
         mock_generate.return_value = mock_itinerary
 
         # Test calling the method directly

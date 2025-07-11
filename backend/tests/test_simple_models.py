@@ -7,6 +7,7 @@ from datetime import date, datetime, timezone
 
 # SQL Family model removed - use Cosmos FamilyDocument, FamilyRole
 from app.models.notification import NotificationType
+
 # SQL Trip model removed - use Cosmos TripDocument, TripStatus
 
 # User model tests

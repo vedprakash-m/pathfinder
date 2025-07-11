@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """
 from app.repositories.cosmos_unified import UnifiedCosmosRepository, UserDocument
 from app.core.database_unified import get_cosmos_service
@@ -21,6 +22,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from ..core.database_unified import get_cosmos_repository
 from ..core.logging_config import get_logger
 from ..core.zero_trust import require_permissions
+
 # SQL User model removed - use Cosmos UserDocument
 from ..repositories.cosmos_unified import UnifiedCosmosRepository
 from ..services.ai_service import AIService
@@ -38,12 +40,16 @@ from pydantic import BaseModel
 
 class ItineraryType(str, Enum):
     FULL_TRIP = "full_trip"
+
+
 DAILY = "daily"
 ACTIVITY = "activity"
 
 
 class ItineraryRequest(BaseModel):
     trip_id: int
+
+
 itinerary_type: ItineraryType = ItineraryType.FULL_TRIP
 preferences: Optional[dict[str, Any]] = None
 regenerate: bool = False
@@ -51,6 +57,8 @@ regenerate: bool = False
 
 class ItineraryCustomization(BaseModel):
     activity_preferences: Optional[list[str]] = None
+
+
 budget_constraints: Optional[dict[str, float]] = None
 accessibility_needs: Optional[list[str]] = None
 dietary_restrictions: Optional[list[str]] = None
@@ -60,6 +68,8 @@ accommodation_preferences: Optional[list[str]] = None
 
 class ItineraryDay(BaseModel):
     date: date
+
+
 activities: list[dict[str, Any]]
 estimated_cost: Optional[float] = None
 transportation: Optional[dict[str, Any]] = None
@@ -67,6 +77,8 @@ transportation: Optional[dict[str, Any]] = None
 
 class GeneratedItinerary(BaseModel):
     id: Optional[str] = None
+
+
 trip_id: int
 title: str
 description: Optional[str] = None
@@ -79,6 +91,8 @@ ai_confidence_score: Optional[float] = None
 
 class ItineraryResponse(BaseModel):
     itinerary: GeneratedItinerary
+
+
 alternatives: Optional[list[dict[str, Any]]] = None
 optimization_suggestions: Optional[list[str]] = None
 
@@ -86,18 +100,20 @@ optimization_suggestions: Optional[list[str]] = None
 @router.post("/{trip_id}/generate", response_model=ItineraryResponse)
 async def generate_itinerary(
     trip_id: int,
-request_data: ItineraryRequest,
-request: Request,
-cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
-current_user: dict = Depends(require_permissions("itineraries", "create")),
-ai_service: AIService = Depends(lambda: AIService()),  # noqa: B008
+    request_data: ItineraryRequest,
+    request: Request,
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
+    current_user: dict = Depends(require_permissions("itineraries", "create")),
+    ai_service: AIService = Depends(lambda: AIService()),  # noqa: B008
 ):
     """Generate an AI-powered itinerary for a trip."""
     try:
         # Verify trip exists and user has access
         trip = await cosmos_repo.get_trip_by_id(str(trip_id))
         if not trip:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found"
+            )
 
         # Check if user has access to trip
         user_trips = await cosmos_repo.get_user_trips(current_user["id"])
@@ -159,7 +175,9 @@ ai_service: AIService = Depends(lambda: AIService()),  # noqa: B008
             }
 
         # Generate itinerary using AI service with correct parameters
-        logger.info(f"Generating itinerary for trip {trip_id} by user {current_user['id']}")
+        logger.info(
+            f"Generating itinerary for trip {trip_id} by user {current_user['id']}"
+        )
         itinerary_data = await ai_service.generate_itinerary(
             destination=str(trip.destination),
             duration_days=duration_days,
@@ -167,7 +185,7 @@ ai_service: AIService = Depends(lambda: AIService()),  # noqa: B008
             preferences=preferences,
             budget_total=float(trip.budget_total) if trip.budget_total else None,
             user_id=str(current_user["id"]),
-        )        # Create itinerary response
+        )  # Create itinerary response
         itinerary = GeneratedItinerary(
             trip_id=trip_id,
             title=itinerary_data.get("title", f"Itinerary for {trip.destination}"),
@@ -208,19 +226,21 @@ ai_service: AIService = Depends(lambda: AIService()),  # noqa: B008
 @router.post("/{trip_id}/customize", response_model=ItineraryResponse)
 async def customize_itinerary(
     trip_id: int,
-customization: ItineraryCustomization,
-request: Request,
-base_itinerary: Optional[dict[str, Any]] = None,
-cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
-current_user: User = Depends(require_permissions("itineraries", "update")),
-ai_service: AIService = Depends(lambda: AIService()),  # noqa: B008
+    customization: ItineraryCustomization,
+    request: Request,
+    base_itinerary: Optional[dict[str, Any]] = None,
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
+    current_user: User = Depends(require_permissions("itineraries", "update")),
+    ai_service: AIService = Depends(lambda: AIService()),  # noqa: B008
 ):
     """Customize an existing itinerary based on user preferences."""
     try:
         # Verify trip access
         trip = await cosmos_repo.get_trip_by_id(str(trip_id))
         if not trip:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found"
+            )
 
         # Check if user has access to trip
         user_trips = await cosmos_repo.get_user_trips(current_user["id"])
@@ -233,19 +253,23 @@ ai_service: AIService = Depends(lambda: AIService()),  # noqa: B008
         # Prepare customization context
         customization_context = {
             "trip_id": trip_id,
-"destination": trip.destination,
-"customizations": customization.dict(exclude_none=True),
-"base_itinerary": base_itinerary,
-}
+            "destination": trip.destination,
+            "customizations": customization.dict(exclude_none=True),
+            "base_itinerary": base_itinerary,
+        }
 
         # Generate customized itinerary
-        logger.info(f"Customizing itinerary for trip {trip_id} by user {current_user['id']}")
+        logger.info(
+            f"Customizing itinerary for trip {trip_id} by user {current_user['id']}"
+        )
         itinerary_data = await ai_service.customize_itinerary(customization_context)
 
         # Create response
         itinerary = GeneratedItinerary(
             trip_id=trip_id,
-            title=itinerary_data.get("title", f"Customized Itinerary for {trip.destination}"),
+            title=itinerary_data.get(
+                "title", f"Customized Itinerary for {trip.destination}"
+            ),
             description=itinerary_data.get("description"),
             days=[
                 ItineraryDay(
@@ -284,20 +308,28 @@ ai_service: AIService = Depends(lambda: AIService()),  # noqa: B008
 @router.get("/{trip_id}/suggestions")
 async def get_activity_suggestions(
     trip_id: int,
-request: Request,
-activity_type: Optional[str] = Query(None, description="Type of activity to suggest"),
-location: Optional[str] = Query(None, description="Specific location within trip destination"),
-budget_range: Optional[str] = Query(None, description="Budget range (low, medium, high)"),
-cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
-current_user: User = Depends(require_permissions("itineraries", "read")),
-ai_service: AIService = Depends(lambda: AIService()),  # noqa: B008
+    request: Request,
+    activity_type: Optional[str] = Query(
+        None, description="Type of activity to suggest"
+    ),
+    location: Optional[str] = Query(
+        None, description="Specific location within trip destination"
+    ),
+    budget_range: Optional[str] = Query(
+        None, description="Budget range (low, medium, high)"
+    ),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
+    current_user: User = Depends(require_permissions("itineraries", "read")),
+    ai_service: AIService = Depends(lambda: AIService()),  # noqa: B008
 ):
     """Get AI-powered activity suggestions for a trip."""
     try:
         # Verify trip access
         trip = await cosmos_repo.get_trip_by_id(str(trip_id))
         if not trip:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found"
+            )
 
         # Check if user has access to trip
         user_trips = await cosmos_repo.get_user_trips(current_user["id"])
@@ -339,19 +371,23 @@ ai_service: AIService = Depends(lambda: AIService()),  # noqa: B008
 @router.post("/{trip_id}/optimize")
 async def optimize_itinerary(
     trip_id: int,
-itinerary: dict[str, Any],
-request: Request,
-optimization_criteria: Optional[list[str]] = Query(None, description="Optimization criteria"),
-cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
-current_user: User = Depends(require_permissions("itineraries", "update")),
-ai_service: AIService = Depends(lambda: AIService()),  # noqa: B008
+    itinerary: dict[str, Any],
+    request: Request,
+    optimization_criteria: Optional[list[str]] = Query(
+        None, description="Optimization criteria"
+    ),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
+    current_user: User = Depends(require_permissions("itineraries", "update")),
+    ai_service: AIService = Depends(lambda: AIService()),  # noqa: B008
 ):
     """Optimize an existing itinerary for better efficiency, cost, or experience."""
     try:
         # Verify trip access
         trip = await cosmos_repo.get_trip_by_id(str(trip_id))
         if not trip:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found"
+            )
 
         # Check if user has access to trip
         user_trips = await cosmos_repo.get_user_trips(current_user["id"])
@@ -367,17 +403,22 @@ ai_service: AIService = Depends(lambda: AIService()),  # noqa: B008
             "destination": trip.destination,
             "budget": trip.budget,
             "itinerary": itinerary,
-            "optimization_criteria": optimization_criteria or ["cost", "time", "experience"],
+            "optimization_criteria": optimization_criteria
+            or ["cost", "time", "experience"],
         }
 
         # Optimize itinerary
-        logger.info(f"Optimizing itinerary for trip {trip_id} by user {current_user['id']}")
+        logger.info(
+            f"Optimizing itinerary for trip {trip_id} by user {current_user['id']}"
+        )
         optimized_data = await ai_service.optimize_itinerary(optimization_context)
 
         # Create response
         optimized_itinerary = GeneratedItinerary(
             trip_id=trip_id,
-            title=optimized_data.get("title", f"Optimized Itinerary for {trip.destination}"),
+            title=optimized_data.get(
+                "title", f"Optimized Itinerary for {trip.destination}"
+            ),
             description=optimized_data.get("description"),
             days=[
                 ItineraryDay(
@@ -428,7 +469,9 @@ async def get_itinerary_alternatives(
         # Verify trip access
         trip = await cosmos_repo.get_trip_by_id(str(trip_id))
         if not trip:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found"
+            )
 
         # Check if user has access to trip
         user_trips = await cosmos_repo.get_user_trips(current_user["id"])
@@ -483,7 +526,9 @@ async def get_itinerary_alternatives(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting itinerary alternatives for trip {trip_id}: {str(e)}")
+        logger.error(
+            f"Error getting itinerary alternatives for trip {trip_id}: {str(e)}"
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to get itinerary alternatives",

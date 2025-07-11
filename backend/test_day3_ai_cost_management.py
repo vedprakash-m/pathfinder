@@ -19,6 +19,7 @@ try:
         get_ai_usage_stats,
     )
     from app.core.config import get_settings
+
     # SQL User model removed - use Cosmos UserDocument
     from app.repositories.cosmos_unified import UnifiedCosmosRepository
 
@@ -85,7 +86,9 @@ class Day3AICostManagementTest:
             assert abs(result["request_cost"] - expected_cost) < 0.001
 
             self.log_result(
-                "AI Usage Tracker - Basic tracking", True, f"Cost: ${result['request_cost']:.4f}"
+                "AI Usage Tracker - Basic tracking",
+                True,
+                f"Cost: ${result['request_cost']:.4f}",
             )
 
             # Test limit checking
@@ -94,7 +97,9 @@ class Day3AICostManagementTest:
             assert isinstance(limits["request_within_limit"], bool)
             assert isinstance(limits["daily_within_limit"], bool)
 
-            self.log_result("AI Usage Tracker - Limit checking", True, "All limit checks working")
+            self.log_result(
+                "AI Usage Tracker - Limit checking", True, "All limit checks working"
+            )
 
             # Test usage statistics
             stats = tracker.get_usage_stats(user_id)
@@ -141,7 +146,9 @@ class Day3AICostManagementTest:
             assert not result2["within_limits"]["user_within_limit"]
 
             self.log_result(
-                "Cost Limits - User limit enforcement", True, "User limit properly enforced"
+                "Cost Limits - User limit enforcement",
+                True,
+                "User limit properly enforced",
             )
 
             # Test daily limit
@@ -149,7 +156,9 @@ class Day3AICostManagementTest:
             remaining_budget = daily_stats["remaining"]["daily_budget"]
 
             self.log_result(
-                "Cost Limits - Daily budget tracking", True, f"Remaining: ${remaining_budget:.3f}"
+                "Cost Limits - Daily budget tracking",
+                True,
+                f"Remaining: ${remaining_budget:.3f}",
             )
 
             # Restore original limits
@@ -179,7 +188,9 @@ class Day3AICostManagementTest:
             assert result["success"]
 
             self.log_result(
-                "AI Cost Decorator - Basic functionality", True, "Decorator applied successfully"
+                "AI Cost Decorator - Basic functionality",
+                True,
+                "Decorator applied successfully",
             )
 
             # Test cost tracking in response
@@ -190,11 +201,15 @@ class Day3AICostManagementTest:
                 assert "tokens_used" in usage
 
                 self.log_result(
-                    "AI Cost Decorator - Usage tracking", True, f"Cost: ${usage['cost']:.4f}"
+                    "AI Cost Decorator - Usage tracking",
+                    True,
+                    f"Cost: ${usage['cost']:.4f}",
                 )
             else:
                 self.log_result(
-                    "AI Cost Decorator - Usage tracking", True, "No usage info (expected in test)"
+                    "AI Cost Decorator - Usage tracking",
+                    True,
+                    "No usage info (expected in test)",
                 )
 
             self.test_results["ai_endpoint_integration"] = True
@@ -223,7 +238,9 @@ class Day3AICostManagementTest:
             assert "retry_after" in content
 
             self.log_result(
-                "Graceful Degradation - Response format", True, "Proper 503 response with fallbacks"
+                "Graceful Degradation - Response format",
+                True,
+                "Proper 503 response with fallbacks",
             )
 
             # Test fallback suggestions are helpful
@@ -255,7 +272,9 @@ class Day3AICostManagementTest:
             assert "limits" in stats
             assert "remaining" in stats
 
-            self.log_result("Usage Statistics - Global stats", True, "Statistics accessible")
+            self.log_result(
+                "Usage Statistics - Global stats", True, "Statistics accessible"
+            )
 
             # Test user-specific stats
             user_stats = get_ai_usage_stats("test_user_123")
@@ -273,7 +292,9 @@ class Day3AICostManagementTest:
                 )
             else:
                 self.log_result(
-                    "Usage Statistics - User stats", True, "No user data (expected for test)"
+                    "Usage Statistics - User stats",
+                    True,
+                    "No user data (expected for test)",
                 )
 
             self.test_results["usage_statistics"] = True
@@ -294,7 +315,9 @@ class Day3AICostManagementTest:
             assert middleware.ai_endpoints == ai_endpoints
 
             self.log_result(
-                "Middleware - Initialization", True, f"Configured for {len(ai_endpoints)} endpoints"
+                "Middleware - Initialization",
+                True,
+                f"Configured for {len(ai_endpoints)} endpoints",
             )
 
             # Test reset time calculation
@@ -320,17 +343,23 @@ class Day3AICostManagementTest:
             # Test assistant.py imports
             from app.api.assistant import router as assistant_router
 
-            self.log_result("AI Endpoints - Assistant import", True, "Assistant module imported")
+            self.log_result(
+                "AI Endpoints - Assistant import", True, "Assistant module imported"
+            )
 
             # Test polls.py imports
             from app.api.polls import router as polls_router
 
-            self.log_result("AI Endpoints - Polls import", True, "Polls module imported")
+            self.log_result(
+                "AI Endpoints - Polls import", True, "Polls module imported"
+            )
 
             # Test consensus.py imports
             from app.api.consensus import router as consensus_router
 
-            self.log_result("AI Endpoints - Consensus import", True, "Consensus module imported")
+            self.log_result(
+                "AI Endpoints - Consensus import", True, "Consensus module imported"
+            )
 
             # Verify routers have endpoints
             assert len(assistant_router.routes) > 0
@@ -338,7 +367,9 @@ class Day3AICostManagementTest:
             assert len(consensus_router.routes) > 0
 
             self.log_result(
-                "AI Endpoints - Router configuration", True, "All routers have endpoints"
+                "AI Endpoints - Router configuration",
+                True,
+                "All routers have endpoints",
             )
 
         except Exception as e:
@@ -376,23 +407,29 @@ class Day3AICostManagementTest:
             status = "✅ PASS" if passed else "❌ FAIL"
             print(f"{status} {category.replace('_', ' ').title()}")
 
-        print(f"\n📊 Overall Success Rate: {success_rate:.1f}% ({passed_tests}/{total_tests})")
+        print(
+            f"\n📊 Overall Success Rate: {success_rate:.1f}% ({passed_tests}/{total_tests})"
+        )
         print(f"⏱️ Execution Time: {execution_time:.2f} seconds")
 
         # Detailed results summary
         if success_rate >= 90:
-            print("\n🎉 EXCELLENT: AI cost management implementation is production-ready!")
+            print(
+                "\n🎉 EXCELLENT: AI cost management implementation is production-ready!"
+            )
         elif success_rate >= 75:
-            print("\n👍 GOOD: AI cost management mostly implemented, minor issues to resolve")
+            print(
+                "\n👍 GOOD: AI cost management mostly implemented, minor issues to resolve"
+            )
         elif success_rate >= 50:
-            print("\n⚠️ PARTIAL: AI cost management partially implemented, significant work needed")
+            print(
+                "\n⚠️ PARTIAL: AI cost management partially implemented, significant work needed"
+            )
         else:
             print("\n🚨 NEEDS WORK: AI cost management requires major implementation")
 
         # Save detailed results
-        results_file = (
-            f"day3_ai_cost_management_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-        )
+        results_file = f"day3_ai_cost_management_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
         with open(results_file, "w") as f:
             json.dump(
                 {
@@ -410,14 +447,21 @@ class Day3AICostManagementTest:
 
         # Next steps recommendations
         print("\n🔄 NEXT STEPS:")
-        if self.test_results["ai_cost_tracking"] and self.test_results["cost_limits_enforcement"]:
-            print("✅ AI cost management is implemented - proceed with real AI integration testing")
+        if (
+            self.test_results["ai_cost_tracking"]
+            and self.test_results["cost_limits_enforcement"]
+        ):
+            print(
+                "✅ AI cost management is implemented - proceed with real AI integration testing"
+            )
         else:
             print("❌ Fix AI cost management issues before proceeding")
 
         if passed_tests == total_tests:
             print("✅ Ready for production AI endpoint testing with real Cosmos DB")
-            print("✅ Ready to integrate frontend AI components with cost-managed backend")
+            print(
+                "✅ Ready to integrate frontend AI components with cost-managed backend"
+            )
 
         return success_rate >= 75  # 75% threshold for Day 3 readiness
 

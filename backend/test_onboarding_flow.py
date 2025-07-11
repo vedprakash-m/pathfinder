@@ -59,10 +59,17 @@ class OnboardingFlowTester:
         print("\n📊 Testing analytics tracking...")
 
         events = [
-            ("onboarding-start", {"userId": "test-user", "timestamp": int(time.time() * 1000)}),
+            (
+                "onboarding-start",
+                {"userId": "test-user", "timestamp": int(time.time() * 1000)},
+            ),
             (
                 "onboarding-complete",
-                {"userId": "test-user", "completionTime": 45000, "tripType": "family-vacation"},
+                {
+                    "userId": "test-user",
+                    "completionTime": 45000,
+                    "tripType": "family-vacation",
+                },
             ),
             (
                 "onboarding-skip",
@@ -81,7 +88,9 @@ class OnboardingFlowTester:
                     if response.status in [200, 201]:
                         print(f"✅ Analytics event '{event_name}' tracked successfully")
                     else:
-                        print(f"❌ Analytics event '{event_name}' failed: {response.status}")
+                        print(
+                            f"❌ Analytics event '{event_name}' failed: {response.status}"
+                        )
                         all_passed = False
             except Exception as e:
                 print(f"❌ Analytics event '{event_name}' error: {e}")
@@ -163,15 +172,20 @@ class OnboardingFlowTester:
         for test_name, headers in error_tests:
             try:
                 async with self.session.get(
-                    f"{self.base_url}/api/auth/user/onboarding-status", headers=headers or {}
+                    f"{self.base_url}/api/auth/user/onboarding-status",
+                    headers=headers or {},
                 ) as response:
                     if response.status in [401, 422, 400]:
                         print(f"✅ Error handling for '{test_name}': {response.status}")
                     else:
-                        print(f"⚠️  Unexpected response for '{test_name}': {response.status}")
+                        print(
+                            f"⚠️  Unexpected response for '{test_name}': {response.status}"
+                        )
                         all_passed = False
             except Exception as e:
-                print(f"✅ Error handling for '{test_name}': Exception caught - {type(e).__name__}")
+                print(
+                    f"✅ Error handling for '{test_name}': Exception caught - {type(e).__name__}"
+                )
 
         return all_passed
 

@@ -14,7 +14,9 @@ if TELEMETRY_ENABLED and not TESTING:
     try:
         from azure.monitor.opentelemetry import configure_azure_monitor
         from opentelemetry import metrics, trace
-        from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+        from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
+            OTLPSpanExporter,
+        )
         from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
         from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
         from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
@@ -108,7 +110,9 @@ def setup_opentelemetry(app: FastAPI, sqlalchemy_engine=None):
 
         if app_insights_conn_string:
             logger.info("Setting up Azure Monitor OpenTelemetry instrumentation")
-            configure_azure_monitor(connection_string=app_insights_conn_string, resource=resource)
+            configure_azure_monitor(
+                connection_string=app_insights_conn_string, resource=resource
+            )
         else:
             logger.info("Setting up default OpenTelemetry instrumentation")
             # Setup tracer provider with a default exporter (console)
@@ -140,7 +144,9 @@ def setup_opentelemetry(app: FastAPI, sqlalchemy_engine=None):
         )
 
         # Instrument FastAPI
-        FastAPIInstrumentor.instrument_app(app, tracer_provider=trace.get_tracer_provider())
+        FastAPIInstrumentor.instrument_app(
+            app, tracer_provider=trace.get_tracer_provider()
+        )
 
         # Instrument HTTPX for outgoing requests
         HTTPXClientInstrumentor().instrument()
@@ -164,7 +170,9 @@ class EnhancedMonitoring:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
 
-    def track_ai_operation(self, operation_type: str, tokens_used: int, model: str = "gpt-4o-mini"):
+    def track_ai_operation(
+        self, operation_type: str, tokens_used: int, model: str = "gpt-4o-mini"
+    ):
         """Track AI operation with detailed metrics."""
         if not tracer:
             return

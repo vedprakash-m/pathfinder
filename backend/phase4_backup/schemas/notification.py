@@ -4,8 +4,10 @@ from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 
+
 class NotificationResponse(BaseModel):
     """Schema for notification response."""
+
     id: str
     user_id: str
     type: str
@@ -20,12 +22,16 @@ class NotificationResponse(BaseModel):
     expires_at: Optional[datetime] = None
     data: Optional[dict] = None
 
+
 class NotificationUpdate(BaseModel):
     """Schema for updating notification."""
+
     is_read: Optional[bool] = None
+
 
 class NotificationCreate(BaseModel):
     """Schema for creating notification."""
+
     user_id: str
     type: str
     priority: str = "normal"

@@ -5,15 +5,19 @@ from typing import Optional, List
 from datetime import datetime
 from enum import Enum
 
+
 class NotificationPriority(str, Enum):
     """Notification priority levels."""
+
     LOW = "low"
     NORMAL = "normal"
     HIGH = "high"
     URGENT = "urgent"
 
+
 class NotificationType(str, Enum):
     """Notification types."""
+
     TRIP_INVITATION = "trip_invitation"
     TRIP_UPDATE = "trip_update"
     FAMILY_INVITATION = "family_invitation"
@@ -21,8 +25,10 @@ class NotificationType(str, Enum):
     POLL_CREATED = "poll_created"
     SYSTEM_MESSAGE = "system_message"
 
+
 class NotificationResponse(BaseModel):
     """Schema for notification response."""
+
     id: str
     user_id: str
     type: str
@@ -37,12 +43,16 @@ class NotificationResponse(BaseModel):
     expires_at: Optional[datetime] = None
     data: Optional[dict] = None
 
+
 class NotificationUpdate(BaseModel):
     """Schema for updating notification."""
+
     is_read: Optional[bool] = None
+
 
 class NotificationCreate(BaseModel):
     """Schema for creating notification."""
+
     user_id: str
     type: str
     priority: str = "normal"
@@ -53,8 +63,10 @@ class NotificationCreate(BaseModel):
     expires_at: Optional[datetime] = None
     data: Optional[dict] = None
 
+
 class Notification(BaseModel):
     """Full notification model."""
+
     id: str
     user_id: str
     type: NotificationType
@@ -69,8 +81,10 @@ class Notification(BaseModel):
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
 
+
 class BulkNotificationCreate(BaseModel):
     """Schema for creating bulk notifications."""
+
     user_ids: List[str]
     type: NotificationType
     priority: NotificationPriority = NotificationPriority.NORMAL

@@ -87,7 +87,9 @@ def handle_auth_error(error: Exception) -> HTTPException:
         if error.code == "AUTH_PERMISSION_DENIED":
             return create_auth_error_response(error, status.HTTP_403_FORBIDDEN)
         elif error.code == "AUTH_SERVICE_UNAVAILABLE":
-            return create_auth_error_response(error, status.HTTP_503_SERVICE_UNAVAILABLE)
+            return create_auth_error_response(
+                error, status.HTTP_503_SERVICE_UNAVAILABLE
+            )
         else:
             return create_auth_error_response(error)
 
@@ -95,7 +97,9 @@ def handle_auth_error(error: Exception) -> HTTPException:
     import jwt
 
     if isinstance(error, jwt.ExpiredSignatureError):
-        return create_auth_error_response(TokenInvalidError({"reason": "Token has expired"}))
+        return create_auth_error_response(
+            TokenInvalidError({"reason": "Token has expired"})
+        )
     elif isinstance(error, jwt.InvalidTokenError):
         return create_auth_error_response(TokenInvalidError({"reason": str(error)}))
 

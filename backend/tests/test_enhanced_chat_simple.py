@@ -60,7 +60,9 @@ def chat_room(sample_trip_id):
 class TestChatMessage:
     """Test ChatMessage dataclass."""
 
-    def test_chat_message_creation(self, sample_trip_id, sample_user_id, sample_family_id):
+    def test_chat_message_creation(
+        self, sample_trip_id, sample_user_id, sample_family_id
+    ):
         """Test creating chat message."""
         message = ChatMessage(
             id=str(uuid4()),
@@ -80,7 +82,9 @@ class TestChatMessage:
         assert message.content == "Hello world!"
         assert message.metadata == {"test": "data"}
 
-    def test_chat_message_to_dict(self, sample_trip_id, sample_user_id, sample_family_id):
+    def test_chat_message_to_dict(
+        self, sample_trip_id, sample_user_id, sample_family_id
+    ):
         """Test converting chat message to dictionary."""
         timestamp = datetime.utcnow()
         message = ChatMessage(
@@ -259,7 +263,9 @@ class TestMessageTypes:
 class TestEdgeCases:
     """Test edge cases and error handling."""
 
-    def test_chat_message_none_metadata(self, sample_trip_id, sample_user_id, sample_family_id):
+    def test_chat_message_none_metadata(
+        self, sample_trip_id, sample_user_id, sample_family_id
+    ):
         """Test chat message with None metadata."""
         message = ChatMessage(
             id="test-id",

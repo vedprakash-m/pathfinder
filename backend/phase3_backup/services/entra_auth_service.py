@@ -111,7 +111,9 @@ class EntraAuthService:
                 self._jwks_cache = jwks_data
                 self._jwks_cache_expiry = datetime.utcnow() + timedelta(hours=1)
 
-                logger.debug(f"Retrieved JWKS with {len(jwks_data.get('keys', []))} keys")
+                logger.debug(
+                    f"Retrieved JWKS with {len(jwks_data.get('keys', []))} keys"
+                )
                 return jwks_data
 
         except Exception as e:
@@ -143,7 +145,11 @@ class EntraAuthService:
 
             # In production, implement proper JWKS validation
             # For now, return test payload for compatibility
-            return {"sub": "test-entra-user-id", "email": "test@example.com", "name": "Test User"}
+            return {
+                "sub": "test-entra-user-id",
+                "email": "test@example.com",
+                "name": "Test User",
+            }
 
         except Exception as e:
             logger.error(f"Token validation error: {e}")
@@ -186,7 +192,9 @@ class EntraAuthService:
             from uuid import uuid4
 
             email = user_info.get("mail") or user_info.get("userPrincipalName")
-            name = user_info.get("displayName", email.split("@")[0] if email else "Unknown")
+            name = user_info.get(
+                "displayName", email.split("@")[0] if email else "Unknown"
+            )
 
             user_id = str(uuid4())
             family_id = str(uuid4())
@@ -217,7 +225,9 @@ class EntraAuthService:
             await self.cosmos_repo.create_user(user_doc)
             await self.cosmos_repo.create_family(family_doc)
 
-            logger.info(f"Created user {user_id} with auto-family {family_id} from Entra ID")
+            logger.info(
+                f"Created user {user_id} with auto-family {family_id} from Entra ID"
+            )
             return user_doc
 
         except Exception as e:
@@ -232,7 +242,9 @@ class EntraAuthService:
             logger.error(f"Error getting user by Entra ID: {e}")
             return None
 
-    async def process_entra_login(self, access_token: str) -> Optional[tuple[UserDocument, str]]:
+    async def process_entra_login(
+        self, access_token: str
+    ) -> Optional[tuple[UserDocument, str]]:
         """
         Process Entra External ID login and return user and our internal token.
         Creates user if doesn't exist (auto-family creation) using Cosmos DB.
@@ -267,9 +279,13 @@ class EntraAuthService:
             # Create internal access token for API usage
             from app.core.security import create_access_token
 
-            internal_token = create_access_token(data={"sub": str(user.id), "email": user.email})
+            internal_token = create_access_token(
+                data={"sub": str(user.id), "email": user.email}
+            )
 
-            logger.info(f"Successfully processed Entra External ID login for: {user.email}")
+            logger.info(
+                f"Successfully processed Entra External ID login for: {user.email}"
+            )
             return user, internal_token
 
         except Exception as e:

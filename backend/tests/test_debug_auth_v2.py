@@ -49,7 +49,9 @@ def test_debug_auth_response(mock_current_user):
         mock_require.side_effect = mock_permission_func
 
         # Also patch the imports in the trips module
-        with patch("app.api.trips.require_permissions", side_effect=mock_permission_func):
+        with patch(
+            "app.api.trips.require_permissions", side_effect=mock_permission_func
+        ):
             client = TestClient(app)
 
             trip_data = {

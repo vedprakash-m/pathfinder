@@ -149,7 +149,9 @@ class MapsService:
                         place_id=result.get("place_id"),
                     )
 
-                logger.warning(f"Reverse geocoding failed for {lat},{lng}: {data['status']}")
+                logger.warning(
+                    f"Reverse geocoding failed for {lat},{lng}: {data['status']}"
+                )
                 return None
 
         except Exception as e:
@@ -349,7 +351,9 @@ class MapsService:
                         opening_hours = {
                             "open_now": result["opening_hours"].get("open_now"),
                             "periods": result["opening_hours"].get("periods", []),
-                            "weekday_text": result["opening_hours"].get("weekday_text", []),
+                            "weekday_text": result["opening_hours"].get(
+                                "weekday_text", []
+                            ),
                         }
 
                     return Place(
@@ -366,7 +370,9 @@ class MapsService:
                         website=result.get("website"),
                     )
 
-                logger.warning(f"Place details not found for {place_id}: {data['status']}")
+                logger.warning(
+                    f"Place details not found for {place_id}: {data['status']}"
+                )
                 return None
 
         except Exception as e:

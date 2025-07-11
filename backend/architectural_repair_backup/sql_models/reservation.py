@@ -79,7 +79,9 @@ class Reservation(Base):
     # Basic information
     name = Column(String(200), nullable=False)
     description = Column(Text, nullable=True)
-    provider_name = Column(String(200), nullable=True)  # Hotel name, restaurant name, etc.
+    provider_name = Column(
+        String(200), nullable=True
+    )  # Hotel name, restaurant name, etc.
 
     # Location information
     location_name = Column(String(200), nullable=True)
@@ -150,7 +152,9 @@ class ReservationDocument(Base):
 
     # Document details
     name = Column(String(200), nullable=False)
-    document_type = Column(String(50), nullable=False)  # confirmation, ticket, receipt, etc.
+    document_type = Column(
+        String(50), nullable=False
+    )  # confirmation, ticket, receipt, etc.
     file_path = Column(String(500), nullable=True)
     file_url = Column(Text, nullable=True)
     file_size = Column(Integer, nullable=True)

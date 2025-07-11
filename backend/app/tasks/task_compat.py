@@ -13,7 +13,9 @@ from app.core.logging_config import get_logger
 logger = get_logger(__name__)
 
 
-def conditional_task(bind: bool = True, name: Optional[str] = None, max_retries: int = 3):
+def conditional_task(
+    bind: bool = True, name: Optional[str] = None, max_retries: int = 3
+):
     """
     Decorator that creates tasks compatible with both Celery and Redis-free modes.
 
@@ -30,7 +32,9 @@ def conditional_task(bind: bool = True, name: Optional[str] = None, max_retries:
             @functools.wraps(func)
             def wrapper(*args, **kwargs):
                 try:
-                    logger.debug(f"Executing task {name or func.__name__} in Redis-free mode")
+                    logger.debug(
+                        f"Executing task {name or func.__name__} in Redis-free mode"
+                    )
 
                     # Handle bound tasks (first arg is 'self')
                     if bind and args:
@@ -41,7 +45,9 @@ def conditional_task(bind: bool = True, name: Optional[str] = None, max_retries:
                         return func(*args, **kwargs)
 
                 except Exception as e:
-                    logger.error(f"Task {name or func.__name__} failed in Redis-free mode: {e}")
+                    logger.error(
+                        f"Task {name or func.__name__} failed in Redis-free mode: {e}"
+                    )
                     raise
 
             # Add task-like attributes for compatibility
@@ -65,7 +71,9 @@ class MockTaskContext:
         self.max_retries = max_retries
         self.request = MockRequest()
 
-    def retry(self, exc: Exception, countdown: int = 60, max_retries: Optional[int] = None):
+    def retry(
+        self, exc: Exception, countdown: int = 60, max_retries: Optional[int] = None
+    ):
         """
         Mock retry functionality for Redis-free mode.
         In production, this would be handled by a proper task queue.
@@ -83,7 +91,9 @@ class MockTaskContext:
             self.request.retries = current_retries + 1
             raise exc
         else:
-            logger.error(f"Task {self.task_name} exhausted retries ({max_retries}). Giving up.")
+            logger.error(
+                f"Task {self.task_name} exhausted retries ({max_retries}). Giving up."
+            )
             raise exc
 
 

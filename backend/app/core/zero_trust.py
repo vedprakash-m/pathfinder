@@ -20,6 +20,7 @@ from app.core.config import get_settings
 from app.core.context_validator import context_validator
 from app.repositories.cosmos_unified import UserDocument
 from app.core.security import verify_token
+
 # SQL User model removed - use Cosmos UserDocument
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -106,7 +107,9 @@ class ZeroTrustSecurity:
 
         # 2. Verify resource-specific access
         if resource_id:
-            resource_access = await self._check_resource_access(user, resource_type, resource_id)
+            resource_access = await self._check_resource_access(
+                user, resource_type, resource_id
+            )
             if not resource_access:
                 logger.warning(
                     f"Access denied: User {user.id} cannot access {resource_type}/{resource_id}"
@@ -128,7 +131,9 @@ class ZeroTrustSecurity:
 
         return True
 
-    async def _check_permission(self, user: UserDocument, resource_type: str, action: str) -> bool:
+    async def _check_permission(
+        self, user: UserDocument, resource_type: str, action: str
+    ) -> bool:
         """Check if user has permission for the action on the resource type."""
         # Map of resource types to required permissions
         permission_map = {
@@ -196,7 +201,9 @@ class ZeroTrustSecurity:
                     """
                     )
 
-                    result = await db.execute(query, {"trip_id": resource_id, "user_id": user.id})
+                    result = await db.execute(
+                        query, {"trip_id": resource_id, "user_id": user.id}
+                    )
                     has_access = result.scalar()
 
                     if not has_access:
@@ -224,7 +231,9 @@ class ZeroTrustSecurity:
                     """
                     )
 
-                    result = await db.execute(query, {"family_id": resource_id, "user_id": user.id})
+                    result = await db.execute(
+                        query, {"family_id": resource_id, "user_id": user.id}
+                    )
                     has_access = result.scalar()
 
                     if not has_access:
@@ -303,13 +312,15 @@ def require_permissions(resource_type: str, action: str):
     """Decorator to require zero-trust verified permissions for a resource."""
 
     async def permission_checker(
-        request: Request, credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
+        request: Request,
+        credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     ):
         try:
             # Handle missing credentials
             if credentials is None:
                 raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header required"
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Authorization header required",
                 )
 
             # Verify token and get user
@@ -363,7 +374,9 @@ def require_permissions(resource_type: str, action: str):
                             status_code=status.HTTP_403_FORBIDDEN,
                             detail="Access denied due to suspicious activity",
                         )
-                    elif validation_result["risk_score"] > settings.MFA_TRIGGER_THRESHOLD:
+                    elif (
+                        validation_result["risk_score"] > settings.MFA_TRIGGER_THRESHOLD
+                    ):
                         raise HTTPException(
                             status_code=status.HTTP_401_UNAUTHORIZED,
                             detail="Additional verification required",

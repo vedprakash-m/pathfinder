@@ -96,7 +96,9 @@ class Day2MigrationValidator:
             reservation = await unified_cosmos_repo.create_reservation(reservation_data)
             print(f"    ✅ Created reservation: {reservation.id}")
 
-            trip_reservations = await unified_cosmos_repo.get_trip_reservations("test-trip-123")
+            trip_reservations = await unified_cosmos_repo.get_trip_reservations(
+                "test-trip-123"
+            )
             print(f"    ✅ Retrieved {len(trip_reservations)} reservations for trip")
 
             self.results["cosmos_functionality"]["reservations"] = True
@@ -171,7 +173,9 @@ class Day2MigrationValidator:
             itinerary = await unified_cosmos_repo.create_itinerary(itinerary_data)
             print(f"    ✅ Created itinerary: {itinerary.id}")
 
-            trip_itineraries = await unified_cosmos_repo.get_trip_itineraries("test-trip-123")
+            trip_itineraries = await unified_cosmos_repo.get_trip_itineraries(
+                "test-trip-123"
+            )
             print(f"    ✅ Retrieved {len(trip_itineraries)} itineraries for trip")
 
             self.results["cosmos_functionality"]["itineraries"] = True
@@ -211,7 +215,11 @@ class Day2MigrationValidator:
 
         # Calculate completion percentages
         sql_cleanup_pct = (
-            (sum(self.results["sql_cleanup"].values()) / len(self.results["sql_cleanup"]) * 100)
+            (
+                sum(self.results["sql_cleanup"].values())
+                / len(self.results["sql_cleanup"])
+                * 100
+            )
             if self.results["sql_cleanup"]
             else 0
         )
@@ -236,7 +244,9 @@ class Day2MigrationValidator:
             else 0
         )
 
-        overall_pct = (sql_cleanup_pct + cosmos_functionality_pct + endpoint_migration_pct) / 3
+        overall_pct = (
+            sql_cleanup_pct + cosmos_functionality_pct + endpoint_migration_pct
+        ) / 3
 
         # Determine overall status
         if overall_pct >= 90:

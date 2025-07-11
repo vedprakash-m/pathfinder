@@ -8,6 +8,7 @@ from enum import Enum
 
 class UserRole(str, Enum):
     """User role enumeration."""
+
     ADMIN = "admin"
     MEMBER = "member"
     VIEWER = "viewer"
@@ -15,6 +16,7 @@ class UserRole(str, Enum):
 
 class TripStatus(str, Enum):
     """Trip status enumeration."""
+
     DRAFT = "draft"
     PLANNING = "planning"
     CONFIRMED = "confirmed"
@@ -25,6 +27,7 @@ class TripStatus(str, Enum):
 
 class ActivityType(str, Enum):
     """Activity type enumeration."""
+
     ACCOMMODATION = "accommodation"
     TRANSPORTATION = "transportation"
     DINING = "dining"
@@ -37,6 +40,7 @@ class ActivityType(str, Enum):
 
 class DifficultyLevel(str, Enum):
     """Activity difficulty level."""
+
     EASY = "easy"
     MODERATE = "moderate"
     CHALLENGING = "challenging"
@@ -45,6 +49,7 @@ class DifficultyLevel(str, Enum):
 
 class ItineraryStatus(str, Enum):
     """Itinerary status enumeration."""
+
     DRAFT = "draft"
     ACTIVE = "active"
     COMPLETED = "completed"
@@ -53,6 +58,7 @@ class ItineraryStatus(str, Enum):
 
 class ParticipationStatus(str, Enum):
     """Participation status enumeration."""
+
     INVITED = "invited"
     ACCEPTED = "accepted"
     DECLINED = "declined"

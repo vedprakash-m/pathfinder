@@ -60,7 +60,9 @@ class InMemoryCache:
         if now - self._last_cleanup > self._cleanup_interval:
             with self._lock:
                 # Find keys to remove
-                expired_keys = [key for key, item in self._cache.items() if item.is_expired()]
+                expired_keys = [
+                    key for key, item in self._cache.items() if item.is_expired()
+                ]
 
                 # Remove expired keys
                 for key in expired_keys:
@@ -135,7 +137,9 @@ class InMemoryCache:
 
         return result
 
-    async def set_many(self, mapping: Dict[str, Any], ttl: Optional[int] = None) -> bool:
+    async def set_many(
+        self, mapping: Dict[str, Any], ttl: Optional[int] = None
+    ) -> bool:
         """Set multiple values in cache."""
         if ttl is None:
             ttl = (
@@ -230,7 +234,9 @@ class RedisCache:
 
         return default
 
-    async def set(self, key: str, value: Any, ttl: Optional[int] = None, nx: bool = False) -> bool:
+    async def set(
+        self, key: str, value: Any, ttl: Optional[int] = None, nx: bool = False
+    ) -> bool:
         """Set a value in cache."""
         if ttl is None:
             ttl = getattr(settings, "REDIS_TTL", None) or settings.CACHE_TTL
@@ -394,7 +400,9 @@ class RedisCache:
 
         return result
 
-    async def set_many(self, mapping: Dict[str, Any], ttl: Optional[int] = None) -> bool:
+    async def set_many(
+        self, mapping: Dict[str, Any], ttl: Optional[int] = None
+    ) -> bool:
         """Set multiple values in cache."""
         if ttl is None:
             ttl = getattr(settings, "REDIS_TTL", None) or settings.CACHE_TTL

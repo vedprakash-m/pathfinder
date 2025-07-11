@@ -145,7 +145,6 @@ class TestAPIAuthentication:
                 patch("app.api.auth.authenticate_user") as mock_auth,
                 patch("app.api.auth.create_access_token") as mock_token,
             ):
-
                 mock_auth.return_value = {"id": "123", "email": "test@example.com"}
                 mock_token.return_value = "test_token"
 

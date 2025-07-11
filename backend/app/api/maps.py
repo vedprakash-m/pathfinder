@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """
 Maps API endpoints for location services.
 Provides endpoints for geocoding, route planning, and place search.
@@ -20,11 +21,13 @@ router = APIRouter()
 
 class LocationRequest(BaseModel):
     """Request model for location operations."""
+
     address: str = Field(..., description="Address to geocode")
 
 
 class LocationResponse(BaseModel):
     """Response model for location data."""
+
     lat: float
     lng: float
     address: str
@@ -34,6 +37,7 @@ class LocationResponse(BaseModel):
 
 class PlaceResponse(BaseModel):
     """Response model for place data."""
+
     place_id: str
     name: str
     address: str
@@ -49,6 +53,7 @@ class PlaceResponse(BaseModel):
 
 class RouteRequest(BaseModel):
     """Request model for route planning."""
+
     origin: str = Field(..., description="Starting location")
     destination: str = Field(..., description="Ending location")
     waypoints: Optional[list[str]] = Field(None, description="Optional waypoints")
@@ -58,6 +63,7 @@ class RouteRequest(BaseModel):
 
 class RouteStepResponse(BaseModel):
     """Response model for route steps."""
+
     instruction: str
     distance: str
     duration: str
@@ -67,6 +73,7 @@ class RouteStepResponse(BaseModel):
 
 class RouteResponse(BaseModel):
     """Response model for route data."""
+
     distance: str
     duration: str
     steps: list[RouteStepResponse]
@@ -77,6 +84,7 @@ class RouteResponse(BaseModel):
 
 class PlaceSearchRequest(BaseModel):
     """Request model for place search."""
+
     query: str = Field(..., description="Search query")
     location: Optional[LocationResponse] = Field(None, description="Center location")
     radius: int = Field(50000, description="Search radius in meters")
@@ -139,7 +147,7 @@ async def reverse_geocode_coordinates(
     request: Request,
     lat: float = Query(..., description="Latitude"),
     lng: float = Query(..., description="Longitude"),
-    current_user: User = Depends(require_permissions("maps", "read"))
+    current_user: User = Depends(require_permissions("maps", "read")),
 ):
     """Reverse geocode coordinates to get address."""
     try:
@@ -155,14 +163,16 @@ async def reverse_geocode_coordinates(
 
     except Exception as e:
         logger.error(f"Error reverse geocoding coordinates {lat}, {lng}: {e}")
-        raise HTTPException(status_code=500, detail="Error reverse geocoding coordinates")
+        raise HTTPException(
+            status_code=500, detail="Error reverse geocoding coordinates"
+        )
 
 
 @router.post("/route", response_model=RouteResponse)
 async def get_route(
     request_data: RouteRequest,
     request: Request,
-    current_user: User = Depends(require_permissions("maps", "read"))
+    current_user: User = Depends(require_permissions("maps", "read")),
 ):
     """Get route between locations."""
     try:
@@ -202,7 +212,9 @@ async def get_route(
         )
 
     except Exception as e:
-        logger.error(f"Error getting route from {request_data.origin} to {request_data.destination}: {e}")
+        logger.error(
+            f"Error getting route from {request_data.origin} to {request_data.destination}: {e}"
+        )
         raise HTTPException(status_code=500, detail="Error getting route")
 
 
@@ -210,7 +222,7 @@ async def get_route(
 async def search_places(
     request_data: PlaceSearchRequest,
     request: Request,
-    current_user: User = Depends(require_permissions("maps", "read"))
+    current_user: User = Depends(require_permissions("maps", "read")),
 ):
     """Search for places using Google Places API."""
     try:
@@ -243,7 +255,7 @@ async def search_places(
 async def get_place_details(
     place_id: str,
     request: Request,
-    current_user: User = Depends(require_permissions("maps", "read"))
+    current_user: User = Depends(require_permissions("maps", "read")),
 ):
     """Get detailed information about a specific place."""
     try:
@@ -263,9 +275,11 @@ async def get_place_details(
 async def get_distance_matrix(
     request: Request,
     origins: str = Query(..., description="Comma-separated list of origin locations"),
-    destinations: str = Query(..., description="Comma-separated list of destination locations"),
+    destinations: str = Query(
+        ..., description="Comma-separated list of destination locations"
+    ),
     mode: str = Query("driving", description="Travel mode"),
-    current_user: User = Depends(require_permissions("maps", "read"))
+    current_user: User = Depends(require_permissions("maps", "read")),
 ):
     """Get distance and duration matrix between multiple origins and destinations."""
     try:
@@ -292,13 +306,15 @@ async def find_nearby_attractions(
     lat: float = Query(..., description="Latitude"),
     lng: float = Query(..., description="Longitude"),
     radius: int = Query(25000, description="Search radius in meters"),
-    current_user: User = Depends(require_permissions("maps", "read"))
+    current_user: User = Depends(require_permissions("maps", "read")),
 ):
     """Find tourist attractions near a location."""
     try:
         location = Location(lat=lat, lng=lng, address="")
 
-        places = await maps_service.find_nearby_attractions(location=location, radius=radius)
+        places = await maps_service.find_nearby_attractions(
+            location=location, radius=radius
+        )
 
         return [_convert_place_to_response(place) for place in places]
 

@@ -51,12 +51,16 @@ class TripRepository:
         await self._db.flush()
         return trip
 
-    async def get_trip_by_id(self, trip_id: UUID, user_id: str = None) -> Optional[Trip]:
+    async def get_trip_by_id(
+        self, trip_id: UUID, user_id: str = None
+    ) -> Optional[Trip]:
         """Get trip by ID, optionally with user permission check."""
         query = (
             select(Trip)
             .options(
-                selectinload(Trip.participations).selectinload(TripParticipation.family),
+                selectinload(Trip.participations).selectinload(
+                    TripParticipation.family
+                ),
                 selectinload(Trip.participations).selectinload(TripParticipation.user),
                 selectinload(Trip.creator),
             )
@@ -65,7 +69,9 @@ class TripRepository:
         result = await self._db.execute(query)
         return result.scalar_one_or_none()
 
-    async def update_trip(self, trip_or_id, trip_update=None, user_id: str = None) -> Trip:
+    async def update_trip(
+        self, trip_or_id, trip_update=None, user_id: str = None
+    ) -> Trip:
         """Update trip - handles both (trip) and (trip_id, trip_update, user_id) signatures."""
         if trip_update is None and user_id is None:
             # Original signature: update_trip(trip)
@@ -127,7 +133,9 @@ class TripRepository:
         res = await self._db.execute(stmt)
         return res.scalars().all()
 
-    async def get_participation_by_id(self, participation_id: UUID) -> Optional[TripParticipation]:
+    async def get_participation_by_id(
+        self, participation_id: UUID
+    ) -> Optional[TripParticipation]:
         stmt = select(TripParticipation).where(TripParticipation.id == participation_id)
         res = await self._db.execute(stmt)
         return res.scalar_one_or_none()
@@ -189,12 +197,16 @@ class TripRepository:
         """Alias for list_user_trips for backward compatibility."""
         return await self.list_user_trips(user_id, skip, limit, status_filter)
 
-    async def get_trip_by_id_with_user_check(self, trip_id: UUID, user_id: str) -> Optional[Trip]:
+    async def get_trip_by_id_with_user_check(
+        self, trip_id: UUID, user_id: str
+    ) -> Optional[Trip]:
         """Get trip by ID with user permission check."""
         # For now, just call the base method - permission checks would be in service layer
         return await self.get_trip_by_id(trip_id)
 
-    async def update_trip_with_user_check(self, trip_id: UUID, trip_update, user_id: str) -> Trip:
+    async def update_trip_with_user_check(
+        self, trip_id: UUID, trip_update, user_id: str
+    ) -> Trip:
         """Update trip with permission check."""
         trip = await self.get_trip_by_id(trip_id)
         if not trip:
@@ -217,7 +229,11 @@ class TripRepository:
         await self.delete_trip(trip)
 
     async def add_family_to_trip(
-        self, trip_id: UUID, family_id: UUID, user_id: str, budget_allocation: float = None
+        self,
+        trip_id: UUID,
+        family_id: UUID,
+        user_id: str,
+        budget_allocation: float = None,
     ) -> TripParticipation:
         """Add a family to a trip."""
         participation = TripParticipation(
@@ -243,7 +259,12 @@ class TripRepository:
 
         TripStats = namedtuple(
             "TripStats",
-            ["total_families", "confirmed_families", "budget_allocated", "days_until_trip"],
+            [
+                "total_families",
+                "confirmed_families",
+                "budget_allocated",
+                "days_until_trip",
+            ],
         )
 
         total_families = len(participations)

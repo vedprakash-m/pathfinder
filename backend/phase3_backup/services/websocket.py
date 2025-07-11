@@ -52,7 +52,9 @@ class ConnectionManager:
         self.user_connections.clear()
         self.connection_metadata.clear()
 
-    async def connect(self, websocket: WebSocket, user_id: str, trip_id: Optional[str] = None):
+    async def connect(
+        self, websocket: WebSocket, user_id: str, trip_id: Optional[str] = None
+    ):
         """Accept and register a new WebSocket connection."""
         await websocket.accept()
 
@@ -144,7 +146,9 @@ class ConnectionManager:
                 trip_id,
             )
 
-    async def send_personal_message(self, message: Dict[str, Any], websocket: WebSocket):
+    async def send_personal_message(
+        self, message: Dict[str, Any], websocket: WebSocket
+    ):
         """Send a message to a specific WebSocket connection."""
         try:
             await websocket.send_text(json.dumps(message))
@@ -316,7 +320,9 @@ class ConnectionManager:
                 await self.broadcast_to_trip(
                     {
                         "type": "new_message",
-                        "message": message.dict(exclude={"_resource_id", "_etag", "_ts"}),
+                        "message": message.dict(
+                            exclude={"_resource_id", "_etag", "_ts"}
+                        ),
                         "trip_id": trip_id,
                         "timestamp": datetime.now(timezone.utc).isoformat(),
                     },
@@ -329,7 +335,9 @@ class ConnectionManager:
             logger.error(f"Error sending trip message: {e}")
             return False
 
-    async def get_trip_recent_messages(self, websocket: WebSocket, limit: int = 20) -> None:
+    async def get_trip_recent_messages(
+        self, websocket: WebSocket, limit: int = 20
+    ) -> None:
         """
         Get and send recent messages for the current trip to a user.
 
@@ -348,7 +356,9 @@ class ConnectionManager:
 
         try:
             # Get messages from Cosmos DB
-            messages = await self.cosmos_ops.get_trip_messages(trip_id=trip_id, limit=limit)
+            messages = await self.cosmos_ops.get_trip_messages(
+                trip_id=trip_id, limit=limit
+            )
 
             if messages:
                 # Send messages to the requesting client
@@ -356,7 +366,8 @@ class ConnectionManager:
                     {
                         "type": "message_history",
                         "messages": [
-                            m.dict(exclude={"_resource_id", "_etag", "_ts"}) for m in messages
+                            m.dict(exclude={"_resource_id", "_etag", "_ts"})
+                            for m in messages
                         ],
                         "trip_id": trip_id,
                         "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -372,7 +383,9 @@ websocket_manager = ConnectionManager()
 
 
 # WebSocket message handlers
-async def handle_websocket_message(websocket: WebSocket, message: Dict[str, Any], user_id: str):
+async def handle_websocket_message(
+    websocket: WebSocket, message: Dict[str, Any], user_id: str
+):
     """Handle incoming WebSocket messages."""
     message_type = message.get("type")
 
@@ -422,7 +435,9 @@ async def handle_websocket_message(websocket: WebSocket, message: Dict[str, Any]
         elif message_type == "get_messages":
             # Handle message history requests
             limit = message.get("limit", 20)
-            await websocket_manager.get_trip_recent_messages(websocket=websocket, limit=limit)
+            await websocket_manager.get_trip_recent_messages(
+                websocket=websocket, limit=limit
+            )
 
         elif message_type == "itinerary_update":
             # Handle itinerary updates

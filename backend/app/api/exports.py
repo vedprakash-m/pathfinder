@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """
 from app.repositories.cosmos_unified import UnifiedCosmosRepository, UserDocument
 from app.core.database_unified import get_cosmos_service
@@ -22,11 +23,20 @@ from app.core.container import Container
 from app.core.database_unified import get_cosmos_repository
 from app.core.logging_config import get_logger
 from app.core.security import get_current_user, require_permissions
+
 # SQL User model removed - use Cosmos UserDocument
 from app.repositories.cosmos_unified import UnifiedCosmosRepository
 from app.services.export_service import DataExportService
 from app.tasks.export_tasks import bulk_export_trips, export_trip_data
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Query,
+    Request,
+    status,
+)
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -36,6 +46,7 @@ logger = get_logger(__name__)
 class ExportRequest(BaseModel):
     """Export request model."""
 
+
 format: str = "excel"
 export_type: str = "complete"
 async_processing: bool = True
@@ -43,6 +54,7 @@ async_processing: bool = True
 
 class BulkExportRequest(BaseModel):
     """Bulk export request model."""
+
 
 trip_ids: list[UUID]
 format: str = "excel"
@@ -52,24 +64,27 @@ async_processing: bool = True
 @router.post("/trips/{trip_id}")
 async def export_trip(
     trip_id: UUID,
-export_request: ExportRequest,
-background_tasks: BackgroundTasks,
-request: Request,
-current_user: dict = Depends(require_permissions(["trips: read"])),
-cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository)
+    export_request: ExportRequest,
+    background_tasks: BackgroundTasks,
+    request: Request,
+    current_user: dict = Depends(require_permissions(["trips: read"])),
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
 ):
     """Export trip data in various formats."""
     try:
         # Verify user has access to trip
         trip = await cosmos_repo.get_trip_by_id(str(trip_id))
         if not trip:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found"
+            )
 
         # Check if user has access to the trip
         user_trips = await cosmos_repo.get_user_trips(current_user["id"])
         if not any(t.id == str(trip_id) for t in user_trips):
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to export this trip"
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not authorized to export this trip",
             )
 
         if export_request.async_processing:
@@ -145,7 +160,7 @@ cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository)
 @router.get("/tasks/{task_id}")
 async def get_export_task_status(
     task_id: str,
-current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
 ):
     """Get the status of an export task."""
     try:

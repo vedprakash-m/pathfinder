@@ -58,7 +58,9 @@ async def test_cost_tracker_budget_limit():
 
     # Track high token usage to exceed budget faster
     for _ in range(10):
-        tracker.track_usage("gpt-4o", 5000, 5000, "general")  # Each call costs ~$0.10, total ~$1.00
+        tracker.track_usage(
+            "gpt-4o", 5000, 5000, "general"
+        )  # Each call costs ~$0.10, total ~$1.00
 
     # Verify the data structure was created correctly
     assert today in tracker.daily_usage
@@ -169,7 +171,11 @@ async def test_ai_service_generate_itinerary(mock_openai_response):
         # Create a properly structured mock response
         mock_response = {
             "content": '{"overview": "Test itinerary", "daily_itinerary": [{"day": 1, "activities": ["Test activity"]}], "budget_summary": {"total": 1000}}',
-            "usage": {"prompt_tokens": 100, "completion_tokens": 200, "total_tokens": 300},
+            "usage": {
+                "prompt_tokens": 100,
+                "completion_tokens": 200,
+                "total_tokens": 300,
+            },
         }
         mock_api_call.return_value = mock_response
 
@@ -182,7 +188,9 @@ async def test_ai_service_generate_itinerary(mock_openai_response):
         assert result is not None
         assert "overview" in result
         assert "daily_itinerary" in result
-        assert result["overview"] == "Test itinerary"  # overview is a string in our mock
+        assert (
+            result["overview"] == "Test itinerary"
+        )  # overview is a string in our mock
         assert len(result["daily_itinerary"]) > 0
 
 
@@ -216,7 +224,11 @@ async def test_ai_service_with_cost_tracking(mock_openai_response):
         # Create a properly structured mock response
         mock_response = {
             "content": '{"overview": "Test itinerary", "daily_itinerary": [{"day": 1, "activities": ["Test activity"]}], "budget_summary": {"total": 1000}}',
-            "usage": {"prompt_tokens": 100, "completion_tokens": 200, "total_tokens": 300},
+            "usage": {
+                "prompt_tokens": 100,
+                "completion_tokens": 200,
+                "total_tokens": 300,
+            },
         }
         mock_api_call.return_value = mock_response
 
@@ -311,6 +323,8 @@ async def test_ai_service_budget_exceeded():
 
     # Act & Assert
     with pytest.raises(Exception) as excinfo:
-        await ai_service.generate_itinerary(destination, duration_days, families_data, preferences)
+        await ai_service.generate_itinerary(
+            destination, duration_days, families_data, preferences
+        )
 
     assert "budget" in str(excinfo.value).lower()

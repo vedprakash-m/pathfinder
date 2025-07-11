@@ -70,7 +70,9 @@ class TripDomainService:  # pragma: no cover – thin façade for now
             creator_id=trip_doc.creator_id,
             created_at=trip_doc.created_at,
             updated_at=trip_doc.updated_at,
-            participant_count=len(trip_doc.participants) if trip_doc.participants else 0,
+            participant_count=len(trip_doc.participants)
+            if trip_doc.participants
+            else 0,
             preferences=trip_doc.preferences,
         )
 
@@ -81,7 +83,9 @@ class TripDomainService:  # pragma: no cover – thin façade for now
             return None
 
         # Access control: creator or participant
-        if trip_doc.creator_id != user_id and user_id not in (trip_doc.participants or []):
+        if trip_doc.creator_id != user_id and user_id not in (
+            trip_doc.participants or []
+        ):
             return None
 
         # Convert to TripDetail format
@@ -109,7 +113,9 @@ class TripDomainService:  # pragma: no cover – thin façade for now
         status_filter: Optional[str] = None,
     ) -> List[TripResponse]:
         """Get all trips for a user using unified Cosmos DB."""
-        trip_docs = await self._cosmos_repo.get_user_trips(user_id, skip, limit, status_filter)
+        trip_docs = await self._cosmos_repo.get_user_trips(
+            user_id, skip, limit, status_filter
+        )
 
         return [
             TripResponse(
@@ -130,7 +136,9 @@ class TripDomainService:  # pragma: no cover – thin façade for now
             for trip in trip_docs
         ]
 
-    async def update_trip(self, trip_id: UUID, update: TripUpdate, user_id: str) -> TripResponse:
+    async def update_trip(
+        self, trip_id: UUID, update: TripUpdate, user_id: str
+    ) -> TripResponse:
         """Update trip using unified Cosmos DB repository."""
         trip_doc = await self._cosmos_repo.get_trip_by_id(str(trip_id))
         if not trip_doc:
@@ -155,7 +163,9 @@ class TripDomainService:  # pragma: no cover – thin façade for now
             creator_id=updated_trip.creator_id,
             created_at=updated_trip.created_at,
             updated_at=updated_trip.updated_at,
-            participant_count=len(updated_trip.participants) if updated_trip.participants else 0,
+            participant_count=len(updated_trip.participants)
+            if updated_trip.participants
+            else 0,
             preferences=updated_trip.preferences,
         )
 
@@ -176,14 +186,18 @@ class TripDomainService:  # pragma: no cover – thin façade for now
     # Stats & participants
     # ---------------------------------------------------------------------
 
-    async def get_trip_stats(self, trip_id: UUID, user_id: str) -> TripStats | None:  # noqa: D401
+    async def get_trip_stats(
+        self, trip_id: UUID, user_id: str
+    ) -> TripStats | None:  # noqa: D401
         """Get trip statistics using unified Cosmos DB repository."""
         trip_doc = await self._cosmos_repo.get_trip_by_id(str(trip_id))
         if not trip_doc:
             return None
 
         # Access check
-        if trip_doc.creator_id != user_id and user_id not in (trip_doc.participants or []):
+        if trip_doc.creator_id != user_id and user_id not in (
+            trip_doc.participants or []
+        ):
             return None
 
         _participants = trip_doc.participants or []
@@ -195,7 +209,9 @@ class TripDomainService:  # pragma: no cover – thin façade for now
             [p for p in participations if p.status == ParticipationStatus.PENDING]
         )
 
-        total_participants = total_families  # placeholder – individual members not tracked yet
+        total_participants = (
+            total_families  # placeholder – individual members not tracked yet
+        )
 
         budget_allocated = sum(float(p.budget_allocation or 0) for p in participations)
         budget_spent = 0.0  # TODO: aggregate reservations once repository exists
@@ -277,7 +293,9 @@ class TripDomainService:  # pragma: no cover – thin façade for now
                 family_id=str(p.family_id),
                 user_id=str(p.user_id),
                 status=p.status,
-                budget_allocation=float(p.budget_allocation) if p.budget_allocation else None,
+                budget_allocation=float(p.budget_allocation)
+                if p.budget_allocation
+                else None,
                 preferences=json.loads(p.preferences) if p.preferences else None,
                 notes=p.notes,
                 joined_at=p.joined_at,
@@ -293,7 +311,9 @@ class TripDomainService:  # pragma: no cover – thin façade for now
         user_id: str,
     ) -> ParticipationResponse:
         if not self._trip_repo:
-            return await self._svc.update_participation(participation_id, update, user_id)
+            return await self._svc.update_participation(
+                participation_id, update, user_id
+            )
 
         participation = await self._trip_repo.get_participation_by_id(participation_id)
         if not participation:
@@ -320,10 +340,14 @@ class TripDomainService:  # pragma: no cover – thin façade for now
             user_id=str(participation.user_id),
             status=participation.status,
             budget_allocation=(
-                float(participation.budget_allocation) if participation.budget_allocation else None
+                float(participation.budget_allocation)
+                if participation.budget_allocation
+                else None
             ),
             preferences=(
-                json.loads(participation.preferences) if participation.preferences else None
+                json.loads(participation.preferences)
+                if participation.preferences
+                else None
             ),
             notes=participation.notes,
             joined_at=participation.joined_at,
@@ -346,7 +370,9 @@ class TripDomainService:  # pragma: no cover – thin façade for now
         await self._trip_repo.delete_participation(participation)
         await self._trip_repo.commit()
 
-    async def send_invitation(self, trip_id: UUID, data: TripInvitation, user_id: str) -> None:
+    async def send_invitation(
+        self, trip_id: UUID, data: TripInvitation, user_id: str
+    ) -> None:
         await self._svc.send_invitation(data, user_id)
 
     # ---------------------------------------------------------------------
@@ -407,12 +433,16 @@ class TripDomainService:  # pragma: no cover – thin façade for now
         completion_factors = []
         # Basic info (25%)
         completion_factors.append(
-            25.0 if all([trip.name, trip.destination, trip.start_date, trip.end_date]) else 0.0
+            25.0
+            if all([trip.name, trip.destination, trip.start_date, trip.end_date])
+            else 0.0
         )
 
         # Participants confirmed (25%)
         total = len(participations)
-        confirmed = len([p for p in participations if p.status == ParticipationStatus.CONFIRMED])
+        confirmed = len(
+            [p for p in participations if p.status == ParticipationStatus.CONFIRMED]
+        )
         completion_factors.append(25.0 * (confirmed / max(1, total)))
 
         # Budget planning (25%)
@@ -443,7 +473,9 @@ class TripDomainService:  # pragma: no cover – thin façade for now
                     family_id=str(p.family_id),
                     user_id=str(p.user_id),
                     status=p.status,
-                    budget_allocation=float(p.budget_allocation) if p.budget_allocation else None,
+                    budget_allocation=float(p.budget_allocation)
+                    if p.budget_allocation
+                    else None,
                     preferences=json.loads(p.preferences) if p.preferences else None,
                     notes=p.notes,
                     joined_at=p.joined_at,
@@ -470,7 +502,9 @@ class TripDomainService:  # pragma: no cover – thin façade for now
                 return p
         return None
 
-    async def update_trip_status(self, trip_id: UUID, status: str, user_id: str) -> None:
+    async def update_trip_status(
+        self, trip_id: UUID, status: str, user_id: str
+    ) -> None:
         """Update the `status` field of a trip with permission checks."""
 
         if not self._trip_repo:

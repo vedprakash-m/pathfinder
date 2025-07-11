@@ -59,13 +59,16 @@ class Day4SecurityAuditSimplified:
                         for header in ["security", "headers", "middleware"]
                     ),
                     "authentication": any(
-                        auth in main_content.lower() for auth in ["auth", "security", "token"]
+                        auth in main_content.lower()
+                        for auth in ["auth", "security", "token"]
                     ),
                     "error_handling": "HTTPException" in main_content
                     or "exception" in main_content.lower(),
                 }
 
-                security_score = sum(security_features.values()) / len(security_features) * 100
+                security_score = (
+                    sum(security_features.values()) / len(security_features) * 100
+                )
 
                 self.log_result(
                     "Security Config - main.py security features",
@@ -78,7 +81,9 @@ class Day4SecurityAuditSimplified:
                     print(f"   {status} {feature.replace('_', ' ').title()}")
 
             else:
-                self.log_result("Security Config - main.py check", False, "main.py not found")
+                self.log_result(
+                    "Security Config - main.py check", False, "main.py not found"
+                )
 
             self.test_results["security_configuration_check"] = True
 
@@ -91,7 +96,9 @@ class Day4SecurityAuditSimplified:
 
         try:
             # Check security module
-            security_py_path = os.path.join(self.backend_path, "app", "core", "security.py")
+            security_py_path = os.path.join(
+                self.backend_path, "app", "core", "security.py"
+            )
             if os.path.exists(security_py_path):
                 with open(security_py_path, "r") as f:
                     security_content = f.read()
@@ -123,7 +130,9 @@ class Day4SecurityAuditSimplified:
                 )
 
             # Check for VedUser interface compliance
-            user_model_path = os.path.join(self.backend_path, "app", "models", "user.py")
+            user_model_path = os.path.join(
+                self.backend_path, "app", "models", "user.py"
+            )
             if os.path.exists(user_model_path):
                 with open(user_model_path, "r") as f:
                     user_content = f.read()
@@ -141,7 +150,9 @@ class Day4SecurityAuditSimplified:
                     ),
                 )
             else:
-                self.log_result("Authentication - User model check", False, "user.py not found")
+                self.log_result(
+                    "Authentication - User model check", False, "user.py not found"
+                )
 
             self.test_results["authentication_implementation"] = True
 
@@ -162,10 +173,12 @@ class Day4SecurityAuditSimplified:
                 cors_config = {
                     "cors_import": "fastapi.middleware.cors" in main_content
                     or "CORSMiddleware" in main_content,
-                    "cors_middleware": "add_middleware" in main_content and "CORS" in main_content,
+                    "cors_middleware": "add_middleware" in main_content
+                    and "CORS" in main_content,
                     "allowed_origins": "allow_origins" in main_content,
                     "security_middleware": any(
-                        sec in main_content.lower() for sec in ["security", "auth", "middleware"]
+                        sec in main_content.lower()
+                        for sec in ["security", "auth", "middleware"]
                     ),
                 }
 
@@ -183,7 +196,9 @@ class Day4SecurityAuditSimplified:
 
             else:
                 self.log_result(
-                    "CORS & Middleware - Configuration check", False, "main.py not found"
+                    "CORS & Middleware - Configuration check",
+                    False,
+                    "main.py not found",
                 )
 
             self.test_results["cors_and_middleware"] = True
@@ -203,14 +218,21 @@ class Day4SecurityAuditSimplified:
                     config_content = f.read()
 
                 env_security = {
-                    "env_import": "os.environ" in config_content or "getenv" in config_content,
+                    "env_import": "os.environ" in config_content
+                    or "getenv" in config_content,
                     "no_hardcoded_secrets": not any(
                         secret in config_content.lower()
-                        for secret in ['"password"', "'password'", '"secret"', "'secret'"]
+                        for secret in [
+                            '"password"',
+                            "'password'",
+                            '"secret"',
+                            "'secret'",
+                        ]
                     ),
                     "pydantic_settings": "BaseSettings" in config_content
                     or "Settings" in config_content,
-                    "default_values": "default=" in config_content or "=" in config_content,
+                    "default_values": "default=" in config_content
+                    or "=" in config_content,
                 }
 
                 env_score = sum(env_security.values()) / len(env_security) * 100
@@ -227,7 +249,9 @@ class Day4SecurityAuditSimplified:
 
             else:
                 self.log_result(
-                    "Environment Security - config.py check", False, "config.py not found"
+                    "Environment Security - config.py check",
+                    False,
+                    "config.py not found",
                 )
 
             # Check for .env files (should not exist in repo)
@@ -279,9 +303,14 @@ class Day4SecurityAuditSimplified:
                                     ),
                                     "hardcoded_keys": any(
                                         pattern in content.lower()
-                                        for pattern in ["api_key=", "secret_key=", "private_key="]
+                                        for pattern in [
+                                            "api_key=",
+                                            "secret_key=",
+                                            "private_key=",
+                                        ]
                                     ),
-                                    "sql_injection_risk": "execute(" in content and "%" in content,
+                                    "sql_injection_risk": "execute(" in content
+                                    and "%" in content,
                                     "eval_usage": "eval(" in content,
                                     "debug_enabled": "debug=True" in content
                                     or "DEBUG=True" in content,
@@ -324,7 +353,9 @@ class Day4SecurityAuditSimplified:
             api_path = os.path.join(self.backend_path, "app", "api")
             if os.path.exists(api_path):
                 api_files = [
-                    f for f in os.listdir(api_path) if f.endswith(".py") and f != "__init__.py"
+                    f
+                    for f in os.listdir(api_path)
+                    if f.endswith(".py") and f != "__init__.py"
                 ]
 
                 security_features_count = 0
@@ -356,7 +387,9 @@ class Day4SecurityAuditSimplified:
                         continue
 
                 security_coverage = (
-                    (security_features_count / total_files * 100) if total_files > 0 else 0
+                    (security_features_count / total_files * 100)
+                    if total_files > 0
+                    else 0
                 )
 
                 self.log_result(
@@ -373,13 +406,18 @@ class Day4SecurityAuditSimplified:
                         with open(file_path, "r") as f:
                             content = f.read()
 
-                        if "get_cosmos_repository" in content or "cosmos_repo" in content:
+                        if (
+                            "get_cosmos_repository" in content
+                            or "cosmos_repo" in content
+                        ):
                             cosmos_usage_count += 1
 
                     except Exception:
                         continue
 
-                cosmos_coverage = (cosmos_usage_count / total_files * 100) if total_files > 0 else 0
+                cosmos_coverage = (
+                    (cosmos_usage_count / total_files * 100) if total_files > 0 else 0
+                )
 
                 self.log_result(
                     "API Security - Unified data access",
@@ -389,7 +427,9 @@ class Day4SecurityAuditSimplified:
 
             else:
                 self.log_result(
-                    "API Security - API directory check", False, "API directory not found"
+                    "API Security - API directory check",
+                    False,
+                    "API directory not found",
                 )
 
             self.test_results["api_security_structure"] = True
@@ -427,7 +467,9 @@ class Day4SecurityAuditSimplified:
             status = "✅ PASS" if passed else "❌ FAIL"
             print(f"{status} {category.replace('_', ' ').title()}")
 
-        print(f"\n📊 Overall Success Rate: {success_rate:.1f}% ({passed_tests}/{total_tests})")
+        print(
+            f"\n📊 Overall Success Rate: {success_rate:.1f}% ({passed_tests}/{total_tests})"
+        )
         print(f"⏱️ Execution Time: {execution_time:.2f} seconds")
 
         # Security compliance assessment
@@ -441,9 +483,7 @@ class Day4SecurityAuditSimplified:
             print("\n🚨 NEEDS WORK: Significant security improvements required")
 
         # Save detailed results
-        results_file = (
-            f"day4_security_audit_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-        )
+        results_file = f"day4_security_audit_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
         with open(results_file, "w") as f:
             json.dump(
                 {

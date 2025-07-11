@@ -67,12 +67,16 @@ class ComprehensiveRuffFixer:
                         if j < len(lines):
                             # Add 'from None' to the last line
                             lines[j] = lines[j].rstrip() + " from None"
-                            print(f"  - Fixed B904 multi-line raise in {file_path} at line {i+1}")
+                            print(
+                                f"  - Fixed B904 multi-line raise in {file_path} at line {i+1}"
+                            )
                             self.changes_made += 1
                     else:
                         # Single line raise
                         lines[i] = line.rstrip() + " from None"
-                        print(f"  - Fixed B904 single-line raise in {file_path} at line {i+1}")
+                        print(
+                            f"  - Fixed B904 single-line raise in {file_path} at line {i+1}"
+                        )
                         self.changes_made += 1
             new_lines.append(lines[i])
             i += 1
@@ -94,7 +98,9 @@ class ComprehensiveRuffFixer:
 
     def fix_e722_bare_except(self, file_path: str, content: str) -> str:
         """Fix E722 errors - bare except clauses"""
-        content = re.sub(r"except:\s*$", "except Exception:", content, flags=re.MULTILINE)
+        content = re.sub(
+            r"except:\s*$", "except Exception:", content, flags=re.MULTILINE
+        )
 
         if content != content:
             print(f"  - Fixed E722 bare except in {file_path}")
@@ -129,7 +135,10 @@ class ComprehensiveRuffFixer:
         for line in lines:
             should_remove = False
             for unused_import in imports_to_remove:
-                if f"import {unused_import}" in line or f"from .* import.*{unused_import}" in line:
+                if (
+                    f"import {unused_import}" in line
+                    or f"from .* import.*{unused_import}" in line
+                ):
                     should_remove = True
                     break
 
@@ -218,7 +227,9 @@ class ComprehensiveRuffFixer:
 
         # Filter out __pycache__ and other unwanted directories
         python_files = [
-            f for f in python_files if "__pycache__" not in str(f) and ".git" not in str(f)
+            f
+            for f in python_files
+            if "__pycache__" not in str(f) and ".git" not in str(f)
         ]
 
         print(f"Found {len(python_files)} Python files to check")

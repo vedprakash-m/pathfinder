@@ -13,6 +13,7 @@ from app.core.repository import (
     with_error_handling,
     with_performance_monitoring,
 )
+
 # SQL User model removed - use Cosmos UserDocument
 from azure.cosmos.aio import ContainerProxy
 from azure.cosmos.exceptions import CosmosResourceNotFoundError
@@ -73,7 +74,9 @@ class TestSqlAlchemyRepository:
         return SqlAlchemyRepository(mock_session, mock_model_class)
 
     @pytest.mark.asyncio
-    async def test_repository_initialization(self, repository, mock_session, mock_model_class):
+    async def test_repository_initialization(
+        self, repository, mock_session, mock_model_class
+    ):
         """Test repository initialization."""
         assert repository.session == mock_session
         assert repository.model_class == mock_model_class
@@ -104,7 +107,9 @@ class TestSqlAlchemyRepository:
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_get_by_id_with_relations(self, repository, mock_session, mock_model_class):
+    async def test_get_by_id_with_relations(
+        self, repository, mock_session, mock_model_class
+    ):
         """Test get by ID with eager loading."""
         mock_result = MagicMock()
         mock_entity = mock_model_class()
@@ -114,13 +119,17 @@ class TestSqlAlchemyRepository:
         # Mock relation attribute
         mock_model_class.test_relation = MagicMock()
 
-        _result = await repository.get_by_id("test_id", include_relations=["test_relation"])
+        _result = await repository.get_by_id(
+            "test_id", include_relations=["test_relation"]
+        )
 
         assert result == mock_entity
         mock_session.execute.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_get_by_filters_basic(self, repository, mock_session, mock_model_class):
+    async def test_get_by_filters_basic(
+        self, repository, mock_session, mock_model_class
+    ):
         """Test get by filters with basic filtering."""
         mock_result = MagicMock()
         mock_entities = [mock_model_class(), mock_model_class()]
@@ -134,7 +143,9 @@ class TestSqlAlchemyRepository:
         mock_session.execute.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_get_by_filters_complex(self, repository, mock_session, mock_model_class):
+    async def test_get_by_filters_complex(
+        self, repository, mock_session, mock_model_class
+    ):
         """Test get by filters with complex filtering."""
         mock_result = MagicMock()
         mock_entities = [mock_model_class()]
@@ -143,15 +154,22 @@ class TestSqlAlchemyRepository:
 
         # Setup model attributes for complex filtering
         mock_model_class.age = mock_model_class.__table__.c.id  # Reuse existing column
-        mock_model_class.status = mock_model_class.__table__.c.name  # Reuse existing column
+        mock_model_class.status = (
+            mock_model_class.__table__.c.name
+        )  # Reuse existing column
 
-        filters = {"age": {"gte": 18, "lte": 65}, "status": {"in": ["active", "pending"]}}
+        filters = {
+            "age": {"gte": 18, "lte": 65},
+            "status": {"in": ["active", "pending"]},
+        }
         _result = await repository.get_by_filters(filters)
 
         assert result == mock_entities
 
     @pytest.mark.asyncio
-    async def test_get_by_filters_with_pagination(self, repository, mock_session, mock_model_class):
+    async def test_get_by_filters_with_pagination(
+        self, repository, mock_session, mock_model_class
+    ):
         """Test get by filters with pagination."""
         mock_result = MagicMock()
         mock_entities = [mock_model_class()]
@@ -189,7 +207,9 @@ class TestSqlAlchemyRepository:
         mock_session.flush.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_create_error_handling(self, repository, mock_session, mock_model_class):
+    async def test_create_error_handling(
+        self, repository, mock_session, mock_model_class
+    ):
         """Test error handling during creation."""
         mock_entity = mock_model_class()
         mock_session.add.side_effect = Exception("Database error")
@@ -384,7 +404,9 @@ class TestCosmosDbRepository:
         _result = await repository.get_by_id("test_id")
 
         assert result == mock_item
-        mock_container.read_item.assert_called_once_with(item="test_id", partition_key="test_id")
+        mock_container.read_item.assert_called_once_with(
+            item="test_id", partition_key="test_id"
+        )
 
     @pytest.mark.asyncio
     async def test_get_by_id_not_found(self, repository, mock_container):
@@ -464,12 +486,16 @@ class TestCosmosDbRepository:
         _result = await repository.delete("test_id")
 
         assert result is True
-        mock_container.delete_item.assert_called_once_with(item="test_id", partition_key="test_id")
+        mock_container.delete_item.assert_called_once_with(
+            item="test_id", partition_key="test_id"
+        )
 
     @pytest.mark.asyncio
     async def test_delete_not_found(self, repository, mock_container):
         """Test delete when entity not found."""
-        mock_container.delete_item.side_effect = CosmosResourceNotFoundError("Not found")
+        mock_container.delete_item.side_effect = CosmosResourceNotFoundError(
+            "Not found"
+        )
 
         _result = await repository.delete("nonexistent_id")
 

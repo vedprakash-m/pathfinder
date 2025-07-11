@@ -191,7 +191,9 @@ class TestTripUpdates:
         }
 
         headers = {"Authorization": "Bearer test-token"}
-        response = client.put("/api/v1/trips/trip-789", json=update_data, headers=headers)
+        response = client.put(
+            "/api/v1/trips/trip-789", json=update_data, headers=headers
+        )
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -208,7 +210,9 @@ class TestTripUpdates:
         update_data = {"title": "Updated Title"}
 
         headers = {"Authorization": "Bearer test-token"}
-        response = client.put("/api/v1/trips/nonexistent", json=update_data, headers=headers)
+        response = client.put(
+            "/api/v1/trips/nonexistent", json=update_data, headers=headers
+        )
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -217,12 +221,16 @@ class TestTripUpdates:
     def test_update_trip_unauthorized(self, mock_get_user, mock_trip_service):
         """Test update by non-authorized user."""
         mock_get_user.return_value = {"id": "user-999", "family_id": "other-family"}
-        mock_trip_service.update_trip = AsyncMock(side_effect=PermissionError("Not authorized"))
+        mock_trip_service.update_trip = AsyncMock(
+            side_effect=PermissionError("Not authorized")
+        )
 
         update_data = {"title": "Unauthorized Update"}
 
         headers = {"Authorization": "Bearer test-token"}
-        response = client.put("/api/v1/trips/trip-789", json=update_data, headers=headers)
+        response = client.put(
+            "/api/v1/trips/trip-789", json=update_data, headers=headers
+        )
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 

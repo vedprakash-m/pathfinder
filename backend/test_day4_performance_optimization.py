@@ -30,7 +30,9 @@ class Day4PerformanceTests:
         self.detailed_results = []
         self.performance_data = {}
 
-    def log_result(self, test_name: str, success: bool, details: str = "", metrics: Dict = None):
+    def log_result(
+        self, test_name: str, success: bool, details: str = "", metrics: Dict = None
+    ):
         """Log test result with performance metrics"""
         status = "✅ PASS" if success else "❌ FAIL"
         message = f"{status} - {test_name}"
@@ -98,7 +100,9 @@ class Day4PerformanceTests:
                             "threshold_ms": threshold_ms,
                             "pass": endpoint_pass,
                             "status_code": (
-                                response.status_code if "response" in locals() else "N/A"
+                                response.status_code
+                                if "response" in locals()
+                                else "N/A"
                             ),
                         }
 
@@ -353,7 +357,9 @@ class Day4PerformanceTests:
             status = "✅ PASS" if result else "❌ FAIL"
             print(f"{status} {test_name.replace('_', ' ').title()}")
 
-        print(f"\n📊 Overall Success Rate: {success_rate:.1f}% ({passed_tests}/{total_tests})")
+        print(
+            f"\n📊 Overall Success Rate: {success_rate:.1f}% ({passed_tests}/{total_tests})"
+        )
         print(f"⏱️ Execution Time: {execution_time:.2f} seconds")
 
         # Save detailed results
@@ -398,7 +404,9 @@ async def main():
         async with httpx.AsyncClient(timeout=5.0) as client:
             _response = await client.get("http://localhost:8000/health")
             if response.status_code != 200:
-                print("❌ Backend not accessible. Please start the backend server first.")
+                print(
+                    "❌ Backend not accessible. Please start the backend server first."
+                )
                 print("Run: uvicorn app.main:app --reload")
                 return False
     except Exception:

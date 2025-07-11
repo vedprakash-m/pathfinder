@@ -50,7 +50,6 @@ def test_trips_with_valid_jwt():
 
     with patch("app.core.zero_trust.require_permissions", return_value=mock_auth):
         with patch("app.api.trips.require_permissions", return_value=mock_auth):
-
             client = TestClient(app)
 
             # Get CSRF token first
@@ -99,7 +98,6 @@ def test_trips_with_mocked_verify_token():
     # Mock verify_token to return our token data
     with patch("app.core.zero_trust.verify_token", return_value=mock_token_data):
         with patch("app.core.security.verify_token", return_value=mock_token_data):
-
             client = TestClient(app)
 
             # Get CSRF token first

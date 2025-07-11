@@ -50,7 +50,9 @@ class TestTaskQueueOperations:
         with patch("app.tasks.ai_tasks_alt.task_queue") as mock_queue:
             mock_queue.add_task.return_value = "task_123"
 
-            result = generate_itinerary_async(sample_trip_id, sample_preferences, sample_user_id)
+            result = generate_itinerary_async(
+                sample_trip_id, sample_preferences, sample_user_id
+            )
 
             assert result["task_id"] == "task_123"
             assert result["status"] == "queued"
@@ -71,7 +73,9 @@ class TestTaskQueueOperations:
             mock_queue.add_task.side_effect = Exception("Queue error")
 
             with pytest.raises(Exception, match="Queue error"):
-                generate_itinerary_async(sample_trip_id, sample_preferences, sample_user_id)
+                generate_itinerary_async(
+                    sample_trip_id, sample_preferences, sample_user_id
+                )
 
     def test_optimize_itinerary_async_success(self, sample_trip_id, sample_user_id):
         """Test successful itinerary optimization queuing."""
@@ -80,7 +84,9 @@ class TestTaskQueueOperations:
         with patch("app.tasks.ai_tasks_alt.task_queue") as mock_queue:
             mock_queue.add_task.return_value = "optimize_task_456"
 
-            result = optimize_itinerary_async(sample_trip_id, optimization_type, sample_user_id)
+            result = optimize_itinerary_async(
+                sample_trip_id, optimization_type, sample_user_id
+            )
 
             assert result["task_id"] == "optimize_task_456"
             assert result["status"] == "queued"
@@ -101,7 +107,9 @@ class TestTaskQueueOperations:
             mock_queue.add_task.side_effect = Exception("Optimization queue error")
 
             with pytest.raises(Exception, match="Optimization queue error"):
-                optimize_itinerary_async(sample_trip_id, optimization_type, sample_user_id)
+                optimize_itinerary_async(
+                    sample_trip_id, optimization_type, sample_user_id
+                )
 
     def test_generate_daily_cost_report_success(self):
         """Test successful daily cost report generation queuing."""
@@ -187,37 +195,49 @@ class TestFunctionParameters:
 class TestLoggingAndErrorHandling:
     """Test logging and error handling."""
 
-    def test_logging_on_success(self, sample_trip_id, sample_preferences, sample_user_id):
+    def test_logging_on_success(
+        self, sample_trip_id, sample_preferences, sample_user_id
+    ):
         """Test that successful operations log appropriately."""
         with patch("app.tasks.ai_tasks_alt.task_queue") as mock_queue:
             with patch("app.tasks.ai_tasks_alt.logger") as mock_logger:
                 mock_queue.add_task.return_value = "task_123"
 
-                generate_itinerary_async(sample_trip_id, sample_preferences, sample_user_id)
+                generate_itinerary_async(
+                    sample_trip_id, sample_preferences, sample_user_id
+                )
 
                 # Should log start and completion
                 assert mock_logger.info.call_count >= 2
 
-    def test_logging_on_failure(self, sample_trip_id, sample_preferences, sample_user_id):
+    def test_logging_on_failure(
+        self, sample_trip_id, sample_preferences, sample_user_id
+    ):
         """Test that failed operations log errors."""
         with patch("app.tasks.ai_tasks_alt.task_queue") as mock_queue:
             with patch("app.tasks.ai_tasks_alt.logger") as mock_logger:
                 mock_queue.add_task.side_effect = Exception("Test error")
 
                 with pytest.raises(Exception):
-                    generate_itinerary_async(sample_trip_id, sample_preferences, sample_user_id)
+                    generate_itinerary_async(
+                        sample_trip_id, sample_preferences, sample_user_id
+                    )
 
                 # Should log error
                 mock_logger.error.assert_called_once()
 
-    def test_error_message_content(self, sample_trip_id, sample_preferences, sample_user_id):
+    def test_error_message_content(
+        self, sample_trip_id, sample_preferences, sample_user_id
+    ):
         """Test that error messages contain relevant information."""
         with patch("app.tasks.ai_tasks_alt.task_queue") as mock_queue:
             with patch("app.tasks.ai_tasks_alt.logger") as mock_logger:
                 mock_queue.add_task.side_effect = Exception("Specific error")
 
                 with pytest.raises(Exception):
-                    generate_itinerary_async(sample_trip_id, sample_preferences, sample_user_id)
+                    generate_itinerary_async(
+                        sample_trip_id, sample_preferences, sample_user_id
+                    )
 
                 # Check that error log contains trip ID
                 error_call = mock_logger.error.call_args[0][0]
@@ -227,7 +247,9 @@ class TestLoggingAndErrorHandling:
 class TestTaskDataStructures:
     """Test task data structure creation."""
 
-    def test_generate_itinerary_task_data(self, sample_trip_id, sample_preferences, sample_user_id):
+    def test_generate_itinerary_task_data(
+        self, sample_trip_id, sample_preferences, sample_user_id
+    ):
         """Test that generate_itinerary creates correct task data."""
         with patch("app.tasks.ai_tasks_alt.task_queue") as mock_queue:
             mock_queue.add_task.return_value = "task_id"
@@ -290,7 +312,9 @@ class TestReturnValues:
         with patch("app.tasks.ai_tasks_alt.task_queue") as mock_queue:
             mock_queue.add_task.return_value = "unique_task_id"
 
-            result = generate_itinerary_async(sample_trip_id, sample_preferences, sample_user_id)
+            result = generate_itinerary_async(
+                sample_trip_id, sample_preferences, sample_user_id
+            )
 
             assert isinstance(result, dict)
             assert "task_id" in result
@@ -335,7 +359,9 @@ class TestEdgeCases:
         with patch("app.tasks.ai_tasks_alt.task_queue") as mock_queue:
             mock_queue.add_task.return_value = "task_id"
 
-            result = generate_itinerary_async(sample_trip_id, large_preferences, sample_user_id)
+            result = generate_itinerary_async(
+                sample_trip_id, large_preferences, sample_user_id
+            )
             assert result["status"] == "queued"
 
     def test_unicode_strings(self):
@@ -347,17 +373,23 @@ class TestEdgeCases:
         with patch("app.tasks.ai_tasks_alt.task_queue") as mock_queue:
             mock_queue.add_task.return_value = "task_id"
 
-            result = generate_itinerary_async(unicode_trip_id, unicode_preferences, unicode_user_id)
+            result = generate_itinerary_async(
+                unicode_trip_id, unicode_preferences, unicode_user_id
+            )
             assert result["status"] == "queued"
 
-    def test_special_characters_in_optimization_type(self, sample_trip_id, sample_user_id):
+    def test_special_characters_in_optimization_type(
+        self, sample_trip_id, sample_user_id
+    ):
         """Test optimization with special characters."""
         special_optimization = "budget-friendly & time-efficient"
 
         with patch("app.tasks.ai_tasks_alt.task_queue") as mock_queue:
             mock_queue.add_task.return_value = "task_id"
 
-            result = optimize_itinerary_async(sample_trip_id, special_optimization, sample_user_id)
+            result = optimize_itinerary_async(
+                sample_trip_id, special_optimization, sample_user_id
+            )
             assert result["status"] == "queued"
 
     def test_nested_preferences_structure(self, sample_trip_id, sample_user_id):
@@ -377,5 +409,7 @@ class TestEdgeCases:
         with patch("app.tasks.ai_tasks_alt.task_queue") as mock_queue:
             mock_queue.add_task.return_value = "task_id"
 
-            result = generate_itinerary_async(sample_trip_id, nested_preferences, sample_user_id)
+            result = generate_itinerary_async(
+                sample_trip_id, nested_preferences, sample_user_id
+            )
             assert result["status"] == "queued"

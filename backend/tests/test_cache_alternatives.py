@@ -5,7 +5,12 @@ Testing the simple cache implementations and utilities.
 
 import time
 
-from app.core.cache_alternatives import CacheEntry, InMemoryCache, cache_decorator, memory_cache
+from app.core.cache_alternatives import (
+    CacheEntry,
+    InMemoryCache,
+    cache_decorator,
+    memory_cache,
+)
 
 
 class TestCacheEntry:

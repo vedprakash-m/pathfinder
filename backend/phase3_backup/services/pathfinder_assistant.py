@@ -55,7 +55,9 @@ class PathfinderAssistantService:
             ai_response = await self._generate_ai_response(query, context)
 
             # Create response cards
-            response_cards = await self._create_response_cards(ai_response, interaction.id, db)
+            response_cards = await self._create_response_cards(
+                ai_response, interaction.id, db
+            )
 
             # Update interaction with response
             processing_time = int((time.time() - start_time) * 1000)
@@ -106,7 +108,9 @@ class PathfinderAssistantService:
         else:
             return ContextType.GENERAL_HELP
 
-    async def _generate_ai_response(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def _generate_ai_response(
+        self, query: str, context: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Generate AI response using LLM Orchestration service"""
         try:
             # Prepare the AI prompt with context
@@ -147,18 +151,20 @@ class PathfinderAssistantService:
     def _build_assistant_prompt(self, query: str, context: Dict[str, Any]) -> str:
         """Build contextual prompt for the AI assistant"""
         system_context = "You are Pathfinder Assistant, an AI helper for family trip planning. Provide helpful, actionable advice for coordinating multi-family trips. "
-        system_context += (
-            "Always be concise but informative. Suggest specific actions when possible.\n\n"
-        )
+        system_context += "Always be concise but informative. Suggest specific actions when possible.\n\n"
 
         base_prompt = f"User question: {query}\n\n"
 
         # Add context information
         if context.get("trip_id"):
-            base_prompt += f"Context: User is planning a trip (ID: {context['trip_id']})\n"
+            base_prompt += (
+                f"Context: User is planning a trip (ID: {context['trip_id']})\n"
+            )
 
         if context.get("family_id"):
-            base_prompt += f"Family context: User is part of family (ID: {context['family_id']})\n"
+            base_prompt += (
+                f"Family context: User is part of family (ID: {context['family_id']})\n"
+            )
 
         if context.get("current_page"):
             base_prompt += f"Current page: {context['current_page']}\n"
@@ -169,9 +175,13 @@ class PathfinderAssistantService:
             if trip_data.get("destination"):
                 base_prompt += f"Destination: {trip_data['destination']}\n"
             if trip_data.get("start_date") and trip_data.get("end_date"):
-                base_prompt += f"Dates: {trip_data['start_date']} to {trip_data['end_date']}\n"
+                base_prompt += (
+                    f"Dates: {trip_data['start_date']} to {trip_data['end_date']}\n"
+                )
 
-        base_prompt += "\nPlease provide helpful, specific advice for family trip coordination."
+        base_prompt += (
+            "\nPlease provide helpful, specific advice for family trip coordination."
+        )
 
         return system_context + base_prompt
 

@@ -413,7 +413,9 @@ class EnhancedChatService:
         await room.broadcast_message(message)
         return True
 
-    async def handle_typing_indicator(self, trip_id: str, user_id: str, is_typing: bool) -> None:
+    async def handle_typing_indicator(
+        self, trip_id: str, user_id: str, is_typing: bool
+    ) -> None:
         """Handle typing indicators for a trip."""
         if trip_id in self.chat_rooms:
             await self.chat_rooms[trip_id].handle_typing_indicator(user_id, is_typing)
@@ -426,17 +428,23 @@ class EnhancedChatService:
             return await self.chat_rooms[trip_id].create_vote(user_id, vote_data)
         return None
 
-    async def cast_vote(self, trip_id: str, user_id: str, vote_id: str, option_index: int) -> bool:
+    async def cast_vote(
+        self, trip_id: str, user_id: str, vote_id: str, option_index: int
+    ) -> bool:
         """Cast a vote in a trip's chat room."""
         if trip_id in self.chat_rooms:
-            return await self.chat_rooms[trip_id].cast_vote(user_id, vote_id, option_index)
+            return await self.chat_rooms[trip_id].cast_vote(
+                user_id, vote_id, option_index
+            )
         return False
 
     def get_room_stats(self) -> Dict[str, Any]:
         """Get statistics about all chat rooms."""
         return {
             "total_rooms": len(self.chat_rooms),
-            "total_connections": sum(len(room.connections) for room in self.chat_rooms.values()),
+            "total_connections": sum(
+                len(room.connections) for room in self.chat_rooms.values()
+            ),
             "rooms": {
                 trip_id: {
                     "user_count": len(room.connections),

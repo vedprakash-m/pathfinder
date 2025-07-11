@@ -55,7 +55,11 @@ def test_ai_endpoints_migration():
                 * 100,
             }
 
-            status = "✅ READY" if results[endpoint]["overall_score"] >= 75 else "🔄 NEEDS WORK"
+            status = (
+                "✅ READY"
+                if results[endpoint]["overall_score"] >= 75
+                else "🔄 NEEDS WORK"
+            )
             print(f"  {endpoint}: {status} ({results[endpoint]['overall_score']:.0f}%)")
 
             if results[endpoint]["cosmos_migrated"]:
@@ -84,7 +88,11 @@ def test_frontend_ai_services():
     print("\n🎨 TESTING FRONTEND AI SERVICES...")
 
     frontend_services_path = "../frontend/src/services"
-    expected_services = ["assistantService.ts", "magicPollsService.ts", "consensusService.ts"]
+    expected_services = [
+        "assistantService.ts",
+        "magicPollsService.ts",
+        "consensusService.ts",
+    ]
 
     results = {}
 
@@ -108,14 +116,25 @@ def test_frontend_ai_services():
                     "has_type_safety": has_type_safety,
                     "has_async": has_async,
                     "quality_score": sum(
-                        [has_api_integration, has_error_handling, has_type_safety, has_async]
+                        [
+                            has_api_integration,
+                            has_error_handling,
+                            has_type_safety,
+                            has_async,
+                        ]
                     )
                     / 4
                     * 100,
                 }
 
-                status = "✅ READY" if results[service]["quality_score"] >= 75 else "🔄 NEEDS WORK"
-                print(f"  {service}: {status} ({results[service]['quality_score']:.0f}%)")
+                status = (
+                    "✅ READY"
+                    if results[service]["quality_score"] >= 75
+                    else "🔄 NEEDS WORK"
+                )
+                print(
+                    f"  {service}: {status} ({results[service]['quality_score']:.0f}%)"
+                )
 
             else:
                 results[service] = {"exists": False, "quality_score": 0}
@@ -141,7 +160,9 @@ def test_ai_components():
             component_files = []
             for root, dirs, files in os.walk(frontend_components_path):
                 for file in files:
-                    if component.lower() in file.lower() and file.endswith((".tsx", ".ts")):
+                    if component.lower() in file.lower() and file.endswith(
+                        (".tsx", ".ts")
+                    ):
                         component_files.append(os.path.join(root, file))
 
             results[component] = {
@@ -171,7 +192,11 @@ def test_cosmos_db_simulation():
         print("  ✅ Repository initialization working")
 
         # Mock test results
-        results = {"simulation_mode": True, "repository_accessible": True, "crud_operations": True}
+        results = {
+            "simulation_mode": True,
+            "repository_accessible": True,
+            "crud_operations": True,
+        }
 
         return results
 
@@ -191,9 +216,9 @@ def analyze_day3_readiness():
     cosmos_db = test_cosmos_db_simulation()
 
     # Calculate scores
-    backend_score = sum(result.get("overall_score", 0) for result in ai_endpoints.values()) / max(
-        len(ai_endpoints), 1
-    )
+    backend_score = sum(
+        result.get("overall_score", 0) for result in ai_endpoints.values()
+    ) / max(len(ai_endpoints), 1)
     frontend_score = sum(
         result.get("quality_score", 0) for result in frontend_services.values()
     ) / max(len(frontend_services), 1)
@@ -202,7 +227,9 @@ def analyze_day3_readiness():
     ) / max(len(ai_components), 1)
     cosmos_score = 100 if cosmos_db.get("simulation_mode", False) else 0
 
-    overall_score = (backend_score + frontend_score + components_score + cosmos_score) / 4
+    overall_score = (
+        backend_score + frontend_score + components_score + cosmos_score
+    ) / 4
 
     print("\n📈 READINESS SCORES:")
     print(f"  Backend AI Endpoints: {backend_score:.1f}%")

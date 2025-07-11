@@ -13,6 +13,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from app.core.security import create_access_token
+
 # SQL User model removed - use Cosmos UserDocument, UserCreate, UserUpdate
 from app.services.entra_auth_service import EntraAuthService
 from passlib.context import CryptContext
@@ -76,7 +77,9 @@ class AuthService:
                 entra_id=user_data.entra_id,  # Primary field for Entra ID
                 picture=None,
                 phone=user_data.phone,
-                preferences=(str(user_data.preferences) if user_data.preferences else None),
+                preferences=(
+                    str(user_data.preferences) if user_data.preferences else None
+                ),
                 is_active=True,
                 created_at=datetime.utcnow(),
                 updated_at=datetime.utcnow(),
@@ -88,7 +91,11 @@ class AuthService:
             # 🔑 AUTO-CREATE FAMILY for new Family Admin users
             family = Family(
                 id=uuid4(),
-                name=(f"{db_user.name}'s Family" if db_user.name else f"{db_user.email}'s Family"),
+                name=(
+                    f"{db_user.name}'s Family"
+                    if db_user.name
+                    else f"{db_user.email}'s Family"
+                ),
                 description="Auto-created family",
                 admin_user_id=db_user.id,
                 created_at=datetime.utcnow(),
@@ -114,7 +121,9 @@ class AuthService:
             await db.commit()
             await db.refresh(db_user)
 
-            logger.info(f"Created user with auto-family: {db_user.email} (Family: {family.name})")
+            logger.info(
+                f"Created user with auto-family: {db_user.email} (Family: {family.name})"
+            )
             return db_user
 
         except Exception as e:
@@ -132,12 +141,16 @@ class AuthService:
         result = await db.execute(select(User).filter(User.id == user_id))
         return result.scalar_one_or_none()
 
-    async def get_user_by_auth0_id(self, db: AsyncSession, auth0_user_id: str) -> Optional[User]:
+    async def get_user_by_auth0_id(
+        self, db: AsyncSession, auth0_user_id: str
+    ) -> Optional[User]:
         """Get user by Auth0 user ID (DEPRECATED - legacy compatibility only)."""
         # Auth0 migration complete - this method returns None
         return None
 
-    async def get_user_by_entra_id(self, db: AsyncSession, entra_id: str) -> Optional[User]:
+    async def get_user_by_entra_id(
+        self, db: AsyncSession, entra_id: str
+    ) -> Optional[User]:
         """Get user by Entra External ID."""
         result = await db.execute(select(User).filter(User.entra_id == entra_id))
         return result.scalar_one_or_none()
@@ -247,7 +260,9 @@ class AuthService:
         Legacy Auth0 login method - maintained for backward compatibility.
         New implementations should use process_entra_login.
         """
-        logger.warning("process_auth0_login is deprecated. Use process_entra_login instead.")
+        logger.warning(
+            "process_auth0_login is deprecated. Use process_entra_login instead."
+        )
 
         # Convert to AsyncSession and delegate to Entra login
         if hasattr(db, "execute"):  # Check if it's already an AsyncSession
@@ -294,7 +309,9 @@ class AuthService:
         Legacy Auth0 login URL method - maintained for backward compatibility.
         New implementations should use get_entra_login_url.
         """
-        logger.warning("get_auth0_login_url is deprecated. Use get_entra_login_url instead.")
+        logger.warning(
+            "get_auth0_login_url is deprecated. Use get_entra_login_url instead."
+        )
         return self.get_entra_login_url(redirect_uri)
 
     async def exchange_code_for_token(
@@ -305,7 +322,9 @@ class AuthService:
         This replaces the Auth0 token exchange.
         """
         try:
-            return await self.entra_service.exchange_code_for_token(code, redirect_uri, state)
+            return await self.entra_service.exchange_code_for_token(
+                code, redirect_uri, state
+            )
         except Exception as e:
             logger.error(f"Error exchanging code for token: {e}")
             return None
@@ -318,7 +337,9 @@ class AuthService:
             entra_health = await self.entra_service.health_check()
 
             return {
-                "status": "healthy" if entra_health.get("status") == "healthy" else "degraded",
+                "status": "healthy"
+                if entra_health.get("status") == "healthy"
+                else "degraded",
                 "provider": "Microsoft Entra External ID",
                 "legacy_support": self.auth0_domain is not None,
                 "entra_service": entra_health,

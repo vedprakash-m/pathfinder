@@ -23,7 +23,8 @@ def create_valid_jwt_token(user_data: dict) -> str:
         "iat": datetime.utcnow(),
         "https://pathfinder.app/roles": user_data.get("roles", ["user"]),
         "https://pathfinder.app/permissions": user_data.get(
-            "permissions", ["read:trips", "create:trips", "update:trips", "delete:trips"]
+            "permissions",
+            ["read:trips", "create:trips", "update:trips", "delete:trips"],
         ),
     }
     return jwt.encode(payload, "test-secret-key", algorithm="HS256")
@@ -51,7 +52,12 @@ def test_trips_with_proper_auth_bypass(simple_client):
             "id": str(uuid4()),
             "email": "test@example.com",
             "roles": ["user"],
-            "permissions": ["create:trips", "read:trips", "update:trips", "delete:trips"],
+            "permissions": [
+                "create:trips",
+                "read:trips",
+                "update:trips",
+                "delete:trips",
+            ],
         }
 
         # Create a valid JWT token
@@ -71,7 +77,9 @@ def test_trips_with_proper_auth_bypass(simple_client):
             return mock_credentials
 
         # Force reload the settings module with test environment
-        with patch.dict(os.environ, {"ENVIRONMENT": "testing", "SECRET_KEY": "test-secret-key"}):
+        with patch.dict(
+            os.environ, {"ENVIRONMENT": "testing", "SECRET_KEY": "test-secret-key"}
+        ):
             get_settings.cache_clear()  # Clear cache again to pick up env changes
 
             # Override the security dependency
@@ -128,7 +136,12 @@ def test_trips_with_environment_bypass():
             "id": str(uuid4()),
             "email": "test@example.com",
             "roles": ["user"],
-            "permissions": ["create:trips", "read:trips", "update:trips", "delete:trips"],
+            "permissions": [
+                "create:trips",
+                "read:trips",
+                "update:trips",
+                "delete:trips",
+            ],
         }
 
         # Create valid JWT token
@@ -223,7 +236,6 @@ def test_check_auth_with_complete_mock_stack():
 
         # Mock the zero trust security verification
         with patch.object(zero_trust_security, "verify_access", return_value=True):
-
             app.dependency_overrides[security] = mock_security
 
             try:

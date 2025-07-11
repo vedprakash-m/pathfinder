@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """
 Trip messages API endpoints - Unified Cosmos DB Implementation.
 """
@@ -10,6 +11,7 @@ from app.core.config import get_settings
 from app.core.database_unified import get_cosmos_repository
 from app.core.zero_trust import require_permissions
 from app.models.cosmos.message import MessageType
+
 # SQL User model removed - use Cosmos UserDocument
 from app.repositories.cosmos_unified import UnifiedCosmosRepository
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -24,7 +26,7 @@ async def get_trip_messages(
     room_id: Optional[str] = None,
     limit: int = Query(50, gt=0, le=100),
     current_user: User = Depends(require_permissions("trips", "read")),
-    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository)
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
 ):
     """
     Get messages for a trip from unified Cosmos DB.
@@ -38,7 +40,9 @@ async def get_trip_messages(
         # Get trip to verify access
         trip = await cosmos_repo.get_trip(str(trip_id))
         if not trip:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found"
+            )
 
         # Get messages using unified repository
         messages = await cosmos_repo.get_trip_messages(
@@ -60,7 +64,7 @@ async def send_trip_message(
     message: dict[str, Any],
     room_id: Optional[str] = None,
     current_user: User = Depends(require_permissions("trips", "write")),
-    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository)
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
 ):
     """
     Send a new message in the trip chat using unified Cosmos DB.
@@ -82,7 +86,9 @@ async def send_trip_message(
         # Get trip to verify access
         trip = await cosmos_repo.get_trip(str(trip_id))
         if not trip:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found"
+            )
 
         # Send message using unified repository
         result = await cosmos_repo.send_trip_message(

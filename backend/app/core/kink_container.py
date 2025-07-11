@@ -140,7 +140,9 @@ class KinkContainer:
 
         kink.bind(
             UpdateParticipationUseCase,
-            lambda: UpdateParticipationUseCase(trip_service=kink.get(TripDomainService)),
+            lambda: UpdateParticipationUseCase(
+                trip_service=kink.get(TripDomainService)
+            ),
         )
 
         kink.bind(

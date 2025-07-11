@@ -56,7 +56,9 @@ def test_database():
             ]
 
             actual_columns = [col[1] for col in columns]
-            missing_columns = [col for col in expected_columns if col not in actual_columns]
+            missing_columns = [
+                col for col in expected_columns if col not in actual_columns
+            ]
 
             if not missing_columns:
                 print("✅ All expected columns present")

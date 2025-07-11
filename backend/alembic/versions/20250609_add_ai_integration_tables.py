@@ -93,18 +93,28 @@ def upgrade() -> None:
     )
 
     # Create indexes for performance
-    op.create_index("idx_assistant_interactions_user_id", "assistant_interactions", ["user_id"])
-    op.create_index("idx_assistant_interactions_trip_id", "assistant_interactions", ["trip_id"])
     op.create_index(
-        "idx_assistant_interactions_created_at", "assistant_interactions", ["created_at"]
+        "idx_assistant_interactions_user_id", "assistant_interactions", ["user_id"]
+    )
+    op.create_index(
+        "idx_assistant_interactions_trip_id", "assistant_interactions", ["trip_id"]
+    )
+    op.create_index(
+        "idx_assistant_interactions_created_at",
+        "assistant_interactions",
+        ["created_at"],
     )
 
     op.create_index("idx_magic_polls_trip_id", "magic_polls", ["trip_id"])
     op.create_index("idx_magic_polls_creator_id", "magic_polls", ["creator_id"])
     op.create_index("idx_magic_polls_status", "magic_polls", ["status"])
 
-    op.create_index("idx_ai_response_cards_interaction_id", "ai_response_cards", ["interaction_id"])
-    op.create_index("idx_ai_response_cards_card_type", "ai_response_cards", ["card_type"])
+    op.create_index(
+        "idx_ai_response_cards_interaction_id", "ai_response_cards", ["interaction_id"]
+    )
+    op.create_index(
+        "idx_ai_response_cards_card_type", "ai_response_cards", ["card_type"]
+    )
 
     op.create_index("idx_ai_suggestions_user_id", "ai_suggestions", ["user_id"])
     op.create_index("idx_ai_suggestions_trip_id", "ai_suggestions", ["trip_id"])

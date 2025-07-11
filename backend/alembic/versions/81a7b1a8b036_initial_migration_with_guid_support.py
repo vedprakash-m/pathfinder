@@ -114,7 +114,12 @@ def upgrade() -> None:
         sa.Column(
             "status",
             sa.Enum(
-                "PLANNING", "CONFIRMED", "IN_PROGRESS", "COMPLETED", "CANCELLED", name="tripstatus"
+                "PLANNING",
+                "CONFIRMED",
+                "IN_PROGRESS",
+                "COMPLETED",
+                "CANCELLED",
+                name="tripstatus",
             ),
             nullable=True,
         ),
@@ -259,7 +264,14 @@ def upgrade() -> None:
         ),
         sa.Column(
             "payment_status",
-            sa.Enum("UNPAID", "PARTIALLY_PAID", "PAID", "REFUNDED", "FAILED", name="paymentstatus"),
+            sa.Enum(
+                "UNPAID",
+                "PARTIALLY_PAID",
+                "PAID",
+                "REFUNDED",
+                "FAILED",
+                name="paymentstatus",
+            ),
             nullable=True,
         ),
         sa.Column("name", sa.String(length=200), nullable=False),
@@ -285,7 +297,13 @@ def upgrade() -> None:
         sa.Column("booking_phone", sa.String(length=20), nullable=True),
         sa.Column(
             "cancellation_policy",
-            sa.Enum("FLEXIBLE", "MODERATE", "STRICT", "NON_REFUNDABLE", name="cancellationpolicy"),
+            sa.Enum(
+                "FLEXIBLE",
+                "MODERATE",
+                "STRICT",
+                "NON_REFUNDABLE",
+                name="cancellationpolicy",
+            ),
             nullable=True,
         ),
         sa.Column("cancellation_deadline", sa.DateTime(), nullable=True),
@@ -325,10 +343,18 @@ def upgrade() -> None:
         sa.Column("user_id", sa.String(length=36), nullable=False),
         sa.Column(
             "status",
-            sa.Enum("INVITED", "CONFIRMED", "DECLINED", "PENDING", name="participationstatus"),
+            sa.Enum(
+                "INVITED",
+                "CONFIRMED",
+                "DECLINED",
+                "PENDING",
+                name="participationstatus",
+            ),
             nullable=True,
         ),
-        sa.Column("budget_allocation", sa.Numeric(precision=10, scale=2), nullable=True),
+        sa.Column(
+            "budget_allocation", sa.Numeric(precision=10, scale=2), nullable=True
+        ),
         sa.Column("preferences", sa.Text(), nullable=True),
         sa.Column("notes", sa.Text(), nullable=True),
         sa.Column(
@@ -362,7 +388,9 @@ def upgrade() -> None:
         sa.Column("description", sa.Text(), nullable=True),
         sa.Column("estimated_cost", sa.Numeric(precision=10, scale=2), nullable=True),
         sa.Column("driving_time_minutes", sa.Integer(), nullable=True),
-        sa.Column("driving_distance_km", sa.Numeric(precision=8, scale=2), nullable=True),
+        sa.Column(
+            "driving_distance_km", sa.Numeric(precision=8, scale=2), nullable=True
+        ),
         sa.Column("created_at", sa.DateTime(), nullable=True),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
         sa.ForeignKeyConstraint(
@@ -420,7 +448,9 @@ def upgrade() -> None:
         ),
         sa.Column(
             "difficulty",
-            sa.Enum("EASY", "MODERATE", "CHALLENGING", "EXPERT", name="difficultylevel"),
+            sa.Enum(
+                "EASY", "MODERATE", "CHALLENGING", "EXPERT", name="difficultylevel"
+            ),
             nullable=True,
         ),
         sa.Column("location_name", sa.String(length=200), nullable=True),
@@ -431,7 +461,11 @@ def upgrade() -> None:
         sa.Column("start_time", sa.Time(), nullable=True),
         sa.Column("end_time", sa.Time(), nullable=True),
         sa.Column("duration_minutes", sa.Integer(), nullable=True),
-        sa.Column("estimated_cost_per_person", sa.Numeric(precision=10, scale=2), nullable=True),
+        sa.Column(
+            "estimated_cost_per_person",
+            sa.Numeric(precision=10, scale=2),
+            nullable=True,
+        ),
         sa.Column("booking_required", sa.Boolean(), nullable=True),
         sa.Column("booking_url", sa.Text(), nullable=True),
         sa.Column("booking_phone", sa.String(length=20), nullable=True),

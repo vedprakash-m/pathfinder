@@ -235,7 +235,9 @@ class AISuggestion(Base):
 
     def is_active(self) -> bool:
         """Check if the suggestion is still active"""
-        return not self.is_dismissed and not self.is_acknowledged and not self.is_expired()
+        return (
+            not self.is_dismissed and not self.is_acknowledged and not self.is_expired()
+        )
 
 
 # Helper functions for creating common AI interactions

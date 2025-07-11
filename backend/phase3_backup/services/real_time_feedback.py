@@ -121,7 +121,9 @@ class RealTimeFeedbackService:
     def __init__(self, db: AsyncSession):
         self.db = db
         self.active_sessions: Dict[str, LiveEditingSession] = {}
-        self.feedback_store: Dict[str, List[FeedbackItem]] = {}  # trip_id -> feedback list
+        self.feedback_store: Dict[
+            str, List[FeedbackItem]
+        ] = {}  # trip_id -> feedback list
 
     # Real-time feedback collection
 
@@ -189,7 +191,9 @@ class RealTimeFeedbackService:
             logger.error(f"Failed to get trip feedback: {str(e)}")
             return []
 
-    async def respond_to_feedback(self, feedback_id: str, response: Dict[str, Any]) -> bool:
+    async def respond_to_feedback(
+        self, feedback_id: str, response: Dict[str, Any]
+    ) -> bool:
         """Respond to existing feedback item."""
         try:
             # Find feedback item
@@ -255,7 +259,9 @@ class RealTimeFeedbackService:
             logger.error(f"Failed to start editing session: {str(e)}")
             return ""
 
-    async def lock_element(self, session_id: str, user_id: str, element_id: str) -> bool:
+    async def lock_element(
+        self, session_id: str, user_id: str, element_id: str
+    ) -> bool:
         """Lock an element for editing by a specific user."""
         try:
             if session_id not in self.active_sessions:
@@ -267,7 +273,9 @@ class RealTimeFeedbackService:
             if element_id in session.locked_elements:
                 current_owner = session.locked_elements[element_id]
                 if current_owner != user_id:
-                    logger.info(f"Element {element_id} already locked by {current_owner}")
+                    logger.info(
+                        f"Element {element_id} already locked by {current_owner}"
+                    )
                     return False
 
             # Lock the element
@@ -300,7 +308,9 @@ class RealTimeFeedbackService:
                     return {"success": False, "error": "Element locked by another user"}
 
             # Analyze change impact
-            impact = await self._analyze_live_change_impact(change_data, session.trip_id)
+            impact = await self._analyze_live_change_impact(
+                change_data, session.trip_id
+            )
 
             # Add change to pending list
             change_record = {
@@ -311,7 +321,8 @@ class RealTimeFeedbackService:
                 "impact_analysis": asdict(impact),
                 "status": (
                     "pending_approval"
-                    if impact.impact_level in [ChangeImpactLevel.HIGH, ChangeImpactLevel.CRITICAL]
+                    if impact.impact_level
+                    in [ChangeImpactLevel.HIGH, ChangeImpactLevel.CRITICAL]
                     else "auto_approved"
                 ),
             }
@@ -340,7 +351,9 @@ class RealTimeFeedbackService:
             logger.error(f"Failed to submit live change: {str(e)}")
             return {"success": False, "error": str(e)}
 
-    async def approve_change(self, session_id: str, change_id: str, approver_id: str) -> bool:
+    async def approve_change(
+        self, session_id: str, change_id: str, approver_id: str
+    ) -> bool:
         """Approve a pending change."""
         try:
             if session_id not in self.active_sessions:
@@ -387,12 +400,16 @@ class RealTimeFeedbackService:
             time_delta = 0
 
             # Cost-related changes
-            if any(word in content for word in ["expensive", "budget", "cost", "price"]):
+            if any(
+                word in content for word in ["expensive", "budget", "cost", "price"]
+            ):
                 impact_level = ChangeImpactLevel.MEDIUM
                 cost_delta = 50.0
 
             # Time-related changes
-            if any(word in content for word in ["time", "schedule", "duration", "delay"]):
+            if any(
+                word in content for word in ["time", "schedule", "duration", "delay"]
+            ):
                 impact_level = ChangeImpactLevel.MEDIUM
                 time_delta = 30
 
@@ -502,7 +519,9 @@ class RealTimeFeedbackService:
         next_steps = []
 
         if feedback_item.impact_analysis:
-            impact_level = ChangeImpactLevel(feedback_item.impact_analysis["impact_level"])
+            impact_level = ChangeImpactLevel(
+                feedback_item.impact_analysis["impact_level"]
+            )
 
             if impact_level == ChangeImpactLevel.CRITICAL:
                 next_steps.extend(
@@ -557,7 +576,9 @@ class RealTimeFeedbackService:
         """Notify about element being locked for editing."""
         logger.info(f"🔒 Element {element_id} locked by {user_id}")
 
-    async def _notify_live_change(self, session: LiveEditingSession, change_record: Dict[str, Any]):
+    async def _notify_live_change(
+        self, session: LiveEditingSession, change_record: Dict[str, Any]
+    ):
         """Notify about live change being made."""
         logger.info(f"⚡ Live change submitted: {change_record['change_id']}")
 
@@ -570,7 +591,9 @@ class RealTimeFeedbackService:
     async def _implement_change(self, change_record: Dict[str, Any], trip_id: str):
         """Actually implement the approved change."""
         # In production, this would update the trip data
-        logger.info(f"🔧 Implementing change {change_record['change_id']} for trip {trip_id}")
+        logger.info(
+            f"🔧 Implementing change {change_record['change_id']} for trip {trip_id}"
+        )
 
 
 # Helper functions for easy integration

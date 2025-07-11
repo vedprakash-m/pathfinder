@@ -60,8 +60,12 @@ class Trip(Base):
     participations = relationship(
         "TripParticipation", back_populates="trip", cascade="all, delete-orphan"
     )
-    reservations = relationship("Reservation", back_populates="trip", cascade="all, delete-orphan")
-    itineraries = relationship("Itinerary", back_populates="trip", cascade="all, delete-orphan")
+    reservations = relationship(
+        "Reservation", back_populates="trip", cascade="all, delete-orphan"
+    )
+    itineraries = relationship(
+        "Itinerary", back_populates="trip", cascade="all, delete-orphan"
+    )
     notifications = relationship(
         "Notification", back_populates="trip", cascade="all, delete-orphan"
     )

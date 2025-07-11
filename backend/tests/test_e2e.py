@@ -37,7 +37,9 @@ class TestCompleteUserJourney:
                     "last_name": "User",
                 }
 
-                register_response = await client.post("/api/v1/auth/register", json=user_data)
+                register_response = await client.post(
+                    "/api/v1/auth/register", json=user_data
+                )
                 assert register_response.status_code == status.HTTP_201_CREATED
 
                 user = register_response.json()
@@ -49,7 +51,9 @@ class TestCompleteUserJourney:
                     "password": user_data["password"],
                 }
 
-                login_response = await client.post("/api/v1/auth/login", json=login_data)
+                login_response = await client.post(
+                    "/api/v1/auth/login", json=login_data
+                )
                 assert login_response.status_code == status.HTTP_200_OK
 
                 auth_data = login_response.json()
@@ -77,7 +81,9 @@ class TestCompleteUserJourney:
                     _family_id = family["id"]
                 else:
                     # Family might be auto-created, get user's family
-                    profile_response = await client.get("/api/v1/auth/profile", headers=headers)
+                    profile_response = await client.get(
+                        "/api/v1/auth/profile", headers=headers
+                    )
                     if profile_response.status_code == 200:
                         profile = profile_response.json()
                         _family_id = profile.get("family_id")
@@ -111,7 +117,11 @@ class TestCompleteUserJourney:
 
                 # 5. Trip Preferences Configuration
                 preferences_data = {
-                    "activities": ["Golden Gate Bridge", "Alcatraz", "Santa Monica Pier"],
+                    "activities": [
+                        "Golden Gate Bridge",
+                        "Alcatraz",
+                        "Santa Monica Pier",
+                    ],
                     "dietary_restrictions": ["vegetarian", "no_nuts"],
                     "budget_preferences": {
                         "accommodation": 40,
@@ -131,7 +141,9 @@ class TestCompleteUserJourney:
 
                 # Preferences endpoint might not exist yet
                 if prefs_response.status_code not in [200, 404]:
-                    pytest.fail(f"Unexpected preferences response: {prefs_response.status_code}")
+                    pytest.fail(
+                        f"Unexpected preferences response: {prefs_response.status_code}"
+                    )
 
                 # 6. Itinerary Generation
                 itinerary_request = {
@@ -212,7 +224,9 @@ class TestCompleteUserJourney:
 
                 # Invitation system might not be implemented
                 if invite_response.status_code not in [200, 201, 404]:
-                    pytest.fail(f"Unexpected invite response: {invite_response.status_code}")
+                    pytest.fail(
+                        f"Unexpected invite response: {invite_response.status_code}"
+                    )
 
                 # 9. Trip Status Updates
                 status_update = {
@@ -221,14 +235,18 @@ class TestCompleteUserJourney:
                 }
 
                 status_response = await client.put(
-                    f"/api/v1/trips/{trip_id}/status", json=status_update, headers=headers
+                    f"/api/v1/trips/{trip_id}/status",
+                    json=status_update,
+                    headers=headers,
                 )
 
                 if status_response.status_code == 200:
                     updated_trip = status_response.json()
                     assert updated_trip["status"] == "confirmed"
                 elif status_response.status_code not in [404]:
-                    pytest.fail(f"Unexpected status update response: {status_response.status_code}")
+                    pytest.fail(
+                        f"Unexpected status update response: {status_response.status_code}"
+                    )
 
                 # 10. Export Trip Data
                 export_response = await client.get(
@@ -239,7 +257,9 @@ class TestCompleteUserJourney:
                     assert export_response.headers["content-type"] == "application/pdf"
                     assert len(export_response.content) > 0
                 elif export_response.status_code not in [404, 501]:
-                    pytest.fail(f"Unexpected export response: {export_response.status_code}")
+                    pytest.fail(
+                        f"Unexpected export response: {export_response.status_code}"
+                    )
 
                 # 11. Trip Analytics/Summary
                 analytics_response = await client.get(
@@ -250,7 +270,9 @@ class TestCompleteUserJourney:
                     analytics = analytics_response.json()
                     assert "budget_breakdown" in analytics or "summary" in analytics
                 elif analytics_response.status_code not in [404]:
-                    pytest.fail(f"Unexpected analytics response: {analytics_response.status_code}")
+                    pytest.fail(
+                        f"Unexpected analytics response: {analytics_response.status_code}"
+                    )
 
                 # 12. Cleanup - Archive or Delete Trip
                 archive_response = await client.post(
@@ -291,7 +313,9 @@ class TestMultiFamilyCoordination:
                     "last_name": "Admin",
                 }
 
-                register_response = await client.post("/api/v1/auth/register", json=user_data)
+                register_response = await client.post(
+                    "/api/v1/auth/register", json=user_data
+                )
                 assert register_response.status_code == status.HTTP_201_CREATED
 
                 # Login to get token
@@ -355,7 +379,9 @@ class TestMultiFamilyCoordination:
                 "is_public": True,
             }
 
-            create_response = await client.post("/api/v1/trips", json=trip_data, headers=headers1)
+            create_response = await client.post(
+                "/api/v1/trips", json=trip_data, headers=headers1
+            )
             assert create_response.status_code == status.HTTP_201_CREATED
 
             trip = create_response.json()
@@ -365,7 +391,9 @@ class TestMultiFamilyCoordination:
             headers2 = {"Authorization": f"Bearer {tokens[1]}"}
 
             # Search for public trips
-            search_response = await client.get("/api/v1/trips/search?public=true", headers=headers2)
+            search_response = await client.get(
+                "/api/v1/trips/search?public=true", headers=headers2
+            )
 
             if search_response.status_code == 200:
                 public_trips = search_response.json()
@@ -373,7 +401,9 @@ class TestMultiFamilyCoordination:
                 assert trip_id in trip_ids
 
             # Join the trip
-            join_response = await client.post(f"/api/v1/trips/{trip_id}/join", headers=headers2)
+            join_response = await client.post(
+                f"/api/v1/trips/{trip_id}/join", headers=headers2
+            )
 
             if join_response.status_code == 200:
                 # Verify both families are participants
@@ -389,7 +419,9 @@ class TestMultiFamilyCoordination:
             for i, headers in enumerate([headers1, headers2]):
                 family_prefs = {
                     "activities": (
-                        ["wine_tasting", "hiking"] if i == 0 else ["shopping", "restaurants"]
+                        ["wine_tasting", "hiking"]
+                        if i == 0
+                        else ["shopping", "restaurants"]
                     ),
                     "budget_per_day": 200.0 if i == 0 else 350.0,
                     "special_requirements": f"Family {i} specific requirements",
@@ -491,12 +523,16 @@ class TestPerformanceAndReliability:
             async def create_trip(index):
                 trip_data = {
                     "title": f"Concurrent Trip {index}",
-                    "start_date": (date.today() + timedelta(days=60 + index)).isoformat(),
+                    "start_date": (
+                        date.today() + timedelta(days=60 + index)
+                    ).isoformat(),
                     "end_date": (date.today() + timedelta(days=67 + index)).isoformat(),
                     "budget_total": 2000.0 + (index * 100),
                 }
 
-                response = await client.post("/api/v1/trips", json=trip_data, headers=headers)
+                response = await client.post(
+                    "/api/v1/trips", json=trip_data, headers=headers
+                )
                 return (
                     response.status_code,
                     response.json() if response.status_code == 201 else None,
@@ -519,7 +555,9 @@ class TestPerformanceAndReliability:
                 trip_id = successful_trips[0][1]["id"]
 
                 async def read_trip():
-                    response = await client.get(f"/api/v1/trips/{trip_id}", headers=headers)
+                    response = await client.get(
+                        f"/api/v1/trips/{trip_id}", headers=headers
+                    )
                     return response.status_code
 
                 read_tasks = [read_trip() for _ in range(10)]
@@ -565,7 +603,9 @@ class TestPerformanceAndReliability:
             }
 
             # This should either succeed or fail gracefully with appropriate limits
-            response = await client.post("/api/v1/trips", json=trip_data, headers=headers)
+            response = await client.post(
+                "/api/v1/trips", json=trip_data, headers=headers
+            )
             assert response.status_code in [
                 201,
                 413,
@@ -577,7 +617,9 @@ class TestPerformanceAndReliability:
                 trip_id = trip["id"]
 
                 # Verify large data is handled correctly
-                get_response = await client.get(f"/api/v1/trips/{trip_id}", headers=headers)
+                get_response = await client.get(
+                    f"/api/v1/trips/{trip_id}", headers=headers
+                )
                 assert get_response.status_code == 200
 
                 retrieved_trip = get_response.json()
@@ -674,6 +716,8 @@ class TestErrorRecoveryAndEdgeCases:
             ]
 
             for case in edge_cases:
-                response = await client.post("/api/v1/trips", json=case, headers=headers)
+                response = await client.post(
+                    "/api/v1/trips", json=case, headers=headers
+                )
                 # Should either accept or reject gracefully
                 assert response.status_code in [201, 400, 422]

@@ -201,7 +201,9 @@ async def _rollup_metrics():
     # Trim memory samples (keep last 24 hours)
     cutoff = datetime.now() - timedelta(hours=24)
     _metrics_store["memory_usage_samples"] = [
-        sample for sample in _metrics_store["memory_usage_samples"] if sample[0] >= cutoff
+        sample
+        for sample in _metrics_store["memory_usage_samples"]
+        if sample[0] >= cutoff
     ]
 
     # Compute average endpoint times and reset

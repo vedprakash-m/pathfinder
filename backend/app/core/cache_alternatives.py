@@ -67,7 +67,8 @@ class InMemoryCache:
             if len(self.cache) >= self.max_size and key not in self.cache:
                 oldest_key = min(
                     self.cache.keys(),
-                    key=lambda k: self.cache[k].last_accessed or self.cache[k].timestamp,
+                    key=lambda k: self.cache[k].last_accessed
+                    or self.cache[k].timestamp,
                 )
                 del self.cache[oldest_key]
 
@@ -97,7 +98,9 @@ class InMemoryCache:
         """Remove expired entries."""
         current_time = time.time()
         expired_keys = [
-            key for key, entry in self.cache.items() if current_time - entry.timestamp >= entry.ttl
+            key
+            for key, entry in self.cache.items()
+            if current_time - entry.timestamp >= entry.ttl
         ]
         for key in expired_keys:
             del self.cache[key]

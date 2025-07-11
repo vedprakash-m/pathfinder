@@ -28,7 +28,6 @@ def test_trip_creation_end_to_end():
     # Mock authentication
     with patch("app.core.zero_trust.verify_token", return_value=mock_token_data):
         with patch("app.core.security.verify_token", return_value=mock_token_data):
-
             client = TestClient(app)
 
             # Get CSRF token
@@ -63,17 +62,25 @@ def test_trip_creation_end_to_end():
             response_data = response.json()
             assert "id" in response_data
             assert response_data["name"] == "Integration Test Trip"
-            assert response_data["description"] == "A test trip created by integration test"
+            assert (
+                response_data["description"]
+                == "A test trip created by integration test"
+            )
             assert response_data["destination"] == "Integration Test Destination"
             assert response_data["start_date"] == "2025-08-01"
             assert response_data["end_date"] == "2025-08-15"
-            assert response_data["budget_total"] is None or response_data["budget_total"] == 3000.0
+            assert (
+                response_data["budget_total"] is None
+                or response_data["budget_total"] == 3000.0
+            )
             assert not response_data["is_public"]
             assert response_data["status"] == "planning"
             assert response_data["creator_id"] == test_user_id
             assert "created_at" in response_data
             assert "updated_at" in response_data
-            assert response_data["family_count"] == 0  # New trip should have no families initially
+            assert (
+                response_data["family_count"] == 0
+            )  # New trip should have no families initially
             assert response_data["confirmed_families"] == 0
 
 
@@ -125,7 +132,6 @@ def test_trip_creation_with_invalid_data():
     # Mock authentication
     with patch("app.core.zero_trust.verify_token", return_value=mock_token_data):
         with patch("app.core.security.verify_token", return_value=mock_token_data):
-
             client = TestClient(app)
 
             # Get CSRF token

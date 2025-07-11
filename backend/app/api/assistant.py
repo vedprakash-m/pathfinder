@@ -11,6 +11,7 @@ from ..core.ai_cost_management import ai_cost_control
 from ..core.database_unified import get_cosmos_repository
 from ..core.logging_config import get_logger
 from ..core.security import get_current_user, VedUser
+
 # SQL User model removed - use Cosmos UserDocument
 from ..repositories.cosmos_unified import UnifiedCosmosRepository
 from ..schemas.assistant import MentionRequest, FeedbackRequest, SuggestionsRequest
@@ -26,18 +27,20 @@ router = APIRouter(prefix="/api/assistant", tags=["assistant"])
 async def process_mention(
     request: MentionRequest,
     current_user: VedUser = Depends(get_current_user),
-    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository)
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
 ):
     """Process @pathfinder mention and return AI response using unified Cosmos DB"""
     try:
         # Add user context to the request context
         context = request.context.copy()
-        context.update({
-            "user_id": current_user.id,
-            "user_role": current_user.role,
-            "trip_id": request.trip_id,
-            "family_id": request.family_id,
-        })
+        context.update(
+            {
+                "user_id": current_user.id,
+                "user_role": current_user.role,
+                "trip_id": request.trip_id,
+                "family_id": request.family_id,
+            }
+        )
 
         # Process the mention
         result = await assistant_service.process_mention(
@@ -58,7 +61,9 @@ async def process_mention(
                 },
             }
         else:
-            raise HTTPException(status_code=400, detail=result.get("error", "Unknown error"))
+            raise HTTPException(
+                status_code=400, detail=result.get("error", "Unknown error")
+            )
 
     except Exception as e:
         logger.error(f"Error processing mention: {str(e)}")
@@ -69,9 +74,9 @@ async def process_mention(
 @ai_cost_control(model="gpt-3.5-turbo", max_tokens=1000)
 async def get_contextual_suggestions(
     page: Optional[str] = None,
-trip_id: Optional[str] = None,
+    trip_id: Optional[str] = None,
     current_user: VedUser = Depends(get_current_user),
-    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository)
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
 ):
     """Get contextual AI suggestions for the current user context using unified Cosmos DB"""
     try:
@@ -106,7 +111,7 @@ trip_id: Optional[str] = None,
 async def provide_feedback(
     request: FeedbackRequest,
     current_user: VedUser = Depends(get_current_user),
-    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository)
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
 ):
     """Provide feedback on an assistant interaction using unified Cosmos DB"""
     try:
@@ -135,7 +140,7 @@ async def get_interaction_history(
     offset: int = 0,
     trip_id: Optional[str] = None,
     current_user: VedUser = Depends(get_current_user),
-    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository)
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
 ):
     """Get user's assistant interaction history using unified Cosmos DB"""
     try:
@@ -162,12 +167,14 @@ async def get_interaction_history(
 async def get_interaction_details(
     interaction_id: str,
     current_user: VedUser = Depends(get_current_user),
-    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository)
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
 ):
     """Get details of a specific assistant interaction using unified Cosmos DB"""
     try:
         details = await assistant_service.get_interaction_details(
-            interaction_id=interaction_id, user_id=current_user.id, cosmos_repo=cosmos_repo
+            interaction_id=interaction_id,
+            user_id=current_user.id,
+            cosmos_repo=cosmos_repo,
         )
 
         if details:
@@ -190,7 +197,7 @@ async def get_interaction_details(
 async def dismiss_response_card(
     card_id: str,
     current_user: VedUser = Depends(get_current_user),
-    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository)
+    cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
 ):
     """Dismiss a response card using unified Cosmos DB"""
     try:

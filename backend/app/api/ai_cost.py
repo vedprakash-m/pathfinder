@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """
 API endpoints for AI Cost Management functionality
 """
@@ -11,6 +12,7 @@ from pydantic import BaseModel, Field
 from ..core.ai_cost_management import ai_cost_tracker, get_ai_usage_stats
 from ..core.logging_config import get_logger
 from ..core.security import get_current_user
+
 # SQL User model removed - use Cosmos UserDocument
 from ..services.ai_service import advanced_ai_service
 
@@ -22,30 +24,42 @@ router = APIRouter(prefix="/api/ai", tags=["ai-cost"])
 class CostStatusResponse(BaseModel):
     """Response model for AI cost status"""
 
+
 budgetUsed: float = Field(..., description="Amount of budget used today")
 budgetLimit: float = Field(..., description="Daily budget limit")
 remainingQuota: float = Field(..., description="Remaining budget quota")
 currentTier: str = Field(..., description="Current usage tier")
 gracefulMode: bool = Field(..., description="Whether in graceful degradation mode")
 dailyRequests: int = Field(default=0, description="Number of requests today")
-averageCostPerRequest: float = Field(default=0.0, description="Average cost per request")
+averageCostPerRequest: float = Field(
+    default=0.0, description="Average cost per request"
+)
 modelUsage: dict[str, Any] = Field(default_factory=dict, description="Usage by model")
 
 
 class UsageStatsResponse(BaseModel):
     """Response model for detailed usage statistics"""
 
-daily_stats: dict[str, Any] = Field(default_factory=dict, description="Daily usage statistics")
-user_stats: Optional[dict[str, Any]] = Field(None, description="User-specific statistics")
+
+daily_stats: dict[str, Any] = Field(
+    default_factory=dict, description="Daily usage statistics"
+)
+user_stats: Optional[dict[str, Any]] = Field(
+    None, description="User-specific statistics"
+)
 limits: dict[str, float] = Field(default_factory=dict, description="Cost limits")
-remaining: dict[str, float] = Field(default_factory=dict, description="Remaining budget")
+remaining: dict[str, float] = Field(
+    default_factory=dict, description="Remaining budget"
+)
 optimization_suggestions: list = Field(
-        default_factory=list, description="Cost optimization suggestions"
+    default_factory=list, description="Cost optimization suggestions"
 )
 
 
 @router.get("/cost/status", response_model=CostStatusResponse)
-async def get_cost_status(current_user: User = Depends(get_current_user)) -> CostStatusResponse:
+async def get_cost_status(
+    current_user: User = Depends(get_current_user),
+) -> CostStatusResponse:
     """
     Get current AI cost status and budget information.
     This endpoint provides the data expected by the frontend aiService.
@@ -55,7 +69,9 @@ async def get_cost_status(current_user: User = Depends(get_current_user)) -> Cos
         cost_status = advanced_ai_service.get_cost_status()
 
         # Determine current tier based on usage
-        budget_used_percent = (cost_status["daily_cost"] / cost_status["budget_limit"]) * 100
+        budget_used_percent = (
+            cost_status["daily_cost"] / cost_status["budget_limit"]
+        ) * 100
 
         if budget_used_percent >= 90:
             current_tier = "critical"
@@ -93,14 +109,16 @@ async def get_cost_status(current_user: User = Depends(get_current_user)) -> Cos
             remainingQuota=50.0,
             currentTier="basic",
             gracefulMode=False,
-dailyRequests=0,
-averageCostPerRequest=0.0,
-modelUsage={},
-)
+            dailyRequests=0,
+            averageCostPerRequest=0.0,
+            modelUsage={},
+        )
 
 
 @router.get("/usage/stats", response_model=UsageStatsResponse)
-async def get_usage_stats(current_user: User = Depends(get_current_user)) -> UsageStatsResponse:
+async def get_usage_stats(
+    current_user: User = Depends(get_current_user),
+) -> UsageStatsResponse:
     """
     Get detailed AI usage statistics for the current user.
     """
@@ -123,11 +141,15 @@ async def get_usage_stats(current_user: User = Depends(get_current_user)) -> Usa
 
     except Exception as e:
         logger.error(f"Failed to get usage stats: {e}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve usage statistics")
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve usage statistics"
+        )
 
 
 @router.get("/budget/status")
-async def get_budget_status(current_user: User = Depends(get_current_user)) -> dict[str, Any]:
+async def get_budget_status(
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
     """
     Get budget status with detailed breakdown.
     """
@@ -170,14 +192,18 @@ async def validate_request_budget(
         is_valid = ai_cost_tracker.validate_request_budget(model, estimated_tokens)
 
         # Get cost estimate
-        estimated_cost = (estimated_tokens / 1000) * ai_cost_tracker.model_costs.get(model, 0.001)
+        estimated_cost = (estimated_tokens / 1000) * ai_cost_tracker.model_costs.get(
+            model, 0.001
+        )
 
         return {
             "valid": is_valid,
             "estimated_cost": round(estimated_cost, 4),
             "model": model,
             "estimated_tokens": estimated_tokens,
-            "reason": "Budget limits exceeded" if not is_valid else "Request can be processed",
+            "reason": "Budget limits exceeded"
+            if not is_valid
+            else "Request can be processed",
         }
 
     except Exception as e:
@@ -202,7 +228,8 @@ async def get_ai_health() -> dict[str, Any]:
             "cost_tracking": "operational",
             "budget_management": "operational",
             "graceful_degradation": "available",
-            "last_check": usage_stats.get("daily_stats", {}).get("total_requests", 0) > 0,
+            "last_check": usage_stats.get("daily_stats", {}).get("total_requests", 0)
+            > 0,
             "budget_remaining": budget_status.get("budget_remaining", 0),
             "services": {
                 "cost_tracker": "up",

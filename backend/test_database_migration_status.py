@@ -119,7 +119,6 @@ def test_api_endpoints_migration():
 
     # Check families.py
     try:
-
         # Check if it imports unified cosmos repository
         source = open("app/api/families.py").read()
         if "get_cosmos_repository" in source and "get_db" not in source:
@@ -131,7 +130,6 @@ def test_api_endpoints_migration():
 
     # Check consensus.py
     try:
-
         source = open("app/api/consensus.py").read()
         if "get_cosmos_repository" in source:
             migrated_endpoints.append("consensus.py - ✅ MIGRATED")
@@ -142,7 +140,6 @@ def test_api_endpoints_migration():
 
     # Check notifications.py
     try:
-
         source = open("app/api/notifications.py").read()
         if "get_cosmos_repository" in source:
             migrated_endpoints.append("notifications.py - ✅ MIGRATED")
@@ -153,7 +150,6 @@ def test_api_endpoints_migration():
 
     # Check trips.py (use case pattern)
     try:
-
         source = open("app/api/trips.py").read()
         if "# from app.core.database import get_db" in source:
             migrated_endpoints.append("trips.py - ✅ USE CASE PATTERN")

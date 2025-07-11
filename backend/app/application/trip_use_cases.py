@@ -32,7 +32,9 @@ class CreateTripUseCase:
     def __init__(self, trip_service: TripService):
         self._trip_service = trip_service
 
-    async def __call__(self, trip_data: TripCreate, creator_id: str) -> TripResponse:  # noqa: D401
+    async def __call__(
+        self, trip_data: TripCreate, creator_id: str
+    ) -> TripResponse:  # noqa: D401
         """Execute the use-case."""
         return await self._trip_service.create_trip(trip_data, creator_id)
 
@@ -43,7 +45,9 @@ class GetTripUseCase:
     def __init__(self, trip_service: TripService):
         self._trip_service = trip_service
 
-    async def __call__(self, trip_id: UUID, user_id: str) -> TripDetail | None:  # noqa: D401
+    async def __call__(
+        self, trip_id: UUID, user_id: str
+    ) -> TripDetail | None:  # noqa: D401
         return await self._trip_service.get_trip_by_id(trip_id, user_id)
 
 
@@ -77,7 +81,6 @@ class UpdateTripUseCase:
     async def __call__(
         self, trip_id: UUID, update: "TripUpdate", user_id: str
     ) -> TripResponse:  # noqa: D401
-
         return await self._trip_service.update_trip(trip_id, update, user_id)
 
 
@@ -97,7 +100,9 @@ class GetTripStatsUseCase:
     def __init__(self, trip_service: TripService):
         self._trip_service = trip_service
 
-    async def __call__(self, trip_id: UUID, user_id: str) -> TripStats | None:  # noqa: D401
+    async def __call__(
+        self, trip_id: UUID, user_id: str
+    ) -> TripStats | None:  # noqa: D401
         return await self._trip_service.get_trip_stats(trip_id, user_id)
 
 
@@ -139,7 +144,9 @@ class UpdateParticipationUseCase:
         update: ParticipationUpdate,
         user_id: str,
     ) -> ParticipationResponse:  # noqa: D401
-        return await self._trip_service.update_participation(participation_id, update, user_id)
+        return await self._trip_service.update_participation(
+            participation_id, update, user_id
+        )
 
 
 class RemoveParticipantUseCase:
@@ -148,7 +155,9 @@ class RemoveParticipantUseCase:
     def __init__(self, trip_service: TripService):
         self._trip_service = trip_service
 
-    async def __call__(self, participation_id: UUID, user_id: str) -> None:  # noqa: D401
+    async def __call__(
+        self, participation_id: UUID, user_id: str
+    ) -> None:  # noqa: D401
         await self._trip_service.remove_participant(participation_id, user_id)
 
 

@@ -32,7 +32,11 @@ async def test_unified_cosmos():
 
         # Test 3: User Operations
         logger.info("📝 Test 3: Testing user operations...")
-        user_data = {"email": "test@example.com", "name": "Test User", "role": "family_admin"}
+        user_data = {
+            "email": "test@example.com",
+            "name": "Test User",
+            "role": "family_admin",
+        }
 
         # Create user
         user_doc = await repo.create_user(user_data)
@@ -91,7 +95,9 @@ async def test_unified_cosmos():
         assert len(trip_messages) >= 1
         logger.info(f"✅ Trip messages retrieved: {len(trip_messages)} messages")
 
-        logger.info("🎉 All tests passed! Unified Cosmos DB implementation is working correctly.")
+        logger.info(
+            "🎉 All tests passed! Unified Cosmos DB implementation is working correctly."
+        )
 
         return True
 

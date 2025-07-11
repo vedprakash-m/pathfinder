@@ -12,7 +12,9 @@ from pathlib import Path
 from typing import List, Optional
 
 # Set up logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 
@@ -147,11 +149,15 @@ class ComprehensiveFixer:
 
         # F403: Remove star imports
         content = re.sub(
-            r"from\s+[\w.]+\s+import\s+\*.*", "# Star import removed for F403 compliance", content
+            r"from\s+[\w.]+\s+import\s+\*.*",
+            "# Star import removed for F403 compliance",
+            content,
         )
 
         # B008: Fix Depends in argument defaults
-        content = re.sub(r"(\w+):\s*\w+\s*=\s*Depends\(([^)]+)\)", r"\1: \2 = Depends(\2)", content)
+        content = re.sub(
+            r"(\w+):\s*\w+\s*=\s*Depends\(([^)]+)\)", r"\1: \2 = Depends(\2)", content
+        )
 
         # F841: Remove unused variables by commenting them out
         content = re.sub(
@@ -176,7 +182,9 @@ class ComprehensiveFixer:
         content = re.sub(r"\s*!=\s*False\b", " is not False", content)
 
         # E722: Replace bare except with specific exception
-        content = re.sub(r"(\s+)except:\s*$", r"\1except Exception:", content, flags=re.MULTILINE)
+        content = re.sub(
+            r"(\s+)except:\s*$", r"\1except Exception:", content, flags=re.MULTILINE
+        )
 
         # F821: Add missing imports for common undefined names
         undefined_fixes = {
@@ -197,9 +205,9 @@ class ComprehensiveFixer:
 
                 # Find where to insert import
                 for i, line in enumerate(lines):
-                    if line.strip().startswith("from typing import") or line.strip().startswith(
-                        "import"
-                    ):
+                    if line.strip().startswith(
+                        "from typing import"
+                    ) or line.strip().startswith("import"):
                         insert_idx = i + 1
                     elif (
                         line.strip()
@@ -232,7 +240,10 @@ class ComprehensiveFixer:
 
         # Fix missing type annotations for variables
         content = re.sub(
-            r"^(\s*)(\w+)\s*=\s*\[\](\s*)$", r"\1\2: List[Any] = []\3", content, flags=re.MULTILINE
+            r"^(\s*)(\w+)\s*=\s*\[\](\s*)$",
+            r"\1\2: List[Any] = []\3",
+            content,
+            flags=re.MULTILINE,
         )
 
         content = re.sub(
@@ -312,7 +323,9 @@ class ComprehensiveFixer:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Comprehensive code fixer for pre-commit issues")
+    parser = argparse.ArgumentParser(
+        description="Comprehensive code fixer for pre-commit issues"
+    )
     parser.add_argument("--root", default=".", help="Root directory of the project")
     parser.add_argument("files", nargs="*", help="Specific files or directories to fix")
 

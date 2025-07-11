@@ -31,10 +31,16 @@ class CostMonitoringService:
 
     def __init__(self, notification_service: Optional[NotificationService] = None):
         self.cost_thresholds = {
-            "cosmos_db_ru_daily": float(os.getenv("COSMOS_DB_RU_DAILY_LIMIT", "100000")),
-            "openai_tokens_daily": float(os.getenv("OPENAI_TOKENS_DAILY_LIMIT", "1000000")),
+            "cosmos_db_ru_daily": float(
+                os.getenv("COSMOS_DB_RU_DAILY_LIMIT", "100000")
+            ),
+            "openai_tokens_daily": float(
+                os.getenv("OPENAI_TOKENS_DAILY_LIMIT", "1000000")
+            ),
             "storage_gb_monthly": float(os.getenv("STORAGE_GB_MONTHLY_LIMIT", "100")),
-            "bandwidth_gb_monthly": float(os.getenv("BANDWIDTH_GB_MONTHLY_LIMIT", "500")),
+            "bandwidth_gb_monthly": float(
+                os.getenv("BANDWIDTH_GB_MONTHLY_LIMIT", "500")
+            ),
             "ai_cost_daily": float(os.getenv("AI_COST_DAILY_LIMIT", "50.0")),
         }
         self.current_usage = {}
@@ -67,7 +73,9 @@ class CostMonitoringService:
             threshold=self.cost_thresholds.get(key, 0),
         )
 
-    async def send_cost_alert(self, service: str, percentage: float, threshold: float) -> None:
+    async def send_cost_alert(
+        self, service: str, percentage: float, threshold: float
+    ) -> None:
         """Send cost alerts to administrators."""
         # Only send alerts if notification service is available
         if not self.notification_service:

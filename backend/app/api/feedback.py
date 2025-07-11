@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """
 from app.repositories.cosmos_unified import UnifiedCosmosRepository, UserDocument
 from app.core.database_unified import get_cosmos_service
@@ -23,13 +24,14 @@ from pydantic import BaseModel
 
 from ..core.database_unified import get_cosmos_repository
 from ..core.zero_trust import require_permissions
+
 # SQL User model removed - use Cosmos UserDocument
 from ..repositories.cosmos_unified import UnifiedCosmosRepository
 from ..services.real_time_feedback import (
     FeedbackStatus,
-FeedbackType,
-RealTimeFeedbackService,
-get_feedback_dashboard_data,
+    FeedbackType,
+    RealTimeFeedbackService,
+    get_feedback_dashboard_data,
 )
 
 logger = logging.getLogger(__name__)
@@ -40,6 +42,7 @@ router = APIRouter(prefix="/api/v1/feedback", tags=["feedback"])
 class FeedbackSubmissionRequest(BaseModel):
     """Request model for submitting feedback."""
 
+
 feedback_type: str
 target_element: str  # What they're providing feedback on
 content: str
@@ -49,6 +52,7 @@ suggested_change: Optional[str] = None
 class FeedbackResponseRequest(BaseModel):
     """Request model for responding to feedback."""
 
+
 response_content: str
 new_status: Optional[str] = None
 decision: Optional[str] = None  # "approve", "reject", "modify"
@@ -56,6 +60,7 @@ decision: Optional[str] = None  # "approve", "reject", "modify"
 
 class LiveChangeRequest(BaseModel):
     """Request model for live collaborative changes."""
+
 
 element_id: str
 change_type: str  # "modify", "add", "delete"
@@ -68,7 +73,7 @@ async def submit_feedback(
     trip_id: str,
     feedback_request: FeedbackSubmissionRequest,
     cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
-    current_user: dict = Depends(require_permissions("trips", "read"))
+    current_user: dict = Depends(require_permissions("trips", "read")),
 ):
     """
     Submit feedback for a trip element.
@@ -84,7 +89,9 @@ async def submit_feedback(
 
         # Get user's family for family_id
         user_families = await cosmos_repo.get_user_families(current_user["id"])
-        family_id = user_families[0].id if user_families else f"family_{current_user['id']}"
+        family_id = (
+            user_families[0].id if user_families else f"family_{current_user['id']}"
+        )
 
         # Create feedback document
         feedback_data = {
@@ -111,7 +118,9 @@ async def submit_feedback(
 
         feedback_doc = await cosmos_repo.create_feedback(feedback_data)
 
-        logger.info(f"Feedback submitted for trip {trip_id} by user {current_user['id']}")
+        logger.info(
+            f"Feedback submitted for trip {trip_id} by user {current_user['id']}"
+        )
         return {
             "success": True,
             "feedback_id": feedback_doc.id,
@@ -131,7 +140,7 @@ async def submit_feedback(
 async def get_feedback_dashboard(
     trip_id: str,
     cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
-    current_user: dict = Depends(require_permissions("trips", "read"))
+    current_user: dict = Depends(require_permissions("trips", "read")),
 ):
     """
     Get comprehensive feedback dashboard data for a trip.
@@ -142,31 +151,35 @@ async def get_feedback_dashboard(
         dashboard_data = await get_feedback_dashboard_data(cosmos_repo, trip_id)
 
         # Add real-time collaboration metrics
-        dashboard_data.update({
-            "collaboration_health": {
-                "feedback_velocity": "3.2 items/day",  # Rate of feedback submission
-                "response_rate": f"{dashboard_data['response_rate'] * 100:.0f}%",
-                "average_resolution_time": f"{dashboard_data['average_resolution_time_hours']:.1f} hours",
-                "active_discussions": 2,
-            },
-            "quick_actions": [
-                "Review pending feedback",
-                "Respond to family concerns",
-                "Approve suggested changes",
-            ],
-            "feedback_trends": {
-                "most_common_type": "suggestion",
-                "peak_feedback_time": "Evening (7-9 PM)",
-                "family_participation": "4 out of 5 families active",
-            },
-        })
+        dashboard_data.update(
+            {
+                "collaboration_health": {
+                    "feedback_velocity": "3.2 items/day",  # Rate of feedback submission
+                    "response_rate": f"{dashboard_data['response_rate'] * 100:.0f}%",
+                    "average_resolution_time": f"{dashboard_data['average_resolution_time_hours']:.1f} hours",
+                    "active_discussions": 2,
+                },
+                "quick_actions": [
+                    "Review pending feedback",
+                    "Respond to family concerns",
+                    "Approve suggested changes",
+                ],
+                "feedback_trends": {
+                    "most_common_type": "suggestion",
+                    "peak_feedback_time": "Evening (7-9 PM)",
+                    "family_participation": "4 out of 5 families active",
+                },
+            }
+        )
 
         logger.info(f"Feedback dashboard data retrieved for trip {trip_id}")
         return dashboard_data
 
     except Exception as e:
         logger.error(f"Error getting feedback dashboard data: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to get feedback dashboard data")
+        raise HTTPException(
+            status_code=500, detail="Failed to get feedback dashboard data"
+        )
 
 
 @router.get("/trip/{trip_id}")
@@ -175,7 +188,7 @@ async def get_trip_feedback(
     status: Optional[str] = None,
     feedback_type: Optional[str] = None,
     cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
-    current_user: dict = Depends(require_permissions("trips", "read"))
+    current_user: dict = Depends(require_permissions("trips", "read")),
 ):
     """
     Get all feedback for a trip with optional filtering.
@@ -199,7 +212,9 @@ async def get_trip_feedback(
         if feedback_type:
             try:
                 FeedbackType(feedback_type)  # Validate feedback type
-                feedback_list = [f for f in feedback_list if f["feedback_type"] == feedback_type]
+                feedback_list = [
+                    f for f in feedback_list if f["feedback_type"] == feedback_type
+                ]
             except ValueError:
                 raise HTTPException(
                     status_code=400, detail=f"Invalid feedback type: {feedback_type}"
@@ -207,7 +222,9 @@ async def get_trip_feedback(
 
         # Add enhanced metadata
         for feedback in feedback_list:
-            feedback["time_since_submission"] = _calculate_time_since(feedback["created_at"])
+            feedback["time_since_submission"] = _calculate_time_since(
+                feedback["created_at"]
+            )
             feedback["needs_response"] = len(feedback.get("responses", [])) == 0
             feedback["urgency_level"] = _calculate_urgency(feedback)
 
@@ -231,7 +248,7 @@ async def respond_to_feedback(
     feedback_id: str,
     response_request: FeedbackResponseRequest,
     cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
-    current_user: dict = Depends(require_permissions("trips", "update"))
+    current_user: dict = Depends(require_permissions("trips", "update")),
 ):
     """
     Respond to a feedback item.
@@ -260,7 +277,9 @@ async def respond_to_feedback(
         success = await service.respond_to_feedback(feedback_id, response_data)
 
         if success:
-            logger.info(f"Response added to feedback {feedback_id} by user {current_user['id']}")
+            logger.info(
+                f"Response added to feedback {feedback_id} by user {current_user['id']}"
+            )
             return {
                 "success": True,
                 "message": "Response added successfully",
@@ -282,7 +301,7 @@ async def submit_live_change(
     trip_id: str,
     change_request: LiveChangeRequest,
     cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
-    current_user: dict = Depends(require_permissions("trips", "update"))
+    current_user: dict = Depends(require_permissions("trips", "update")),
 ):
     """
     Submit a live collaborative change during trip planning.
@@ -296,7 +315,9 @@ async def submit_live_change(
         session_id = await service.start_editing_session(trip_id, current_user["id"])
 
         if not session_id:
-            raise HTTPException(status_code=400, detail="Failed to start editing session")
+            raise HTTPException(
+                status_code=400, detail="Failed to start editing session"
+            )
 
         # Submit the live change
         change_data = {
@@ -306,10 +327,14 @@ async def submit_live_change(
             "description": change_request.description,
         }
 
-        result = await service.submit_live_change(session_id, current_user["id"], change_data)
+        result = await service.submit_live_change(
+            session_id, current_user["id"], change_data
+        )
 
         if result["success"]:
-            logger.info(f"Live change submitted for trip {trip_id} by user {current_user['id']}")
+            logger.info(
+                f"Live change submitted for trip {trip_id} by user {current_user['id']}"
+            )
             return {
                 "success": True,
                 "change_id": result["change_id"],
@@ -335,7 +360,7 @@ async def submit_live_change(
 async def get_collaboration_status(
     trip_id: str,
     cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repository),
-    current_user: User = Depends(require_permissions("trips", "read"))
+    current_user: User = Depends(require_permissions("trips", "read")),
 ):
     """
     Get real-time collaboration status for a trip.
@@ -377,7 +402,9 @@ async def get_collaboration_status(
 
     except Exception as e:
         logger.error(f"Error getting collaboration status: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to get collaboration status")
+        raise HTTPException(
+            status_code=500, detail="Failed to get collaboration status"
+        )
 
 
 # Helper functions

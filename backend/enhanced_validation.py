@@ -86,7 +86,8 @@ def main():
     # 1. Check Python version
     python_interpreter = get_python_interpreter()
     success, result = run_command(
-        f"{python_interpreter} --version", f"Checking Python version ({python_interpreter})"
+        f"{python_interpreter} --version",
+        f"Checking Python version ({python_interpreter})",
     )
     results.append(("Python Version Check", success))
 

@@ -80,20 +80,27 @@ class Day4SecurityAuditTest:
                 from app.core.security import SecurityMiddleware
 
                 self.log_result(
-                    "Security Headers - Middleware exists", True, "SecurityMiddleware found"
+                    "Security Headers - Middleware exists",
+                    True,
+                    "SecurityMiddleware found",
                 )
             except ImportError:
                 self.log_result(
-                    "Security Headers - Middleware exists", False, "SecurityMiddleware not found"
+                    "Security Headers - Middleware exists",
+                    False,
+                    "SecurityMiddleware not found",
                 )
 
             # Check main.py for security middleware configuration
             try:
-                with open("/Users/vedprakashmishra/pathfinder/backend/app/main.py", "r") as f:
+                with open(
+                    "/Users/vedprakashmishra/pathfinder/backend/app/main.py", "r"
+                ) as f:
                     main_content = f.read()
 
                 security_middleware_configured = (
-                    "SecurityMiddleware" in main_content or "security" in main_content.lower()
+                    "SecurityMiddleware" in main_content
+                    or "security" in main_content.lower()
                 )
                 self.log_result(
                     "Security Headers - Middleware configured",
@@ -111,11 +118,15 @@ class Day4SecurityAuditTest:
                 )
 
             # Test CORS configuration
-            cors_configured = "CORS" in main_content if "main_content" in locals() else False
+            cors_configured = (
+                "CORS" in main_content if "main_content" in locals() else False
+            )
             self.log_result(
                 "Security Headers - CORS configuration",
                 cors_configured,
-                "CORS middleware found" if cors_configured else "CORS configuration missing",
+                "CORS middleware found"
+                if cors_configured
+                else "CORS configuration missing",
             )
 
             self.test_results["security_headers_compliance"] = True
@@ -194,7 +205,9 @@ class Day4SecurityAuditTest:
             protected_routes = 0
 
             for name, router in protected_endpoints:
-                routes = [route for route in router.routes if hasattr(route, "dependant")]
+                routes = [
+                    route for route in router.routes if hasattr(route, "dependant")
+                ]
                 total_routes += len(routes)
 
                 for route in routes:
@@ -206,12 +219,15 @@ class Day4SecurityAuditTest:
                             else []
                         )
                         has_auth = any(
-                            "current_user" in str(dep) or "auth" in str(dep).lower() for dep in deps
+                            "current_user" in str(dep) or "auth" in str(dep).lower()
+                            for dep in deps
                         )
                         if has_auth:
                             protected_routes += 1
 
-            protection_rate = (protected_routes / total_routes * 100) if total_routes > 0 else 0
+            protection_rate = (
+                (protected_routes / total_routes * 100) if total_routes > 0 else 0
+            )
 
             self.log_result(
                 "API Security - Protected endpoints",
@@ -266,7 +282,9 @@ class Day4SecurityAuditTest:
                     if "health" in endpoint:
                         # Test endpoint availability
                         _endpoint_exists = True
-                        response_time = (time.time() - start_time) * 1000  # Convert to ms
+                        response_time = (
+                            time.time() - start_time
+                        ) * 1000  # Convert to ms
                         response_times[endpoint] = response_time
 
                         meets_target = response_time < 100  # Tech Spec: <100ms
@@ -279,12 +297,16 @@ class Day4SecurityAuditTest:
                 except Exception as e:
                     response_times[endpoint] = 999  # High penalty for errors
                     self.log_result(
-                        f"Performance - {endpoint} availability", False, f"Error: {str(e)}"
+                        f"Performance - {endpoint} availability",
+                        False,
+                        f"Error: {str(e)}",
                     )
 
             # Overall performance assessment
             avg_response_time = (
-                sum(response_times.values()) / len(response_times) if response_times else 999
+                sum(response_times.values()) / len(response_times)
+                if response_times
+                else 999
             )
             performance_target_met = avg_response_time < 100
 
@@ -338,7 +360,9 @@ class Day4SecurityAuditTest:
                 # Test basic repository operation speed
                 repo_response_time = (time.time() - start_time) * 1000
 
-                db_performance_target_met = repo_response_time < 50  # Target: fast DB operations
+                db_performance_target_met = (
+                    repo_response_time < 50
+                )  # Target: fast DB operations
                 self.log_result(
                     "Database - Connection performance",
                     db_performance_target_met,
@@ -347,7 +371,9 @@ class Day4SecurityAuditTest:
 
             except Exception as e:
                 self.log_result(
-                    "Database - Connection performance", False, f"Repository error: {str(e)}"
+                    "Database - Connection performance",
+                    False,
+                    f"Repository error: {str(e)}",
                 )
 
             self.test_results["database_query_optimization"] = True
@@ -378,7 +404,10 @@ class Day4SecurityAuditTest:
                         with open(file_path, "r") as f:
                             content = f.read().lower()
                             for pattern in secret_patterns:
-                                if f'"{pattern}"' in content or f"'{pattern}'" in content:
+                                if (
+                                    f'"{pattern}"' in content
+                                    or f"'{pattern}'" in content
+                                ):
                                     # Check if it's actually a hardcoded value (basic check)
                                     if "=" in content and pattern in content:
                                         lines = content.split("\n")
@@ -411,7 +440,9 @@ class Day4SecurityAuditTest:
                 )
 
             except Exception as e:
-                self.log_result("Security Scan - Secret detection", False, f"Error: {str(e)}")
+                self.log_result(
+                    "Security Scan - Secret detection", False, f"Error: {str(e)}"
+                )
 
             # Test 2: Check environment variable usage
             try:
@@ -421,7 +452,9 @@ class Day4SecurityAuditTest:
                     config_content = f.read()
 
                 env_usage_patterns = ["os.getenv", "os.environ", "getenv", "environ"]
-                uses_env_vars = any(pattern in config_content for pattern in env_usage_patterns)
+                uses_env_vars = any(
+                    pattern in config_content for pattern in env_usage_patterns
+                )
 
                 self.log_result(
                     "Security Scan - Environment variables",
@@ -434,7 +467,9 @@ class Day4SecurityAuditTest:
                 )
 
             except FileNotFoundError:
-                self.log_result("Security Scan - Configuration check", False, "config.py not found")
+                self.log_result(
+                    "Security Scan - Configuration check", False, "config.py not found"
+                )
 
             # Test 3: Check for SQL injection protection (should be N/A with Cosmos DB)
             sql_injection_safe = True  # Cosmos DB with parameterized queries is safe
@@ -482,19 +517,30 @@ class Day4SecurityAuditTest:
 
                 user_model_available = True
                 self.log_result(
-                    "Authentication - User model", user_model_available, "User model available"
+                    "Authentication - User model",
+                    user_model_available,
+                    "User model available",
                 )
             except ImportError:
-                self.log_result("Authentication - User model", False, "User model not found")
+                self.log_result(
+                    "Authentication - User model", False, "User model not found"
+                )
 
             # Test authentication middleware integration
             try:
-                with open("/Users/vedprakashmishra/pathfinder/backend/app/main.py", "r") as f:
+                with open(
+                    "/Users/vedprakashmishra/pathfinder/backend/app/main.py", "r"
+                ) as f:
                     main_content = f.read()
 
                 auth_middleware_configured = any(
                     pattern in main_content
-                    for pattern in ["authentication", "auth", "get_current_user", "security"]
+                    for pattern in [
+                        "authentication",
+                        "auth",
+                        "get_current_user",
+                        "security",
+                    ]
                 )
 
                 self.log_result(
@@ -504,7 +550,9 @@ class Day4SecurityAuditTest:
                 )
 
             except FileNotFoundError:
-                self.log_result("Authentication - Configuration check", False, "main.py not found")
+                self.log_result(
+                    "Authentication - Configuration check", False, "main.py not found"
+                )
 
             self.test_results["authentication_enforcement"] = True
 
@@ -519,10 +567,14 @@ class Day4SecurityAuditTest:
         try:
             # Check CORS configuration in main.py
             try:
-                with open("/Users/vedprakashmishra/pathfinder/backend/app/main.py", "r") as f:
+                with open(
+                    "/Users/vedprakashmishra/pathfinder/backend/app/main.py", "r"
+                ) as f:
                     main_content = f.read()
 
-                cors_configured = "CORS" in main_content or "cors" in main_content.lower()
+                cors_configured = (
+                    "CORS" in main_content or "cors" in main_content.lower()
+                )
                 self.log_result(
                     "CORS - Configuration present",
                     cors_configured,
@@ -553,10 +605,14 @@ class Day4SecurityAuditTest:
                         f"{configured_options}/{len(secure_cors_patterns)} CORS options configured",
                     )
                 else:
-                    self.log_result("CORS - Security configuration", False, "CORS not configured")
+                    self.log_result(
+                        "CORS - Security configuration", False, "CORS not configured"
+                    )
 
             except FileNotFoundError:
-                self.log_result("CORS - Configuration check", False, "main.py not found")
+                self.log_result(
+                    "CORS - Configuration check", False, "main.py not found"
+                )
 
             self.test_results["cors_configuration"] = True
 
@@ -596,7 +652,9 @@ class Day4SecurityAuditTest:
             status = "✅ PASS" if passed else "❌ FAIL"
             print(f"{status} {category.replace('_', ' ').title()}")
 
-        print(f"\n📊 Overall Success Rate: {success_rate:.1f}% ({passed_tests}/{total_tests})")
+        print(
+            f"\n📊 Overall Success Rate: {success_rate:.1f}% ({passed_tests}/{total_tests})"
+        )
         print(f"⏱️ Execution Time: {execution_time:.2f} seconds")
 
         # Performance metrics summary
@@ -604,7 +662,9 @@ class Day4SecurityAuditTest:
             print("\n📈 Performance Metrics:")
             if "average_response_time" in self.performance_metrics:
                 avg_time = self.performance_metrics["average_response_time"]
-                print(f"   Average API Response Time: {avg_time:.2f}ms (target: <100ms)")
+                print(
+                    f"   Average API Response Time: {avg_time:.2f}ms (target: <100ms)"
+                )
 
         # Security compliance assessment
         security_tests = [
@@ -615,7 +675,9 @@ class Day4SecurityAuditTest:
             "authentication_enforcement",
             "security_vulnerability_scan",
         ]
-        security_passed = sum(1 for test in security_tests if self.test_results.get(test, False))
+        security_passed = sum(
+            1 for test in security_tests if self.test_results.get(test, False)
+        )
         security_rate = (security_passed / len(security_tests)) * 100
 
         print(
@@ -623,7 +685,10 @@ class Day4SecurityAuditTest:
         )
 
         # Performance assessment
-        performance_tests = ["performance_api_response_times", "database_query_optimization"]
+        performance_tests = [
+            "performance_api_response_times",
+            "database_query_optimization",
+        ]
         performance_passed = sum(
             1 for test in performance_tests if self.test_results.get(test, False)
         )
@@ -635,18 +700,20 @@ class Day4SecurityAuditTest:
 
         # Detailed results summary
         if success_rate >= 90:
-            print("\n🎉 EXCELLENT: Security audit and performance optimization complete!")
+            print(
+                "\n🎉 EXCELLENT: Security audit and performance optimization complete!"
+            )
         elif success_rate >= 75:
             print("\n👍 GOOD: Most security and performance requirements met")
         elif success_rate >= 50:
             print("\n⚠️ PARTIAL: Some security and performance issues need attention")
         else:
-            print("\n🚨 NEEDS WORK: Significant security and performance improvements required")
+            print(
+                "\n🚨 NEEDS WORK: Significant security and performance improvements required"
+            )
 
         # Save detailed results
-        results_file = (
-            f"day4_security_performance_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-        )
+        results_file = f"day4_security_performance_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
         with open(results_file, "w") as f:
             json.dump(
                 {
@@ -673,10 +740,14 @@ class Day4SecurityAuditTest:
             )
             print("✅ Ready to begin Day 5: Golden Path Onboarding & User Experience")
         elif success_rate >= 70:
-            print("⚠️ DAY 4 partially complete - address remaining security/performance issues")
+            print(
+                "⚠️ DAY 4 partially complete - address remaining security/performance issues"
+            )
             print("🔄 Continue security and performance work before proceeding")
         else:
-            print("❌ DAY 4 objectives not met - significant security and performance work needed")
+            print(
+                "❌ DAY 4 objectives not met - significant security and performance work needed"
+            )
 
         return success_rate >= 85 and security_rate >= 80
 

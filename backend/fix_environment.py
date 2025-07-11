@@ -82,7 +82,14 @@ def reinstall_all_dependencies():
 
     # Force reinstall all requirements
     run_command(
-        ["pip", "install", "--force-reinstall", "--no-cache-dir", "-r", "requirements.txt"],
+        [
+            "pip",
+            "install",
+            "--force-reinstall",
+            "--no-cache-dir",
+            "-r",
+            "requirements.txt",
+        ],
         "Force reinstalling all requirements",
     )
 

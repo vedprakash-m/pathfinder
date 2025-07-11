@@ -39,7 +39,9 @@ class RateLimitStore:
 
         # Remove old requests outside the window
         self._store[key] = {
-            req_time: ts for req_time, ts in self._store[key].items() if now - ts < self.window_size
+            req_time: ts
+            for req_time, ts in self._store[key].items()
+            if now - ts < self.window_size
         }
 
         # Add current request
@@ -56,7 +58,9 @@ class RateLimitStore:
         now = time.time()
         for key in list(self._store.keys()):
             self._store[key] = {
-                req_id: ts for req_id, ts in self._store[key].items() if now - ts < self.window_size
+                req_id: ts
+                for req_id, ts in self._store[key].items()
+                if now - ts < self.window_size
             }
 
             # Remove empty entries
@@ -108,7 +112,9 @@ class RateLimiter(BaseHTTPMiddleware):
 
         # Check if rate limit exceeded
         if count > limit:
-            logger.warning(f"Rate limit exceeded for {client_key} on {endpoint}: {count}/{limit}")
+            logger.warning(
+                f"Rate limit exceeded for {client_key} on {endpoint}: {count}/{limit}"
+            )
 
             # Add retry-after header
             headers["Retry-After"] = str(self.window_size)

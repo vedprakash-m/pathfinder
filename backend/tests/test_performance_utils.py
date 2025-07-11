@@ -227,7 +227,11 @@ class TestPerformanceUtilities:
         try:
             from app.core.performance import format_performance_data
 
-            data = {"response_time": 0.123456, "memory_usage": 1024000, "timestamp": datetime.now()}
+            data = {
+                "response_time": 0.123456,
+                "memory_usage": 1024000,
+                "timestamp": datetime.now(),
+            }
 
             formatted = format_performance_data(data)
             assert isinstance(formatted, (dict, str))
@@ -280,7 +284,11 @@ class TestPerformanceUtilities:
         try:
             from app.core.performance import log_performance_metrics
 
-            metrics = {"endpoint": "/api/test", "response_time": 0.5, "status_code": 200}
+            metrics = {
+                "endpoint": "/api/test",
+                "response_time": 0.5,
+                "status_code": 200,
+            }
 
             # Should not raise an exception
             log_performance_metrics(metrics)

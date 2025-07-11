@@ -15,7 +15,14 @@ try:
     from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
     from reportlab.lib.units import inch
     from reportlab.pdfgen import canvas
-    from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+    from reportlab.platypus import (
+        Image,
+        Paragraph,
+        SimpleDocTemplate,
+        Spacer,
+        Table,
+        TableStyle,
+    )
     from reportlab.platypus.tableofcontents import TableOfContents
 except ImportError:
     logger = logging.getLogger(__name__)
@@ -43,6 +50,7 @@ except ImportError:
 # SQL Family model removed - use Cosmos FamilyDocument
 from app.models.itinerary import Itinerary, ItineraryActivity, ItineraryDay
 from app.models.reservation import Reservation
+
 # SQL Trip model removed - use Cosmos TripDocumentDetail
 
 logger = logging.getLogger(__name__)
@@ -52,7 +60,9 @@ class PDFService:
     """Service for generating PDF documents."""
 
     def __init__(self):
-        self.styles = getSampleStyleSheet() if "getSampleStyleSheet" in globals() else {}
+        self.styles = (
+            getSampleStyleSheet() if "getSampleStyleSheet" in globals() else {}
+        )
         self._setup_custom_styles()
 
     def _setup_custom_styles(self):
@@ -274,7 +284,9 @@ class PDFService:
             elements.append(participants_header)
 
             for participation in trip.participations:
-                participant_text = f"• {participation.user.name} ({participation.family.name})"
+                participant_text = (
+                    f"• {participation.user.name} ({participation.family.name})"
+                )
                 if participation.status:
                     participant_text += f" - {participation.status.value.title()}"
 
@@ -352,7 +364,9 @@ class PDFService:
                 time_str += f" - {activity.end_time.strftime('%I:%M %p')}"
 
         activity_title = f"{time_str} - {activity.name}" if time_str else activity.name
-        title = Paragraph(activity_title, self.styles.get("CustomBody", self.styles.get("Normal")))
+        title = Paragraph(
+            activity_title, self.styles.get("CustomBody", self.styles.get("Normal"))
+        )
         elements.append(title)
 
         # Activity details
@@ -405,7 +419,9 @@ class PDFService:
         ]
 
         for info in emergency_info:
-            info_para = Paragraph(info, self.styles.get("CustomBody", self.styles.get("Normal")))
+            info_para = Paragraph(
+                info, self.styles.get("CustomBody", self.styles.get("Normal"))
+            )
             elements.append(info_para)
 
         elements.append(Spacer(1, 15))
@@ -427,7 +443,9 @@ class PDFService:
         ]
 
         for tip in tips:
-            tip_para = Paragraph(tip, self.styles.get("CustomBody", self.styles.get("Normal")))
+            tip_para = Paragraph(
+                tip, self.styles.get("CustomBody", self.styles.get("Normal"))
+            )
             elements.append(tip_para)
 
         return elements
@@ -477,7 +495,9 @@ class PDFService:
         finally:
             buffer.close()
 
-    def _create_reservations_summary(self, reservations: List[Reservation]) -> List[Any]:
+    def _create_reservations_summary(
+        self, reservations: List[Reservation]
+    ) -> List[Any]:
         """Create reservations summary section."""
         elements = []
 
@@ -529,9 +549,13 @@ class PDFService:
         if reservation.confirmation_number:
             details.append(f"Confirmation: {reservation.confirmation_number}")
         if reservation.check_in_date:
-            details.append(f"Check-in: {reservation.check_in_date.strftime('%B %d, %Y')}")
+            details.append(
+                f"Check-in: {reservation.check_in_date.strftime('%B %d, %Y')}"
+            )
         if reservation.check_out_date:
-            details.append(f"Check-out: {reservation.check_out_date.strftime('%B %d, %Y')}")
+            details.append(
+                f"Check-out: {reservation.check_out_date.strftime('%B %d, %Y')}"
+            )
         if reservation.total_cost:
             details.append(f"Cost: ${reservation.total_cost}")
         if reservation.status:

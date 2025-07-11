@@ -17,6 +17,7 @@ try:
     from app.api.polls import router as polls_router
     from app.core.ai_cost_management import get_ai_usage_stats
     from app.core.database_unified import get_cosmos_repository
+
     # SQL User model removed - use Cosmos UserDocument
     from app.repositories.cosmos_unified import UnifiedCosmosRepository
     from app.services.consensus_engine import analyze_trip_consensus
@@ -74,7 +75,9 @@ class Day3EndToEndAITest:
             assert self.cosmos_repo is not None
             assert isinstance(self.cosmos_repo, UnifiedCosmosRepository)
 
-            self.log_result("Cosmos DB Repository Setup", True, "Unified repository initialized")
+            self.log_result(
+                "Cosmos DB Repository Setup", True, "Unified repository initialized"
+            )
             self.test_results["cosmos_db_integration"] = True
 
         except Exception as e:
@@ -91,7 +94,9 @@ class Day3EndToEndAITest:
             assert hasattr(assistant_service, "get_contextual_suggestions")
 
             self.log_result(
-                "Assistant Service - Service methods", True, "All required methods available"
+                "Assistant Service - Service methods",
+                True,
+                "All required methods available",
             )
 
             # Test mock assistant response (simulation mode)
@@ -112,7 +117,9 @@ class Day3EndToEndAITest:
 
                 # In simulation mode, this should return a mock response or handle gracefully
                 self.log_result(
-                    "Assistant Service - Process mention", True, "Service call completed"
+                    "Assistant Service - Process mention",
+                    True,
+                    "Service call completed",
                 )
 
             except Exception as e:
@@ -141,7 +148,9 @@ class Day3EndToEndAITest:
             )  # Changed from analyze_poll_results
 
             self.log_result(
-                "Magic Polls Service - Service methods", True, "All required methods available"
+                "Magic Polls Service - Service methods",
+                True,
+                "All required methods available",
             )
 
             # Test mock poll creation
@@ -212,10 +221,13 @@ class Day3EndToEndAITest:
 
             try:
                 _result = analyze_trip_consensus(
-                    trip_id=test_trip_data["trip_id"], families_data=test_trip_data["families"]
+                    trip_id=test_trip_data["trip_id"],
+                    families_data=test_trip_data["families"],
                 )
 
-                self.log_result("Consensus Engine - Analysis", True, "Consensus analysis completed")
+                self.log_result(
+                    "Consensus Engine - Analysis", True, "Consensus analysis completed"
+                )
 
             except Exception as e:
                 # Expected in simulation mode
@@ -240,15 +252,21 @@ class Day3EndToEndAITest:
             assistant_routes = [
                 route for route in assistant_router.routes if hasattr(route, "path")
             ]
-            polls_routes = [route for route in polls_router.routes if hasattr(route, "path")]
+            polls_routes = [
+                route for route in polls_router.routes if hasattr(route, "path")
+            ]
             consensus_routes = [
                 route for route in consensus_router.routes if hasattr(route, "path")
             ]
 
-            total_routes = len(assistant_routes) + len(polls_routes) + len(consensus_routes)
+            total_routes = (
+                len(assistant_routes) + len(polls_routes) + len(consensus_routes)
+            )
 
             self.log_result(
-                "AI Endpoints - Route registration", True, f"Total routes: {total_routes}"
+                "AI Endpoints - Route registration",
+                True,
+                f"Total routes: {total_routes}",
             )
 
             # Verify key AI endpoints exist
@@ -263,15 +281,25 @@ class Day3EndToEndAITest:
             }
 
             # Check for key endpoints
-            assistant_key_endpoints = any("/mention" in path for path in assistant_paths)
+            assistant_key_endpoints = any(
+                "/mention" in path for path in assistant_paths
+            )
             polls_key_endpoints = any(
                 path in ["", "/", "/trip/{trip_id}"] for path in polls_paths
             )  # More flexible check
-            consensus_key_endpoints = any("/analyze/" in path for path in consensus_paths)
+            consensus_key_endpoints = any(
+                "/analyze/" in path for path in consensus_paths
+            )
 
-            if assistant_key_endpoints and polls_key_endpoints and consensus_key_endpoints:
+            if (
+                assistant_key_endpoints
+                and polls_key_endpoints
+                and consensus_key_endpoints
+            ):
                 self.log_result(
-                    "AI Endpoints - Key endpoints present", True, "All major AI endpoints found"
+                    "AI Endpoints - Key endpoints present",
+                    True,
+                    "All major AI endpoints found",
                 )
             else:
                 missing = []
@@ -308,7 +336,9 @@ class Day3EndToEndAITest:
                     cosmos_repo=self.cosmos_repo,
                 )
                 self.log_result(
-                    "Error Handling - Assistant graceful handling", True, "Error handled gracefully"
+                    "Error Handling - Assistant graceful handling",
+                    True,
+                    "Error handled gracefully",
                 )
 
             except Exception as e:
@@ -331,7 +361,9 @@ class Day3EndToEndAITest:
             assert isinstance(usage_stats, dict)
 
             self.log_result(
-                "Error Handling - Usage stats availability", True, "Usage stats accessible"
+                "Error Handling - Usage stats availability",
+                True,
+                "Usage stats accessible",
             )
 
             self.test_results["error_handling_and_fallbacks"] = True
@@ -349,14 +381,18 @@ class Day3EndToEndAITest:
             initial_stats = get_ai_usage_stats()
             assert "daily_stats" in initial_stats or "limits" in initial_stats
 
-            self.log_result("Cost Tracking - Initial stats", True, "Usage statistics available")
+            self.log_result(
+                "Cost Tracking - Initial stats", True, "Usage statistics available"
+            )
 
             # Test user-specific tracking
             user_stats = get_ai_usage_stats("test_user_cost_tracking")
             assert isinstance(user_stats, dict)
 
             self.log_result(
-                "Cost Tracking - User-specific stats", True, "User statistics accessible"
+                "Cost Tracking - User-specific stats",
+                True,
+                "User statistics accessible",
             )
 
             # Test cost tracking structure
@@ -379,7 +415,9 @@ class Day3EndToEndAITest:
                     )
             else:
                 self.log_result(
-                    "Cost Tracking - Limit structure", True, "No limits in test mode (expected)"
+                    "Cost Tracking - Limit structure",
+                    True,
+                    "No limits in test mode (expected)",
                 )
 
             self.test_results["real_time_cost_tracking"] = True
@@ -425,7 +463,9 @@ class Day3EndToEndAITest:
                 )
             else:
                 self.log_result(
-                    "Unified Repository - AI operations", False, f"Low coverage: {coverage:.1f}%"
+                    "Unified Repository - AI operations",
+                    False,
+                    f"Low coverage: {coverage:.1f}%",
                 )
 
             # Test document creation capabilities
@@ -440,7 +480,9 @@ class Day3EndToEndAITest:
                 # This should work in simulation mode
                 _result = await self.cosmos_repo.create_user(test_user_data)
                 self.log_result(
-                    "Unified Repository - Document creation", True, "User creation successful"
+                    "Unified Repository - Document creation",
+                    True,
+                    "User creation successful",
                 )
 
             except Exception as e:
@@ -454,7 +496,9 @@ class Day3EndToEndAITest:
             self.test_results["unified_repository_ai_operations"] = True
 
         except Exception as e:
-            self.log_result("Unified Repository AI Operations", False, f"Error: {str(e)}")
+            self.log_result(
+                "Unified Repository AI Operations", False, f"Error: {str(e)}"
+            )
             traceback.print_exc()
 
     async def run_all_tests(self):
@@ -491,7 +535,9 @@ class Day3EndToEndAITest:
             status = "✅ PASS" if passed else "❌ FAIL"
             print(f"{status} {category.replace('_', ' ').title()}")
 
-        print(f"\n📊 Overall Success Rate: {success_rate:.1f}% ({passed_tests}/{total_tests})")
+        print(
+            f"\n📊 Overall Success Rate: {success_rate:.1f}% ({passed_tests}/{total_tests})"
+        )
         print(f"⏱️ Execution Time: {execution_time:.2f} seconds")
 
         # Detailed results summary
@@ -500,14 +546,14 @@ class Day3EndToEndAITest:
         elif success_rate >= 75:
             print("\n👍 GOOD: AI integration mostly complete, minor issues to resolve")
         elif success_rate >= 50:
-            print("\n⚠️ PARTIAL: AI integration partially complete, significant work needed")
+            print(
+                "\n⚠️ PARTIAL: AI integration partially complete, significant work needed"
+            )
         else:
             print("\n🚨 NEEDS WORK: AI integration requires major implementation")
 
         # Save detailed results
-        results_file = (
-            f"day3_e2e_ai_integration_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-        )
+        results_file = f"day3_e2e_ai_integration_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
         with open(results_file, "w") as f:
             json.dump(
                 {
@@ -538,7 +584,9 @@ class Day3EndToEndAITest:
         # Day 3 completion assessment
         print("\n🎯 DAY 3 COMPLETION ASSESSMENT:")
         if success_rate >= 85:
-            print("✅ DAY 3 OBJECTIVES ACHIEVED: AI Integration & End-to-End Validation COMPLETE")
+            print(
+                "✅ DAY 3 OBJECTIVES ACHIEVED: AI Integration & End-to-End Validation COMPLETE"
+            )
             print("✅ Ready to begin Day 4: Security Audit & Performance Optimization")
         else:
             print("❌ DAY 3 objectives not met - continue AI integration work")

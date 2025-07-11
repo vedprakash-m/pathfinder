@@ -151,7 +151,9 @@ class TestTripAPIIntegration:
                 trip_id = created_trip["id"]
 
                 # 2. Read trip
-                get_response = await client.get(f"/api/v1/trips/{trip_id}", headers=headers)
+                get_response = await client.get(
+                    f"/api/v1/trips/{trip_id}", headers=headers
+                )
                 assert get_response.status_code == 200
 
                 retrieved_trip = get_response.json()
@@ -165,7 +167,9 @@ class TestTripAPIIntegration:
                 assert update_response.status_code == 200
 
                 # 4. Delete trip
-                delete_response = await client.delete(f"/api/v1/trips/{trip_id}", headers=headers)
+                delete_response = await client.delete(
+                    f"/api/v1/trips/{trip_id}", headers=headers
+                )
                 assert delete_response.status_code == 204
 
             except Exception as e:
@@ -201,7 +205,9 @@ class TestTripAPIIntegration:
 
             try:
                 # Test with pagination parameters
-                response = await client.get("/api/v1/trips?page=1&limit=10", headers=headers)
+                response = await client.get(
+                    "/api/v1/trips?page=1&limit=10", headers=headers
+                )
 
                 if response.status_code == 401:
                     pytest.skip("Authentication required for pagination tests")
@@ -278,7 +284,9 @@ class TestFamilyAPIIntegration:
 
             try:
                 # Test invitation status endpoint
-                response = await client.get("/api/v1/families/invitations", headers=headers)
+                response = await client.get(
+                    "/api/v1/families/invitations", headers=headers
+                )
 
                 if response.status_code == 401:
                     pytest.skip("Authentication required for invitation tests")
@@ -396,9 +404,11 @@ class TestDatabaseIntegration:
                     or health_data.get("status")
                 )
                 # Accept various forms of healthy status
-                assert db_status in ["healthy", "connected", "error"] or "database" in str(
-                    health_data
-                )
+                assert db_status in [
+                    "healthy",
+                    "connected",
+                    "error",
+                ] or "database" in str(health_data)
 
     @pytest.mark.asyncio
     async def test_database_migration_status(self):

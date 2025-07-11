@@ -78,7 +78,9 @@ class Itinerary(Base):
     # Relationships
     trip = relationship("Trip", back_populates="itineraries")
     approver = relationship("User", foreign_keys=[approved_by])
-    days = relationship("ItineraryDay", back_populates="itinerary", cascade="all, delete-orphan")
+    days = relationship(
+        "ItineraryDay", back_populates="itinerary", cascade="all, delete-orphan"
+    )
 
 
 class ItineraryDay(Base):

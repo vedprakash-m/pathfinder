@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """
 Full API router including all reconstructed endpoints.
 """
@@ -16,13 +17,18 @@ api_router.include_router(families.router, prefix="/families", tags=["families"]
 api_router.include_router(consensus.router, prefix="/consensus", tags=["consensus"])
 api_router.include_router(polls.router, prefix="/polls", tags=["polls"])
 
+
 # Simple root endpoint
 @api_router.get("/")
 async def root():
     """API root endpoint."""
-    return {"message": "Welcome to Pathfinder API - Full Mode", "status": "production_ready"}
+    return {
+        "message": "Welcome to Pathfinder API - Full Mode",
+        "status": "production_ready",
+    }
 
-# Health check endpoint  
+
+# Health check endpoint
 @api_router.get("/health")
 async def api_health():
     """API health check endpoint."""

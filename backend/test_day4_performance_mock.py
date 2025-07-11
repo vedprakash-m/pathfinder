@@ -27,7 +27,9 @@ class Day4PerformanceTestsMock:
         self.detailed_results = []
         self.performance_data = {}
 
-    def log_result(self, test_name: str, success: bool, details: str = "", metrics: Dict = None):
+    def log_result(
+        self, test_name: str, success: bool, details: str = "", metrics: Dict = None
+    ):
         """Log test result with performance metrics"""
         status = "✅ PASS" if success else "❌ FAIL"
         message = f"{status} - {test_name}"
@@ -92,12 +94,16 @@ class Day4PerformanceTestsMock:
             }
 
             status = "✅" if endpoint_pass else "❌"
-            print(f"   {status} {endpoint}: {avg_time:.1f}ms (threshold: {threshold_ms}ms)")
+            print(
+                f"   {status} {endpoint}: {avg_time:.1f}ms (threshold: {threshold_ms}ms)"
+            )
 
         self.performance_data["api_response_times"] = performance_results
 
         # Pass if 4/5 endpoints meet criteria (80% pass rate)
-        passing_endpoints = len([r for r in performance_results.values() if r.get("pass", False)])
+        passing_endpoints = len(
+            [r for r in performance_results.values() if r.get("pass", False)]
+        )
         test_pass = passing_endpoints >= 4
 
         self.log_result(
@@ -237,7 +243,9 @@ class Day4PerformanceTestsMock:
         print("🚀 Starting Day 4 Performance Optimization Tests (Mock Implementation)")
         print("=" * 70)
         print("⚠️  NOTE: Running mock performance tests due to server startup issues")
-        print("⚠️  Real performance validation will be conducted in production environment")
+        print(
+            "⚠️  Real performance validation will be conducted in production environment"
+        )
         print("=" * 70)
 
         start_time = time.time()
@@ -264,7 +272,9 @@ class Day4PerformanceTestsMock:
             status = "✅ PASS" if result else "❌ FAIL"
             print(f"{status} {test_name.replace('_', ' ').title()}")
 
-        print(f"\n📊 Overall Success Rate: {success_rate:.1f}% ({passed_tests}/{total_tests})")
+        print(
+            f"\n📊 Overall Success Rate: {success_rate:.1f}% ({passed_tests}/{total_tests})"
+        )
         print(f"⏱️ Execution Time: {execution_time:.2f} seconds")
 
         # Save detailed results

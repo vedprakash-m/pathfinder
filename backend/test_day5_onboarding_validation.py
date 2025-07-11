@@ -26,6 +26,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "."))
 try:
     from app.core.config import get_settings
     from app.core.database_unified import DatabaseService
+
     # SQL Trip model removed - use Cosmos TripDocumentCreate, TripResponse
     # SQL User model removed - use Cosmos UserDocument, UserCreate
     from app.repositories.cosmos_unified import CosmosUnifiedRepository
@@ -139,7 +140,10 @@ class OnboardingValidationSuite:
                         "name": "Napa Valley Family Weekend",
                         "duration": 3,
                         "budget": 1200.0,
-                        "activities": ["Family-friendly wineries", "Hot air balloon ride"],
+                        "activities": [
+                            "Family-friendly wineries",
+                            "Hot air balloon ride",
+                        ],
                     },
                     "family_vacation": {
                         "name": "Yellowstone National Park Adventure",
@@ -188,7 +192,9 @@ class OnboardingValidationSuite:
             creation_time = time.time() - start_time
 
             if creation_time < target_time:
-                print(f"  ✅ Sample trip creation: {creation_time:.3f}s (target: <{target_time}s)")
+                print(
+                    f"  ✅ Sample trip creation: {creation_time:.3f}s (target: <{target_time}s)"
+                )
                 return True
             else:
                 print(
@@ -260,7 +266,10 @@ class OnboardingValidationSuite:
                     "budget": 1200.0,
                     "activities": ["Family-friendly wineries", "Hot air balloon ride"],
                     "decision_scenarios": [
-                        {"title": "Balloon Ride Timing", "options": ["Morning", "Afternoon"]}
+                        {
+                            "title": "Balloon Ride Timing",
+                            "options": ["Morning", "Afternoon"],
+                        }
                     ],
                 }
             }
@@ -432,7 +441,9 @@ class OnboardingValidationSuite:
 
     async def generate_day5_summary(self):
         """Generate Day 5 completion summary."""
-        success_rate = (self.test_results["tests_passed"] / self.test_results["tests_run"]) * 100
+        success_rate = (
+            self.test_results["tests_passed"] / self.test_results["tests_run"]
+        ) * 100
 
         print("\n" + "=" * 60)
         print("📋 DAY 5 ONBOARDING VALIDATION SUMMARY")
@@ -461,7 +472,9 @@ class OnboardingValidationSuite:
         # Overall assessment
         if success_rate >= 90:
             print("\n✅ Day 5 Status: READY FOR PRODUCTION")
-            print("Onboarding flow meets all requirements for 60-second value demonstration.")
+            print(
+                "Onboarding flow meets all requirements for 60-second value demonstration."
+            )
         elif success_rate >= 80:
             print("\n⚠️ Day 5 Status: NEEDS MINOR IMPROVEMENTS")
             print("Onboarding flow is functional but could be optimized.")

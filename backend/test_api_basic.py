@@ -29,7 +29,9 @@ def test_imports():
         print("✅ Family API imported successfully")
 
         # Check enum values
-        print(f"   - InvitationStatus values: {[status.value for status in InvitationStatus]}")
+        print(
+            f"   - InvitationStatus values: {[status.value for status in InvitationStatus]}"
+        )
         print(f"   - FamilyRole values: {[role.value for role in FamilyRole]}")
 
         return True
@@ -113,7 +115,10 @@ def check_migration_file():
     print("\n🧪 Checking migration file...")
 
     migration_path = (
-        Path(__file__).parent / "alembic" / "versions" / "add_family_invitations_table_20250528.py"
+        Path(__file__).parent
+        / "alembic"
+        / "versions"
+        / "add_family_invitations_table_20250528.py"
     )
 
     if migration_path.exists():
@@ -169,7 +174,9 @@ async def main():
         print("🎉 All tests passed! Family invitation system is ready.")
         return True
     elif passed >= total - 1:
-        print("✅ System is mostly ready. Minor issues detected but functionality should work.")
+        print(
+            "✅ System is mostly ready. Minor issues detected but functionality should work."
+        )
         return True
     else:
         print("⚠️  Several tests failed. Check the implementation.")

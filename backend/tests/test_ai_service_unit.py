@@ -134,10 +134,14 @@ class TestAIServiceItineraryGeneration:
     ):
         """Test itinerary generation with API error."""
         # Mock the _make_api_call method to raise an exception
-        with patch.object(ai_service, "_make_api_call", side_effect=Exception("API Error")):
+        with patch.object(
+            ai_service, "_make_api_call", side_effect=Exception("API Error")
+        ):
             # Extract parameters from trip data
             destination = sample_trip_data["destinations"][0]
-            duration_days = (sample_trip_data["end_date"] - sample_trip_data["start_date"]).days
+            duration_days = (
+                sample_trip_data["end_date"] - sample_trip_data["start_date"]
+            ).days
             families_data = sample_trip_data["participants"]
 
             # Should handle the error gracefully
@@ -165,7 +169,9 @@ class TestAIServiceItineraryGeneration:
         with patch.object(ai_service, "_make_api_call", return_value=mock_response):
             # Extract parameters from trip data
             destination = sample_trip_data["destinations"][0]
-            duration_days = (sample_trip_data["end_date"] - sample_trip_data["start_date"]).days
+            duration_days = (
+                sample_trip_data["end_date"] - sample_trip_data["start_date"]
+            ).days
             families_data = sample_trip_data["participants"]
 
             # Should handle invalid response
@@ -226,7 +232,9 @@ class TestAIServiceRecommendations:
             location = "San Francisco"
             preferences = ["museums", "family_friendly", "accessible"]
 
-            result = await ai_service.get_activity_recommendations(location, preferences)
+            result = await ai_service.get_activity_recommendations(
+                location, preferences
+            )
 
             # Assertions
             assert result is not None
@@ -319,7 +327,10 @@ class TestAIServiceOptimization:
                                 "distance": 329.7,
                                 "drive_time": 225,
                                 "scenic_route": False,
-                                "ev_charging_stops": ["San Luis Obispo", "Santa Barbara"],
+                                "ev_charging_stops": [
+                                    "San Luis Obispo",
+                                    "Santa Barbara",
+                                ],
                             },
                         ],
                         "total_cost_estimate": 85.50,

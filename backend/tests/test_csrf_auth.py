@@ -110,7 +110,6 @@ def test_trips_with_csrf_token():
 
         with patch("app.core.zero_trust.require_permissions", return_value=mock_auth):
             with patch("app.api.trips.require_permissions", return_value=mock_auth):
-
                 trip_data = {
                     "name": "Test Trip",
                     "description": "Test description",

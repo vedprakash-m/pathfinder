@@ -101,7 +101,8 @@ class AuthenticationMonitoringMiddleware(BaseHTTPMiddleware):
 
         # Update average duration
         total_auth_requests = (
-            self.auth_metrics["authenticated_requests"] + self.auth_metrics["failed_auth_requests"]
+            self.auth_metrics["authenticated_requests"]
+            + self.auth_metrics["failed_auth_requests"]
         )
         if total_auth_requests > 0:
             current_avg = self.auth_metrics["avg_auth_duration"]
@@ -127,7 +128,9 @@ class AuthenticationMonitoringMiddleware(BaseHTTPMiddleware):
     def get_metrics(self) -> Dict[str, Any]:
         """Get current authentication metrics."""
         total_requests = self.auth_metrics["total_requests"]
-        success_rate = self.auth_metrics["authenticated_requests"] / max(total_requests, 1) * 100
+        success_rate = (
+            self.auth_metrics["authenticated_requests"] / max(total_requests, 1) * 100
+        )
 
         return {
             **self.auth_metrics,

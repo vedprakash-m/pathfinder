@@ -79,7 +79,8 @@ def test_database_structure():
 
         # Verify the insertion
         cursor.execute(
-            "SELECT email, status FROM family_invitations WHERE id = ?", ("test-invite-123",)
+            "SELECT email, status FROM family_invitations WHERE id = ?",
+            ("test-invite-123",),
         )
         result = cursor.fetchone()
 
@@ -90,7 +91,9 @@ def test_database_structure():
             return False
 
         # Clean up test data
-        cursor.execute("DELETE FROM family_invitations WHERE id = ?", ("test-invite-123",))
+        cursor.execute(
+            "DELETE FROM family_invitations WHERE id = ?", ("test-invite-123",)
+        )
         conn.commit()
         conn.close()
 
@@ -139,7 +142,9 @@ def test_api_files():
         print("✅ All invitation endpoint functions found")
         return True
     else:
-        print(f"❌ Only found {len(found_functions)}/{len(expected_functions)} endpoint functions")
+        print(
+            f"❌ Only found {len(found_functions)}/{len(expected_functions)} endpoint functions"
+        )
         return False
 
 

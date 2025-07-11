@@ -66,7 +66,9 @@ def fix_test_file():
             content,
         )
 
-        content = re.sub(r'assert isinstance\(task_data\["timestamp"\], float\)', "", content)
+        content = re.sub(
+            r'assert isinstance\(task_data\["timestamp"\], float\)', "", content
+        )
 
         # Clean up any double empty lines created by the replacements
         content = re.sub(r"\n\s*\n\s*\n", "\n\n", content)

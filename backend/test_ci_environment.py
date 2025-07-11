@@ -43,7 +43,9 @@ def test_configuration_loading():
         print(f"   - Environment: {settings.ENVIRONMENT}")
         print(f"   - Cosmos DB Enabled: {settings.COSMOS_DB_ENABLED}")
         print(f"   - OpenAI API Key: {'✅' if settings.OPENAI_API_KEY else '❌'}")
-        print(f"   - Google Maps API Key: {'✅' if settings.GOOGLE_MAPS_API_KEY else '❌'}")
+        print(
+            f"   - Google Maps API Key: {'✅' if settings.GOOGLE_MAPS_API_KEY else '❌'}"
+        )
 
         return True
 

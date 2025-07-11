@@ -27,11 +27,15 @@ def upgrade() -> None:
         sa.Column("invited_by", sa.String(length=36), nullable=False),
         sa.Column("email", sa.String(length=255), nullable=False),
         sa.Column(
-            "role", sa.Enum("COORDINATOR", "ADULT", "CHILD", name="familyrole"), nullable=False
+            "role",
+            sa.Enum("COORDINATOR", "ADULT", "CHILD", name="familyrole"),
+            nullable=False,
         ),
         sa.Column(
             "status",
-            sa.Enum("PENDING", "ACCEPTED", "DECLINED", "EXPIRED", name="invitationstatus"),
+            sa.Enum(
+                "PENDING", "ACCEPTED", "DECLINED", "EXPIRED", name="invitationstatus"
+            ),
             nullable=False,
         ),
         sa.Column("invitation_token", sa.String(length=255), nullable=False),

@@ -24,7 +24,9 @@ class UnifiedSettings(BaseSettings):
     # ==================== CORE APPLICATION SETTINGS ====================
     APP_NAME: str = Field(default="Pathfinder API", description="Application name")
     VERSION: str = Field(default="1.0.0", description="Application version")
-    ENVIRONMENT: str = Field(default="development", description="Deployment environment")
+    ENVIRONMENT: str = Field(
+        default="development", description="Deployment environment"
+    )
     DEBUG: bool = Field(default=False, description="Debug mode flag")
     SECRET_KEY: str = Field(
         default_factory=lambda: secrets.token_urlsafe(32),
@@ -43,12 +45,16 @@ class UnifiedSettings(BaseSettings):
         default="http://localhost:3000,http://localhost:5173",
         description="Comma-separated List[Any] of CORS origins",
     )
-    CORS_ALLOW_CREDENTIALS: bool = Field(default=True, description="Allow CORS credentials")
+    CORS_ALLOW_CREDENTIALS: bool = Field(
+        default=True, description="Allow CORS credentials"
+    )
     CORS_ALLOW_METHODS: List[str] = Field(
         default=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         description="Allowed CORS methods",
     )
-    CORS_ALLOW_HEADERS: List[str] = Field(default=["*"], description="Allowed CORS headers")
+    CORS_ALLOW_HEADERS: List[str] = Field(
+        default=["*"], description="Allowed CORS headers"
+    )
 
     # ==================== DATABASE CONFIGURATION ====================
     DATABASE_URL: str = Field(
@@ -68,7 +74,9 @@ class UnifiedSettings(BaseSettings):
     DATABASE_TIMEOUT: int = Field(
         default=30, ge=5, le=300, description="Database connection timeout in seconds"
     )
-    DATABASE_ECHO: bool = Field(default=False, description="Enable database query logging")
+    DATABASE_ECHO: bool = Field(
+        default=False, description="Enable database query logging"
+    )
 
     # ==================== COSMOS DB CONFIGURATION ====================
     # Unified Cosmos DB approach per Tech Spec
@@ -76,15 +84,23 @@ class UnifiedSettings(BaseSettings):
         default=False,  # Simplified: disabled by default for cost optimization
         description="Enable unified Cosmos DB integration",
     )
-    COSMOS_DB_URL: Optional[str] = Field(default=None, description="Cosmos DB endpoint URL")
-    COSMOS_DB_KEY: Optional[str] = Field(default=None, description="Cosmos DB primary key")
-    COSMOS_DB_DATABASE: str = Field(default="pathfinder", description="Cosmos DB database name")
+    COSMOS_DB_URL: Optional[str] = Field(
+        default=None, description="Cosmos DB endpoint URL"
+    )
+    COSMOS_DB_KEY: Optional[str] = Field(
+        default=None, description="Cosmos DB primary key"
+    )
+    COSMOS_DB_DATABASE: str = Field(
+        default="pathfinder", description="Cosmos DB database name"
+    )
     COSMOS_DB_CONTAINER: str = Field(
         default="entities", description="Unified entities container name"
     )
 
     # Legacy SQL Database (to be deprecated)
-    USE_SQL_DATABASE: bool = Field(default=False, description="Use SQL database (legacy)")
+    USE_SQL_DATABASE: bool = Field(
+        default=False, description="Use SQL database (legacy)"
+    )
 
     # Legacy container names (deprecated - will be removed after migration)
     COSMOS_DB_CONTAINER_ITINERARIES: str = Field(
@@ -103,12 +119,18 @@ class UnifiedSettings(BaseSettings):
     CACHE_TTL: int = Field(
         default=3600, ge=60, le=86400, description="Default cache TTL in seconds"
     )
-    CACHE_MAX_SIZE: int = Field(default=2000, ge=100, le=10000, description="Maximum cache entries")
-    CACHE_DB_PATH: str = Field(default="data/cache.db", description="SQLite cache database path")
+    CACHE_MAX_SIZE: int = Field(
+        default=2000, ge=100, le=10000, description="Maximum cache entries"
+    )
+    CACHE_DB_PATH: str = Field(
+        default="data/cache.db", description="SQLite cache database path"
+    )
 
     # Redis settings (optional)
     REDIS_URL: Optional[str] = Field(default=None, description="Redis connection URL")
-    REDIS_TTL: int = Field(default=3600, ge=60, le=86400, description="Redis TTL in seconds")
+    REDIS_TTL: int = Field(
+        default=3600, ge=60, le=86400, description="Redis TTL in seconds"
+    )
     USE_REDIS_CACHE: bool = Field(default=False, description="Use Redis for caching")
 
     # ==================== AUTHENTICATION CONFIGURATION ====================
@@ -139,13 +161,21 @@ class UnifiedSettings(BaseSettings):
         default=None,  # Simplified: get from env var or None
         description="OpenAI API key",
     )
-    OPENAI_MODEL_PRIMARY: str = Field(default="gpt-4o-mini", description="Primary OpenAI model")
-    OPENAI_MODEL_FALLBACK: str = Field(default="gpt-4o", description="Fallback OpenAI model")
+    OPENAI_MODEL_PRIMARY: str = Field(
+        default="gpt-4o-mini", description="Primary OpenAI model"
+    )
+    OPENAI_MODEL_FALLBACK: str = Field(
+        default="gpt-4o", description="Fallback OpenAI model"
+    )
     OPENAI_MAX_TOKENS: int = Field(
         default=2000, ge=100, le=8000, description="Maximum tokens per request"
     )
-    OPENAI_TEMPERATURE: float = Field(default=0.7, ge=0.0, le=2.0, description="Model temperature")
-    OPENAI_TIMEOUT: int = Field(default=60, ge=10, le=300, description="API request timeout")
+    OPENAI_TEMPERATURE: float = Field(
+        default=0.7, ge=0.0, le=2.0, description="Model temperature"
+    )
+    OPENAI_TIMEOUT: int = Field(
+        default=60, ge=10, le=300, description="API request timeout"
+    )
 
     # ==================== EXTERNAL SERVICES ====================
     GOOGLE_MAPS_API_KEY: Optional[str] = Field(
@@ -154,8 +184,12 @@ class UnifiedSettings(BaseSettings):
     )
 
     # Email services
-    SENDGRID_API_KEY: Optional[str] = Field(default=None, description="SendGrid API key")
-    FROM_EMAIL: str = Field(default="noreply@pathfinder.com", description="Default sender email")
+    SENDGRID_API_KEY: Optional[str] = Field(
+        default=None, description="SendGrid API key"
+    )
+    FROM_EMAIL: str = Field(
+        default="noreply@pathfinder.com", description="Default sender email"
+    )
     FROM_NAME: str = Field(default="Pathfinder", description="Default sender name")
 
     # SMTP fallback
@@ -200,7 +234,9 @@ class UnifiedSettings(BaseSettings):
     AZURE_STORAGE_ACCOUNT: Optional[str] = Field(
         default=None, description="Azure Storage account name"
     )
-    AZURE_STORAGE_KEY: Optional[str] = Field(default=None, description="Azure Storage account key")
+    AZURE_STORAGE_KEY: Optional[str] = Field(
+        default=None, description="Azure Storage account key"
+    )
     AZURE_STORAGE_CONNECTION_STRING: Optional[str] = Field(
         default=None, description="Azure Storage connection string"
     )
@@ -225,7 +261,9 @@ class UnifiedSettings(BaseSettings):
     )
 
     # ==================== AI COST TRACKING ====================
-    AI_COST_TRACKING_ENABLED: bool = Field(default=True, description="Enable AI cost tracking")
+    AI_COST_TRACKING_ENABLED: bool = Field(
+        default=True, description="Enable AI cost tracking"
+    )
     AI_DAILY_BUDGET_LIMIT: float = Field(
         default=50.0, ge=1.0, le=1000.0, description="Daily AI budget limit in USD"
     )
@@ -254,7 +292,9 @@ class UnifiedSettings(BaseSettings):
 
     # ==================== LEGACY SETTINGS COMPATIBILITY ====================
     # Temporary fields for backward compatibility during migration
-    TRUSTED_LOCATIONS: List[str] = Field(default=[], description="Trusted location patterns")
+    TRUSTED_LOCATIONS: List[str] = Field(
+        default=[], description="Trusted location patterns"
+    )
     TRUSTED_NETWORKS: List[str] = Field(
         default=["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"],
         description="Trusted network CIDR blocks",
@@ -265,7 +305,9 @@ class UnifiedSettings(BaseSettings):
     WORKING_HOURS_END: int = Field(
         default=18, ge=0, le=23, description="Working hours end (24h format)"
     )
-    WORKING_HOURS_TIMEZONE: str = Field(default="UTC", description="Working hours timezone")
+    WORKING_HOURS_TIMEZONE: str = Field(
+        default="UTC", description="Working hours timezone"
+    )
     USER_PATTERNS_FILE: str = Field(
         default="user_access_patterns.json", description="User patterns storage file"
     )
@@ -280,10 +322,14 @@ class UnifiedSettings(BaseSettings):
     def validate_debug_mode(cls, v, info) -> None:
         """Ensure DEBUG is properly disabled in production."""
         environment = (
-            info.data.get("ENVIRONMENT", "development") if hasattr(info, "data") else "development"
+            info.data.get("ENVIRONMENT", "development")
+            if hasattr(info, "data")
+            else "development"
         )
         if environment.lower() == "production" and v is True:
-            logger.warning("DEBUG mode is enabled in production environment - forcing to False")
+            logger.warning(
+                "DEBUG mode is enabled in production environment - forcing to False"
+            )
             return False
         return v
 
@@ -292,7 +338,9 @@ class UnifiedSettings(BaseSettings):
     def validate_allowed_hosts(cls, v, info) -> None:
         """Validate and secure allowed hosts configuration."""
         environment = (
-            info.data.get("ENVIRONMENT", "development") if hasattr(info, "data") else "development"
+            info.data.get("ENVIRONMENT", "development")
+            if hasattr(info, "data")
+            else "development"
         )
 
         # Convert string to list if needed
@@ -303,7 +351,9 @@ class UnifiedSettings(BaseSettings):
 
         # Security check for production
         if environment.lower() == "production" and "*" in hosts:
-            logger.warning("Wildcard host '*' detected in production - this is a security risk")
+            logger.warning(
+                "Wildcard host '*' detected in production - this is a security risk"
+            )
             # Remove wildcard in production unless explicitly allowed
             hosts = [h for h in hosts if h != "*"]
             if not hosts:
@@ -315,7 +365,11 @@ class UnifiedSettings(BaseSettings):
     @classmethod
     def set_entra_authority(cls, v, info) -> None:
         """Set Entra External ID authority from tenant ID if not provided."""
-        if v is None and hasattr(info, "data") and "ENTRA_EXTERNAL_TENANT_ID" in info.data:
+        if (
+            v is None
+            and hasattr(info, "data")
+            and "ENTRA_EXTERNAL_TENANT_ID" in info.data
+        ):
             tenant_id = info.data["ENTRA_EXTERNAL_TENANT_ID"]
             return f"https://login.microsoftonline.com/{tenant_id}"
         return v
@@ -325,7 +379,9 @@ class UnifiedSettings(BaseSettings):
     def validate_cors_origins(cls, v, info) -> None:
         """Validate CORS origins for security."""
         environment = (
-            info.data.get("ENVIRONMENT", "development") if hasattr(info, "data") else "development"
+            info.data.get("ENVIRONMENT", "development")
+            if hasattr(info, "data")
+            else "development"
         )
 
         if not v:
@@ -333,7 +389,9 @@ class UnifiedSettings(BaseSettings):
 
         # Check for wildcard in production
         if environment.lower() == "production" and "*" in v:
-            logger.warning("CORS wildcard '*' detected in production - this is a security risk")
+            logger.warning(
+                "CORS wildcard '*' detected in production - this is a security risk"
+            )
 
         return v
 
@@ -439,7 +497,9 @@ class UnifiedSettings(BaseSettings):
         if not self.CORS_ORIGINS:
             return ["http://localhost:3000", "http://localhost:5173"]
 
-        origins = [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
+        origins = [
+            origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()
+        ]
 
         # Add default localhost if none specified
         if not origins:
@@ -451,7 +511,9 @@ class UnifiedSettings(BaseSettings):
     def allowed_hosts_list(self) -> List[str]:
         """Get allowed hosts as a validated List[Any]."""
         if isinstance(self.ALLOWED_HOSTS, str):
-            return [host.strip() for host in self.ALLOWED_HOSTS.split(",") if host.strip()]
+            return [
+                host.strip() for host in self.ALLOWED_HOSTS.split(",") if host.strip()
+            ]
         return self.ALLOWED_HOSTS
 
     @property
@@ -588,14 +650,19 @@ class UnifiedSettings(BaseSettings):
         warnings = []
 
         # Check required environment variables (simplified for single-environment deployment)
-        required_vars = ["SECRET_KEY", "DATABASE_URL"]  # OPENAI_API_KEY is optional with defaults
+        required_vars = [
+            "SECRET_KEY",
+            "DATABASE_URL",
+        ]  # OPENAI_API_KEY is optional with defaults
         for var in required_vars:
             if not getattr(self, var, None):
                 issues.append(f"Missing required environment variable: {var}")
 
         # Optional services with warnings (not errors)
         if not self.OPENAI_API_KEY:
-            warnings.append("OPENAI_API_KEY not set - using test defaults for AI features")
+            warnings.append(
+                "OPENAI_API_KEY not set - using test defaults for AI features"
+            )
 
         # Check production-specific requirements
         if self.is_production:
@@ -640,7 +707,9 @@ def get_settings() -> UnifiedSettings:
     validation_result = settings_instance.validate_runtime_config()
     if not validation_result["valid"]:
         logger.error(f"Configuration validation failed: {validation_result['issues']}")
-        raise ValueError(f"Invalid configuration: {'; '.join(validation_result['issues'])}")
+        raise ValueError(
+            f"Invalid configuration: {'; '.join(validation_result['issues'])}"
+        )
 
     if validation_result["warnings"]:
         for warning in validation_result["warnings"]:
@@ -709,6 +778,8 @@ def get_environment_info() -> Dict[str, Any]:
             "context_validation": settings.ENABLE_CONTEXT_VALIDATION,
             "cost_tracking": settings.AI_COST_TRACKING_ENABLED,
         },
-        "database_type": ("sqlite" if "sqlite" in settings.database_url_sqlalchemy else "external"),
+        "database_type": (
+            "sqlite" if "sqlite" in settings.database_url_sqlalchemy else "external"
+        ),
         "cache_backend": settings.cache_config.get("backend", "memory"),
     }

@@ -48,7 +48,9 @@ class TestFileService:
                 mock_blob_item = MagicMock()
                 mock_blob_item.name = name
                 mock_blob_item.size = (i + 1) * 100
-                mock_blob_item.last_modified = datetime(2023, 1, 1, 0, 0, 0)  # Add datetime
+                mock_blob_item.last_modified = datetime(
+                    2023, 1, 1, 0, 0, 0
+                )  # Add datetime
                 mock_blob_item.content_settings = None  # Add content_settings
                 mock_blob_item.etag = f"etag-{i}"  # Add etag
                 mock_blob_item.metadata = {}  # Add metadata
@@ -72,7 +74,9 @@ class TestFileService:
         mock_settings.AZURE_STORAGE_KEY = "mock_key"
 
         with patch("app.services.file_service.settings", mock_settings):
-            with patch("app.services.file_service.BlobServiceClient") as mock_blob_client_class:
+            with patch(
+                "app.services.file_service.BlobServiceClient"
+            ) as mock_blob_client_class:
                 mock_blob_client_class.from_connection_string.return_value = (
                     mock_blob_service_client
                 )
@@ -81,7 +85,9 @@ class TestFileService:
                 return service
 
     @pytest.mark.asyncio
-    async def test_ensure_container_exists_success(self, file_service, mock_blob_service_client):
+    async def test_ensure_container_exists_success(
+        self, file_service, mock_blob_service_client
+    ):
         """Test successful container creation."""
         mock_container = mock_blob_service_client.get_container_client.return_value
         mock_container.create_container.side_effect = None  # Success
@@ -98,7 +104,9 @@ class TestFileService:
         from azure.core.exceptions import ResourceExistsError
 
         mock_container = mock_blob_service_client.get_container_client.return_value
-        mock_container.create_container.side_effect = ResourceExistsError("Container exists")
+        mock_container.create_container.side_effect = ResourceExistsError(
+            "Container exists"
+        )
 
         await file_service.ensure_container_exists()
 
@@ -117,7 +125,9 @@ class TestFileService:
         assert result["size"] == len(file_content)
 
     @pytest.mark.asyncio
-    async def test_upload_file_with_folder(self, file_service, mock_blob_service_client):
+    async def test_upload_file_with_folder(
+        self, file_service, mock_blob_service_client
+    ):
         """Test file upload with folder structure."""
         file_content = b"test file content"
         file_name = "test.txt"
@@ -130,7 +140,9 @@ class TestFileService:
         assert folder in result["blob_name"]
 
     @pytest.mark.asyncio
-    async def test_upload_file_error_handling(self, file_service, mock_blob_service_client):
+    async def test_upload_file_error_handling(
+        self, file_service, mock_blob_service_client
+    ):
         """Test file upload error handling."""
         # Get the mock blob from our fixture
         mock_blob = mock_blob_service_client.get_blob_client()
@@ -158,7 +170,9 @@ class TestFileService:
         mock_properties.metadata = {"original_filename": "test.txt"}
         mock_properties.content_settings.content_type = "text/plain"
         mock_properties.size = 17
-        mock_properties.last_modified = datetime(2023, 1, 1, 0, 0, 0)  # Use datetime object
+        mock_properties.last_modified = datetime(
+            2023, 1, 1, 0, 0, 0
+        )  # Use datetime object
         mock_properties.etag = "test-etag"
         mock_blob.get_blob_properties.return_value = mock_properties
 
@@ -194,7 +208,9 @@ class TestFileService:
             mock_settings.AZURE_STORAGE_ACCOUNT = "mockaccount"
             mock_settings.AZURE_STORAGE_KEY = "mock_key"
 
-            with patch("app.services.file_service.generate_blob_sas") as mock_generate_sas:
+            with patch(
+                "app.services.file_service.generate_blob_sas"
+            ) as mock_generate_sas:
                 mock_generate_sas.return_value = "mock_sas_token"
 
                 url = file_service.generate_download_url("test.txt")
@@ -202,21 +218,27 @@ class TestFileService:
                 assert "https://" in url
                 assert "mock_sas_token" in url
 
-    def test_generate_download_url_default_expiry(self, file_service, mock_blob_service_client):
+    def test_generate_download_url_default_expiry(
+        self, file_service, mock_blob_service_client
+    ):
         """Test generating download URL with default expiry."""
         # Mock the settings to include the required Azure Storage credentials
         with patch("app.services.file_service.settings") as mock_settings:
             mock_settings.AZURE_STORAGE_ACCOUNT = "mockaccount"
             mock_settings.AZURE_STORAGE_KEY = "mock_key"
 
-            with patch("app.services.file_service.generate_blob_sas") as mock_generate_sas:
+            with patch(
+                "app.services.file_service.generate_blob_sas"
+            ) as mock_generate_sas:
                 mock_generate_sas.return_value = "mock_sas_token"
 
                 url = file_service.generate_download_url("test.txt")
 
                 assert url is not None
 
-    def test_generate_download_url_error_handling(self, file_service, mock_blob_service_client):
+    def test_generate_download_url_error_handling(
+        self, file_service, mock_blob_service_client
+    ):
         """Test download URL generation error handling."""
         with patch("app.services.file_service.generate_blob_sas") as mock_generate_sas:
             mock_generate_sas.side_effect = Exception("SAS generation failed")
@@ -257,7 +279,9 @@ class TestFileService:
         assert files[0]["blob_name"] == "folder/file1.txt"
 
     @pytest.mark.asyncio
-    async def test_list_files_error_handling(self, file_service, mock_blob_service_client):
+    async def test_list_files_error_handling(
+        self, file_service, mock_blob_service_client
+    ):
         """Test file listing error handling."""
         mock_container = mock_blob_service_client.get_container_client.return_value
 
@@ -279,7 +303,9 @@ class TestFileService:
         mock_properties = MagicMock()
         mock_properties.size = 1024
         mock_properties.content_settings.content_type = "text/plain"
-        mock_properties.last_modified = datetime(2023, 1, 1, 0, 0, 0)  # Use datetime object
+        mock_properties.last_modified = datetime(
+            2023, 1, 1, 0, 0, 0
+        )  # Use datetime object
         mock_properties.metadata = {"original_filename": "test.txt"}
         mock_blob.get_blob_properties.return_value = mock_properties
 
@@ -289,13 +315,17 @@ class TestFileService:
         assert info["content_type"] == "text/plain"
 
     @pytest.mark.asyncio
-    async def test_get_file_info_not_found(self, file_service, mock_blob_service_client):
+    async def test_get_file_info_not_found(
+        self, file_service, mock_blob_service_client
+    ):
         """Test getting info for non-existent file."""
         from azure.core.exceptions import ResourceNotFoundError
 
         # Get the mock blob from our fixture
         mock_blob = mock_blob_service_client.get_blob_client()
-        mock_blob.get_blob_properties.side_effect = ResourceNotFoundError("Blob not found")
+        mock_blob.get_blob_properties.side_effect = ResourceNotFoundError(
+            "Blob not found"
+        )
 
         with pytest.raises(FileNotFoundError):
             await file_service.get_file_info("nonexistent.txt")
@@ -314,7 +344,9 @@ class TestFileServiceIntegration:
 
         with patch("app.services.file_service.settings", mock_settings):
             # For integration tests, we still need to mock Azure services
-            with patch("app.services.file_service.BlobServiceClient") as mock_blob_client_class:
+            with patch(
+                "app.services.file_service.BlobServiceClient"
+            ) as mock_blob_client_class:
                 mock_client = MagicMock()
                 mock_blob_client_class.from_connection_string.return_value = mock_client
 
@@ -335,7 +367,9 @@ class TestFileServiceIntegration:
                 mock_blob.upload_blob = AsyncMock()
                 mock_blob.download_blob = AsyncMock()
                 mock_blob.delete_blob = AsyncMock()
-                mock_blob.url = "https://mockaccount.blob.core.windows.net/container/blob"
+                mock_blob.url = (
+                    "https://mockaccount.blob.core.windows.net/container/blob"
+                )
 
                 service = FileService()
                 return service

@@ -405,12 +405,12 @@ export const useErrorStats = () => {
 
 // ==================== UTILITIES ====================
 
-// Create a timeout-aware error boundary
-export const withTimeout = (
-  component: ReactNode,
-  timeoutMs: number = 10000,
-  fallback?: ReactNode
-) => {
+// Create a timeout-aware error boundary component
+export const WithTimeoutComponent: React.FC<{
+  component: ReactNode;
+  timeoutMs?: number;
+  fallback?: ReactNode;
+}> = ({ component, timeoutMs = 10000, fallback }) => {
   const [hasTimedOut, setHasTimedOut] = React.useState(false);
 
   React.useEffect(() => {

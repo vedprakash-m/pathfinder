@@ -18,11 +18,17 @@ class CodeFixer:
         self.backend_dir = self.root_dir / "backend"
         self.fixed_files = []
 
-    def run_command(self, cmd: List[str], cwd: Optional[Path] = None) -> tuple[str, str, int]:
+    def run_command(
+        self, cmd: List[str], cwd: Optional[Path] = None
+    ) -> tuple[str, str, int]:
         """Run a command and return stdout, stderr, and return code."""
         try:
             result = subprocess.run(
-                cmd, cwd=cwd or self.backend_dir, capture_output=True, text=True, timeout=60
+                cmd,
+                cwd=cwd or self.backend_dir,
+                capture_output=True,
+                text=True,
+                timeout=60,
             )
             return result.stdout, result.stderr, result.returncode
         except subprocess.TimeoutExpired:
@@ -119,7 +125,9 @@ class CodeFixer:
 
             return f"{except_part}{raise_stmt}"
 
-        content = re.sub(pattern, replace_raise, content, flags=re.DOTALL | re.MULTILINE)
+        content = re.sub(
+            pattern, replace_raise, content, flags=re.DOTALL | re.MULTILINE
+        )
         return content
 
     def _fix_boolean_comparisons(self, content: str) -> str:
@@ -143,9 +151,9 @@ class CodeFixer:
 
         for line in lines:
             # Skip removing imports that might be needed for side effects
-            if (line.strip().startswith("from") or line.strip().startswith("import")) and (
-                "models" in line or "__all__" in line or "typing" in line
-            ):
+            if (
+                line.strip().startswith("from") or line.strip().startswith("import")
+            ) and ("models" in line or "__all__" in line or "typing" in line):
                 new_lines.append(line)
             elif "# imported but unused" in line or "# F401" in line:
                 # Comment out instead of removing
@@ -177,8 +185,12 @@ class CodeFixer:
     def _fix_bare_except(self, content: str) -> str:
         """Fix E722: Replace bare except with specific exceptions."""
         # Replace bare except with Exception
-        content = re.sub(r"\bexcept:\s*$", "except Exception:", content, flags=re.MULTILINE)
-        content = re.sub(r"\bexcept:\s*#", "except Exception:  #", content, flags=re.MULTILINE)
+        content = re.sub(
+            r"\bexcept:\s*$", "except Exception:", content, flags=re.MULTILINE
+        )
+        content = re.sub(
+            r"\bexcept:\s*#", "except Exception:  #", content, flags=re.MULTILINE
+        )
         return content
 
     def _fix_import_order(self, content: str) -> str:
@@ -194,7 +206,9 @@ class CodeFixer:
             if stripped.startswith('"""') or stripped.startswith("'''"):
                 if not in_docstring:
                     in_docstring = True
-                elif in_docstring and (stripped.endswith('"""') or stripped.endswith("'''")):
+                elif in_docstring and (
+                    stripped.endswith('"""') or stripped.endswith("'''")
+                ):
                     docstring_end = i + 1
                     break
 
@@ -310,7 +324,9 @@ class CodeFixer:
 
                 # Add specific ignores for problematic modules
                 if "[mypy-llm_orchestration.core.types]" not in content:
-                    content += "\n[mypy-llm_orchestration.core.types]\nignore_errors = True\n"
+                    content += (
+                        "\n[mypy-llm_orchestration.core.types]\nignore_errors = True\n"
+                    )
 
                 mypy_ini.write_text(content)
                 self.fixed_files.append(str(mypy_ini))
@@ -337,7 +353,9 @@ class CodeFixer:
 
         print("\n🧪 Running pre-commit on a sample file to test...")
         sample_file = "app/core/config.py"
-        stdout, stderr, code = self.run_command(["pre-commit", "run", "--files", sample_file])
+        stdout, stderr, code = self.run_command(
+            ["pre-commit", "run", "--files", sample_file]
+        )
 
         if code == 0:
             print(f"✅ Pre-commit passed for {sample_file}")

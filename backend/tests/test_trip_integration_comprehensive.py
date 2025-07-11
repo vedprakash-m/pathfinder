@@ -6,6 +6,7 @@ from datetime import date, timedelta
 
 import pytest
 from app.main import app
+
 # SQL Trip model removed - use Cosmos TripDocumentStatus
 from fastapi import status
 from httpx import AsyncClient
@@ -33,9 +34,13 @@ class TestTripManagementIntegration:
                     "name": "Lifecycle Test User",
                     "family_name": "Lifecycle Family",
                 }
-                register_response = await client.post("/api/v1/auth/register", json=register_data)
+                register_response = await client.post(
+                    "/api/v1/auth/register", json=register_data
+                )
                 if register_response.status_code == 201:
-                    login_response = await client.post("/api/v1/auth/login", json=login_data)
+                    login_response = await client.post(
+                        "/api/v1/auth/login", json=login_data
+                    )
 
             if login_response.status_code != 200:
                 pytest.skip("Authentication failed - user may not exist")
@@ -76,7 +81,9 @@ class TestTripManagementIntegration:
                 "family_ids": [family_id],
             }
 
-            create_response = await client.post("/api/v1/trips", json=trip_data, headers=headers)
+            create_response = await client.post(
+                "/api/v1/trips", json=trip_data, headers=headers
+            )
             assert create_response.status_code == status.HTTP_201_CREATED
             trip = create_response.json()
             trip_id = trip["id"]
@@ -102,16 +109,22 @@ class TestTripManagementIntegration:
             assert updated_trip["budget_total"] == 9000.0
 
             # Clean up - Delete trip
-            delete_response = await client.delete(f"/api/v1/trips/{trip_id}", headers=headers)
+            delete_response = await client.delete(
+                f"/api/v1/trips/{trip_id}", headers=headers
+            )
             if delete_response.status_code == 204:
                 # Verify deletion
-                verify_response = await client.get(f"/api/v1/trips/{trip_id}", headers=headers)
+                verify_response = await client.get(
+                    f"/api/v1/trips/{trip_id}", headers=headers
+                )
                 assert verify_response.status_code == status.HTTP_404_NOT_FOUND
             elif delete_response.status_code == 200:
                 # Some APIs return 200 with confirmation
                 pass
             elif delete_response.status_code not in [404, 501]:
-                pytest.fail(f"Unexpected delete response: {delete_response.status_code}")
+                pytest.fail(
+                    f"Unexpected delete response: {delete_response.status_code}"
+                )
 
 
 class TestAPIPerformance:
@@ -145,7 +158,9 @@ class TestAPIPerformance:
             response_time = end_time - start_time
 
             assert response.status_code == 200
-            assert response_time < 2.0, f"Trip list took {response_time}s, should be under 2s"
+            assert (
+                response_time < 2.0
+            ), f"Trip list took {response_time}s, should be under 2s"
 
     @pytest.mark.asyncio
     async def test_concurrent_trip_access(self):

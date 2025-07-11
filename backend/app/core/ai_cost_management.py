@@ -34,7 +34,9 @@ class AIUsageTracker:
             "claude-3": 0.025,  # $0.025 per 1K tokens
         }
 
-    def track_usage(self, user_id: str, endpoint: str, model: str, tokens: int) -> Dict[str, Any]:
+    def track_usage(
+        self, user_id: str, endpoint: str, model: str, tokens: int
+    ) -> Dict[str, Any]:
         """Track AI usage and calculate costs."""
         cost = (tokens / 1000) * self.model_costs.get(model, 0.01)
 
@@ -65,19 +67,27 @@ class AIUsageTracker:
         return {
             "user_daily_cost": user_data["cost"],
             "request_cost": cost,
-            "total_daily_cost": sum(user["cost"] for user in self.usage_data[today].values()),
+            "total_daily_cost": sum(
+                user["cost"] for user in self.usage_data[today].values()
+            ),
             "within_limits": self._check_limits(user_data["cost"], cost),
         }
 
-    def _check_limits(self, user_daily_cost: float, request_cost: float) -> Dict[str, bool]:
+    def _check_limits(
+        self, user_daily_cost: float, request_cost: float
+    ) -> Dict[str, bool]:
         """Check if usage is within cost limits."""
         today = datetime.now().date().isoformat()
-        total_daily_cost = sum(user["cost"] for user in self.usage_data.get(today, {}).values())
+        total_daily_cost = sum(
+            user["cost"] for user in self.usage_data.get(today, {}).values()
+        )
 
         return {
             "user_within_limit": user_daily_cost <= self.cost_thresholds["user_limit"],
-            "request_within_limit": request_cost <= self.cost_thresholds["request_limit"],
-            "daily_within_limit": total_daily_cost <= self.cost_thresholds["daily_limit"],
+            "request_within_limit": request_cost
+            <= self.cost_thresholds["request_limit"],
+            "daily_within_limit": total_daily_cost
+            <= self.cost_thresholds["daily_limit"],
         }
 
     def get_usage_stats(self, user_id: Optional[str] = None) -> Dict[str, Any]:
@@ -91,7 +101,9 @@ class AIUsageTracker:
                 "limits": self.cost_thresholds,
                 "remaining": {
                     "user_budget": max(
-                        0, self.cost_thresholds["user_limit"] - today_data[user_id]["cost"]
+                        0,
+                        self.cost_thresholds["user_limit"]
+                        - today_data[user_id]["cost"],
                     )
                 },
             }
@@ -104,7 +116,9 @@ class AIUsageTracker:
                 "active_users": len(today_data),
             },
             "limits": self.cost_thresholds,
-            "remaining": {"daily_budget": max(0, self.cost_thresholds["daily_limit"] - total_cost)},
+            "remaining": {
+                "daily_budget": max(0, self.cost_thresholds["daily_limit"] - total_cost)
+            },
         }
 
 
@@ -117,7 +131,11 @@ class AICostManagementMiddleware(BaseHTTPMiddleware):
 
     def __init__(self, app, ai_endpoints: list = None):
         super().__init__(app)
-        self.ai_endpoints = ai_endpoints or ["/api/assistant", "/api/polls", "/api/consensus"]
+        self.ai_endpoints = ai_endpoints or [
+            "/api/assistant",
+            "/api/polls",
+            "/api/consensus",
+        ]
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         """Process request with AI cost controls."""
@@ -167,9 +185,9 @@ class AICostManagementMiddleware(BaseHTTPMiddleware):
 
     def _get_reset_time(self) -> str:
         """Get the time when daily limits reset."""
-        tomorrow = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(
-            days=1
-        )
+        tomorrow = datetime.now().replace(
+            hour=0, minute=0, second=0, microsecond=0
+        ) + timedelta(days=1)
         return tomorrow.isoformat()
 
     def _graceful_degradation_response(self) -> Response:
@@ -208,7 +226,9 @@ def ai_cost_control(model: str = "gpt-3.5-turbo", max_tokens: int = 1000):
                 )
 
             # Pre-flight cost check
-            estimated_cost = (max_tokens / 1000) * usage_tracker.model_costs.get(model, 0.01)
+            estimated_cost = (max_tokens / 1000) * usage_tracker.model_costs.get(
+                model, 0.01
+            )
             usage_stats = usage_tracker.get_usage_stats(user_id)
 
             if user_id != "anonymous" and "remaining" in usage_stats:
@@ -234,17 +254,22 @@ def ai_cost_control(model: str = "gpt-3.5-turbo", max_tokens: int = 1000):
                 result = await func(*args, **kwargs)
 
                 # Track actual usage (would need to be implemented based on actual AI response)
-                actual_tokens = getattr(result, "usage", {}).get("total_tokens", max_tokens // 2)
+                actual_tokens = getattr(result, "usage", {}).get(
+                    "total_tokens", max_tokens // 2
+                )
                 endpoint = func.__name__
 
-                tracking_result = usage_tracker.track_usage(user_id, endpoint, model, actual_tokens)
+                tracking_result = usage_tracker.track_usage(
+                    user_id, endpoint, model, actual_tokens
+                )
 
                 # Add usage information to response
                 if isinstance(result, dict):
                     result["ai_usage"] = {
                         "cost": tracking_result["request_cost"],
                         "remaining_budget": usage_stats.get("remaining", {}).get(
-                            "user_budget", usage_stats.get("remaining", {}).get("daily_budget", 0)
+                            "user_budget",
+                            usage_stats.get("remaining", {}).get("daily_budget", 0),
                         ),
                         "tokens_used": actual_tokens,
                     }
@@ -311,7 +336,9 @@ class AICostTracker:
 
         return daily_remaining >= estimated_cost
 
-    def track_request(self, user_id: str, endpoint: str, model: str, tokens: int) -> Dict[str, Any]:
+    def track_request(
+        self, user_id: str, endpoint: str, model: str, tokens: int
+    ) -> Dict[str, Any]:
         """Track an AI request and return usage metrics."""
         return self.usage_tracker.track_usage(user_id, endpoint, model, tokens)
 

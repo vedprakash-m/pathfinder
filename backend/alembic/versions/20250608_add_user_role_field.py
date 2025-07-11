@@ -22,7 +22,8 @@ def upgrade() -> None:
     # Add role column to users table with default FAMILY_ADMIN
     # SQLite doesn't support ENUMs or adding constraints after table creation
     op.add_column(
-        "users", sa.Column("role", sa.String(20), nullable=False, server_default="family_admin")
+        "users",
+        sa.Column("role", sa.String(20), nullable=False, server_default="family_admin"),
     )
 
 

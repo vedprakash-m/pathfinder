@@ -87,7 +87,9 @@ class SqlAlchemyRepository(Repository[T]):
             if include_relations:
                 for relation in include_relations:
                     if hasattr(self.model_class, relation):
-                        query = query.options(selectinload(getattr(self.model_class, relation)))
+                        query = query.options(
+                            selectinload(getattr(self.model_class, relation))
+                        )
 
             result = await self.session.execute(query)
             return result.scalar_one_or_none()
@@ -129,7 +131,9 @@ class SqlAlchemyRepository(Repository[T]):
             if include_relations:
                 for relation in include_relations:
                     if hasattr(self.model_class, relation):
-                        query = query.options(selectinload(getattr(self.model_class, relation)))
+                        query = query.options(
+                            selectinload(getattr(self.model_class, relation))
+                        )
 
             # Add ordering
             if order_by:
@@ -146,7 +150,9 @@ class SqlAlchemyRepository(Repository[T]):
             return result.scalars().all()
 
         except Exception as e:
-            logger.error(f"Error querying {self.table_name} with filters {filters}: {e}")
+            logger.error(
+                f"Error querying {self.table_name} with filters {filters}: {e}"
+            )
             return []
 
     async def create(self, entity: T, flush: bool = True) -> T:
@@ -174,7 +180,11 @@ class SqlAlchemyRepository(Repository[T]):
             if hasattr(self.model_class, "updated_at"):
                 updates["updated_at"] = datetime.utcnow()
 
-            query = update(self.model_class).where(self.model_class.id == id).values(**updates)
+            query = (
+                update(self.model_class)
+                .where(self.model_class.id == id)
+                .values(**updates)
+            )
             result = await self.session.execute(query)
 
             if result.rowcount == 0:
@@ -313,10 +323,14 @@ class CosmosDbRepository(Repository[T]):
                 if isinstance(value, dict):
                     if "gte" in value:
                         conditions.append(f"c.{field} >= @{field}_gte")
-                        parameters.append({"name": f"@{field}_gte", "value": value["gte"]})
+                        parameters.append(
+                            {"name": f"@{field}_gte", "value": value["gte"]}
+                        )
                     if "lte" in value:
                         conditions.append(f"c.{field} <= @{field}_lte")
-                        parameters.append({"name": f"@{field}_lte", "value": value["lte"]})
+                        parameters.append(
+                            {"name": f"@{field}_lte", "value": value["lte"]}
+                        )
                     if "in" in value:
                         conditions.append(
                             f"c.{field} IN ({','.join([f'@{field}_{i}' for i in range(len(value['in']))])})"
@@ -345,7 +359,9 @@ class CosmosDbRepository(Repository[T]):
             return [self._deserialize_entity(item) for item in items]
 
         except Exception as e:
-            logger.error(f"Error querying {self.container_name} with filters {filters}: {e}")
+            logger.error(
+                f"Error querying {self.container_name} with filters {filters}: {e}"
+            )
             return []
 
     async def create(self, entity: T, **kwargs) -> T:
@@ -363,7 +379,9 @@ class CosmosDbRepository(Repository[T]):
             data["updated_at"] = now
 
             created_item = self.container.create_item(data)
-            logger.info(f"Created document in {self.container_name} with ID: {created_item['id']}")
+            logger.info(
+                f"Created document in {self.container_name} with ID: {created_item['id']}"
+            )
 
             return self._deserialize_entity(created_item)
 
@@ -390,7 +408,9 @@ class CosmosDbRepository(Repository[T]):
             return self._deserialize_entity(updated_item)
 
         except CosmosResourceNotFoundError:
-            logger.warning(f"Document not found for update in {self.container_name}: {id}")
+            logger.warning(
+                f"Document not found for update in {self.container_name}: {id}"
+            )
             return None
         except Exception as e:
             logger.error(f"Error updating document in {self.container_name}: {e}")
@@ -405,7 +425,9 @@ class CosmosDbRepository(Repository[T]):
             return True
 
         except CosmosResourceNotFoundError:
-            logger.warning(f"Document not found for deletion in {self.container_name}: {id}")
+            logger.warning(
+                f"Document not found for deletion in {self.container_name}: {id}"
+            )
             return False
         except Exception as e:
             logger.error(f"Error deleting document from {self.container_name}: {e}")
@@ -421,7 +443,9 @@ class CosmosDbRepository(Repository[T]):
                 # Simple count query
                 query = "SELECT VALUE COUNT(1) FROM c"
                 result = list(
-                    self.container.query_items(query=query, enable_cross_partition_query=True)
+                    self.container.query_items(
+                        query=query, enable_cross_partition_query=True
+                    )
                 )
                 return result[0] if result else 0
 
@@ -508,9 +532,7 @@ def with_caching(cache_key_prefix: str, ttl: int = 3600):
     def decorator(repository_method):
         async def wrapper(self, *args, **kwargs):
             # Generate cache key
-            _cache_key = (
-                f"{cache_key_prefix}:{repository_method.__name__}:{hash(str(args) + str(kwargs))}"
-            )
+            _cache_key = f"{cache_key_prefix}:{repository_method.__name__}:{hash(str(args) + str(kwargs))}"
 
             # Try cache first (implementation depends on cache provider)
             # For now, just execute the method

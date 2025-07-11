@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """
 Admin endpoints for managing the application.
 
@@ -18,6 +19,7 @@ settings = get_settings()
 class PerformanceMetricsResponse(BaseModel):
     """Performance metrics response model."""
 
+
 timestamp: str
 endpoint_average_times: dict
 query_average_times: dict
@@ -28,7 +30,9 @@ cpu_percent: float
 
 
 @router.get("/performance", response_model=PerformanceMetricsResponse)
-async def get_app_performance(current_user=Depends(require_role("admin"))):  # noqa: B008
+async def get_app_performance(
+    current_user=Depends(require_role("admin")),
+):  # noqa: B008
     """
     Get application performance metrics.
 

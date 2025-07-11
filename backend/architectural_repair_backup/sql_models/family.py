@@ -53,7 +53,9 @@ class Family(Base):
         foreign_keys="Family.admin_user_id",
         back_populates="administered_families",
     )
-    members = relationship("FamilyMember", back_populates="family", cascade="all, delete-orphan")
+    members = relationship(
+        "FamilyMember", back_populates="family", cascade="all, delete-orphan"
+    )
     invitations = relationship(
         "FamilyInvitationModel", back_populates="family", cascade="all, delete-orphan"
     )
@@ -95,7 +97,9 @@ class FamilyInvitationModel(Base):
     invited_by = Column(GUID(), ForeignKey("users.id"), nullable=False)
     email = Column(String(255), nullable=False)
     role = Column(SQLEnum(FamilyRole), nullable=False, default=FamilyRole.ADULT)
-    status = Column(SQLEnum(InvitationStatus), nullable=False, default=InvitationStatus.PENDING)
+    status = Column(
+        SQLEnum(InvitationStatus), nullable=False, default=InvitationStatus.PENDING
+    )
     invitation_token = Column(String(255), nullable=False, unique=True)
     message = Column(Text, nullable=True)
     expires_at = Column(DateTime(timezone=True), nullable=False)

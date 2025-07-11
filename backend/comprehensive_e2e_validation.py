@@ -57,7 +57,10 @@ def print_info(message: str):
 
 
 def run_command(
-    cmd: List[str], description: str, capture_output: bool = True, check_return_code: bool = True
+    cmd: List[str],
+    description: str,
+    capture_output: bool = True,
+    check_return_code: bool = True,
 ) -> Tuple[bool, str, str]:
     """Run a command and return success status and outputs."""
     print(f"\n🔄 {description}")
@@ -164,7 +167,9 @@ def check_python_imports() -> Tuple[bool, List[str]]:
         return True, []
     else:
         print_error(f"Found {total_errors} import/syntax errors")
-        print_error(f"Import errors: {len(failed_imports)}, Syntax errors: {len(syntax_errors)}")
+        print_error(
+            f"Import errors: {len(failed_imports)}, Syntax errors: {len(syntax_errors)}"
+        )
         return False, failed_imports + syntax_errors
 
 
@@ -200,7 +205,10 @@ def run_comprehensive_tests() -> bool:
         ),
         (["coverage", "report", "--fail-under=70"], "Coverage Threshold Check"),
         # 4. Specific CI/CD Test Cases
-        (["python3", "-m", "pytest", "tests/test_ai_service.py", "-v"], "AI Service Tests"),
+        (
+            ["python3", "-m", "pytest", "tests/test_ai_service.py", "-v"],
+            "AI Service Tests",
+        ),
     ]
 
     results = []
@@ -230,7 +238,10 @@ def run_architecture_validation() -> bool:
             "Architecture Contract Validation",
         ),
         # 2. Type checking
-        (["mypy", "app/", "--ignore-missing-imports", "--explicit-package-bases"], "Type Checking"),
+        (
+            ["mypy", "app/", "--ignore-missing-imports", "--explicit-package-bases"],
+            "Type Checking",
+        ),
         # 3. Code formatting
         (["black", "--check", "--diff", "."], "Code Formatting Check"),
         # 4. Import sorting
