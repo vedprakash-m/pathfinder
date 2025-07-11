@@ -4,7 +4,7 @@ File service for Azure Blob Storage integration.
 
 import os
 from datetime import datetime, timedelta
-from typing import List
+from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
 from app.core.config import get_settings
@@ -69,9 +69,7 @@ class FileService:
         blob_name = f"{folder}/{uuid4()}{file_extension}"
 
         try:
-            blob_client = self.client.get_blob_client(
-                container=self.container_name, blob=blob_name
-            )
+            blob_client = self.client.get_blob_client(container=self.container_name, blob=blob_name)
 
             # Upload with metadata
             metadata = {
@@ -122,9 +120,7 @@ class FileService:
             raise RuntimeError("Azure Blob Storage not configured")
 
         try:
-            blob_client = self.client.get_blob_client(
-                container=self.container_name, blob=blob_name
-            )
+            blob_client = self.client.get_blob_client(container=self.container_name, blob=blob_name)
 
             # Download blob
             download_stream = await blob_client.download_blob()
@@ -133,9 +129,7 @@ class FileService:
             # Get metadata
             properties = await blob_client.get_blob_properties()
             metadata = {
-                "original_filename": properties.metadata.get(
-                    "original_filename", blob_name
-                ),
+                "original_filename": properties.metadata.get("original_filename", blob_name),
                 "content_type": properties.content_settings.content_type,
                 "size": properties.size,
                 "last_modified": properties.last_modified.isoformat(),
@@ -166,9 +160,7 @@ class FileService:
             raise RuntimeError("Azure Blob Storage not configured")
 
         try:
-            blob_client = self.client.get_blob_client(
-                container=self.container_name, blob=blob_name
-            )
+            blob_client = self.client.get_blob_client(container=self.container_name, blob=blob_name)
 
             await blob_client.delete_blob()
             logger.info(f"File deleted successfully: {blob_name}")
@@ -226,17 +218,13 @@ class FileService:
             name_starts_with = folder + "/" if folder else None
             files = []
 
-            async for blob in container_client.list_blobs(
-                name_starts_with=name_starts_with
-            ):
+            async for blob in container_client.list_blobs(name_starts_with=name_starts_with):
                 file_info = {
                     "blob_name": blob.name,
                     "size": blob.size,
                     "last_modified": blob.last_modified.isoformat(),
                     "content_type": (
-                        blob.content_settings.content_type
-                        if blob.content_settings
-                        else None
+                        blob.content_settings.content_type if blob.content_settings else None
                     ),
                     "etag": blob.etag,
                 }
@@ -268,17 +256,13 @@ class FileService:
             raise RuntimeError("Azure Blob Storage not configured")
 
         try:
-            blob_client = self.client.get_blob_client(
-                container=self.container_name, blob=blob_name
-            )
+            blob_client = self.client.get_blob_client(container=self.container_name, blob=blob_name)
 
             properties = await blob_client.get_blob_properties()
 
             file_info = {
                 "blob_name": blob_name,
-                "original_filename": properties.metadata.get(
-                    "original_filename", blob_name
-                ),
+                "original_filename": properties.metadata.get("original_filename", blob_name),
                 "content_type": properties.content_settings.content_type,
                 "size": properties.size,
                 "last_modified": properties.last_modified.isoformat(),
@@ -298,9 +282,7 @@ class FileService:
 # Utility functions for common file operations
 
 
-async def upload_user_avatar(
-    file_data: bytes, user_id: str, filename: str
-) -> Dict[str, Any]:
+async def upload_user_avatar(file_data: bytes, user_id: str, filename: str) -> Dict[str, Any]:
     """Upload user avatar image."""
     file_service = FileService()
     return await file_service.upload_file(
@@ -321,9 +303,7 @@ async def upload_trip_document(
     )
 
 
-async def upload_itinerary_pdf(
-    file_data: bytes, trip_id: str, filename: str
-) -> Dict[str, Any]:
+async def upload_itinerary_pdf(file_data: bytes, trip_id: str, filename: str) -> Dict[str, Any]:
     """Upload generated itinerary PDF."""
     file_service = FileService()
     return await file_service.upload_file(

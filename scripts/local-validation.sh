@@ -1088,6 +1088,32 @@ else
     print_status "conftest.py import failed - will cause CI/CD failure" "error"
     echo "   ❌ This is the exact error causing CI/CD failure"
     echo "   🔧 Fix imports in conftest.py and related modules"
+    VALIDATION_FAILED=true
+fi
+
+# NEW: Comprehensive pytest test discovery (simulates full CI/CD test phase)
+echo "   Testing pytest test discovery (comprehensive CI/CD simulation)..."
+PYTEST_DISCOVERY_OUTPUT=$(python3 -m pytest --collect-only tests/ -q 2>&1)
+PYTEST_DISCOVERY_EXIT_CODE=$?
+
+if [ $PYTEST_DISCOVERY_EXIT_CODE -eq 0 ]; then
+    print_status "Pytest test discovery: All tests can be discovered" "success"
+    # Count discovered tests for validation
+    TEST_COUNT=$(echo "$PYTEST_DISCOVERY_OUTPUT" | grep -c "test.*::")
+    echo "   📊 Discovered $TEST_COUNT tests successfully"
+elif [ $PYTEST_DISCOVERY_EXIT_CODE -eq 2 ]; then
+    print_status "Pytest test discovery failed - Collection errors found" "error"
+    echo "   ❌ These errors will cause immediate CI/CD failure"
+    echo "   💡 Fix import/syntax errors in test files"
+    # Show first few collection errors
+    echo "$PYTEST_DISCOVERY_OUTPUT" | grep -A 3 "ERROR collecting" | head -10
+    VALIDATION_FAILED=true
+elif [ $PYTEST_DISCOVERY_EXIT_CODE -eq 5 ]; then
+    print_status "Pytest test discovery: No tests collected (check test patterns)" "warning"
+else
+    print_status "Pytest test discovery failed with exit code $PYTEST_DISCOVERY_EXIT_CODE" "error"
+    VALIDATION_FAILED=true
+fi
 fi
 
 # Test specific auth unit tests that were failing in CI/CD

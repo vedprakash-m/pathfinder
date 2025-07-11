@@ -63,3 +63,29 @@ class ParticipationStatus(str, Enum):
     ACCEPTED = "accepted"
     DECLINED = "declined"
     PENDING = "pending"
+
+
+class FamilyRole(str, Enum):
+    """Family member roles."""
+
+    COORDINATOR = "coordinator"
+    ADULT = "adult"
+    CHILD = "child"
+
+
+class InvitationStatus(str, Enum):
+    """Family invitation status."""
+
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    DECLINED = "declined"
+    EXPIRED = "expired"
+
+
+class PollStatus(str, Enum):
+    """Magic poll status enumeration."""
+
+    ACTIVE = "active"
+    CLOSED = "closed"
+    ANALYZING = "analyzing"
+    COMPLETED = "completed"

@@ -5,8 +5,8 @@ Simple unit tests for model classes to ensure they are exercised in test coverag
 import uuid
 from datetime import date, datetime, timezone
 
-# SQL Family model removed - use Cosmos FamilyDocument, FamilyRole
-from app.models.notification import NotificationType
+# Cosmos models - updated import paths for unified architecture
+from app.schemas.notification import NotificationType
 
 # SQL Trip model removed - use Cosmos TripDocument, TripStatus
 
