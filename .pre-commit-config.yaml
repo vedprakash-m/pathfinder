@@ -26,4 +26,14 @@ repos:
     rev: v5.0.0
     hooks:
       - id: check-added-large-files
-        args: ["--maxkb=512"] 
+        args: ["--maxkb=512"]
+
+  # Frontend lockfile validation
+  - repo: local
+    hooks:
+      - id: pnpm-lockfile-sync
+        name: Check pnpm lockfile synchronization
+        entry: ./scripts/validate-lockfile.sh
+        language: system
+        files: ^frontend/(package\.json|pnpm-lock\.yaml)$
+        pass_filenames: false 

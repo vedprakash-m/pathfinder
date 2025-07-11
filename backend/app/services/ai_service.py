@@ -27,9 +27,7 @@ logger = create_logger(__name__)
 
 # Initialize OpenAI client with fallback for missing API key
 try:
-    client = (
-        OpenAI(api_key=settings.OPENAI_API_KEY) if settings.OPENAI_API_KEY else None
-    )
+    client = OpenAI(api_key=settings.OPENAI_API_KEY) if settings.OPENAI_API_KEY else None
     if not client:
         logger.warning("OpenAI client not initialized - API key not provided")
 except Exception as e:
@@ -56,9 +54,7 @@ class CostTracker:
         self.daily_usage: Dict[str, Dict[str, Any]] = {}
         self.usage_patterns: Dict[str, Dict[str, Any]] = {}
 
-    def calculate_cost(
-        self, model: str, input_tokens: int, output_tokens: int
-    ) -> float:
+    def calculate_cost(self, model: str, input_tokens: int, output_tokens: int) -> float:
         """Calculate cost for token usage."""
         if model not in self.MODEL_COSTS:
             logger.warning(f"Unknown model for cost calculation: {model}")
@@ -137,17 +133,14 @@ class CostTracker:
 
         # Check request-type specific limits
         request_type_limits = {
-            "itinerary_generation": daily_budget_limit
-            * 0.6,  # 60% for itinerary generation
+            "itinerary_generation": daily_budget_limit * 0.6,  # 60% for itinerary generation
             "optimization": daily_budget_limit * 0.2,  # 20% for optimization
             "general": daily_budget_limit * 0.2,  # 20% for other requests
         }
 
         if request_type in request_type_limits:
             type_cost = (
-                self.daily_usage[today]["request_types"]
-                .get(request_type, {})
-                .get("cost", 0)
+                self.daily_usage[today]["request_types"].get(request_type, {}).get("cost", 0)
             )
             if type_cost >= request_type_limits[request_type]:
                 return False
@@ -170,22 +163,16 @@ class CostTracker:
             mini_requests = usage["models"]["gpt-4o-mini"]["requests"]
 
             if gpt4_requests > mini_requests:
-                suggestions.append(
-                    "Consider using gpt-4o-mini for more requests to reduce costs"
-                )
+                suggestions.append("Consider using gpt-4o-mini for more requests to reduce costs")
 
         # Suggest caching
         if usage["requests"] > 20:
-            suggestions.append(
-                "High request volume detected - ensure caching is enabled"
-            )
+            suggestions.append("High request volume detected - ensure caching is enabled")
 
         # Budget warnings
         daily_budget_limit = getattr(settings, "AI_DAILY_BUDGET_LIMIT", 50.0)
         if usage["cost"] > daily_budget_limit * 0.8:
-            suggestions.append(
-                "Approaching daily budget limit - consider request optimization"
-            )
+            suggestions.append("Approaching daily budget limit - consider request optimization")
 
         return suggestions
 
@@ -230,9 +217,7 @@ class MultiFamilyPreferenceEngine:
         # Select activities preferred by at least 30% of families
         threshold = max(1, len(families_data) * 0.3)
         popular_activities = [
-            activity
-            for activity, count in activity_counts.items()
-            if count >= threshold
+            activity for activity, count in activity_counts.items() if count >= threshold
         ]
 
         # Handle budget level conflicts (take conservative approach)
@@ -256,9 +241,7 @@ class MultiFamilyPreferenceEngine:
             "unified_budget_level": unified_budget,
             "unified_travel_style": unified_style,
             "family_count": len(families_data),
-            "total_participants": sum(
-                len(family.get("members", [])) for family in families_data
-            ),
+            "total_participants": sum(len(family.get("members", [])) for family in families_data),
             "preference_conflicts": {
                 "budget_levels": budget_levels,
                 "travel_styles": travel_styles,
@@ -293,9 +276,7 @@ class ItineraryPrompts:
         """Create enhanced prompt with multi-family preference reconciliation."""
 
         # Use preference engine to reconcile family preferences
-        unified_prefs = MultiFamilyPreferenceEngine.reconcile_family_preferences(
-            families_data
-        )
+        unified_prefs = MultiFamilyPreferenceEngine.reconcile_family_preferences(families_data)
 
         # Format family information
         family_info: List[str] = []
@@ -304,23 +285,16 @@ class ItineraryPrompts:
         for i, family in enumerate(families_data, 1):
             family_size = len(family.get("members", []))
 
-            ages = [
-                str(member.get("age", "adult")) for member in family.get("members", [])
-            ]
+            ages = [str(member.get("age", "adult")) for member in family.get("members", [])]
             dietary_lists = [
-                member.get("dietary_restrictions", [])
-                for member in family.get("members", [])
+                member.get("dietary_restrictions", []) for member in family.get("members", [])
             ]
             dietary_flat = [
-                item
-                for sublist in dietary_lists
-                for item in sublist
-                if isinstance(sublist, list)
+                item for sublist in dietary_lists for item in sublist if isinstance(sublist, list)
             ]
 
             accessibility_lists = [
-                member.get("accessibility_needs", [])
-                for member in family.get("members", [])
+                member.get("accessibility_needs", []) for member in family.get("members", [])
             ]
             accessibility_flat = [
                 item
@@ -339,11 +313,7 @@ class ItineraryPrompts:
             """
             )
 
-        budget_info = (
-            f"Total budget: ${budget_total:,.2f}"
-            if budget_total
-            else "Budget: Flexible"
-        )
+        budget_info = f"Total budget: ${budget_total:,.2f}" if budget_total else "Budget: Flexible"
 
         # Create conflict resolution notes
         conflicts = unified_prefs.get("preference_conflicts", {})
@@ -554,9 +524,7 @@ class AIService:
                 temperature = getattr(settings, "OPENAI_TEMPERATURE", 0.7)
 
                 # Enhanced prompt for LLM orchestration with system context
-                enhanced_prompt = (
-                    f"{ItineraryPrompts.SYSTEM_PROMPT}\n\nUser Request:\n{prompt}"
-                )
+                enhanced_prompt = f"{ItineraryPrompts.SYSTEM_PROMPT}\n\nUser Request:\n{prompt}"
 
                 orchestration_response = await llm_orchestration_client.generate_text(
                     prompt=enhanced_prompt,
@@ -583,12 +551,8 @@ class AIService:
                     "input_tokens": input_tokens,
                     "output_tokens": output_tokens,
                     "cost": orchestration_cost,
-                    "processing_time": orchestration_response.get(
-                        "processing_time", 0.0
-                    ),
-                    "orchestration_metadata": orchestration_response.get(
-                        "metadata", {}
-                    ),
+                    "processing_time": orchestration_response.get("processing_time", 0.0),
+                    "orchestration_metadata": orchestration_response.get("metadata", {}),
                     "source": "llm_orchestration",
                 }
 
@@ -642,15 +606,13 @@ class AIService:
             error_message = str(e).lower()
             if "rate limit" in error_message:
                 logger.error("OpenAI rate limit exceeded")
-                raise ValueError(
-                    "AI service temporarily unavailable due to rate limits"
-                )
+                raise ValueError("AI service temporarily unavailable due to rate limits") from e
             elif "timeout" in error_message:
                 logger.error("OpenAI API timeout")
-                raise ValueError("AI service timeout - please try again")
+                raise ValueError("AI service timeout - please try again") from e
             else:
                 logger.error(f"OpenAI API error: {e}")
-                raise ValueError(f"AI service error: {str(e)}")
+                raise ValueError(f"AI service error: {str(e)}") from e
 
     def _parse_itinerary_response(self, response: Dict[str, Any]) -> Dict[str, Any]:
         """Parse and validate the AI response."""
@@ -675,10 +637,10 @@ class AIService:
 
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse AI response as JSON: {e}")
-            raise ValueError("Invalid AI response format")
+            raise ValueError("Invalid AI response format") from e
         except Exception as e:
             logger.error(f"Failed to validate AI response: {e}")
-            raise ValueError(f"AI response validation failed: {str(e)}")
+            raise ValueError(f"AI response validation failed: {str(e)}") from e
 
     async def enhance_activity(
         self,
@@ -729,9 +691,7 @@ class AIService:
     def get_usage_stats(self) -> Dict[str, Any]:
         """Get current usage statistics."""
         today = datetime.now().date().isoformat()
-        today_usage = self.cost_tracker.daily_usage.get(
-            today, {"cost": 0, "requests": 0}
-        )
+        today_usage = self.cost_tracker.daily_usage.get(today, {"cost": 0, "requests": 0})
         daily_budget_limit = getattr(settings, "AI_DAILY_BUDGET_LIMIT", 50.0)
 
         return {
@@ -1214,16 +1174,12 @@ class AdvancedAIService:
             "estimated_retry_time": "15-30 minutes",
         }
 
-    async def generate_with_fallback(
-        self, request_type: str, **kwargs
-    ) -> Dict[str, Any]:
+    async def generate_with_fallback(self, request_type: str, **kwargs) -> Dict[str, Any]:
         """Generate AI content with graceful fallback for errors."""
         try:
             # Check budget limits first
             if not self.cost_tracker.check_budget_limit(request_type):
-                logger.warning(
-                    f"Budget limit exceeded for {request_type}, using fallback"
-                )
+                logger.warning(f"Budget limit exceeded for {request_type}, using fallback")
                 return self._get_fallback_response(request_type)
 
             # Try the main AI service
@@ -1264,9 +1220,7 @@ class AdvancedAIService:
             "budget_limit": usage_stats.get("budget_limit", 50.0),
             "budget_remaining": usage_stats.get("budget_remaining", 50.0),
             "models_available": usage_stats.get("models_available", []),
-            "budget_status": "ok"
-            if usage_stats.get("budget_remaining", 0) > 5
-            else "warning",
+            "budget_status": "ok" if usage_stats.get("budget_remaining", 0) > 5 else "warning",
             "graceful_mode": usage_stats.get("budget_remaining", 0) <= 0,
         }
 

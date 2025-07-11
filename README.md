@@ -218,7 +218,7 @@ Our optimized CI/CD system provides:
 ## 🛠️ Development Workflow
 
 ### Local Validation System
-Before pushing changes to CI/CD, use our comprehensive local validation system with enhanced dependency checking:
+Before pushing changes to CI/CD, use our comprehensive local validation system with enhanced dependency and lockfile checking:
 
 ```bash
 # Quick validation (recommended before every commit)
@@ -227,17 +227,27 @@ cd backend && python3 local_validation.py
 # Check for undeclared dependencies
 cd backend && python3 local_validation.py --dependency-check
 
-# Full project validation
+# Full project validation with lockfile sync
 ./scripts/local-validation.sh --fix
+
+# Validate frontend lockfile specifically
+./scripts/validate-lockfile.sh --fix
 ```
 
 ### What Gets Validated
 - ✅ **Dependencies:** Undeclared dependencies, requirements.txt completeness, package conflicts
+- ✅ **Lockfile Synchronization:** pnpm-lock.yaml matches package.json (prevents CI/CD failures)
 - ✅ **CI/CD Parity:** Test collection validation, environment consistency
 - ✅ **Code Quality:** Formatting, linting, type checking, imports
 - ✅ **Build Compatibility:** Docker build validation
 - ✅ **Git Status:** Branch awareness and uncommitted changes
 - ✅ **Infrastructure:** GitHub Actions and Azure prerequisites
+
+### Enhanced Lockfile Validation
+- 🔒 **CI/CD Simulation:** Tests `--frozen-lockfile` install locally
+- ⚡ **Pre-commit Hooks:** Blocks commits with out-of-sync lockfiles
+- 🛠️ **Auto-fix Mode:** Automatically regenerates lockfiles when out of sync
+- 🔍 **Offline Testing:** Catches sync issues without network dependency
 
 ### Dependency Validation Features
 - 🔍 **Undeclared Dependency Detection:** Scans imports vs requirements.txt

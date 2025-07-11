@@ -7,10 +7,10 @@ Authentication API endpoints - Unified Cosmos DB Implementation.
 import logging
 from datetime import datetime
 
-from app.repositories.cosmos_unified import UnifiedCosmosRepository, UserDocument
 from app.core.database_unified import get_cosmos_service
 from app.core.security import get_current_user
 from app.core.zero_trust import require_permissions
+from app.repositories.cosmos_unified import UnifiedCosmosRepository, UserDocument
 from app.schemas.auth import (
     LoginRequest,
     LoginResponse,
@@ -32,9 +32,7 @@ async def get_cosmos_repo() -> UnifiedCosmosRepository:
     return cosmos_service.get_repository()
 
 
-@router.post(
-    "/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED
-)
+@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register_user(
     user_data: UserCreate,
     cosmos_repo: UnifiedCosmosRepository = Depends(get_cosmos_repo),
@@ -57,9 +55,7 @@ async def register_user(
         )
 
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
-        ) from e
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
     except Exception as e:
         logger.error(f"Registration failed: {e}")
         raise HTTPException(

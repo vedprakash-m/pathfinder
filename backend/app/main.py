@@ -190,9 +190,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 async def health_check():
     """Health check endpoint for monitoring."""
     # Check cache service
-    cache_status = (
-        "connected" if hasattr(app.state, "cache_service") else "not_initialized"
-    )
+    cache_status = "connected" if hasattr(app.state, "cache_service") else "not_initialized"
 
     # Check database
     db_status = "connected"

@@ -281,11 +281,40 @@ if [ -f "frontend/package.json" ]; then
         print_status "Package.json has syntax errors" "error"
     fi
     
-    # Check pnpm lock file
+    # Check pnpm lock file and synchronization
     if [ -f "frontend/pnpm-lock.yaml" ]; then
         print_status "pnpm-lock.yaml found" "success"
+        
+        # Critical: Check if lockfile is synchronized with package.json
+        echo "   Validating lockfile synchronization..."
+        cd frontend
+        if command -v pnpm &> /dev/null; then
+            # Test if frozen lockfile install would succeed (simulating CI/CD)
+            if pnpm install --frozen-lockfile --offline 2>/dev/null; then
+                print_status "Lockfile synchronized with package.json" "success"
+            else
+                # Try with network (dependencies might need to be downloaded)
+                if pnpm install --frozen-lockfile >/dev/null 2>&1; then
+                    print_status "Lockfile synchronized (required dependency download)" "success"
+                else
+                    print_status "Lockfile out of sync with package.json" "error"
+                    echo "   ❌ This will cause CI/CD failure with --frozen-lockfile"
+                    if [ "$FIX_ISSUES" = true ]; then
+                        echo "   🔧 Regenerating lockfile..."
+                        pnpm install >/dev/null 2>&1 && print_status "Lockfile regenerated" "success"
+                    else
+                        echo "   💡 Fix with: cd frontend && pnpm install"
+                    fi
+                fi
+            fi
+        else
+            print_status "pnpm not available - cannot validate lockfile sync" "warning"
+            echo "   💡 Install pnpm: npm install -g pnpm"
+        fi
+        cd ..
     else
-        print_status "pnpm-lock.yaml missing - run 'pnpm install'" "warning"
+        print_status "pnpm-lock.yaml missing - run 'pnpm install'" "error"
+        echo "   ❌ CI/CD will fail without lockfile"
     fi
     
 else
