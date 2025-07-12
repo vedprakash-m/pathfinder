@@ -167,9 +167,7 @@ def check_python_imports() -> Tuple[bool, List[str]]:
         return True, []
     else:
         print_error(f"Found {total_errors} import/syntax errors")
-        print_error(
-            f"Import errors: {len(failed_imports)}, Syntax errors: {len(syntax_errors)}"
-        )
+        print_error(f"Import errors: {len(failed_imports)}, Syntax errors: {len(syntax_errors)}")
         return False, failed_imports + syntax_errors
 
 
@@ -182,8 +180,15 @@ def run_comprehensive_tests() -> bool:
         (
             ["python3", "-m", "pytest", "tests/", "--collect-only", "-q"],
             "Test Collection (Import Error Detection)",
+            True,  # This step is informational only
         ),
-        # 2. Unit Tests
+        # 2. Quick Smoke Test (catches execution-time failures early)
+        (
+            ["python3", "-m", "pytest", "tests/test_auth.py", "-v", "--maxfail=1", "-x"],
+            "Auth Service Smoke Test (Execution Validation)",
+            False,  # This step should fail if there are execution issues
+        ),
+        # 3. Unit Tests
         (
             [
                 "python3",
@@ -197,24 +202,36 @@ def run_comprehensive_tests() -> bool:
                 "--maxfail=5",
             ],
             "Unit and Integration Tests",
+            False,
         ),
-        # 3. Coverage Analysis
+        # 4. Coverage Analysis
         (
             ["coverage", "run", "-m", "pytest", "tests/", "-v", "--maxfail=3"],
             "Test Coverage Analysis",
+            True,  # Allow some failures for coverage analysis
         ),
-        (["coverage", "report", "--fail-under=70"], "Coverage Threshold Check"),
-        # 4. Specific CI/CD Test Cases
+        (["coverage", "report", "--fail-under=70"], "Coverage Threshold Check", True),
+        # 5. Specific CI/CD Test Cases
         (
             ["python3", "-m", "pytest", "tests/test_ai_service.py", "-v"],
             "AI Service Tests",
+            True,
         ),
     ]
 
     results = []
-    for cmd, description in test_steps:
+    critical_failure = False
+
+    for cmd, description, allow_failure in test_steps:
         success, stdout, stderr = run_command(cmd, description)
         results.append((description, success))
+
+        # Stop immediately on critical failures
+        if not success and not allow_failure:
+            print_error(f"CRITICAL FAILURE in {description}")
+            print_error("This would cause CI/CD to fail. Stopping validation.")
+            critical_failure = True
+            break
 
         # Continue on failure but log it
         if not success:
@@ -224,6 +241,11 @@ def run_comprehensive_tests() -> bool:
     total = len(results)
 
     print_info(f"Test Results: {passed}/{total} test steps passed")
+
+    # Return False if there were critical failures
+    if critical_failure:
+        return False
+
     return passed >= (total * 0.8)  # Allow 80% pass rate
 
 

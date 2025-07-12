@@ -18,9 +18,11 @@ from app.main import app
 
 # Import ALL models to ensure they're registered with Base metadata
 from app.models import *  # This imports all models including User, Trip, Family, etc.
+from app.models.cosmos.enums import FamilyRole, UserRole
 
 # Cosmos models - updated import paths for unified architecture
 from app.models.cosmos.trip import ParticipationStatus, Trip, TripParticipation
+from app.repositories.cosmos_unified import FamilyDocument, UserDocument
 
 # SQL User model removed - use Cosmos UserDocument, UserRole
 from fastapi.testclient import TestClient
@@ -83,18 +85,25 @@ async def db_session():
 @pytest_asyncio.fixture
 async def test_user(db_session):
     """Create a test user in the database."""
-    user = User(
-        auth0_id="auth0|test123",
-        email="test@example.com",
-        role=UserRole.FAMILY_ADMIN,
-        name="Test User",
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
-    )
-    db_session.add(user)
-    await db_session.commit()
-    await db_session.refresh(user)
-    return user
+    # TODO: This fixture needs to be updated to use Cosmos repository instead of SQL session
+    # This is a placeholder to fix the NameError - the test architecture needs updating
+    user_data = {
+        "id": "test-user-123",
+        "auth0_id": "auth0|test123",
+        "email": "test@example.com",
+        "role": UserRole.ADMIN.value,
+        "name": "Test User",
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow(),
+    }
+
+    # For now, return a mock object with the expected attributes
+    class MockUser:
+        def __init__(self, **kwargs):
+            for k, v in kwargs.items():
+                setattr(self, k, v)
+
+    return MockUser(**user_data)
 
 
 @pytest_asyncio.fixture

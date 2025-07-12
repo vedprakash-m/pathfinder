@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from app.core.security import create_access_token, verify_token
+from app.schemas.auth import UserCreate  # Fix missing import
 
 # SQL User model removed - use Cosmos UserDocumentCreate, UserUpdate
 from app.services.auth_service import AuthService
