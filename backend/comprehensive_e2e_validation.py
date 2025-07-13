@@ -431,15 +431,35 @@ def main():
     import_success, import_errors = check_python_imports()
     results["Import Validation"] = (import_success, import_errors)
 
-    # 2. Comprehensive testing
+    # 2. CRITICAL: Auth smoke test (must pass before continuing)
+    print_section("CRITICAL AUTH SMOKE TEST")
+    auth_cmd = [
+        "python3",
+        "-m",
+        "pytest",
+        "tests/test_auth.py::test_auth_service_register_user",
+        "-v",
+        "--maxfail=1",
+        "-x",
+    ]
+    auth_success, auth_stdout, auth_stderr = run_command(auth_cmd, "Critical Auth Test - Must Pass")
+
+    if not auth_success:
+        print_error("🚨 CRITICAL FAILURE: Auth test failed - this would cause CI/CD failure!")
+        print_error("Stopping validation immediately to match CI/CD behavior")
+        print_error(f"Error details: {auth_stderr}")
+        results["Critical Auth Test"] = (False, ["Auth service method signature mismatch"])
+        return results
+
+    # 3. Comprehensive testing (only if auth passes)
     test_success = run_comprehensive_tests()
     results["Comprehensive Testing"] = (test_success, [])
 
-    # 3. Architecture validation
+    # 4. Architecture validation
     arch_success = run_architecture_validation()
     results["Architecture & Quality"] = (arch_success, [])
 
-    # 4. Environment readiness
+    # 5. Environment readiness
     env_success = check_environment_readiness()
     results["Environment Readiness"] = (env_success, [])
 

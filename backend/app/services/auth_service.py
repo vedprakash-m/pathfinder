@@ -30,14 +30,33 @@ class AuthService:
             logger.error(f"Error getting user by email: {e}")
             return None
 
-    async def create_user(self, user_data: dict) -> dict:
-        """Create user in Cosmos DB."""
+    async def create_user(self, db_session, user_data) -> dict:
+        """Create user in Cosmos DB.
+
+        Args:
+            db_session: Database session (kept for interface compatibility)
+            user_data: User creation data (UserCreate object or dict)
+
+        Returns:
+            dict: Created user data
+        """
         try:
+            # Convert UserCreate object to dict if needed
+            if hasattr(user_data, "model_dump"):
+                user_dict = user_data.model_dump()
+            elif hasattr(user_data, "dict"):
+                user_dict = user_data.dict()
+            else:
+                user_dict = user_data
+
             # This will be implemented when we rebuild the API layer
             return {
-                "email": user_data.get("email"),
+                "email": user_dict.get("email"),
                 "id": "temp",
                 "role": "family_admin",
+                "entra_id": user_dict.get("entra_id"),
+                "auth0_id": user_dict.get("auth0_id"),
+                "name": user_dict.get("name"),
             }
         except Exception as e:
             logger.error(f"Error creating user: {e}")

@@ -16,6 +16,9 @@ class UserCreate(BaseModel):
     name: Optional[str] = None
     phone: Optional[str] = None
     preferences: Optional[Dict[str, Any]] = None
+    # Authentication provider IDs
+    entra_id: Optional[str] = None  # Microsoft Entra External ID
+    auth0_id: Optional[str] = None  # Auth0 ID for legacy compatibility
 
 
 class UserUpdate(BaseModel):

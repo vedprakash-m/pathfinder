@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from app.core.security import create_access_token, verify_token
-from app.schemas.auth import UserCreate  # Fix missing import
+from app.schemas.auth import UserCreate, UserUpdate  # Fix missing imports
 
 # SQL User model removed - use Cosmos UserDocumentCreate, UserUpdate
 from app.services.auth_service import AuthService
@@ -98,9 +98,9 @@ async def test_auth_service_register_user(db_session):
 
     # Assert
     assert user is not None
-    assert user.email == "newuser@example.com"
-    assert user.name == "New User"
-    assert user.entra_id == "entra|newuser123"  # Check the required field we added
+    assert user["email"] == "newuser@example.com"  # Access dict keys, not attributes
+    assert user["name"] == "New User"
+    assert user["entra_id"] == "entra|newuser123"  # Check the required field we added
 
 
 @pytest.mark.asyncio
