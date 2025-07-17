@@ -127,7 +127,7 @@ describe('API Service Integration', () => {
 
     it('filters trips by status', async () => {
       const filters: TripFilters = {
-        status: ['confirmed', 'planning'],
+        status: ['active', 'planning'],
         destination: 'Paris',
       };
 
@@ -175,7 +175,7 @@ describe('API Service Integration', () => {
       const result = await familyService.getFamilies();
 
       expect(result.data).toHaveLength(2);
-      expect(result.data.items[0].name).toBe('Smith Family');
+      expect(result.data[0].name).toBe('Smith Family');
       expect(apiService.get).toHaveBeenCalledWith('/families/');
     });
 

@@ -115,9 +115,9 @@ async def test_auth_service_get_user_by_auth0_id(db_session, test_user):
 
     # Assert
     assert user is not None
-    assert user.id == test_user.id
-    assert user.email == test_user.email
-    assert user.auth0_id == auth0_id
+    assert user["id"] == test_user.id  # Access dict keys for Cosmos architecture
+    assert user["email"] == test_user.email
+    assert user["auth0_id"] == auth0_id
 
 
 @pytest.mark.asyncio

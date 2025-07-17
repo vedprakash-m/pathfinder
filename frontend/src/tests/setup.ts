@@ -83,3 +83,42 @@ vi.mock('react-router-dom', async () => {
     useLocation: () => ({ pathname: '/', search: '', hash: '', state: null }),
   };
 });
+
+// Mock MSAL React
+vi.mock('@azure/msal-react', async () => {
+  const actual = await vi.importActual('@azure/msal-react') as any;
+  return {
+    ...actual,
+    useAccount: vi.fn(() => ({
+      homeAccountId: 'test-home-account-id',
+      environment: 'test-environment',
+      tenantId: 'test-tenant-id',
+      username: 'test@example.com',
+      localAccountId: 'test-local-account-id',
+      name: 'Test User',
+    })),
+    useMsal: vi.fn(() => ({
+      instance: {
+        loginRedirect: vi.fn(),
+        logout: vi.fn(),
+        acquireTokenSilent: vi.fn().mockResolvedValue({
+          accessToken: 'mock-access-token',
+          account: {
+            username: 'test@example.com',
+            name: 'Test User',
+          },
+        }),
+      },
+      accounts: [{
+        homeAccountId: 'test-home-account-id',
+        environment: 'test-environment',
+        tenantId: 'test-tenant-id',
+        username: 'test@example.com',
+        localAccountId: 'test-local-account-id',
+        name: 'Test User',
+      }],
+      inProgress: 'none',
+    })),
+    MsalProvider: ({ children }: { children: React.ReactNode }) => children,
+  };
+});

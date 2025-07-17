@@ -182,11 +182,11 @@ def run_comprehensive_tests() -> bool:
             "Test Collection (Import Error Detection)",
             True,  # This step is informational only
         ),
-        # 2. Quick Smoke Test (catches execution-time failures early)
+        # 2. Comprehensive Auth Test Suite (catches all auth interface issues)
         (
             ["python3", "-m", "pytest", "tests/test_auth.py", "-v", "--maxfail=1", "-x"],
-            "Auth Service Smoke Test (Execution Validation)",
-            False,  # This step should fail if there are execution issues
+            "Complete Auth Service Test Suite (Interface Validation)",
+            False,  # This step should fail if there are any auth issues - CRITICAL
         ),
         # 3. Unit Tests
         (
@@ -389,6 +389,80 @@ def generate_validation_report(results: Dict[str, Tuple[bool, List[str]]]) -> st
     return report_text
 
 
+def validate_service_interfaces() -> Tuple[bool, List[str]]:
+    """Validate that service interfaces match test expectations.
+
+    This prevents interface breaking changes during architectural migrations.
+    Based on CI/CD failure analysis: AuthService missing get_user_by_auth0_id method.
+    """
+    print_section("SERVICE INTERFACE CONTRACT VALIDATION")
+
+    interface_errors = []
+
+    try:
+        # Import services and tests to validate interfaces
+        import ast
+        import inspect
+
+        from app.services.auth_service import AuthService
+
+        print_info("Validating AuthService interface contracts...")
+
+        # Get AuthService methods
+        auth_service = AuthService()
+        service_methods = set(
+            method
+            for method in dir(auth_service)
+            if not method.startswith("_") and callable(getattr(auth_service, method))
+        )
+
+        print_info(f"AuthService methods: {sorted(service_methods)}")
+
+        # Parse test file to find expected method calls
+        test_file_path = Path("tests/test_auth.py")
+        expected_methods = set()
+
+        with open(test_file_path, "r") as f:
+            test_content = f.read()
+
+        tree = ast.parse(test_content)
+
+        # Find method calls on auth_service
+        for node in ast.walk(tree):
+            if (
+                isinstance(node, ast.Attribute)
+                and isinstance(node.value, ast.Name)
+                and node.value.id == "auth_service"
+            ):
+                expected_methods.add(node.attr)
+
+        print_info(f"Expected methods from tests: {sorted(expected_methods)}")
+
+        # Check for missing methods
+        missing_methods = expected_methods - service_methods
+        if missing_methods:
+            for method in missing_methods:
+                error_msg = f"AuthService missing expected method: {method}"
+                interface_errors.append(error_msg)
+                print_error(error_msg)
+        else:
+            print_success("All expected AuthService methods are implemented")
+
+        # Additional interface checks can be added here for other services
+
+        if interface_errors:
+            print_error(f"Found {len(interface_errors)} interface contract violations")
+            return False, interface_errors
+        else:
+            print_success("All service interface contracts validated successfully")
+            return True, []
+
+    except Exception as e:
+        error_msg = f"Interface validation failed: {str(e)}"
+        print_error(error_msg)
+        return False, [error_msg]
+
+
 def main():
     """Run comprehensive E2E validation."""
     print(f"{Colors.PURPLE}{Colors.BOLD}")
@@ -431,13 +505,17 @@ def main():
     import_success, import_errors = check_python_imports()
     results["Import Validation"] = (import_success, import_errors)
 
-    # 2. CRITICAL: Auth smoke test (must pass before continuing)
+    # 2. Service Interface Contract Validation (NEW - prevents interface breaks)
+    interface_success, interface_errors = validate_service_interfaces()
+    results["Interface Contract Validation"] = (interface_success, interface_errors)
+
+    # 3. CRITICAL: Auth smoke test (must pass before continuing)
     print_section("CRITICAL AUTH SMOKE TEST")
     auth_cmd = [
         "python3",
         "-m",
         "pytest",
-        "tests/test_auth.py::test_auth_service_register_user",
+        "tests/test_auth.py::test_auth_service_get_user_by_auth0_id",  # The test that actually failed in CI/CD
         "-v",
         "--maxfail=1",
         "-x",
@@ -451,15 +529,15 @@ def main():
         results["Critical Auth Test"] = (False, ["Auth service method signature mismatch"])
         return results
 
-    # 3. Comprehensive testing (only if auth passes)
+    # 4. Comprehensive testing (only if auth passes)
     test_success = run_comprehensive_tests()
     results["Comprehensive Testing"] = (test_success, [])
 
-    # 4. Architecture validation
+    # 5. Architecture validation
     arch_success = run_architecture_validation()
     results["Architecture & Quality"] = (arch_success, [])
 
-    # 5. Environment readiness
+    # 6. Environment readiness
     env_success = check_environment_readiness()
     results["Environment Readiness"] = (env_success, [])
 
