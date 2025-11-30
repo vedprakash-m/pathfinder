@@ -217,7 +217,7 @@ def check_schema_compatibility():
     try:
         import sys
 
-        sys.path.append("/Users/vedprakashmishra/pathfinder/backend")
+        sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
         # SQL User model removed - use Cosmos UserDocumentCreate
 
@@ -333,7 +333,7 @@ def check_model_test_alignment():
     # Run a quick test to instantiate UserCreate with current test data
     test_script = """
 import sys
-sys.path.append('/Users/vedprakashmishra/pathfinder/backend')
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 try:
     # SQL User model removed - use Cosmos UserDocumentCreate
@@ -453,8 +453,10 @@ def main():
     print_colored("🚀 Enhanced Local Validation (Legacy + Critical Checks)", "blue")
     print("=" * 70)
 
-    # Change to backend directory
-    os.chdir("/Users/vedprakashmishra/pathfinder/backend")
+    # Change to backend directory - cross-platform compatible
+    backend_dir = os.path.dirname(os.path.abspath(__file__))
+    os.chdir(backend_dir)
+    print(f"🏁 Working directory: {os.getcwd()}")
 
     # Critical import check first (addresses CI/CD failure root cause)
     import_success = check_critical_imports()
