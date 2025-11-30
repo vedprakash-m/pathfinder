@@ -209,4 +209,4 @@ When modifying workflows:
 3. **Update this README** if adding new features
 4. **Consider backward compatibility** for any secret changes
 
-For questions or issues with the CI/CD setup, check the workflow run logs or create an issue in the repository. 
+For questions or issues with the CI/CD setup, check the workflow run logs or create an issue in the repository. # CI/CD re-enabled Sun Nov 30 14:56:09 PST 2025
