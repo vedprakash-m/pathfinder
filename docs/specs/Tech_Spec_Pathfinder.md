@@ -534,6 +534,62 @@ api_router.include_router(ai_router, prefix="/ai", tags=["AI Services"])
 
 - Current `/api/v1/`, strategy for future versions with backward compatibility
 
+### 12.3 Contextual Data Enrichment (Phase 5+ Consideration)
+
+**Status:** Deferred pending Phase 1-4 completion and user validation
+
+If user feedback validates the need for contextual enrichment, a minimal implementation would follow these principles:
+
+**Architecture Pattern:**
+```python
+class ContextEnrichmentService:
+    """
+    Lightweight service for read-only contextual data.
+    
+    Design Constraints:
+    - Read-only queries only (no transactional features)
+    - Aggressive caching (24hr+ TTL)
+    - Graceful degradation (never blocks core features)
+    - Cost-capped ($100/month maximum)
+    - Maintains serverless cost optimization
+    """
+    
+    async def get_weather_context(
+        self, location: str, dates: List[date]
+    ) -> Optional[WeatherContext]:
+        """Get weather forecast to enrich itinerary suggestions."""
+        try:
+            # Check cache first (24hr TTL)
+            cached = await self.cache.get(f"weather:{location}")
+            if cached:
+                return cached
+            
+            # Query external API (OpenWeatherMap free tier)
+            result = await self.weather_api.query(location, dates)
+            await self.cache.set(f"weather:{location}", result, ttl=86400)
+            return result
+        except Exception as e:
+            logger.warning(f"Weather context unavailable: {e}")
+            return None  # Graceful degradation
+```
+
+**Potential Data Sources (If Validated):**
+- Weather API (OpenWeatherMap - $0-10/month)
+- Events API (PredictHQ - $50-100/month)
+- Basic place info (Google Places - pay-per-use, with caps)
+
+**Integration Points:**
+- AI Assistant context enhancement (not primary feature)
+- Magic Polls enrichment (optional suggestions)
+- Itinerary generation improvements (fallback to internal data)
+
+**Explicitly Out of Scope:**
+- ❌ Booking system integrations
+- ❌ Price monitoring or alerts
+- ❌ Real-time disruption management
+- ❌ Transactional features
+- ❌ Any feature that conflicts with cost-optimization architecture
+
 ---
 
 ## 13. Risk Mitigation & Contingency

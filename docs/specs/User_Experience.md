@@ -35,9 +35,11 @@ Our UX vision is built on:
 
 | Pillar                 | Goal                                                                | Key Concepts                                                                 |
 |------------------------|---------------------------------------------------------------------|------------------------------------------------------------------------------|
-| Proactive Intelligence | Anticipate user needs, surface right info at right time, reducing cognitive load. | Pathfinder Assistant, Proactive Nudges, "Day Of" Itinerary View.             |
-| Seamless Collaboration | Make group decision-making enjoyable. Turn potential friction into fun, interactive moments. | AI-Powered Chat, Magic Polls, Organizer's Command Center.                    |
-| Emotional Engagement   | Create a memorable experience that lasts long after the trip, fostering user loyalty. | "Golden Path" Onboarding, Post-Trip "Memory Lane", Gamified Decision Making. |
+| Proactive Intelligence | Anticipate user needs through AI-powered consensus analysis, reducing cognitive load in multi-family decision-making. | Pathfinder Assistant, Smart Conflict Resolution, Preference Aggregation, "Day Of" Itinerary View.             |
+| Seamless Collaboration | Make group decision-making enjoyable and efficient. Turn potential friction into fun, interactive moments through family-atomic design. | AI-Powered Chat, Magic Polls, Consensus Engine, Real-time Updates.                    |
+| Emotional Engagement   | Create a memorable collaborative experience that lasts long after the trip, fostering family connections and user loyalty. | "Golden Path" Onboarding, Post-Trip "Memory Lane", Gamified Decision Making, Shared Trip Stories. |
+
+**Strategic Focus:** Our intelligence comes from understanding family dynamics and facilitating consensus, not from aggregating external booking data. We enhance collaboration, not transactions.
 
 ---
 
@@ -103,12 +105,12 @@ The platform uses a hierarchical role system where Family is the atomic unit for
 - **The Pathfinder Assistant & Magic Polls:** Family Admins/Trip Organizers prompt AI directly.
 - **Rich Response Cards:** AI returns structured options (images, ratings, quick actions).
 - **Magic Polls Creation:** AI automatically generates family-level decision polls.
-- **Context Awareness:** AI understands trip context, preferences.
+- **Context Awareness:** AI understands trip context, preferences, and family dynamics.
 - **"Day Of" Itinerary View:** Mobile app defaults to dashboard with:
   - Offline capability for core itinerary.
-  - Real-time updates (weather, traffic) when connected.
   - Family-specific customized view.
   - Quick actions (maps, contact info).
+  - **Future Enhancement (Phase 5+):** Optional contextual data (weather forecasts, local events) if user-validated.
 
 **Graceful Degradation & User Notifications (AI Features):**
 - **Proactive Notifications:** Banner: "AI Assistant operating in cost-optimized mode. Responses may be faster but less detailed."
@@ -163,11 +165,12 @@ The platform uses a hierarchical role system where Family is the atomic unit for
 |----------|-------------------------------|---------------|----------------------------------------------------------------------------------------------|
 | 1        | "Golden Path" Onboarding      | 🚧 In Progress| Interactive flow creating pre-populated sample trip, demonstrating family-based value in 60 seconds. |
 | 2        | Pathfinder Assistant & Magic Polls | 🚧 In Progress| Phase 1 (In Progress): Rule-based assistance. Phase 2 (Planned): Full LLM integration.        |
-| 3        | Proactive Command Center      | 📋 Planned    | Timeline and proactive "nudges" for Trip Organizers (e.g., "Flight prices are low") with family-aware suggestions. |
+| 3        | Proactive Command Center      | 📋 Planned    | Timeline and proactive "nudges" for Trip Organizers with family-aware suggestions. |
 | 4        | Dynamic "Day Of" Itinerary View | 🚧 PWA Ready  | Mobile-optimized itinerary for active travel days, with offline capability and family-specific views. |
 | 5        | Post-Trip "Memory Lane"       | 📋 Planned    | Automated, shareable post-trip summaries with family-focused highlights, photos, and simple AI-generated "trip superlatives." |
 | 6        | Visual Budget Dashboard       | 🚧 Foundation Built / Visuals Planned | Family-aware charts and visual summaries for budget tracking. Core expense tracking implemented. |
 | 7        | Family Invitation Management  | ✅ Core Built  | Enhanced invitation process with status tracking, bulk invites, and family templates.         |
+| 8        | Smart Context Enrichment      | 🔮 Future Consideration | Optional lightweight context (weather, events) to enhance AI suggestions. User validation required before implementation. |
 
 **AI Cost Analytics Dashboard (Super Admin):**
 - Key Metrics Display: Total AI Spend, Cost per Trip, Most Expensive AI Feature.

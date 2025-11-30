@@ -43,9 +43,13 @@ describe('API Service Integration', () => {
       const mockTrips = {
         data: {
           items: [
-            { id: '1', title: 'Trip 1', status: 'planning' },
-            { id: '2', title: 'Trip 2', status: 'active' },
-          ],
+          {
+            id: '1',
+            title: 'Trip 1',
+            status: 'planning',
+          },
+          { id: '2', title: 'Trip 2', status: 'active' },
+        ],
           total: 2,
           page: 1,
           pageSize: 10,
@@ -152,21 +156,26 @@ describe('API Service Integration', () => {
   describe('Family Service', () => {
     it('fetches families correctly', async () => {
       const mockFamilies = {
-        data: [
-          {
-            id: 'fam1',
-            name: 'Smith Family',
-            members: [
-              { id: 'user1', name: 'John Smith', role: 'admin' },
-              { id: 'user2', name: 'Jane Smith', role: 'member' },
-            ],
-          },
-          {
-            id: 'fam2',
-            name: 'Johnson Family',
-            members: [{ id: 'user3', name: 'Bob Johnson', role: 'admin' }],
-          },
-        ],
+        data: {
+          items: [
+            {
+              id: 'fam1',
+              name: 'Smith Family',
+              members: [
+                { id: 'user1', name: 'John Smith', role: 'admin' },
+                { id: 'user2', name: 'Jane Smith', role: 'member' },
+              ],
+            },
+            {
+              id: 'fam2',
+              name: 'Johnson Family',
+              members: [{ id: 'user3', name: 'Bob Johnson', role: 'admin' }],
+            },
+          ],
+          total: 2,
+          page: 1,
+          pageSize: 10,
+        },
         success: true,
       };
 
@@ -174,8 +183,8 @@ describe('API Service Integration', () => {
 
       const result = await familyService.getFamilies();
 
-      expect(result.data).toHaveLength(2);
-      expect(result.data[0].name).toBe('Smith Family');
+      expect(result.data.items).toHaveLength(2);
+      expect(result.data.items[0].name).toBe('Smith Family');
       expect(apiService.get).toHaveBeenCalledWith('/families/');
     });
 

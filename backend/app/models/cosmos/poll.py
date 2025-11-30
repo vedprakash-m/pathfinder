@@ -39,6 +39,12 @@ class MagicPoll(BaseModel):
     class Config:
         json_encoders = {datetime: lambda v: v.isoformat()}
 
+    def is_expired(self) -> bool:
+        """Check if poll has expired."""
+        if not self.expires_at:
+            return False
+        return datetime.now() > self.expires_at
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert poll to dictionary format."""
         return {

@@ -14,8 +14,8 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Set
 
-from app.services.trip_cosmos import TripCosmosOperations
 from app.models.cosmos.message import MessageType
+from app.services.trip_cosmos import TripCosmosOperations
 from fastapi import WebSocket, WebSocketDisconnect
 
 logger = logging.getLogger(__name__)
@@ -52,9 +52,7 @@ class ConnectionManager:
         self.user_connections.clear()
         self.connection_metadata.clear()
 
-    async def connect(
-        self, websocket: WebSocket, user_id: str, trip_id: Optional[str] = None
-    ):
+    async def connect(self, websocket: WebSocket, user_id: str, trip_id: Optional[str] = None):
         """Accept and register a new WebSocket connection."""
         await websocket.accept()
 
@@ -146,9 +144,7 @@ class ConnectionManager:
                 trip_id,
             )
 
-    async def send_personal_message(
-        self, message: Dict[str, Any], websocket: WebSocket
-    ):
+    async def send_personal_message(self, message: Dict[str, Any], websocket: WebSocket):
         """Send a message to a specific WebSocket connection."""
         try:
             await websocket.send_text(json.dumps(message))
@@ -320,9 +316,7 @@ class ConnectionManager:
                 await self.broadcast_to_trip(
                     {
                         "type": "new_message",
-                        "message": message.dict(
-                            exclude={"_resource_id", "_etag", "_ts"}
-                        ),
+                        "message": message.dict(exclude={"_resource_id", "_etag", "_ts"}),
                         "trip_id": trip_id,
                         "timestamp": datetime.now(timezone.utc).isoformat(),
                     },
@@ -335,9 +329,7 @@ class ConnectionManager:
             logger.error(f"Error sending trip message: {e}")
             return False
 
-    async def get_trip_recent_messages(
-        self, websocket: WebSocket, limit: int = 20
-    ) -> None:
+    async def get_trip_recent_messages(self, websocket: WebSocket, limit: int = 20) -> None:
         """
         Get and send recent messages for the current trip to a user.
 
@@ -356,9 +348,7 @@ class ConnectionManager:
 
         try:
             # Get messages from Cosmos DB
-            messages = await self.cosmos_ops.get_trip_messages(
-                trip_id=trip_id, limit=limit
-            )
+            messages = await self.cosmos_ops.get_trip_messages(trip_id=trip_id, limit=limit)
 
             if messages:
                 # Send messages to the requesting client
@@ -366,8 +356,7 @@ class ConnectionManager:
                     {
                         "type": "message_history",
                         "messages": [
-                            m.dict(exclude={"_resource_id", "_etag", "_ts"})
-                            for m in messages
+                            m.dict(exclude={"_resource_id", "_etag", "_ts"}) for m in messages
                         ],
                         "trip_id": trip_id,
                         "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -383,9 +372,7 @@ websocket_manager = ConnectionManager()
 
 
 # WebSocket message handlers
-async def handle_websocket_message(
-    websocket: WebSocket, message: Dict[str, Any], user_id: str
-):
+async def handle_websocket_message(websocket: WebSocket, message: Dict[str, Any], user_id: str):
     """Handle incoming WebSocket messages."""
     message_type = message.get("type")
 
@@ -435,9 +422,7 @@ async def handle_websocket_message(
         elif message_type == "get_messages":
             # Handle message history requests
             limit = message.get("limit", 20)
-            await websocket_manager.get_trip_recent_messages(
-                websocket=websocket, limit=limit
-            )
+            await websocket_manager.get_trip_recent_messages(websocket=websocket, limit=limit)
 
         elif message_type == "itinerary_update":
             # Handle itinerary updates
@@ -542,6 +527,63 @@ async def notify_itinerary_update(
             "itinerary_id": itinerary_id,
             "update_type": update_type,
             "data": data,
+            "timestamp": datetime.utcnow().isoformat(),
+        },
+        trip_id,
+    )
+
+
+async def notify_poll_created(trip_id: str, poll_id: str, poll_data: Dict[str, Any]):
+    """Notify trip members about new poll creation."""
+    await websocket_manager.broadcast_to_trip(
+        {
+            "type": "poll_notification",
+            "event": "poll_created",
+            "poll_id": poll_id,
+            "data": poll_data,
+            "timestamp": datetime.utcnow().isoformat(),
+        },
+        trip_id,
+    )
+
+
+async def notify_poll_vote(trip_id: str, poll_id: str, voter_id: str, vote_data: Dict[str, Any]):
+    """Notify trip members about a new vote on a poll."""
+    await websocket_manager.broadcast_to_trip(
+        {
+            "type": "poll_notification",
+            "event": "poll_vote",
+            "poll_id": poll_id,
+            "voter_id": voter_id,
+            "data": vote_data,
+            "timestamp": datetime.utcnow().isoformat(),
+        },
+        trip_id,
+    )
+
+
+async def notify_poll_results(trip_id: str, poll_id: str, results_data: Dict[str, Any]):
+    """Notify trip members about poll results and AI analysis."""
+    await websocket_manager.broadcast_to_trip(
+        {
+            "type": "poll_notification",
+            "event": "poll_results",
+            "poll_id": poll_id,
+            "data": results_data,
+            "timestamp": datetime.utcnow().isoformat(),
+        },
+        trip_id,
+    )
+
+
+async def notify_poll_completed(trip_id: str, poll_id: str, consensus_data: Dict[str, Any]):
+    """Notify trip members about poll completion with consensus recommendation."""
+    await websocket_manager.broadcast_to_trip(
+        {
+            "type": "poll_notification",
+            "event": "poll_completed",
+            "poll_id": poll_id,
+            "data": consensus_data,
             "timestamp": datetime.utcnow().isoformat(),
         },
         trip_id,

@@ -143,7 +143,8 @@ export interface Trip {
   updated_at: string;
 }
 
-export type TripStatus = 'planning' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled';
+// Updated to match backend TripStatus enum: draft, planning, confirmed, active, completed, cancelled
+export type TripStatus = 'draft' | 'planning' | 'confirmed' | 'active' | 'completed' | 'cancelled';
 
 export interface TripParticipant {
   user_id: string;

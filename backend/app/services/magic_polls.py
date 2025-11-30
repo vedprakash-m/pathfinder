@@ -3,12 +3,12 @@ Magic Polls Service - AI-powered group decision making with intelligent preferen
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 import requests
-from app.models.cosmos.poll import MagicPoll
-from sqlalchemy.orm import Session
+from app.models.cosmos.enums import PollStatus, PollType
+from app.repositories.cosmos_unified import UnifiedCosmosRepository
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +16,8 @@ logger = logging.getLogger(__name__)
 class MagicPollsService:
     """Service for handling Magic Polls with AI-powered decision making"""
 
-    def __init__(self):
+    def __init__(self, cosmos_repo: UnifiedCosmosRepository):
+        self.cosmos_repo = cosmos_repo
         self.llm_orchestration_url = "http://localhost:8001"
 
     async def create_poll(
@@ -28,7 +29,6 @@ class MagicPollsService:
         options: List[Dict[str, Any]],
         description: Optional[str] = None,
         expires_hours: int = 72,
-        db: Session = None,
     ) -> Dict[str, Any]:
         """Create a new Magic Poll with AI enhancement"""
         try:
@@ -39,23 +39,49 @@ class MagicPollsService:
             # Enhance options with AI if needed
             enhanced_options = await self._enhance_poll_options(options, poll_type)
 
-            # Create the poll
-            poll = create_magic_poll(
-                trip_id=trip_id,
-                creator_id=creator_id,
-                title=title,
-                poll_type=PollType(poll_type),
-                options=enhanced_options,
-                description=description,
-                expires_hours=expires_hours,
-            )
+            # Calculate expiration time
+            expires_at = datetime.now(timezone.utc) + timedelta(hours=expires_hours)
 
-            db.add(poll)
-            db.commit()
+            # Create poll document
+            poll_data = {
+                "trip_id": trip_id,
+                "creator_id": creator_id,
+                "title": title,
+                "description": description,
+                "poll_type": poll_type,
+                "options": enhanced_options,
+                "votes": {},
+                "ai_analysis": None,
+                "consensus_recommendation": None,
+                "status": PollStatus.ACTIVE.value,
+                "expires_at": expires_at,
+            }
+
+            # Create poll in Cosmos DB
+            poll_doc = await self.cosmos_repo.create_poll(poll_data)
+
+            poll_response = {
+                "id": poll_doc.id,
+                "trip_id": poll_doc.trip_id,
+                "creator_id": poll_doc.creator_id,
+                "title": poll_doc.title,
+                "description": poll_doc.description,
+                "poll_type": poll_doc.poll_type,
+                "options": poll_doc.options,
+                "votes": poll_doc.votes,
+                "status": poll_doc.status,
+                "expires_at": poll_doc.expires_at.isoformat() if poll_doc.expires_at else None,
+                "created_at": poll_doc.created_at.isoformat(),
+            }
+
+            # Broadcast poll creation via WebSocket
+            from app.services.websocket import notify_poll_created
+
+            await notify_poll_created(trip_id=trip_id, poll_id=poll_doc.id, poll_data=poll_response)
 
             return {
                 "success": True,
-                "poll": poll.to_dict(),
+                "poll": poll_response,
                 "message": "Magic Poll created successfully with AI enhancements",
             }
 
@@ -63,12 +89,13 @@ class MagicPollsService:
             logger.error(f"Error creating Magic Poll: {str(e)}")
             return {"success": False, "error": str(e)}
 
-    async def submit_response(
-        self, poll_id: str, user_id: str, response_data: Dict[str, Any], db: Session
+    async def submit_vote(
+        self, poll_id: str, trip_id: str, user_id: str, option_indices: List[int]
     ) -> Dict[str, Any]:
-        """Submit a response to a Magic Poll"""
+        """Submit a vote to a Magic Poll"""
         try:
-            poll = db.query(MagicPoll).filter(MagicPoll.id == poll_id).first()
+            # Get poll from Cosmos DB
+            poll = await self.cosmos_repo.get_poll_by_id(poll_id, trip_id)
 
             if not poll:
                 return {"success": False, "error": "Poll not found"}
@@ -76,49 +103,77 @@ class MagicPollsService:
             if poll.status != PollStatus.ACTIVE.value:
                 return {"success": False, "error": "Poll is not active"}
 
-            if poll.is_expired():
-                poll.status = PollStatus.EXPIRED.value
-                db.commit()
+            # Check if poll has expired
+            if poll.expires_at and datetime.now(timezone.utc) > poll.expires_at:
+                # Update status to expired
+                await self.cosmos_repo.update_poll(
+                    poll_id, trip_id, {"status": PollStatus.EXPIRED.value}
+                )
                 return {"success": False, "error": "Poll has expired"}
 
-            # Update responses
-            if not poll.responses:
-                poll.responses = {"user_responses": []}
-
-            # Remove existing response from this user if it exists
-            poll.responses["user_responses"] = [
-                r for r in poll.responses["user_responses"] if r.get("user_id") != user_id
-            ]
-
-            # Add new response
-            new_response = {
-                "user_id": user_id,
-                "response": response_data,
-                "timestamp": datetime.utcnow().isoformat(),
+            # Add/update vote
+            poll.votes[user_id] = {
+                "option_indices": option_indices,
+                "voted_at": datetime.now(timezone.utc).isoformat(),
             }
-            poll.responses["user_responses"].append(new_response)
 
-            # Trigger AI analysis if we have enough responses
-            if len(poll.responses["user_responses"]) >= 2:
-                await self._analyze_poll_responses(poll, db)
+            # Update poll with new vote
+            update_data = {"votes": poll.votes}
 
-            poll.updated_at = datetime.utcnow()
-            db.commit()
+            # Trigger AI analysis if we have enough votes
+            if len(poll.votes) >= 2:
+                ai_analysis = await self._analyze_poll_responses(poll)
+                consensus = await self._generate_consensus_recommendation(poll, ai_analysis)
+                update_data["ai_analysis"] = ai_analysis
+                update_data["consensus_recommendation"] = consensus
+
+            updated_poll = await self.cosmos_repo.update_poll(poll_id, trip_id, update_data)
+
+            # Broadcast vote event via WebSocket
+            from app.services.websocket import notify_poll_vote
+
+            await notify_poll_vote(
+                trip_id=trip_id,
+                poll_id=poll_id,
+                voter_id=user_id,
+                vote_data={
+                    "option_indices": option_indices,
+                    "vote_count": len(updated_poll.votes),
+                    "has_ai_analysis": bool(updated_poll.ai_analysis),
+                },
+            )
+
+            # If AI analysis was generated, broadcast results
+            if updated_poll.ai_analysis:
+                from app.services.websocket import notify_poll_results
+
+                await notify_poll_results(
+                    trip_id=trip_id,
+                    poll_id=poll_id,
+                    results_data={
+                        "ai_analysis": updated_poll.ai_analysis,
+                        "consensus": updated_poll.consensus_recommendation,
+                        "vote_count": len(updated_poll.votes),
+                    },
+                )
 
             return {
                 "success": True,
-                "poll": poll.to_dict(),
-                "response_count": len(poll.responses["user_responses"]),
+                "poll_id": updated_poll.id,
+                "vote_count": len(updated_poll.votes),
+                "ai_analysis": updated_poll.ai_analysis,
+                "consensus": updated_poll.consensus_recommendation,
             }
 
         except Exception as e:
-            logger.error(f"Error submitting poll response: {str(e)}")
+            logger.error(f"Error submitting poll vote: {str(e)}")
             return {"success": False, "error": str(e)}
 
-    async def get_poll_results(self, poll_id: str, user_id: str, db: Session) -> Dict[str, Any]:
+    async def get_poll_results(self, poll_id: str, trip_id: str, user_id: str) -> Dict[str, Any]:
         """Get poll results with AI analysis"""
         try:
-            poll = db.query(MagicPoll).filter(MagicPoll.id == poll_id).first()
+            # Get poll from Cosmos DB
+            poll = await self.cosmos_repo.get_poll_by_id(poll_id, trip_id)
 
             if not poll:
                 return {"success": False, "error": "Poll not found"}
@@ -126,17 +181,22 @@ class MagicPollsService:
             # Check if user has access to this poll's trip
             # TODO: Add proper authorization check
 
-            # Get current results
-            results = await self._calculate_poll_results(poll)
-
-            # Get AI analysis if available
-            ai_analysis = poll.ai_analysis or {}
+            # Calculate current results
+            results = self._calculate_poll_results(poll)
 
             return {
                 "success": True,
-                "poll": poll.to_dict(),
+                "poll": {
+                    "id": poll.id,
+                    "title": poll.title,
+                    "description": poll.description,
+                    "poll_type": poll.poll_type,
+                    "options": poll.options,
+                    "status": poll.status,
+                    "created_at": poll.created_at.isoformat(),
+                },
                 "results": results,
-                "ai_analysis": ai_analysis,
+                "ai_analysis": poll.ai_analysis or {},
                 "consensus_recommendation": poll.consensus_recommendation,
             }
 
@@ -144,17 +204,24 @@ class MagicPollsService:
             logger.error(f"Error getting poll results: {str(e)}")
             return {"success": False, "error": str(e)}
 
-    async def get_trip_polls(self, trip_id: str, user_id: str, db: Session) -> List[Dict[str, Any]]:
+    async def get_trip_polls(self, trip_id: str, user_id: str) -> List[Dict[str, Any]]:
         """Get all polls for a trip"""
         try:
-            polls = (
-                db.query(MagicPoll)
-                .filter(MagicPoll.trip_id == trip_id)
-                .order_by(MagicPoll.created_at.desc())
-                .all()
-            )
+            # Get polls from Cosmos DB
+            polls = await self.cosmos_repo.get_trip_polls(trip_id)
 
-            return [poll.to_dict() for poll in polls]
+            return [
+                {
+                    "id": poll.id,
+                    "title": poll.title,
+                    "description": poll.description,
+                    "poll_type": poll.poll_type,
+                    "status": poll.status,
+                    "vote_count": len(poll.votes),
+                    "created_at": poll.created_at.isoformat(),
+                }
+                for poll in polls
+            ]
 
         except Exception as e:
             logger.error(f"Error getting trip polls: {str(e)}")
@@ -220,35 +287,28 @@ class MagicPollsService:
             "typical_trip_length": "3-4 days",
         }
 
-    async def _analyze_poll_responses(self, poll: MagicPoll, db: Session):
+    async def _analyze_poll_responses(self, poll) -> Optional[Dict[str, Any]]:
         """Analyze poll responses with AI to find patterns and consensus"""
         try:
-            responses = poll.responses.get("user_responses", [])
+            # Need at least 2 votes for analysis
+            if len(poll.votes) < 2:
+                return None
 
-            if len(responses) < 2:
-                return
-
-            # Prepare analysis data
+            # Prepare analysis data from votes
             analysis_data = {
                 "poll_type": poll.poll_type,
                 "options": poll.options,
-                "responses": responses,
+                "votes": poll.votes,
                 "title": poll.title,
             }
 
             # Call AI service for analysis
             ai_analysis = await self._generate_ai_analysis(analysis_data)
-
-            # Generate consensus recommendation
-            consensus = await self._generate_consensus_recommendation(analysis_data, ai_analysis)
-
-            # Update poll with analysis
-            poll.ai_analysis = ai_analysis
-            poll.consensus_recommendation = consensus
-            poll.updated_at = datetime.utcnow()
+            return ai_analysis
 
         except Exception as e:
             logger.error(f"Error analyzing poll responses: {str(e)}")
+            return None
 
     async def _generate_ai_analysis(self, analysis_data: Dict[str, Any]) -> Dict[str, Any]:
         """Generate AI analysis of poll responses"""
@@ -318,41 +378,58 @@ class MagicPollsService:
         return prompt
 
     async def _generate_consensus_recommendation(
-        self, analysis_data: Dict[str, Any], ai_analysis: Dict[str, Any]
+        self, poll, ai_analysis: Optional[Dict[str, Any]]
     ) -> Dict[str, Any]:
-        """Generate AI-powered consensus recommendation"""
+        """Generate AI-powered consensus recommendation from poll votes"""
         try:
-            responses = analysis_data["responses"]
+            votes = poll.votes
 
-            # Calculate voting results
-            vote_counts = {}
-            for response in responses:
-                choice = response.get("response", {}).get("choice")
-                if choice:
-                    vote_counts[choice] = vote_counts.get(choice, 0) + 1
+            if not votes:
+                return {
+                    "recommended_choice": None,
+                    "message": "No votes yet",
+                    "confidence": "low",
+                }
 
-            # Find the most popular choice
-            if vote_counts:
-                top_choice = max(vote_counts.items(), key=lambda x: x[1])
-                consensus_strength = top_choice[1] / len(responses)
+            # Calculate voting results - count votes for each option
+            option_votes: Dict[int, int] = {}
+            for vote_data in votes.values():
+                option_indices = vote_data.get("option_indices", [])
+                for idx in option_indices:
+                    option_votes[idx] = option_votes.get(idx, 0) + 1
+
+            # Find the most popular option
+            if option_votes:
+                top_option_idx = max(option_votes.items(), key=lambda x: x[1])[0]
+                top_option_votes = option_votes[top_option_idx]
+                consensus_strength = top_option_votes / len(votes)
+
+                # Get the option details
+                top_option = (
+                    poll.options[top_option_idx] if top_option_idx < len(poll.options) else {}
+                )
 
                 return {
-                    "recommended_choice": top_choice[0],
-                    "vote_count": top_choice[1],
-                    "total_votes": len(responses),
+                    "recommended_choice": top_option.get("value", f"Option {top_option_idx}"),
+                    "vote_count": top_option_votes,
+                    "total_votes": len(votes),
                     "consensus_strength": consensus_strength,
                     "confidence": (
                         "high"
                         if consensus_strength > 0.7
                         else "moderate" if consensus_strength > 0.5 else "low"
                     ),
-                    "rationale": ai_analysis.get("summary", "Based on group preferences"),
-                    "generated_at": datetime.utcnow().isoformat(),
+                    "rationale": (
+                        ai_analysis.get("summary", "Based on group preferences")
+                        if ai_analysis
+                        else "Based on voting results"
+                    ),
+                    "generated_at": datetime.now(timezone.utc).isoformat(),
                 }
 
             return {
                 "recommended_choice": None,
-                "message": "No clear consensus yet - more responses needed",
+                "message": "No clear consensus yet - more votes needed",
                 "confidence": "low",
             }
 
@@ -416,30 +493,30 @@ class MagicPollsService:
         max_votes = max(vote_counts.values())
         return max_votes / len(responses)
 
-    async def _calculate_poll_results(self, poll: MagicPoll) -> Dict[str, Any]:
-        """Calculate current poll results"""
-        responses = poll.responses.get("user_responses", []) if poll.responses else []
+    def _calculate_poll_results(self, poll) -> Dict[str, Any]:
+        """Calculate current poll results from votes"""
+        votes = poll.votes if hasattr(poll, "votes") else {}
 
-        # Count votes for each option
-        vote_counts = {}
-        for response in responses:
-            choice = response.get("response", {}).get("choice")
-            if choice:
-                vote_counts[choice] = vote_counts.get(choice, 0) + 1
+        # Count votes for each option index
+        vote_counts: Dict[int, int] = {}
+        for vote_data in votes.values():
+            option_indices = vote_data.get("option_indices", [])
+            for idx in option_indices:
+                vote_counts[idx] = vote_counts.get(idx, 0) + 1
 
         # Calculate percentages
-        total_votes = len(responses)
+        total_votes = len(votes)
         results = []
 
-        for option in poll.options:
+        for idx, option in enumerate(poll.options):
             option_value = option.get("value", str(option))
-            votes = vote_counts.get(option_value, 0)
-            percentage = (votes / total_votes * 100) if total_votes > 0 else 0
+            vote_count = vote_counts.get(idx, 0)
+            percentage = (vote_count / total_votes * 100) if total_votes > 0 else 0
 
             results.append(
                 {
                     "option": option_value,
-                    "votes": votes,
+                    "votes": vote_count,
                     "percentage": round(percentage, 1),
                     "details": option,
                 }
@@ -448,9 +525,5 @@ class MagicPollsService:
         return {
             "total_responses": total_votes,
             "results": results,
-            "updated_at": datetime.utcnow().isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
         }
-
-
-# Global instance
-magic_polls_service = MagicPollsService()

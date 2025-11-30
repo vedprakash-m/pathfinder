@@ -38,6 +38,16 @@ vi.mock('@azure/msal-react', () => ({
       name: 'Test User',
     }],
   }),
+  useAccount: vi.fn(() => ({
+    homeAccountId: 'test-user-id',
+    environment: 'test-environment',
+    tenantId: 'vedid.onmicrosoft.com',
+    username: 'test@vedprakash.net',
+    localAccountId: 'test-user-id',
+    name: 'Test User',
+  })),
+  useIsAuthenticated: vi.fn(() => true),
+  MsalProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
 describe('DashboardPage', () => {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Vote, BarChart3, Clock, Brain, CheckCircle, XCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useWebSocket } from '@/hooks/useWebSocket';
 
 interface PollOption {
   value: string;
@@ -73,10 +74,79 @@ export const MagicPolls: React.FC<MagicPollsProps> = ({
   const [consensusRecommendation, setConsensusRecommendation] = useState<ConsensusRecommendation | null>(null);
   const [_isLoading, setIsLoading] = useState(false);
   const [_showCreateForm, setShowCreateForm] = useState(false);
+  const [realtimeUpdateCount, setRealtimeUpdateCount] = useState(0);
+  const [showRealtimeIndicator, setShowRealtimeIndicator] = useState(false);
 
   useEffect(() => {
     fetchTripPolls();
   }, [tripId]);
+
+  // WebSocket integration for real-time poll updates
+  const { messages: pollNotifications } = useWebSocket<{
+    type: string;
+    event: string;
+    poll_id: string;
+    voter_id?: string;
+    data: any;
+    timestamp: string;
+  }>(['poll_notification'], [tripId]);
+
+  // Handle real-time poll notifications
+  useEffect(() => {
+    if (pollNotifications.length > 0) {
+      const latestNotification = pollNotifications[pollNotifications.length - 1];
+      
+      // Show real-time update indicator
+      setShowRealtimeIndicator(true);
+      setRealtimeUpdateCount(prev => prev + 1);
+      
+      // Hide indicator after 3 seconds
+      const timer = setTimeout(() => {
+        setShowRealtimeIndicator(false);
+      }, 3000);
+      
+      switch (latestNotification.event) {
+        case 'poll_created':
+          // Refresh polls list when new poll is created
+          fetchTripPolls();
+          break;
+        
+        case 'poll_vote':
+          // Update poll results in real-time when someone votes
+          if (selectedPoll?.id === latestNotification.poll_id) {
+            fetchPollDetails(latestNotification.poll_id);
+          }
+          // Also update the poll in the list
+          setPolls(prevPolls => 
+            prevPolls.map(poll => 
+              poll.id === latestNotification.poll_id 
+                ? { ...poll, ...latestNotification.data }
+                : poll
+            )
+          );
+          break;
+        
+        case 'poll_results':
+          // Update AI analysis and results when available
+          if (selectedPoll?.id === latestNotification.poll_id) {
+            setAiAnalysis(latestNotification.data.ai_analysis);
+            setConsensusRecommendation(latestNotification.data.consensus);
+          }
+          break;
+        
+        case 'poll_completed':
+          // Update poll status and show final consensus
+          if (selectedPoll?.id === latestNotification.poll_id) {
+            setConsensusRecommendation(latestNotification.data);
+            fetchPollDetails(latestNotification.poll_id);
+          }
+          fetchTripPolls();
+          break;
+      }
+      
+      return () => clearTimeout(timer);
+    }
+  }, [pollNotifications, selectedPoll, tripId]);
 
   const fetchTripPolls = async () => {
     try {
@@ -394,10 +464,23 @@ export const MagicPolls: React.FC<MagicPollsProps> = ({
 
   return (
     <div className={`space-y-6 ${className}`}>
+      {/* Real-time update indicator */}
+      {showRealtimeIndicator && (
+        <div className="fixed top-4 right-4 z-50 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center space-x-2 animate-pulse">
+          <div className="h-2 w-2 bg-white rounded-full animate-ping"></div>
+          <span className="text-sm font-medium">Live Update</span>
+        </div>
+      )}
+      
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900 flex items-center space-x-2">
           <Vote className="h-6 w-6 text-blue-500" />
           <span>Magic Polls</span>
+          {realtimeUpdateCount > 0 && (
+            <span className="ml-2 px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
+              {realtimeUpdateCount} live update{realtimeUpdateCount > 1 ? 's' : ''}
+            </span>
+          )}
         </h2>
         <button
           onClick={() => setShowCreateForm(true)}

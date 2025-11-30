@@ -1,0 +1,47 @@
+{
+  "name": "Pathfinder - AI Trip Planner",
+  "short_name": "Pathfinder",
+  "description": "AI-powered multi-family group trip planning platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["travel", "lifestyle", "productivity"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "My Trips",
+      "short_name": "Trips",
+      "url": "/trips",
+      "icons": [{ "src": "/icons/trips-96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "My Families",
+      "short_name": "Families", 
+      "url": "/families",
+      "icons": [{ "src": "/icons/families-96.png", "sizes": "96x96" }]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
+}

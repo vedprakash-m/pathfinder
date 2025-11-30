@@ -90,22 +90,31 @@ const SampleTripDemo: React.FC<SampleTripDemoProps> = ({ tripType, onComplete })
           const response = await apiService.onboarding.createSampleTrip(backendTripType);
           
           if (response.success && response.data) {
+            // Extract itinerary data from response
+            const itineraryData = response.data.itinerary || {};
+            const activities = Array.isArray(itineraryData.activities) ? itineraryData.activities : [];
+            const durationDays = itineraryData.duration_days || 3;
+            
             // Convert backend response to frontend template format
             template = {
               id: response.data.id || `sample_${Date.now()}`,
               type: tripType,
-              title: response.data.name || 'Sample Trip',
+              title: response.data.title || 'Sample Trip',
               description: response.data.description || 'A wonderful trip created by Pathfinder AI',
-              duration: `${response.data.duration || 3} days`,
+              duration: `${durationDays} days`,
               location: response.data.destination || 'Unknown Location',
-              groupSize: '2-6 people',
-              budget: response.data.budget ? `$${response.data.budget}` : '$1,000',
-              highlights: response.data.activities || ['Great activities', 'Beautiful scenery'],
-              itinerary: [], // Will be populated later
-              tags: ['AI Generated', 'Sample'],
+              groupSize: `${itineraryData.sample_families?.length || 2} families`,
+              budget: response.data.budget ? `$${response.data.budget.toLocaleString()}` : '$1,000',
+              highlights: activities.map((act: { name?: string; description?: string }) => act.name || act.description || '').slice(0, 4) || ['Great activities'],
+              itinerary: activities.map((act: { name?: string; description?: string; difficulty?: string }, idx: number) => ({
+                day: idx + 1,
+                activities: [act.name || 'Activity'],
+                description: act.description || ''
+              })),
+              tags: itineraryData.tags || ['AI Generated', 'Sample'],
               imageUrl: '',
-              difficulty: 'Easy' as const,
-              bestSeason: ['Spring', 'Summer']
+              difficulty: (activities.length > 0 && activities[0].difficulty) || 'Easy' as const,
+              bestSeason: ['Spring', 'Summer', 'Fall']
             };
             
             // Track successful API integration

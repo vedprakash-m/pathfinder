@@ -89,3 +89,17 @@ class PollStatus(str, Enum):
     CLOSED = "closed"
     ANALYZING = "analyzing"
     COMPLETED = "completed"
+    EXPIRED = "expired"
+    CANCELLED = "cancelled"
+
+
+class PollType(str, Enum):
+    """Magic poll type enumeration."""
+
+    DESTINATION_CHOICE = "destination_choice"
+    ACTIVITY_PREFERENCE = "activity_preference"
+    BUDGET_RANGE = "budget_range"
+    DATE_SELECTION = "date_selection"
+    ACCOMMODATION = "accommodation"
+    DINING = "dining"
+    CUSTOM = "custom"

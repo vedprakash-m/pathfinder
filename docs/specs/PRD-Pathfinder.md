@@ -43,10 +43,18 @@ Multi-family trip planning suffers from:
 
 Pathfinder differentiates by:
 
-- **Family-Atomic Architecture:** Treating families as indivisible planning units.
-- **AI-Powered Consensus:** Intelligent preference aggregation and conflict resolution.
-- **Cost-Optimized Infrastructure:** Designed for sustainable operation with significant savings.
-- **Travel-Domain Expertise:** Purpose-built for multi-family trip coordination.
+- **Family-Atomic Architecture:** Treating families as indivisible planning units (not individual travelers).
+- **AI-Powered Consensus:** Intelligent preference aggregation and conflict resolution (not booking aggregation).
+- **Collaboration-First Design:** Purpose-built for multi-family decision-making and coordination.
+- **Cost-Optimized Infrastructure:** Designed for sustainable operation with significant savings (70% cost reduction during idle periods).
+
+**What We Are NOT:**
+- Not a booking aggregator (Kayak, Expedia, Hopper)
+- Not a price monitoring platform
+- Not a disruption management system
+- Not a travel marketplace
+
+**Our Lane:** We solve the coordination and consensus problem that happens *before* bookings are made, enabling families to make better decisions together.
 
 ### 1.3 Vision & Mission
 
@@ -117,8 +125,14 @@ Pathfinder uses a hierarchical role system with Family as the atomic unit. Users
 ### 3.1 Monetization Strategy
 
 - **Current Status:** Open-source platform.
-- **Potential Models:** Freemium SaaS (advanced AI features), B2B Enterprise (white-label), API Marketplace (AI orchestration as-a-service), Commission-based (booking integrations).
+- **Core Focus:** Family collaboration and consensus-building features (not booking aggregation).
+- **Potential Models:** 
+  - Freemium SaaS (advanced AI features, premium collaboration tools)
+  - B2B Enterprise (white-label for organizations, corporate trip planning)
+  - API Marketplace (AI consensus orchestration as-a-service)
+  - Premium Context (weather/events data feeds for enhanced planning)
 - **Cost Structure:** Optimized two-layer Azure architecture for significant savings (e.g., Ephemeral Compute: ~$35-50/month active, $0/month paused; Persistent Data: ~$0-5/month idle, usage-based).
+- **Strategic Non-Goals:** Commission-based booking integrations (preserves focus on collaboration vs. becoming a booking aggregator).
 
 ### 3.2 Legal & Compliance
 
@@ -153,6 +167,35 @@ Pathfinder uses a hierarchical role system with Family as the atomic unit. Users
 - Trip Success Metrics & Optimization (participation, budget efficiency).
 - Personalized Recommendations (family preference learning, seasonal suggestions).
 - Advanced Reporting Dashboard.
+
+### 4.5 Future Consideration: Contextual Enrichment (Phase 5+)
+
+**Status:** Deferred pending user validation
+
+After successfully launching and validating core collaboration features (Phases 1-4), we may consider lightweight, read-only contextual data enrichment to enhance AI suggestions:
+
+**Potential Enhancements (If User-Validated):**
+- **Weather Context:** Basic forecasts to inform activity planning (helps consensus decisions)
+- **Local Events:** Discover happenings at destination (enriches Magic Polls with local options)
+- **Place Information:** Basic venue details (hours, ratings) for restaurant/activity decisions
+
+**Design Principles:**
+- Read-only queries only (no booking/transactional integrations)
+- Aggressive caching (24hr+ TTL) to minimize costs
+- Graceful degradation (never block core features)
+- Cost-capped implementation ($50-150/month maximum)
+- Maintains serverless cost optimization advantage
+
+**Validation Requirements:**
+- User feedback explicitly requests these features
+- Core collaboration metrics (85% trip completion, 4+ family participation) achieved
+- Does not distract from primary differentiation: family-atomic consensus building
+
+**Not Considered:**
+- ❌ Booking integrations (flights, hotels)
+- ❌ Price monitoring systems
+- ❌ Real-time disruption management
+- ❌ Transactional features competing with booking platforms
 
 ---
 

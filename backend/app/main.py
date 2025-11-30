@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from typing import AsyncGenerator
 
 import uvicorn
-from app.api.router_minimal import api_router  # Use minimal router for production stability
+from app.api.router import api_router  # Use full router - Phase 1 complete
 from app.core.config import get_settings
 from app.core.database_unified import get_cosmos_service
 from app.core.logging_config import setup_logging
@@ -20,8 +20,8 @@ from app.core.logging_config import setup_logging
 from app.core.middleware import setup_security_middleware
 
 # from app.core.telemetry import setup_opentelemetry  # Commented out - not used yet
-# TODO: Re-enable after fixing service layer dependencies
-# from app.services.websocket import websocket_manager
+# WebSocket manager for real-time features
+from app.services.websocket import websocket_manager
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
@@ -47,9 +47,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         logger.error(f"Failed to initialize Cosmos DB: {e}")
         # Continue startup - app can work with basic functionality
 
-    # TODO: Re-enable websockets after fixing dependencies
-    # Initialize WebSocket manager
-    # await websocket_manager.startup()
+    # Initialize WebSocket manager for real-time collaboration
+    try:
+        await websocket_manager.startup()
+        app.state.websocket_manager = websocket_manager
+        logger.info("WebSocket manager initialized successfully")
+    except Exception as e:
+        logger.warning(f"WebSocket manager initialization failed: {e}")
 
     # Initialize cache
     from app.core.cache import cache
@@ -75,8 +79,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Cleanup
     logger.info("Shutting down application...")
-    # TODO: Re-enable websockets
-    # await websocket_manager.shutdown()
+
+    # Shutdown WebSocket manager
+    try:
+        await websocket_manager.shutdown()
+        logger.info("WebSocket manager shut down successfully")
+    except Exception as e:
+        logger.warning(f"WebSocket shutdown error: {e}")
 
     # Close cache service connections
     if hasattr(app.state, "cache_service") and app.state.cache_service:
