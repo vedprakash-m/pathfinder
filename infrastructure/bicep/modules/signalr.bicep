@@ -1,17 +1,17 @@
 // Azure SignalR Service module - Free tier
-// IDEMPOTENT: Uses fixed naming convention
+// IDEMPOTENT: Uses deterministic naming based on subscription
 
 @description('Azure region for resources')
 param location string
 
-@description('Name suffix for resources (prod/dev)')
-param nameSuffix string
+@description('Unique ID for globally unique resources')
+param uniqueId string
 
 @description('Environment name')
 param environment string
 
-// Fixed SignalR name - deterministic
-var signalRName = 'pf-signalr-${nameSuffix}'
+// SignalR name must be globally unique - use uniqueId (deterministic per subscription)
+var signalRName = 'pf-signalr-${uniqueId}'
 
 // SignalR Service - Free tier
 resource signalR 'Microsoft.SignalRService/signalR@2023-08-01-preview' = {

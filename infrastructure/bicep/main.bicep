@@ -18,6 +18,8 @@ param projectPrefix string = 'pathfinder'
 // Same names on every deployment = resources updated, not duplicated
 var resourceGroupName = '${projectPrefix}-rg'
 var nameSuffix = environment == 'prod' ? 'prod' : 'dev'
+// For globally unique resources (SignalR, etc.) - still deterministic per subscription
+var uniqueId = uniqueString(subscription().subscriptionId, projectPrefix)
 
 // Create resource group
 resource rg 'Microsoft.Resources/resourceGroups@2023-07-01' = {
@@ -68,7 +70,7 @@ module signalR 'modules/signalr.bicep' = {
   name: 'signalr-deployment'
   params: {
     location: location
-    nameSuffix: nameSuffix
+    uniqueId: uniqueId
     environment: environment
   }
 }
