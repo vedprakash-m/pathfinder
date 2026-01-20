@@ -10,10 +10,12 @@ const clientId = import.meta.env.VITE_ENTRA_EXTERNAL_CLIENT_ID || 'test-client-i
 const msalConfig: Configuration = {
   auth: {
     clientId: clientId,
-    // Use 'common' endpoint to allow both personal Microsoft accounts AND work/school accounts
-    // This enables consumer sign-ups with personal @outlook.com, @gmail.com etc.
-    // The tenantId env var is ignored - we always use 'common' for this consumer app
-    authority: 'https://login.microsoftonline.com/common',
+    // Use tenant-specific endpoint for work/school accounts only
+    // To enable personal Microsoft accounts (@outlook.com, @gmail.com), you must:
+    // 1. Go to Azure Portal → App Registrations → Your App → Authentication
+    // 2. Change "Supported account types" to include personal accounts
+    // 3. Then change this to 'https://login.microsoftonline.com/common'
+    authority: `https://login.microsoftonline.com/${tenantId}`,
     redirectUri: typeof window !== 'undefined'
       ? window.location.origin
       : 'https://icy-wave-01484131e.1.azurestaticapps.net',
