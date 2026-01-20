@@ -1,16 +1,17 @@
 // Azure Storage Account module
+// IDEMPOTENT: Uses fixed naming convention
 
 @description('Azure region for resources')
 param location string
 
-@description('Unique suffix for resource names')
-param uniqueSuffix string
+@description('Name suffix for resources (prod/dev)')
+param nameSuffix string
 
 @description('Environment name')
 param environment string
 
-// Storage account name (must be lowercase, no hyphens)
-var storageAccountName = 'pfstore${uniqueSuffix}'
+// Storage account name (must be lowercase, no hyphens, 3-24 chars)
+var storageAccountName = 'pfstore${nameSuffix}'
 
 // Storage Account
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {

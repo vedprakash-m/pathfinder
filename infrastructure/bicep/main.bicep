@@ -1,5 +1,6 @@
 // Main Bicep template for Pathfinder infrastructure
 // Deploys all Azure resources in a single resource group
+// IDEMPOTENT: Uses fixed naming convention - resources are updated, not recreated
 
 targetScope = 'subscription'
 
@@ -10,18 +11,20 @@ param environment string = 'prod'
 @description('Azure region for resources')
 param location string = 'westus2'
 
-@description('Unique suffix for resource names')
-param uniqueSuffix string = substring(uniqueString(subscription().subscriptionId), 0, 6)
+@description('Project name prefix for all resources')
+param projectPrefix string = 'pathfinder'
 
-// Resource group name
-var resourceGroupName = 'pathfinder-rg'
+// Fixed naming convention - deterministic and idempotent
+// Same names on every deployment = resources updated, not duplicated
+var resourceGroupName = '${projectPrefix}-rg'
+var nameSuffix = environment == 'prod' ? 'prod' : 'dev'
 
 // Create resource group
 resource rg 'Microsoft.Resources/resourceGroups@2023-07-01' = {
   name: resourceGroupName
   location: location
   tags: {
-    project: 'pathfinder'
+    project: projectPrefix
     environment: environment
     managedBy: 'bicep'
   }
@@ -33,7 +36,7 @@ module cosmosDb 'modules/cosmosdb.bicep' = {
   name: 'cosmos-db-deployment'
   params: {
     location: location
-    uniqueSuffix: uniqueSuffix
+    nameSuffix: nameSuffix
     environment: environment
   }
 }
@@ -43,7 +46,7 @@ module storage 'modules/storage.bicep' = {
   name: 'storage-deployment'
   params: {
     location: location
-    uniqueSuffix: uniqueSuffix
+    nameSuffix: nameSuffix
     environment: environment
   }
 }
@@ -53,7 +56,7 @@ module keyVault 'modules/keyvault.bicep' = {
   name: 'key-vault-deployment'
   params: {
     location: location
-    uniqueSuffix: uniqueSuffix
+    nameSuffix: nameSuffix
     environment: environment
     cosmosDbAccountName: cosmosDb.outputs.accountName
     storageAccountName: storage.outputs.storageAccountName
@@ -65,7 +68,7 @@ module signalR 'modules/signalr.bicep' = {
   name: 'signalr-deployment'
   params: {
     location: location
-    uniqueSuffix: uniqueSuffix
+    nameSuffix: nameSuffix
     environment: environment
   }
 }
@@ -75,7 +78,7 @@ module functionApp 'modules/functionapp.bicep' = {
   name: 'function-app-deployment'
   params: {
     location: location
-    uniqueSuffix: uniqueSuffix
+    nameSuffix: nameSuffix
     environment: environment
     storageAccountName: storage.outputs.storageAccountName
     keyVaultName: keyVault.outputs.keyVaultName
@@ -89,7 +92,7 @@ module staticWebApp 'modules/staticwebapp.bicep' = {
   name: 'static-web-app-deployment'
   params: {
     location: location
-    uniqueSuffix: uniqueSuffix
+    nameSuffix: nameSuffix
     environment: environment
     functionAppUrl: functionApp.outputs.functionAppUrl
   }

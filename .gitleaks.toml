@@ -13,18 +13,24 @@ title = "Pathfinder Gitleaks Config"
     '''venv/.*''',
     '''__pycache__/.*''',
     '''\.pytest_cache/.*''',
-    # Test files with mock credentials
     '''.*test.*\.py$''',
     '''.*\.test\.ts$''',
     '''.*\.spec\.ts$''',
     '''conftest\.py$''',
   ]
+  regexes = [
+    '''your-.*-key''',
+    '''test-key''',
+    '''placeholder''',
+    '''YOUR_.*''',
+    '''<your-.*>''',
+    '''example\.com''',
+    '''localhost''',
+  ]
 
-# Extend default rules
 [extend]
   useDefault = true
 
-# Custom rules for Azure/OpenAI specific patterns
 [[rules]]
   id = "azure-cosmos-key"
   description = "Azure Cosmos DB Key"
@@ -53,16 +59,4 @@ title = "Pathfinder Gitleaks Config"
   id = "entra-client-secret"
   description = "Microsoft Entra Client Secret"
   regex = '''(?i)(client[_-]?secret|ENTRA_CLIENT_SECRET)\s*[=:]\s*['"]*[A-Za-z0-9~._-]{30,}['"]*'''
-  keywords = ["client_secret", "entra"]
-
-# Allowlist specific patterns (placeholder values)
-[allowlist]
-  regexes = [
-    '''your-.*-key''',
-    '''test-key''',
-    '''placeholder''',
-    '''YOUR_.*''',
-    '''<your-.*>''',
-    '''example\.com''',
-    '''localhost''',
-  ]
+  keywords = ["entra"]

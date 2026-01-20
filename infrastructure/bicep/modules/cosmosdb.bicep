@@ -1,16 +1,17 @@
 // Azure Cosmos DB module - Serverless configuration
+// IDEMPOTENT: Uses fixed naming convention
 
 @description('Azure region for resources')
 param location string
 
-@description('Unique suffix for resource names')
-param uniqueSuffix string
+@description('Name suffix for resources (prod/dev)')
+param nameSuffix string
 
 @description('Environment name')
 param environment string
 
-// Cosmos DB account name
-var cosmosAccountName = 'pf-cosmos-${uniqueSuffix}'
+// Fixed Cosmos DB account name - deterministic
+var cosmosAccountName = 'pf-cosmos-${nameSuffix}'
 var databaseName = 'pathfinder'
 var containerName = 'data'
 

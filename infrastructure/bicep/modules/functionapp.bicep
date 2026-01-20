@@ -1,10 +1,11 @@
 // Azure Functions Flex Consumption module
+// IDEMPOTENT: Uses fixed naming convention
 
 @description('Azure region for resources')
 param location string
 
-@description('Unique suffix for resource names')
-param uniqueSuffix string
+@description('Name suffix for resources (prod/dev)')
+param nameSuffix string
 
 @description('Environment name')
 param environment string
@@ -21,10 +22,10 @@ param signalRName string
 @description('Cosmos DB endpoint')
 param cosmosDbEndpoint string
 
-// Resource names
-var functionAppName = 'pf-func-${uniqueSuffix}'
-var hostingPlanName = 'pf-plan-${uniqueSuffix}'
-var appInsightsName = 'pf-insights-${uniqueSuffix}'
+// Fixed resource names - deterministic
+var functionAppName = 'pf-func-${nameSuffix}'
+var hostingPlanName = 'pf-plan-${nameSuffix}'
+var appInsightsName = 'pf-insights-${nameSuffix}'
 
 // Reference existing storage account
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' existing = {
@@ -154,12 +155,12 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
         }
         {
           name: 'FRONTEND_URL'
-          value: 'https://pf-swa-${uniqueSuffix}.azurestaticapps.net'
+          value: 'https://pf-swa-${nameSuffix}.azurestaticapps.net'
         }
       ]
       cors: {
         allowedOrigins: [
-          'https://pf-swa-${uniqueSuffix}.azurestaticapps.net'
+          'https://pf-swa-${nameSuffix}.azurestaticapps.net'
           'http://localhost:4280'
           'http://localhost:5173'
         ]
