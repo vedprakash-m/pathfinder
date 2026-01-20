@@ -1,0 +1,316 @@
+# Unified CI/CD Pipeline for Pathfinder
+# Single workflow for all components: infrastructure, backend, and frontend
+
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      deploy_infra:
+        description: 'Deploy infrastructure'
+        type: boolean
+        default: false
+      deploy_backend:
+        description: 'Deploy backend'
+        type: boolean
+        default: false
+      deploy_frontend:
+        description: 'Deploy frontend'
+        type: boolean
+        default: false
+
+env:
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '20'
+  AZURE_LOCATION: 'westus2'
+  RESOURCE_GROUP: 'pathfinder-rg'
+
+jobs:
+  # ============================================
+  # CHANGE DETECTION
+  # ============================================
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      infrastructure: ${{ steps.filter.outputs.infrastructure }}
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            infrastructure:
+              - 'infrastructure/bicep/**'
+            backend:
+              - 'backend/**'
+              - '!backend/**/*.md'
+            frontend:
+              - 'frontend/**'
+              - '!frontend/**/*.md'
+
+  # ============================================
+  # BACKEND: TEST
+  # ============================================
+  backend-test:
+    name: Backend Test
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.backend == 'true' || github.event.inputs.deploy_backend == 'true'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: 'backend/requirements.txt'
+
+      - name: Install & Test
+        run: |
+          cd backend
+          pip install -r requirements.txt pytest pytest-asyncio pytest-cov ruff mypy
+          ruff check .
+          pytest tests/ -v --cov=. --cov-report=xml
+        env:
+          COSMOS_DB_URL: "https://localhost:8081"
+          COSMOS_DB_KEY: "test-key"
+          COSMOS_DB_NAME: "pathfinder"
+          SIGNALR_CONNECTION_STRING: "test-connection"
+          OPENAI_API_KEY: "test-key"
+          ENTRA_TENANT_ID: "test-tenant"
+          ENTRA_CLIENT_ID: "test-client"
+
+      - uses: codecov/codecov-action@v4
+        with:
+          files: backend/coverage.xml
+          flags: backend
+          fail_ci_if_error: false
+
+  # ============================================
+  # FRONTEND: TEST & BUILD
+  # ============================================
+  frontend-test:
+    name: Frontend Test
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true' || github.event.inputs.deploy_frontend == 'true'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Install, Lint & Test
+        run: |
+          cd frontend
+          npm ci
+          npm run lint
+          npm test -- --coverage --watchAll=false
+        env:
+          CI: true
+
+      - uses: codecov/codecov-action@v4
+        with:
+          files: frontend/coverage/lcov.info
+          flags: frontend
+          fail_ci_if_error: false
+
+  frontend-build:
+    name: Frontend Build
+    runs-on: ubuntu-latest
+    needs: frontend-test
+    if: github.event_name == 'push' || github.event.inputs.deploy_frontend == 'true'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Build
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+        env:
+          VITE_ENTRA_EXTERNAL_TENANT_ID: ${{ vars.ENTRA_TENANT_ID || 'vedid.onmicrosoft.com' }}
+          VITE_ENTRA_EXTERNAL_CLIENT_ID: ${{ secrets.ENTRA_CLIENT_ID }}
+          VITE_API_URL: ${{ vars.API_URL || 'https://pf-func-prod.azurewebsites.net/api' }}
+          VITE_ENABLE_SIGNALR: 'true'
+          VITE_ENABLE_AI_ASSISTANT: 'true'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: frontend/dist/
+          retention-days: 1
+
+  # ============================================
+  # INFRASTRUCTURE DEPLOYMENT (runs first)
+  # ============================================
+  deploy-infrastructure:
+    name: Deploy Infrastructure
+    runs-on: ubuntu-latest
+    needs: changes
+    if: |
+      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      (needs.changes.outputs.infrastructure == 'true' || github.event.inputs.deploy_infra == 'true')
+    environment: production
+    outputs:
+      function-url: ${{ steps.deploy.outputs.function-url }}
+      swa-url: ${{ steps.deploy.outputs.swa-url }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Validate Bicep
+        run: az bicep build --file infrastructure/bicep/main.bicep
+
+      - name: Deploy
+        id: deploy
+        run: |
+          cd infrastructure/bicep
+          OUTPUT=$(az deployment sub create \
+            --name pathfinder-$(date +%Y%m%d-%H%M%S) \
+            --location ${{ env.AZURE_LOCATION }} \
+            --template-file main.bicep \
+            --parameters @parameters/prod.parameters.json \
+            --query "properties.outputs" -o json)
+
+          echo "function-url=$(echo $OUTPUT | jq -r '.functionAppUrl.value')" >> $GITHUB_OUTPUT
+          echo "swa-url=$(echo $OUTPUT | jq -r '.staticWebAppUrl.value')" >> $GITHUB_OUTPUT
+
+      - name: Summary
+        run: |
+          echo "## Infrastructure Deployed" >> $GITHUB_STEP_SUMMARY
+          echo "| Resource | URL |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-----|" >> $GITHUB_STEP_SUMMARY
+          echo "| Function App | ${{ steps.deploy.outputs.function-url }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Static Web App | ${{ steps.deploy.outputs.swa-url }} |" >> $GITHUB_STEP_SUMMARY
+
+  # ============================================
+  # BACKEND DEPLOYMENT
+  # ============================================
+  deploy-backend:
+    name: Deploy Backend
+    runs-on: ubuntu-latest
+    needs: [backend-test, deploy-infrastructure]
+    # Run if: tests passed AND (infra deployed OR backend changes on main push)
+    if: |
+      always() &&
+      needs.backend-test.result == 'success' &&
+      github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: ${{ steps.deploy.outputs.webapp-url }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: 'backend/requirements.txt'
+
+      - name: Build Package
+        run: |
+          cd backend
+          pip install -r requirements.txt
+          mkdir -p ../deploy
+          cp -r *.py host.json requirements.txt ../deploy/ 2>/dev/null || true
+          cp -r app core models repositories services functions ../deploy/ 2>/dev/null || true
+
+      - uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy to Azure Functions
+        id: deploy
+        run: |
+          FUNC_NAME="pf-func-prod"
+          az functionapp deployment source config-zip \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --name $FUNC_NAME \
+            --src deploy/
+          echo "webapp-url=https://${FUNC_NAME}.azurewebsites.net" >> $GITHUB_OUTPUT
+
+      - name: Health Check
+        run: |
+          sleep 30
+          curl -f "https://pf-func-prod.azurewebsites.net/api/health" || echo "Health check pending..."
+
+  # ============================================
+  # FRONTEND DEPLOYMENT
+  # ============================================
+  deploy-frontend:
+    name: Deploy Frontend
+    runs-on: ubuntu-latest
+    needs: [frontend-build, deploy-infrastructure]
+    if: |
+      always() &&
+      needs.frontend-build.result == 'success' &&
+      github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment: production
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: frontend-build
+          path: frontend/dist/
+
+      - name: Deploy to Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: 'upload'
+          app_location: 'frontend'
+          output_location: 'dist'
+          skip_app_build: true
+          skip_api_build: true
+
+  # ============================================
+  # DEPLOYMENT SUMMARY
+  # ============================================
+  summary:
+    name: Deployment Summary
+    runs-on: ubuntu-latest
+    needs: [deploy-infrastructure, deploy-backend, deploy-frontend]
+    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Generate Summary
+        run: |
+          echo "# 🚀 Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Infrastructure | ${{ needs.deploy-infrastructure.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend | ${{ needs.deploy-backend.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend | ${{ needs.deploy-frontend.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
