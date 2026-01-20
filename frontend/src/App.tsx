@@ -132,17 +132,15 @@ function App() {
             path="/"
             element={
               <PublicRoute>
-                <AuthLayout>
-                  <motion.div
-                    initial="initial"
-                    animate="in"
-                    exit="out"
-                    variants={pageVariants}
-                    transition={pageTransition}
-                  >
-                    <HomePage />
-                  </motion.div>
-                </AuthLayout>
+                <motion.div
+                  initial="initial"
+                  animate="in"
+                  exit="out"
+                  variants={pageVariants}
+                  transition={pageTransition}
+                >
+                  <HomePage />
+                </motion.div>
               </PublicRoute>
             }
           />
