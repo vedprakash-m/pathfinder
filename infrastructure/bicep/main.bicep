@@ -17,8 +17,7 @@ param projectPrefix string = 'pathfinder'
 // Fixed naming convention - deterministic and idempotent
 // Same names on every deployment = resources updated, not duplicated
 var resourceGroupName = '${projectPrefix}-rg'
-var nameSuffix = environment == 'prod' ? 'prod' : 'dev'
-// For globally unique resources (SignalR, etc.) - still deterministic per subscription
+// For globally unique resources - deterministic per subscription
 var uniqueId = uniqueString(subscription().subscriptionId, projectPrefix)
 
 // Create resource group
@@ -38,7 +37,7 @@ module cosmosDb 'modules/cosmosdb.bicep' = {
   name: 'cosmos-db-deployment'
   params: {
     location: location
-    nameSuffix: nameSuffix
+    uniqueId: uniqueId
     environment: environment
   }
 }
@@ -48,7 +47,7 @@ module storage 'modules/storage.bicep' = {
   name: 'storage-deployment'
   params: {
     location: location
-    nameSuffix: nameSuffix
+    uniqueId: uniqueId
     environment: environment
   }
 }
@@ -58,7 +57,7 @@ module keyVault 'modules/keyvault.bicep' = {
   name: 'key-vault-deployment'
   params: {
     location: location
-    nameSuffix: nameSuffix
+    uniqueId: uniqueId
     environment: environment
     cosmosDbAccountName: cosmosDb.outputs.accountName
     storageAccountName: storage.outputs.storageAccountName
@@ -80,7 +79,7 @@ module functionApp 'modules/functionapp.bicep' = {
   name: 'function-app-deployment'
   params: {
     location: location
-    nameSuffix: nameSuffix
+    uniqueId: uniqueId
     environment: environment
     storageAccountName: storage.outputs.storageAccountName
     keyVaultName: keyVault.outputs.keyVaultName
@@ -94,7 +93,7 @@ module staticWebApp 'modules/staticwebapp.bicep' = {
   name: 'static-web-app-deployment'
   params: {
     location: location
-    nameSuffix: nameSuffix
+    uniqueId: uniqueId
     environment: environment
     functionAppUrl: functionApp.outputs.functionAppUrl
   }

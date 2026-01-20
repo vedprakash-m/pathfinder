@@ -72,7 +72,7 @@ Pathfinder uses a modern serverless architecture optimized for cost and scalabil
 │                                                                  │
 │  ┌──────────────────┐     ┌──────────────────────────────────┐  │
 │  │  Static Web App  │────▶│     Azure Functions (Flex)       │  │
-│  │  (React + Vite)  │     │     (Python 3.11)                │  │
+│  │  (React + Vite)  │     │     (Python 3.13)                │  │
 │  │     [FREE]       │     │                                  │  │
 │  └──────────────────┘     │  ┌────────────┐ ┌────────────┐  │  │
 │                           │  │ HTTP APIs  │ │ Queue Funcs│  │  │
@@ -99,7 +99,7 @@ Pathfinder uses a modern serverless architecture optimized for cost and scalabil
 | Layer | Technology |
 |-------|------------|
 | Frontend | React 18, TypeScript, Vite, Tailwind CSS, Fluent UI v9 |
-| Backend | Azure Functions (Python 3.11), FastAPI patterns |
+| Backend | Azure Functions (Python 3.13), FastAPI patterns |
 | Database | Azure Cosmos DB (Serverless, SQL API) |
 | Real-time | Azure SignalR Service (Free tier) |
 | Auth | Microsoft Entra ID, MSAL.js |
@@ -112,7 +112,7 @@ Pathfinder uses a modern serverless architecture optimized for cost and scalabil
 
 ### Prerequisites
 
-- Python 3.11+
+- Python 3.13+
 - Node.js 20+
 - Azure Functions Core Tools v4
 - Azure CLI
@@ -210,12 +210,14 @@ All Azure resources use deterministic, idempotent naming:
 | Resource | Production Name |
 |----------|----------------|
 | Resource Group | `pathfinder-rg` |
-| Cosmos DB | `pf-cosmos-prod` |
-| Function App | `pf-func-prod` |
-| Static Web App | `pf-swa-prod` |
-| Key Vault | `pf-kv-prod` |
-| SignalR | `pf-signalr-prod` |
-| Storage | `pfstoreprod` |
+| Cosmos DB | `pf-cosmos-<uniqueId>` |
+| Function App | `pf-func-<uniqueId>` |
+| Static Web App | `pf-swa-<uniqueId>` |
+| Key Vault | `pf-kv-<uniqueId>` |
+| SignalR | `pf-signalr-<uniqueId>` |
+| Storage | `pfstore<uniqueId>` |
+
+> **Note:** `<uniqueId>` is generated from `uniqueString(subscriptionId, 'pathfinder')` for global uniqueness.
 
 Push to `main` to trigger deployment. Only changed components are deployed.
 

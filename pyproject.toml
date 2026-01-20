@@ -45,7 +45,7 @@ ignore = [
 ]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.13"
 strict = true
 plugins = []
 explicit_package_bases = true
@@ -54,4 +54,4 @@ namespace_packages = true
 files = ["backend/app"]
 
 [tool.importlinter]
-contract_files = ["importlinter_contracts/*.toml"] 
+contract_files = ["importlinter_contracts/*.toml"]

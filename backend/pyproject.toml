@@ -3,7 +3,7 @@ name = "pathfinder-backend"
 version = "2.0.0"
 description = "AI-powered multi-family trip planning API"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.13"
 license = {text = "MIT"}
 authors = [
     {name = "Ved", email = "ved@pathfinder.app"}
@@ -13,7 +13,7 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: End Users/Desktop",
     "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Internet :: WWW/HTTP :: WSGI :: Application",
 ]
 
@@ -67,7 +67,7 @@ ignore = [
 known-first-party = ["core", "models", "services", "repositories", "functions"]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.13"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true

@@ -12,7 +12,7 @@ format: Markdown (token-optimized)
 
 **Purpose:** AI-powered platform transforming multi-family group trip planning into streamlined, collaborative experience with intelligent preference aggregation and cost-optimized infrastructure.
 
-**Stack:** FastAPI, Python 3.11, React 18, TypeScript, Tailwind CSS, Fluent UI v9, Cosmos DB, Microsoft Entra ID, Socket.IO, OpenAI GPT-4, Azure Container Apps, GitHub Actions
+**Stack:** FastAPI, Python 3.13, React 18, TypeScript, Tailwind CSS, Fluent UI v9, Cosmos DB, Microsoft Entra ID, Socket.IO, OpenAI GPT-4, Azure Container Apps, GitHub Actions
 
 **Architecture:** Two-layer Azure serverless architecture with persistent data layer (Cosmos DB, Storage, Key Vault, Service Bus) and ephemeral compute layer (Container Apps), family-atomic design pattern, clean architecture with domain-driven design
 

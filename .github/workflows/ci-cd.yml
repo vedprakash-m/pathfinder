@@ -24,7 +24,7 @@ on:
         default: false
 
 env:
-  PYTHON_VERSION: '3.11'
+  PYTHON_VERSION: '3.13'
   NODE_VERSION: '20'
   AZURE_LOCATION: 'westus2'
   RESOURCE_GROUP: 'pathfinder-rg'
@@ -151,7 +151,7 @@ jobs:
         env:
           VITE_ENTRA_EXTERNAL_TENANT_ID: ${{ vars.ENTRA_TENANT_ID || 'vedid.onmicrosoft.com' }}
           VITE_ENTRA_EXTERNAL_CLIENT_ID: ${{ secrets.ENTRA_CLIENT_ID }}
-          VITE_API_URL: ${{ vars.API_URL || 'https://pf-func-prod.azurewebsites.net/api' }}
+          VITE_API_URL: 'https://pf-func-kteh35kinffvo.azurewebsites.net/api'
           VITE_ENABLE_SIGNALR: 'true'
           VITE_ENABLE_AI_ASSISTANT: 'true'
 
@@ -214,15 +214,15 @@ jobs:
   deploy-backend:
     name: Deploy Backend
     runs-on: ubuntu-latest
-    needs: [backend-test, deploy-infrastructure]
-    # Run if: tests passed AND (infra deployed OR backend changes on main push)
+    needs: [backend-test]
+    # Run if: tests passed AND pushing to main
     if: |
       always() &&
       needs.backend-test.result == 'success' &&
       github.event_name == 'push' && github.ref == 'refs/heads/main'
     environment:
       name: production
-      url: ${{ steps.deploy.outputs.webapp-url }}
+      url: https://pf-func-kteh35kinffvo.azurewebsites.net
 
     steps:
       - uses: actions/checkout@v4
@@ -247,18 +247,17 @@ jobs:
 
       - name: Deploy to Azure Functions
         id: deploy
-        run: |
-          FUNC_NAME="pf-func-prod"
-          az functionapp deployment source config-zip \
-            --resource-group ${{ env.RESOURCE_GROUP }} \
-            --name $FUNC_NAME \
-            --src deploy/
-          echo "webapp-url=https://${FUNC_NAME}.azurewebsites.net" >> $GITHUB_OUTPUT
+        uses: Azure/functions-action@v1
+        with:
+          app-name: pf-func-kteh35kinffvo
+          package: deploy/
+          scm-do-build-during-deployment: true
+          enable-oryx-build: true
 
       - name: Health Check
         run: |
           sleep 30
-          curl -f "https://pf-func-prod.azurewebsites.net/api/health" || echo "Health check pending..."
+          curl -f "https://pf-func-kteh35kinffvo.azurewebsites.net/api/health" || echo "Health check pending..."
 
   # ============================================
   # FRONTEND DEPLOYMENT
@@ -266,7 +265,7 @@ jobs:
   deploy-frontend:
     name: Deploy Frontend
     runs-on: ubuntu-latest
-    needs: [frontend-build, deploy-infrastructure]
+    needs: [frontend-build]
     if: |
       always() &&
       needs.frontend-build.result == 'success' &&
@@ -301,7 +300,7 @@ jobs:
   summary:
     name: Deployment Summary
     runs-on: ubuntu-latest
-    needs: [deploy-infrastructure, deploy-backend, deploy-frontend]
+    needs: [deploy-backend, deploy-frontend]
     if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
@@ -311,6 +310,9 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Component | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Infrastructure | ${{ needs.deploy-infrastructure.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Backend | ${{ needs.deploy-backend.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Frontend | ${{ needs.deploy-frontend.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## URLs" >> $GITHUB_STEP_SUMMARY
+          echo "- **Frontend:** https://icy-wave-01484131e.1.azurestaticapps.net" >> $GITHUB_STEP_SUMMARY
+          echo "- **Backend:** https://pf-func-kteh35kinffvo.azurewebsites.net" >> $GITHUB_STEP_SUMMARY

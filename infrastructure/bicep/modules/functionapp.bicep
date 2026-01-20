@@ -1,11 +1,11 @@
 // Azure Functions Flex Consumption module
-// IDEMPOTENT: Uses fixed naming convention
+// IDEMPOTENT: Uses deterministic naming based on subscription
 
 @description('Azure region for resources')
 param location string
 
-@description('Name suffix for resources (prod/dev)')
-param nameSuffix string
+@description('Unique ID for globally unique resources')
+param uniqueId string
 
 @description('Environment name')
 param environment string
@@ -22,10 +22,10 @@ param signalRName string
 @description('Cosmos DB endpoint')
 param cosmosDbEndpoint string
 
-// Fixed resource names - deterministic
-var functionAppName = 'pf-func-${nameSuffix}'
-var hostingPlanName = 'pf-plan-${nameSuffix}'
-var appInsightsName = 'pf-insights-${nameSuffix}'
+// Resource names - globally unique, deterministic per subscription
+var functionAppName = 'pf-func-${uniqueId}'
+var hostingPlanName = 'pf-plan-${uniqueId}'
+var appInsightsName = 'pf-insights-${uniqueId}'
 
 // Reference existing storage account
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' existing = {
@@ -94,8 +94,8 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
     httpsOnly: true
     publicNetworkAccess: 'Enabled'
     siteConfig: {
-      linuxFxVersion: 'PYTHON|3.11'
-      pythonVersion: '3.11'
+      linuxFxVersion: 'PYTHON|3.13'
+      pythonVersion: '3.13'
       appSettings: [
         {
           name: 'AzureWebJobsStorage'
@@ -155,12 +155,12 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
         }
         {
           name: 'FRONTEND_URL'
-          value: 'https://pf-swa-${nameSuffix}.azurestaticapps.net'
+          value: 'https://pf-swa-${uniqueId}.azurestaticapps.net'
         }
       ]
       cors: {
         allowedOrigins: [
-          'https://pf-swa-${nameSuffix}.azurestaticapps.net'
+          'https://pf-swa-${uniqueId}.azurestaticapps.net'
           'http://localhost:4280'
           'http://localhost:5173'
         ]

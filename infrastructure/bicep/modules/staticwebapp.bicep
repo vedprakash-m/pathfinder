@@ -1,11 +1,11 @@
 // Azure Static Web Apps module - Free tier
-// IDEMPOTENT: Uses fixed naming convention
+// IDEMPOTENT: Uses deterministic naming based on subscription
 
 @description('Azure region for resources')
 param location string = 'westus2'
 
-@description('Name suffix for resources (prod/dev)')
-param nameSuffix string
+@description('Unique ID for globally unique resources')
+param uniqueId string
 
 @description('Environment name')
 param environment string
@@ -13,8 +13,8 @@ param environment string
 @description('Function App URL for API proxy')
 param functionAppUrl string
 
-// Fixed Static Web App name - deterministic
-var staticWebAppName = 'pf-swa-${nameSuffix}'
+// Static Web App name - globally unique, deterministic per subscription
+var staticWebAppName = 'pf-swa-${uniqueId}'
 
 // Static Web App - Free tier
 resource staticWebApp 'Microsoft.Web/staticSites@2023-12-01' = {
@@ -56,7 +56,7 @@ resource linkedBackend 'Microsoft.Web/staticSites/linkedBackends@2023-12-01' = {
   parent: staticWebApp
   name: 'backend'
   properties: {
-    backendResourceId: resourceId('Microsoft.Web/sites', 'pf-func-${nameSuffix}')
+    backendResourceId: resourceId('Microsoft.Web/sites', 'pf-func-${uniqueId}')
     region: location
   }
 }

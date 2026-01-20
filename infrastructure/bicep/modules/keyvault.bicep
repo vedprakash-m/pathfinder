@@ -1,11 +1,11 @@
 // Azure Key Vault module
-// IDEMPOTENT: Uses fixed naming convention
+// IDEMPOTENT: Uses deterministic naming based on subscription
 
 @description('Azure region for resources')
 param location string
 
-@description('Name suffix for resources (prod/dev)')
-param nameSuffix string
+@description('Unique ID for globally unique resources')
+param uniqueId string
 
 @description('Environment name')
 param environment string
@@ -16,8 +16,8 @@ param cosmosDbAccountName string
 @description('Storage account name')
 param storageAccountName string
 
-// Fixed Key Vault name - deterministic
-var keyVaultName = 'pf-kv-${nameSuffix}'
+// Key Vault name - globally unique, deterministic per subscription
+var keyVaultName = 'pf-kv-${uniqueId}'
 
 // Reference existing Cosmos DB account
 resource cosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2023-11-15' existing = {
@@ -45,8 +45,8 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
     tenantId: subscription().tenantId
     enableRbacAuthorization: true
     enableSoftDelete: true
-    softDeleteRetentionInDays: 7
-    enablePurgeProtection: false // Set to true for production
+    softDeleteRetentionInDays: 90
+    enablePurgeProtection: true
     publicNetworkAccess: 'Enabled'
     networkAcls: {
       defaultAction: 'Allow'
