@@ -10,13 +10,16 @@ const clientId = import.meta.env.VITE_ENTRA_EXTERNAL_CLIENT_ID || 'test-client-i
 const msalConfig: Configuration = {
   auth: {
     clientId: clientId,
-    authority: 'https://login.microsoftonline.com/vedid.onmicrosoft.com', // ✅ Fixed to use standard domain
+    // Use 'common' endpoint to allow both personal Microsoft accounts AND work/school accounts
+    // This enables consumer sign-ups with personal @outlook.com, @gmail.com etc.
+    // The tenantId env var is ignored - we always use 'common' for this consumer app
+    authority: 'https://login.microsoftonline.com/common',
     redirectUri: typeof window !== 'undefined'
       ? window.location.origin
-      : 'https://pathfinder-frontend.yellowdune-9b8d769a.eastus.azurecontainerapps.io',
+      : 'https://icy-wave-01484131e.1.azurestaticapps.net',
     postLogoutRedirectUri: typeof window !== 'undefined'
       ? window.location.origin
-      : 'https://pathfinder-frontend.yellowdune-9b8d769a.eastus.azurecontainerapps.io',
+      : 'https://icy-wave-01484131e.1.azurestaticapps.net',
     navigateToLoginRequestUrl: false,
   },
   cache: {
@@ -79,19 +82,9 @@ console.log('🔧 MSAL Config Loaded:', {
   storeAuthStateInCookie: msalConfig.cache?.storeAuthStateInCookie,
 });
 
-// Validate configuration for Vedprakash domain compliance
-if (!msalConfig.auth.authority?.includes('vedid.onmicrosoft.com')) {
-  console.warn('⚠️ MSAL configuration not using Vedprakash domain tenant!');
-  console.warn('Current authority:', msalConfig.auth.authority);
-  console.warn('Required: https://login.microsoftonline.com/vedid.onmicrosoft.com');
-
-  if (import.meta.env.NODE_ENV === 'production') {
-    console.error('❌ Production deployment requires Vedprakash domain tenant!');
-  }
-}
-
+// Validate cache configuration for SSO
 if (msalConfig.cache?.cacheLocation !== 'sessionStorage') {
-  console.warn('⚠️ MSAL cache configuration may break SSO across Vedprakash apps!');
+  console.warn('⚠️ MSAL cache configuration may break SSO across apps!');
   console.warn('Current cacheLocation:', msalConfig.cache?.cacheLocation);
   console.warn('Required for SSO: sessionStorage');
 }
