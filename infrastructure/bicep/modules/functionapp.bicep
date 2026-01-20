@@ -172,16 +172,12 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
   }
 }
 
-// Grant Function App access to Key Vault
-resource keyVaultAccessPolicy 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(keyVault.id, functionApp.id, 'Key Vault Secrets User')
-  scope: keyVault
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6') // Key Vault Secrets User
-    principalId: functionApp.identity.principalId
-    principalType: 'ServicePrincipal'
-  }
-}
+// NOTE: Key Vault access for Function App's managed identity must be configured manually
+// The service principal used for CI/CD does not have permission to create role assignments.
+// Run this command after deployment:
+// az role assignment create --role "Key Vault Secrets User" \
+//   --assignee $(az functionapp identity show -g pathfinder-rg -n pf-func-<uniqueId> --query principalId -o tsv) \
+//   --scope $(az keyvault show -g pathfinder-rg -n pf-kv-<uniqueId> --query id -o tsv)
 
 // Outputs
 output functionAppName string = functionApp.name
