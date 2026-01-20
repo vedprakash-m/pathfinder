@@ -1,412 +1,319 @@
 # Pathfinder – AI-Powered Group Trip Planner
 
-[![CI/CD Pipeline](https://github.com/vedprakash-m/pathfinder/actions/workflows/ci-cd-pipeline.yml/badge.svg)](https://github.com/vedprakash-m/pathfinder/actions)
-[![Infrastructure Management](https://github.com/vedprakash-m/pathfinder/actions/workflows/infrastructure-management.yml/badge.svg)](https://github.com/vedprakash-m/pathfinder/actions)
+[![Backend CI/CD](https://github.com/vedprakash-m/pathfinder/actions/workflows/backend.yml/badge.svg)](https://github.com/vedprakash-m/pathfinder/actions/workflows/backend.yml)
+[![Frontend CI/CD](https://github.com/vedprakash-m/pathfinder/actions/workflows/frontend.yml/badge.svg)](https://github.com/vedprakash-m/pathfinder/actions/workflows/frontend.yml)
+[![Infrastructure](https://github.com/vedprakash-m/pathfinder/actions/workflows/infrastructure.yml/badge.svg)](https://github.com/vedprakash-m/pathfinder/actions/workflows/infrastructure.yml)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
-![Completion](https://img.shields.io/badge/Completion-95%25-brightgreen)
-![MVP Status](https://img.shields.io/badge/MVP-Ready_for_Testing-blue)
 
-> **🚀 Project Status (Nov 1, 2025)**: **95% Complete** - Phase 1 features complete, ready for final testing and deployment.  
-> **📊 Remaining Work**: 28-40 hours to MVP launch (testing, deployment, documentation)  
-> **📖 Status Reports**: [Executive Summary](EXECUTIVE_SUMMARY.md) | [Comprehensive Status Report](COMPREHENSIVE_STATUS_REPORT_NOV_2025.md)
-
-**Pathfinder** is a production-ready, AI-powered platform that transforms the chaotic process of planning multi-family group trips into a streamlined, collaborative experience. By centralizing communication, gathering preferences intelligently, and generating AI-powered itineraries, Pathfinder eliminates the typical frustrations of group travel planning.
+**Pathfinder** is an AI-powered platform that transforms multi-family group trip planning into a streamlined, collaborative experience. By centralizing communication, gathering preferences intelligently, and generating AI-powered itineraries, Pathfinder eliminates the typical frustrations of group travel planning.
 
 ---
+
 ## 🎯 Table of Contents
+
 1. [Why Pathfinder?](#-why-pathfinder)
-2. [Key Features](#-key-features)  
-3. [Architecture Overview](#-architecture-overview)  
-4. [Quick Start (Local)](#-quick-start-local-development)  
-5. [Cloud Deployment (Azure)](#-cloud-deployment-azure)  
-6. [Development Workflow](#-development-workflow)  
-7. [Testing](#-testing)  
-8. [Cost Optimization](#-cost-optimization)  
+2. [Key Features](#-key-features)
+3. [Architecture](#-architecture)
+4. [Quick Start](#-quick-start)
+5. [Deployment](#-deployment)
+6. [Development](#-development)
+7. [Testing](#-testing)
+8. [Cost](#-cost)
 9. [License](#-license)
 
 ---
+
 ## 🚀 Why Pathfinder?
 
 **For Families & Groups:**
 - **Eliminate Decision Paralysis:** AI-powered itinerary generation with multiple options
-- **Streamline Communication:** Real-time chat, polls, and collaborative planning
+- **Streamline Communication:** Real-time messaging, polls, and collaborative planning
 - **Budget Transparency:** Shared expense tracking with automatic settlement suggestions
 - **Mobile-First Experience:** Progressive Web App works seamlessly across all devices
 
-**For Developers & Organizations:**
-- **Production-Ready:** Enterprise-grade security with Auth0 and comprehensive monitoring
-- **Cost-Optimized:** Innovative pause/resume architecture saves 70% on idle infrastructure
-- **Modern Stack:** React 18, FastAPI, Azure Container Apps with Bicep IaC
-- **Comprehensive Testing:** Full E2E test suite with Playwright and automated CI/CD
+**For Developers:**
+- **Cost-Optimized:** Serverless architecture for 70-80% lower costs vs traditional hosting
+- **Modern Stack:** React 18, Azure Functions, Cosmos DB Serverless
+- **Enterprise Security:** Microsoft Entra ID with zero-trust architecture
+- **Infrastructure as Code:** Bicep templates for reproducible deployments
 
 ---
-## ✨ Key Features
-### 🤖 AI-Powered Planning
-- **Multi-Provider LLM Orchestration:** OpenAI, Gemini, and Claude integration with intelligent fallbacks
-- **Context-Aware Recommendations:** AI understands group preferences, budgets, and constraints
-- **Cost-Controlled AI:** Budget limits and usage tracking prevent runaway costs
 
-### 🏠 Multi-Family Coordination  
-- **Role-Based Access Control:** Family Admin, Trip Organizer, and Member roles
-- **Smart Invitation System:** Email-based family invitation workflow with permissions
-- **Consensus Building:** Interactive polls and decision-making tools
+## ✨ Key Features
+
+### 🤖 AI-Powered Planning
+- **Smart Itinerary Generation:** GPT-powered trip planning with context awareness
+- **Preference Aggregation:** AI understands group preferences, budgets, and constraints
+- **Interactive Assistant:** Natural language chat for trip suggestions and modifications
+
+### 🏠 Multi-Family Coordination
+- **Family Management:** Create families and invite members via email
+- **Role-Based Access:** Family Admin, Trip Organizer, and Member permissions
+- **Consensus Building:** Interactive polls and voting for group decisions
 
 ### 💬 Real-Time Collaboration
-- **Live Chat & Presence:** Socket.IO-powered real-time communication
+- **Live Updates:** SignalR-powered real-time notifications
 - **Smart Polls:** Gather preferences and make group decisions efficiently
 - **Activity Feeds:** Stay updated on trip planning progress
 
-### 💰 Financial Management
-- **Shared Budget Tracking:** Transparent expense management across families
-- **Settlement Suggestions:** Automated calculations for cost splitting
-- **Spending Analytics:** Track expenses by category and family
-
 ### 🔐 Enterprise Security
-- **Zero-Trust Architecture:** Microsoft Entra External ID integration with comprehensive RBAC
-- **Data Protection:** CSRF/CORS protection, input validation, audit logging
-- **Secrets Management:** Azure Key Vault integration with automatic rotation
+- **Microsoft Entra ID:** Modern identity management with MSAL
+- **Zero-Trust Architecture:** JWT validation on every request
+- **Secrets Management:** Azure Key Vault for secure credential storage
 
 ---
-## 🏗️ Architecture Overview
 
-Pathfinder employs a cost-optimized two-layer architecture designed for scalability and efficiency. Complete technical documentation is available in [`docs/metadata.md`](docs/metadata.md).
+## 🏗️ Architecture
 
-### 🔄 Two-Layer Azure Infrastructure
+Pathfinder uses a modern serverless architecture optimized for cost and scalability.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    PERSISTENT DATA LAYER                        │
-│                      (pathfinder-db-rg)                        │
-│  💾 Azure SQL Database     🗄️  Cosmos DB (Serverless)          │
-│  📁 Storage Account        🔐 Key Vault (Secrets)              │
-│  ├─ Never deleted for data preservation                        │
-│  └─ $15-25/month baseline cost                                 │
-└─────────────────────────────────────────────────────────────────┘
-                                    ⬆️
-                             Data persistence
-                                    ⬇️
-┌─────────────────────────────────────────────────────────────────┐
-│                   EPHEMERAL COMPUTE LAYER                      │
-│                       (pathfinder-rg)                          │
-│  🚀 Container Apps Env     📦 Container Registry               │
-│  🖥️  Backend API Service   🌐 Frontend Web App                │
-│  📊 Application Insights   ⚖️  Auto-scaling (0-N instances)   │
-│  ├─ Safe to delete for 70% cost reduction                      │
-│  └─ $35-50/month when active, $0 when paused                  │
+│                      pathfinder-rg (West US 2)                  │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌──────────────────┐     ┌──────────────────────────────────┐  │
+│  │  Static Web App  │────▶│     Azure Functions (Flex)       │  │
+│  │  (React + Vite)  │     │     (Python 3.11)                │  │
+│  │     [FREE]       │     │                                  │  │
+│  └──────────────────┘     │  ┌────────────┐ ┌────────────┐  │  │
+│                           │  │ HTTP APIs  │ │ Queue Funcs│  │  │
+│                           │  └────────────┘ └────────────┘  │  │
+│                           │  ┌────────────┐ ┌────────────┐  │  │
+│                           │  │Timer Tasks │ │ SignalR Hub│  │  │
+│                           │  └────────────┘ └────────────┘  │  │
+│                           └───────────┬──────────────────────┘  │
+│                                       │                          │
+│  ┌─────────────────┐  ┌───────────────┴───────┐  ┌───────────┐  │
+│  │   Cosmos DB     │  │     Key Vault         │  │  SignalR  │  │
+│  │  (Serverless)   │  │  (Secrets Store)      │  │  [FREE]   │  │
+│  └─────────────────┘  └───────────────────────┘  └───────────┘  │
+│                                                                  │
+│  ┌─────────────────┐  ┌───────────────────────┐                 │
+│  │ Storage Account │  │  Application Insights │                 │
+│  │ (Queue Storage) │  │   (Monitoring)        │                 │
+│  └─────────────────┘  └───────────────────────┘                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### ⚡ Cost Optimization Benefits
-- **Active State:** Full functionality, $50-75/month
-- **Paused State:** Data preserved, compute deleted, $15-25/month  
-- **Resume Time:** 5-10 minutes via automated CI/CD
-- **Savings:** Up to 70% cost reduction during idle periods
+### Technology Stack
 
-### 🛠️ Technology Stack
-- **Frontend:** React 18 + TypeScript + Vite + Tailwind CSS + Fluent UI v9 + PWA
-- **Backend:** FastAPI + Python 3.11 + Pydantic v2 + SQLAlchemy + Alembic
-- **Real-time:** Socket.IO for chat and live presence
-- **AI Services:** Custom LLM orchestration with cost tracking and fallbacks
-- **Data:** Azure SQL (relational) + Cosmos DB (documents) + SQLite (local dev)
-- **Caching:** Redis for session management and performance optimization
-- **Infrastructure:** Docker + Bicep IaC + Azure Container Apps + Azure Key Vault
-- **CI/CD:** GitHub Actions with optimized workflows (71% reduction in complexity)
-- **Authentication:** Microsoft Entra External ID with zero-trust security model
-- **Testing:** Playwright E2E + Pytest with comprehensive coverage
+| Layer | Technology |
+|-------|------------|
+| Frontend | React 18, TypeScript, Vite, Tailwind CSS, Fluent UI v9 |
+| Backend | Azure Functions (Python 3.11), FastAPI patterns |
+| Database | Azure Cosmos DB (Serverless, SQL API) |
+| Real-time | Azure SignalR Service (Free tier) |
+| Auth | Microsoft Entra ID, MSAL.js |
+| AI | OpenAI GPT-5-mini |
+| Infrastructure | Bicep, GitHub Actions |
 
 ---
-## 🚀 Quick Start (Local Development)
+
+## 🚀 Quick Start
 
 ### Prerequisites
-- **Node.js 18+** and **Python 3.11+** 
-- **Docker** and **Docker Compose**
-- At least **4GB RAM** available
 
-### Setup & Launch
+- Python 3.11+
+- Node.js 20+
+- Azure Functions Core Tools v4
+- Azure CLI
+
+### Backend
+
 ```bash
-# Clone the repository
-git clone https://github.com/vedprakashmishra/pathfinder.git
-cd pathfinder
+cd backend
 
-# Configure backend environment (copy from template)
-cp backend/.env.test backend/.env
+# Create virtual environment
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
 
-# Configure frontend environment (copy from template)
-cp frontend/.env.template frontend/.env.local
+# Install dependencies
+pip install -r requirements.txt
 
-# Launch the full stack
-docker compose up -d
+# Configure local settings (edit with your values)
+# local.settings.json is git-ignored - update placeholder values:
+#   - COSMOS_DB_KEY
+#   - SIGNALR_CONNECTION_STRING
+#   - OPENAI_API_KEY
+#   - ENTRA_CLIENT_ID
 
-# Access the applications
-open http://localhost:3000        # React PWA (Frontend)
-open http://localhost:8000/docs   # FastAPI Documentation (Backend)
+# Start Functions locally
+func start
 ```
 
-### Local Development with Validation
+### Frontend
+
 ```bash
-# Quick validation before commits (recommended)
-./scripts/local-validation.sh --quick
+cd frontend
 
-# Full validation with auto-fix
-./scripts/local-validation.sh --fix
+# Install dependencies
+npm install
 
-# Run comprehensive E2E tests
-./scripts/run-e2e-tests.sh
+# Configure environment
+cp .env.template .env.local
+# Edit .env.local with your values
+
+# Start development server
+npm run dev
 ```
-
-**What's Included:**
-- ✅ **Backend API** with FastAPI and auto-generated documentation at `/docs`
-- ✅ **Frontend PWA** with hot-reload and modern development tools  
-- ✅ **Database** with SQLite for local development and Cosmos DB emulator
-- ✅ **Real-time features** via Socket.IO
-- ✅ **Caching** with Redis for optimal performance
-- ✅ **AI integration** with mock services for local testing
 
 ---
-## ☁️ Cloud Deployment (Azure)
 
-Pathfinder uses **Bicep Infrastructure as Code** for reliable, repeatable deployments to Azure. The platform is designed for Azure-first deployment with cost optimization built-in.
+## 📦 Deployment
 
-### 🔐 Prerequisites
-1. **Azure Subscription** with appropriate permissions
-2. **GitHub Repository Secrets** configured:
-   - `AZURE_CREDENTIALS` (Service Principal JSON)
-   - `SQL_ADMIN_USERNAME` (Database admin username)  
-   - `SQL_ADMIN_PASSWORD` (Database admin password)
-   - `OPENAI_API_KEY` (Optional - for AI features)
-   - `ENTRA_TENANT_ID` (Microsoft Entra External ID tenant)
-   - `ENTRA_CLIENT_ID` (Microsoft Entra External ID client ID)
+### Infrastructure
 
-### 🏗️ Deployment Process
-
-#### 1. One-Time Data Layer Setup
 ```bash
-# Deploy persistent data layer (SQL, Cosmos DB, Storage, Key Vault)
-./scripts/deploy-data-layer.sh
+# Login to Azure
+az login
 
-# Or use GitHub Actions workflow: "Deploy Infrastructure"
+# Deploy infrastructure
+cd infrastructure/bicep
+az deployment sub create \
+  --name pathfinder-deployment \
+  --location westus2 \
+  --template-file main.bicep \
+  --parameters @parameters/prod.parameters.json
 ```
 
-#### 2. Deploy/Resume Compute Layer  
-```bash
-# Deploy or resume the complete application
-./scripts/resume-environment.sh
+### Configure Secrets
 
-# Or simply push to main branch - CI/CD will auto-deploy
-git push origin main
+```bash
+# Get Key Vault name
+KV_NAME=$(az keyvault list -g pathfinder-rg --query "[0].name" -o tsv)
+
+# Set required secrets
+az keyvault secret set --vault-name $KV_NAME --name openai-api-key --value "YOUR_KEY"
+az keyvault secret set --vault-name $KV_NAME --name entra-client-id --value "YOUR_ID"
 ```
 
-#### 3. Cost Optimization (Pause)
-```bash
-# Pause compute layer to save 70% on costs
-./scripts/pause-environment.sh
+### GitHub Actions
 
-# Data layer remains active for immediate resume
-```
+Configure these secrets in GitHub:
 
-### 🔄 Automated CI/CD Pipeline
-Our optimized CI/CD system provides:
-- ✅ **Quality Gates:** Code formatting, linting, security scanning
-- ✅ **Comprehensive Testing:** Unit tests, integration tests, E2E validation  
-- ✅ **Performance Monitoring:** Load testing and response time tracking
-- ✅ **Security Scanning:** Dependency vulnerabilities and container scanning
-- ✅ **Cost Monitoring:** Azure resource usage alerts and optimization
-- ✅ **Zero-Downtime Deployment:** Container-based rolling updates
+| Secret | Description |
+|--------|-------------|
+| `AZURE_CREDENTIALS` | Service principal JSON |
+| `AZURE_STATIC_WEB_APPS_API_TOKEN` | SWA deployment token |
+| `ENTRA_CLIENT_ID` | Microsoft Entra client ID |
 
-**Recent Optimizations:**
-- **71% reduction** in workflow complexity (7 → 2 workflows)
-- **40-60% faster** execution via parallel jobs and intelligent caching
-- **Enhanced error reporting** with actionable guidance
+Push to `main` to trigger deployment.
+
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed instructions.
 
 ---
-## 🛠️ Development Workflow
 
-### Local Validation System
-Before pushing changes to CI/CD, use our comprehensive local validation system with enhanced dependency and lockfile checking:
+## 🛠️ Development
 
-```bash
-# Quick validation (recommended before every commit)
-cd backend && python3 local_validation.py
+### Project Structure
 
-# Check for undeclared dependencies
-cd backend && python3 local_validation.py --dependency-check
-
-# Full project validation with lockfile sync
-./scripts/local-validation.sh --fix
-
-# Validate frontend lockfile specifically
-./scripts/validate-lockfile.sh --fix
+```
+pathfinder/
+├── backend/
+│   ├── function_app.py      # Azure Functions entry point
+│   ├── core/                 # Config, security, errors
+│   ├── models/               # Pydantic models
+│   ├── repositories/         # Data access layer
+│   ├── services/             # Business logic
+│   └── functions/            # HTTP, Queue, Timer functions
+├── frontend/
+│   ├── src/
+│   │   ├── components/       # React components
+│   │   ├── pages/            # Route pages
+│   │   ├── services/         # API clients
+│   │   └── lib/              # Utilities
+│   └── public/
+├── infrastructure/
+│   └── bicep/                # Azure Bicep templates
+└── docs/                     # Documentation
 ```
 
-### What Gets Validated
-- ✅ **Dependencies:** Undeclared dependencies, requirements.txt completeness, package conflicts
-- ✅ **Lockfile Synchronization:** pnpm-lock.yaml matches package.json (prevents CI/CD failures)
-- ✅ **CI/CD Parity:** Test collection validation, environment consistency
-- ✅ **Code Quality:** Formatting, linting, type checking, imports
-- ✅ **Build Compatibility:** Docker build validation
-- ✅ **Git Status:** Branch awareness and uncommitted changes
-- ✅ **Infrastructure:** GitHub Actions and Azure prerequisites
+### API Endpoints
 
-### Enhanced Lockfile Validation
-- 🔒 **CI/CD Simulation:** Tests `--frozen-lockfile` install locally
-- ⚡ **Pre-commit Hooks:** Blocks commits with out-of-sync lockfiles
-- 🛠️ **Auto-fix Mode:** Automatically regenerates lockfiles when out of sync
-- 🔍 **Offline Testing:** Catches sync issues without network dependency
-
-### Dependency Validation Features
-- 🔍 **Undeclared Dependency Detection:** Scans imports vs requirements.txt
-- 📚 **Standard Library Filtering:** Avoids false positives for built-in modules
-- 🔀 **Import Name Mapping:** Handles cases like `jwt` → `python-jose`
-- 🎯 **CI/CD Environment Simulation:** Ensures local matches CI/CD exactly
-
-### Benefits
-- 🚀 **40-60% faster feedback** than waiting for CI/CD
-- 🔧 **Auto-fix mode** resolves common issues automatically  
-- 🛡️ **Prevents CI/CD failures** by catching dependency issues locally
-- 📊 **Comprehensive reporting** with actionable guidance
-
-### CI/CD Pipeline
-Our streamlined pipeline includes:
-
-1. **Quality Checks** - Code formatting, linting, type checking
-2. **Security Scanning** - Dependency vulnerabilities and container scanning  
-3. **Build & Test** - Docker builds and automated testing
-4. **Performance Testing** - Load testing and performance benchmarks
-5. **Cost Monitoring** - Azure resource usage and optimization alerts
-6. **Deployment** - Automated deployment with rollback capabilities
-
-**Key Optimizations:**
-- ✅ **Consolidated workflows** - 71% reduction (7 → 2 workflows)
-- ✅ **Parallel execution** - 40-60% faster builds
-- ✅ **Smart caching** - 40% reduction in build times
-- ✅ **Enhanced debugging** - Comprehensive error reporting
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/health` | Health check |
+| GET | `/api/auth/me` | Get current user |
+| GET | `/api/trips` | List user's trips |
+| POST | `/api/trips` | Create new trip |
+| POST | `/api/trips/{id}/itinerary` | Generate AI itinerary |
+| GET | `/api/families` | List user's families |
+| POST | `/api/families` | Create new family |
+| POST | `/api/trips/{id}/polls` | Create poll |
 
 ---
+
 ## 🧪 Testing
 
-Pathfinder includes a comprehensive testing strategy covering unit tests, integration tests, and end-to-end validation.
-
-### Unit & Integration Tests
-```bash
-# Backend tests with coverage reporting
-cd backend && pytest -v --cov
-
-# Frontend tests with component validation  
-cd frontend && npm test
-```
-
-### End-to-End Testing Suite
-**Comprehensive E2E validation** using Docker Compose + Playwright:
+### Backend Tests
 
 ```bash
-# Run complete E2E test suite (single command)
-./scripts/run-e2e-tests.sh
-
-# Validate E2E setup and prerequisites
-./scripts/validate-e2e-setup.sh
+cd backend
+pytest tests/ -v --cov=.
 ```
 
-### E2E Testing Features
-- **Multi-Browser Testing:** Chrome, Firefox, Safari, Mobile simulation
-- **Complete Isolation:** Dedicated MongoDB + Redis for each test run  
-- **Comprehensive Coverage:** Authentication, CRUD operations, API integration, user workflows
-- **Mock Services:** Authentication and external service mocking
-- **Automated Orchestration:** Single command execution with cleanup
-- **Performance Testing:** Load testing and response time validation
+### Frontend Tests
 
-### Test Categories
-1. **Authentication Flows** - Login, logout, session management
-2. **Core CRUD Operations** - Trip and family management  
-3. **API Integration** - Complete backend endpoint validation
-4. **User Workflows** - End-to-end journey testing
-5. **Error Scenarios** - Error handling and edge cases
-6. **Performance Testing** - Load and response time testing
-
-### Debugging & Development
 ```bash
-# Run tests with visible browser (debugging)
-cd tests/e2e && npx playwright test --debug
-
-# Run specific test suites
-npx playwright test auth          # Authentication tests
-npx playwright test trips         # Trip management tests  
-npx playwright test api           # API integration tests
+cd frontend
+npm test -- --coverage
 ```
 
-**Test Reports:** Generated in HTML format with screenshots, videos, and comprehensive debugging information.
+### Linting
+
+```bash
+# Backend
+cd backend && ruff check .
+
+# Frontend
+cd frontend && npm run lint
+```
 
 ---
-## 💰 Cost Optimization
 
-Pathfinder's innovative two-layer architecture provides significant cost savings without compromising functionality.
+## 💰 Cost
 
-### 💡 Smart Cost Management
-- **Active State:** Full functionality - $50-75/month
-- **Paused State:** Data preserved, compute deleted - $15-25/month  
-- **Savings:** Up to **70% cost reduction** during idle periods
-- **Resume Time:** **5-10 minutes** via automated CI/CD
+Estimated monthly cost with serverless architecture:
 
-### 🔄 Pause/Resume Operations
-```bash
-# Pause compute layer (immediate cost savings)
-./scripts/pause-environment.sh   
+| Resource | Tier | Cost |
+|----------|------|------|
+| Static Web Apps | Free | $0 |
+| SignalR | Free | $0 |
+| Cosmos DB | Serverless | ~$5-10 |
+| Functions | Flex Consumption | ~$2-5 |
+| Storage | Standard LRS | ~$1 |
+| Key Vault | Standard | ~$1 |
+| App Insights | Basic | ~$1-2 |
 
-# Resume full functionality (5-10 minutes)
-./scripts/resume-environment.sh  
-
-# Check current infrastructure status
-az resource list --resource-group pathfinder-rg --output table
-```
-
-### 📊 Cost Breakdown
-| Component | Persistent Data Layer | Ephemeral Compute Layer | 
-|-----------|----------------------|-------------------------|
-| **Always Active** | Azure SQL, Cosmos DB, Storage, Key Vault | - |
-| **When Active** | - | Container Apps, Registry, App Insights |
-| **Monthly Cost (Active)** | $15-25 | $35-50 |
-| **Monthly Cost (Paused)** | $15-25 | $0 |
-
-### ⚡ Automation Features
-- **GitHub Actions Integration:** Pause/resume via repository workflows
-- **Scheduled Pausing:** Optional automated pausing during off-hours
-- **Cost Monitoring:** Azure alerts for budget thresholds
-- **Resource Optimization:** Auto-scaling with scale-to-zero capabilities
-
-This architecture is ideal for:
-- **Development teams** with intermittent usage patterns
-- **Small organizations** requiring enterprise features on a budget  
-- **Demo environments** that need occasional full functionality
-- **Cost-conscious deployments** requiring production-grade capabilities
+**Total: ~$10-20/month** (vs. $150+ with container-based hosting)
 
 ---
+
 ## 📄 License
 
-This project is licensed under the **GNU Affero General Public License v3.0 (AGPLv3)** – see the [`LICENSE`](LICENSE) file for complete terms.
-
-### 🔑 Key Licensing Points
-- ✅ **Free Use:** Use, modify, and distribute freely
-- ✅ **Commercial Use:** Permitted under AGPLv3 terms  
-- ✅ **Network Services:** Source code must be available to users interacting over a network
-- ✅ **Derivative Works:** Must be licensed under AGPLv3
-
-### 💼 Commercial Licensing
-For commercial use without AGPLv3 obligations, **dual licensing** options are available. Contact the maintainer for:
-- Closed-source commercial deployments
-- SaaS offerings without source code disclosure requirements
-- Custom licensing terms for enterprise customers
-
-### 📞 Contact & Support
-- **Maintainer:** Ved Prakash
-- **Repository:** [github.com/vedprakash-m/pathfinder](https://github.com/vedprakash-m/pathfinder)
-- **Issues:** Report bugs and feature requests via GitHub Issues
-- **Security:** Follow responsible disclosure guidelines in [`docs/metadata.md`](docs/metadata.md)
-
-### 🤝 Contributing
-We welcome contributions! Please see:
-- [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md) for contribution guidelines
-- [`docs/User_Experience.md`](docs/User_Experience.md) for UX principles  
-- [`docs/metadata.md`](docs/metadata.md) for comprehensive technical documentation
-- [`docs/Tech_Spec_Pathfinder.md`](docs/Tech_Spec_Pathfinder.md) for detailed technical specifications
+This project is licensed under the [GNU Affero General Public License v3.0](LICENSE).
 
 ---
-**© Pathfinder 2025** – Empowering seamless group travel planning with AI-powered intelligence and cost-optimized cloud architecture.
+
+## 📚 Documentation
+
+- [Deployment Guide](docs/DEPLOYMENT.md)
+- [Architecture Decisions](architecture_decision_records/)
+- [Revamp Plan](docs/specs/revamp_pathfinder.md)
+
+---
+
+## 🔒 Security
+
+This project implements multiple layers of secret protection:
+
+- **Git Ignore:** Comprehensive `.gitignore` blocks all secret file patterns
+- **Pre-commit Hooks:** Optional gitleaks integration for secret scanning
+- **Key Vault:** Production secrets stored in Azure Key Vault
+- **Environment Variables:** Local secrets in git-ignored files only
+
+**Never commit:**
+- `.env` files with real values
+- `local.settings.json` with real credentials
+- API keys, connection strings, or certificates

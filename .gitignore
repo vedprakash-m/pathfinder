@@ -1,9 +1,59 @@
 # Pathfinder - AI-Powered Multi-Family Trip Planner
-# Solo Developer Optimized - Single environment deployment
+# Serverless Architecture: Azure Functions + Static Web Apps
 
+# =============================================================================
+# SECURITY CRITICAL - Secrets Prevention
+# =============================================================================
+# API Keys & Credentials
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.csr
+*.jks
+*.keystore
+**/.secrets/
+**/secrets/
+**/credentials/
+**/private/
+auth-secrets.json
+service-account.json
+azure-credentials.json
+azure-creds.json
+auth0-config.json
+openai-key.txt
+*-api-key*
+*.secret
+
+# Environment Files (NEVER commit real values)
+.env
+.env.*
+!.env.template
+!.env.example
+*.env.local
+*.env.production
+*.env.staging
+*.env.development
+*.env.secret
+*.env.private
+
+# Azure Functions local settings (contains secrets)
+backend/local.settings.json
+**/local.settings.json
+!**/local.settings.example.json
+
+# =============================================================================
+# Archive & Legacy Code
+# =============================================================================
+.archive/
+
+# =============================================================================
 # Dependencies
+# =============================================================================
 node_modules/
 venv/
+.venv/
 __pycache__/
 *.pyc
 *.pyo
@@ -11,13 +61,6 @@ __pycache__/
 .Python
 pip-log.txt
 pip-delete-this-directory.txt
-
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
 
 # IDE
 .vscode/

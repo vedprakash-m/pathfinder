@@ -1,39 +1,54 @@
-repos:
-  - repo: https://github.com/psf/black
-    rev: 25.1.0
-    hooks:
-      - id: black
-        language_version: python3.9
+# Pre-commit hooks for Pathfinder
+# Install: pip install pre-commit && pre-commit install
 
+repos:
+  # Gitleaks - Secret Detection
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.0
+    hooks:
+      - id: gitleaks
+        name: Detect hardcoded secrets
+        description: Detect hardcoded secrets using Gitleaks
+        entry: gitleaks protect --verbose --redact --staged
+        language: golang
+        pass_filenames: false
+
+  # Python formatting and linting
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.12.1
+    rev: v0.1.8
     hooks:
       - id: ruff
-        args: [
-          "--fix", "--exit-non-zero-on-fix",
-          "--line-length=100",
-          "--target-version=py39",
-          "--ignore=F821,B904,F811,F841,F405,B007,B017,E722",  # Ignore problematic rules for now
-        ]
+        name: Ruff linting
+        args: [--fix]
+        files: ^backend/
+      - id: ruff-format
+        name: Ruff formatting
+        files: ^backend/
 
-  - repo: https://github.com/pycqa/isort
-    rev: 6.0.1
-    hooks:
-      - id: isort
-        args: ["--profile", "black"]
-
+  # General file checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v4.5.0
     hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: [--unsafe]
+      - id: check-json
       - id: check-added-large-files
-        args: ["--maxkb=512"]
+        args: [--maxkb=500]
+      - id: check-merge-conflict
+      - id: detect-private-key
+        name: Detect private keys
 
-  # Frontend lockfile validation
-  - repo: local
+  # TypeScript/JavaScript
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v8.56.0
     hooks:
-      - id: pnpm-lockfile-sync
-        name: Check pnpm lockfile synchronization
-        entry: ./scripts/validate-lockfile.sh
-        language: system
-        files: ^frontend/(package\.json|pnpm-lock\.yaml)$
-        pass_filenames: false 
+      - id: eslint
+        name: ESLint
+        files: ^frontend/src/.*\.(ts|tsx|js|jsx)$
+        additional_dependencies:
+          - eslint
+          - typescript
+          - '@typescript-eslint/parser'
+          - '@typescript-eslint/eslint-plugin'

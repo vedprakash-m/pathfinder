@@ -1,0 +1,30 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+    "FUNCTIONS_EXTENSION_VERSION": "~4",
+    "PYTHON_ENABLE_DEBUG_LOGGING": "1",
+
+    "COSMOS_DB_URL": "https://localhost:8081",
+    "COSMOS_DB_KEY": "YOUR_COSMOS_DB_KEY_HERE",
+    "COSMOS_DB_NAME": "pathfinder",
+
+    "SIGNALR_CONNECTION_STRING": "Endpoint=https://YOUR-SIGNALR.service.signalr.net;AccessKey=YOUR_KEY;Version=1.0;",
+
+    "OPENAI_API_KEY": "YOUR_OPENAI_API_KEY_HERE",
+    "OPENAI_MODEL": "gpt-5-mini",
+
+    "ENTRA_TENANT_ID": "vedid.onmicrosoft.com",
+    "ENTRA_CLIENT_ID": "YOUR_ENTRA_CLIENT_ID_HERE",
+
+    "FRONTEND_URL": "http://localhost:4280",
+
+    "AZURE_STORAGE_CONNECTION_STRING": "UseDevelopmentStorage=true"
+  },
+  "Host": {
+    "CORS": "*",
+    "CORSCredentials": false
+  },
+  "ConnectionStrings": {}
+}

@@ -11,11 +11,11 @@ const msalConfig: Configuration = {
   auth: {
     clientId: clientId,
     authority: 'https://login.microsoftonline.com/vedid.onmicrosoft.com', // ✅ Fixed to use standard domain
-    redirectUri: typeof window !== 'undefined' 
-      ? window.location.origin 
+    redirectUri: typeof window !== 'undefined'
+      ? window.location.origin
       : 'https://pathfinder-frontend.yellowdune-9b8d769a.eastus.azurecontainerapps.io',
-    postLogoutRedirectUri: typeof window !== 'undefined' 
-      ? window.location.origin 
+    postLogoutRedirectUri: typeof window !== 'undefined'
+      ? window.location.origin
       : 'https://pathfinder-frontend.yellowdune-9b8d769a.eastus.azurecontainerapps.io',
     navigateToLoginRequestUrl: false,
   },
@@ -56,8 +56,13 @@ const msalConfig: Configuration = {
 
 // Scopes for API access
 export const loginRequest = {
-  scopes: ['openid', 'profile', 'email', 'User.Read'],
+  scopes: ['openid', 'profile', 'email'],
   prompt: 'select_account' as const,
+};
+
+// Scopes for our backend API
+export const apiRequest = {
+  scopes: [`api://${clientId}/access_as_user`],
 };
 
 // Scopes for Graph API (user info)
@@ -79,7 +84,7 @@ if (!msalConfig.auth.authority?.includes('vedid.onmicrosoft.com')) {
   console.warn('⚠️ MSAL configuration not using Vedprakash domain tenant!');
   console.warn('Current authority:', msalConfig.auth.authority);
   console.warn('Required: https://login.microsoftonline.com/vedid.onmicrosoft.com');
-  
+
   if (import.meta.env.NODE_ENV === 'production') {
     console.error('❌ Production deployment requires Vedprakash domain tenant!');
   }
@@ -97,4 +102,4 @@ if (!msalConfig.cache?.storeAuthStateInCookie) {
 }
 
 export default msalConfig;
-export { tenantId, clientId }; 
+export { tenantId, clientId };
