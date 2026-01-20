@@ -1,8 +1,6 @@
 # Pathfinder – AI-Powered Group Trip Planner
 
-[![Backend CI/CD](https://github.com/vedprakash-m/pathfinder/actions/workflows/backend.yml/badge.svg)](https://github.com/vedprakash-m/pathfinder/actions/workflows/backend.yml)
-[![Frontend CI/CD](https://github.com/vedprakash-m/pathfinder/actions/workflows/frontend.yml/badge.svg)](https://github.com/vedprakash-m/pathfinder/actions/workflows/frontend.yml)
-[![Infrastructure](https://github.com/vedprakash-m/pathfinder/actions/workflows/infrastructure.yml/badge.svg)](https://github.com/vedprakash-m/pathfinder/actions/workflows/infrastructure.yml)
+[![CI/CD](https://github.com/vedprakash-m/pathfinder/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/vedprakash-m/pathfinder/actions/workflows/ci-cd.yml)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
 
 **Pathfinder** is an AI-powered platform that transforms multi-family group trip planning into a streamlined, collaborative experience. By centralizing communication, gathering preferences intelligently, and generating AI-powered itineraries, Pathfinder eliminates the typical frustrations of group travel planning.
@@ -188,17 +186,38 @@ az keyvault secret set --vault-name $KV_NAME --name openai-api-key --value "YOUR
 az keyvault secret set --vault-name $KV_NAME --name entra-client-id --value "YOUR_ID"
 ```
 
-### GitHub Actions
+### CI/CD Pipeline
 
-Configure these secrets in GitHub:
+Pathfinder uses a **unified CI/CD pipeline** (`ci-cd.yml`) that:
+
+1. **Detects changes** - Only runs jobs for components that changed
+2. **Runs tests in parallel** - Backend and frontend tests run simultaneously
+3. **Deploys in order** - Infrastructure → Backend → Frontend
+4. **Supports manual dispatch** - Deploy specific components on demand
+
+#### Required GitHub Secrets
 
 | Secret | Description |
 |--------|-------------|
-| `AZURE_CREDENTIALS` | Service principal JSON |
+| `AZURE_CREDENTIALS` | Service principal JSON for Azure login |
 | `AZURE_STATIC_WEB_APPS_API_TOKEN` | SWA deployment token |
 | `ENTRA_CLIENT_ID` | Microsoft Entra client ID |
 
-Push to `main` to trigger deployment.
+#### Resource Naming Convention
+
+All Azure resources use deterministic, idempotent naming:
+
+| Resource | Production Name |
+|----------|----------------|
+| Resource Group | `pathfinder-rg` |
+| Cosmos DB | `pf-cosmos-prod` |
+| Function App | `pf-func-prod` |
+| Static Web App | `pf-swa-prod` |
+| Key Vault | `pf-kv-prod` |
+| SignalR | `pf-signalr-prod` |
+| Storage | `pfstoreprod` |
+
+Push to `main` to trigger deployment. Only changed components are deployed.
 
 See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed instructions.
 

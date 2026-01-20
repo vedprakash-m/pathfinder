@@ -199,7 +199,9 @@ temp/
 *.env.local
 *.env.secret
 *secret*
-*key*
+**/keys/**
+*key.json
+*key.pem
 *.pem
 *.p12
 *.pfx
@@ -213,6 +215,8 @@ azure-credentials.json
 .secrets/
 secrets/
 vault/
+# Exception: Allow keyvault.bicep
+!**/keyvault.bicep
 private/
 
 # Security - Additional patterns for comprehensive coverage
