@@ -1,26 +1,17 @@
-// Microsoft Entra ID (MSAL) configuration for Consumer Authentication
-// Uses the /consumers endpoint for personal Microsoft accounts (no user provisioning needed)
+// Microsoft Entra ID (MSAL) configuration
+// Uses vedid.onmicrosoft.com tenant for authentication
 
 import { Configuration, LogLevel } from '@azure/msal-browser';
 
-// Client ID from environment - this MUST be from an app registration configured for consumers
-// To create: Azure Portal → App Registrations → New → Supported account types:
-//   "Accounts in any organizational directory and personal Microsoft accounts"
+// Configuration from environment variables
+const tenantId = import.meta.env.VITE_ENTRA_EXTERNAL_TENANT_ID || 'vedid.onmicrosoft.com';
 const clientId = import.meta.env.VITE_ENTRA_EXTERNAL_CLIENT_ID || 'test-client-id';
-
-// Authority endpoints:
-// - /consumers  = Personal Microsoft accounts only (outlook.com, hotmail.com, live.com)
-// - /common     = Both personal AND work/school accounts
-// - /organizations = Work/school accounts only (any Azure AD tenant)
-// - /{tenant-id}   = Specific tenant only
 
 const msalConfig: Configuration = {
   auth: {
     clientId: clientId,
-    // Use 'consumers' endpoint for personal Microsoft accounts
-    // This requires the app registration to support personal accounts
-    // No user provisioning needed - any Microsoft personal account can sign in
-    authority: 'https://login.microsoftonline.com/consumers',
+    // Use tenant-specific endpoint for vedid.onmicrosoft.com
+    authority: `https://login.microsoftonline.com/${tenantId}`,
     redirectUri: typeof window !== 'undefined'
       ? window.location.origin
       : 'https://icy-wave-01484131e.1.azurestaticapps.net',
@@ -66,15 +57,13 @@ const msalConfig: Configuration = {
 
 // Scopes for login - basic profile info
 export const loginRequest = {
-  scopes: ['openid', 'profile', 'email', 'User.Read'],
+  scopes: ['openid', 'profile', 'email'],
   prompt: 'select_account' as const,
 };
 
-// Scopes for our backend API calls
-// For consumer apps, we use the ID token for authentication to our own backend
-// The backend validates the token using Microsoft's public keys
+// Scopes for our backend API
 export const apiRequest = {
-  scopes: ['openid', 'profile', 'email'],
+  scopes: [`api://${clientId}/access_as_user`],
 };
 
 // Scopes for Graph API (user info)
