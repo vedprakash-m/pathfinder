@@ -149,7 +149,7 @@ jobs:
           npm ci
           npm run build
         env:
-          VITE_ENTRA_EXTERNAL_TENANT_ID: ${{ vars.ENTRA_TENANT_ID || 'vedid.onmicrosoft.com' }}
+          # Client ID must be from an app registration configured for consumer accounts
           VITE_ENTRA_EXTERNAL_CLIENT_ID: ${{ secrets.ENTRA_CLIENT_ID }}
           VITE_API_URL: 'https://pf-func-kteh35kinffvo.azurewebsites.net/api'
           VITE_ENABLE_SIGNALR: 'true'

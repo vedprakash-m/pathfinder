@@ -1,21 +1,26 @@
-// Microsoft Entra External ID (MSAL) configuration
-// Replaces Auth0 configuration with Microsoft's identity platform
+// Microsoft Entra ID (MSAL) configuration for Consumer Authentication
+// Uses the /consumers endpoint for personal Microsoft accounts (no user provisioning needed)
 
 import { Configuration, LogLevel } from '@azure/msal-browser';
 
-// Get configuration from environment variables
-const tenantId = import.meta.env.VITE_ENTRA_EXTERNAL_TENANT_ID || 'test-tenant-id';
+// Client ID from environment - this MUST be from an app registration configured for consumers
+// To create: Azure Portal → App Registrations → New → Supported account types:
+//   "Accounts in any organizational directory and personal Microsoft accounts"
 const clientId = import.meta.env.VITE_ENTRA_EXTERNAL_CLIENT_ID || 'test-client-id';
+
+// Authority endpoints:
+// - /consumers  = Personal Microsoft accounts only (outlook.com, hotmail.com, live.com)
+// - /common     = Both personal AND work/school accounts
+// - /organizations = Work/school accounts only (any Azure AD tenant)
+// - /{tenant-id}   = Specific tenant only
 
 const msalConfig: Configuration = {
   auth: {
     clientId: clientId,
-    // Use tenant-specific endpoint for work/school accounts only
-    // To enable personal Microsoft accounts (@outlook.com, @gmail.com), you must:
-    // 1. Go to Azure Portal → App Registrations → Your App → Authentication
-    // 2. Change "Supported account types" to include personal accounts
-    // 3. Then change this to 'https://login.microsoftonline.com/common'
-    authority: `https://login.microsoftonline.com/${tenantId}`,
+    // Use 'consumers' endpoint for personal Microsoft accounts
+    // This requires the app registration to support personal accounts
+    // No user provisioning needed - any Microsoft personal account can sign in
+    authority: 'https://login.microsoftonline.com/consumers',
     redirectUri: typeof window !== 'undefined'
       ? window.location.origin
       : 'https://icy-wave-01484131e.1.azurestaticapps.net',
@@ -59,15 +64,17 @@ const msalConfig: Configuration = {
   },
 };
 
-// Scopes for API access
+// Scopes for login - basic profile info
 export const loginRequest = {
-  scopes: ['openid', 'profile', 'email'],
+  scopes: ['openid', 'profile', 'email', 'User.Read'],
   prompt: 'select_account' as const,
 };
 
-// Scopes for our backend API
+// Scopes for our backend API calls
+// For consumer apps, we use the ID token for authentication to our own backend
+// The backend validates the token using Microsoft's public keys
 export const apiRequest = {
-  scopes: [`api://${clientId}/access_as_user`],
+  scopes: ['openid', 'profile', 'email'],
 };
 
 // Scopes for Graph API (user info)
