@@ -3,6 +3,7 @@ SignalR HTTP Functions
 
 Handles SignalR Service negotiation and messaging.
 """
+
 import json
 import logging
 from datetime import UTC, datetime

@@ -3,6 +3,7 @@ Itinerary Generator Queue Function
 
 Processes async itinerary generation requests from the queue.
 """
+
 import json
 import logging
 from datetime import UTC, datetime
@@ -62,7 +63,7 @@ async def process_itinerary_request(msg: func.QueueMessage) -> None:
         # Generate itinerary
         itinerary_service = get_itinerary_service()
         itinerary = await itinerary_service.generate_itinerary(
-            trip=trip, preferences=preferences if preferences else None
+            trip_id=trip_id, preferences=preferences if preferences else None
         )
 
         if itinerary:
@@ -85,7 +86,7 @@ async def process_itinerary_request(msg: func.QueueMessage) -> None:
             family_service = get_family_service()
 
             member_ids = set()
-            for family_id in trip.family_ids:
+            for family_id in trip.participating_family_ids:
                 members = await family_service.get_family_members(family_id)
                 for member in members:
                     member_ids.add(member.id)

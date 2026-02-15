@@ -1,4 +1,5 @@
 """LLM module initialization."""
+
 from services.llm.client import LLMClient, llm_client
 from services.llm.prompts import (
     ASSISTANT_SYSTEM_PROMPT,

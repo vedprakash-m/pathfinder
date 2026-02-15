@@ -3,6 +3,7 @@ Notification Sender Queue Function
 
 Processes async notification requests from the queue.
 """
+
 import json
 import logging
 from datetime import UTC, datetime
@@ -85,7 +86,7 @@ async def process_notification(msg: func.QueueMessage) -> None:
                 target=RealtimeEvents.NOTIFICATION,
                 data={
                     "id": notification.id,
-                    "type": notification.notification_type.value,
+                    "type": notification.notification_type,
                     "title": notification.title,
                     "body": notification.body,
                     "trip_id": notification.trip_id,

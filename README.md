@@ -99,12 +99,31 @@ Pathfinder uses a modern serverless architecture optimized for cost and scalabil
 | Layer | Technology |
 |-------|------------|
 | Frontend | React 18, TypeScript, Vite, Tailwind CSS, Fluent UI v9 |
-| Backend | Azure Functions (Python 3.13), FastAPI patterns |
-| Database | Azure Cosmos DB (Serverless, SQL API) |
+| Backend | Azure Functions v2 (Python 3.13), Blueprint-based |
+| Database | Azure Cosmos DB (Serverless, NoSQL API — single `entities` container) |
 | Real-time | Azure SignalR Service (Free tier) |
-| Auth | Microsoft Entra ID, MSAL.js |
-| AI | OpenAI GPT-5-mini |
-| Infrastructure | Bicep, GitHub Actions |
+| Auth | Microsoft Entra ID, MSAL.js, PyJWT + JWKS |
+| AI | OpenAI GPT-4o |
+| Queues | Azure Storage Queues (itinerary generation, notifications) |
+| Infrastructure | Bicep IaC, GitHub Actions CI/CD |
+
+### Backend Architecture
+
+The backend follows **clean architecture** with domain-driven design:
+
+```
+function_app.py          ← Azure Functions entry point (registers blueprints)
+├── functions/http/      ← HTTP triggers (thin controllers, no business logic)
+├── functions/queue/     ← Queue triggers (async itinerary generation, notifications)
+├── functions/timer/     ← Timer triggers (cleanup expired data, close polls)
+├── services/            ← Business logic layer (source of truth for all contracts)
+├── models/documents.py  ← Cosmos DB document models (Pydantic v2)
+├── models/schemas.py    ← API request/response schemas
+├── repositories/        ← Data access (singleton cosmos_repo with typed CRUD)
+└── core/                ← Config, security (JWT validation), error handling
+```
+
+**Key pattern:** Services are the source of truth. HTTP functions are thin wrappers that validate input, call a service method, and return the response. All Cosmos DB access goes through the `cosmos_repo` singleton.
 
 ---
 
@@ -232,22 +251,29 @@ See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed instructions.
 ```
 pathfinder/
 ├── backend/
-│   ├── function_app.py      # Azure Functions entry point
-│   ├── core/                 # Config, security, errors
-│   ├── models/               # Pydantic models
-│   ├── repositories/         # Data access layer
-│   ├── services/             # Business logic
-│   └── functions/            # HTTP, Queue, Timer functions
+│   ├── function_app.py        # Azure Functions entry point
+│   ├── core/                   # Config, security, error handling
+│   ├── models/
+│   │   ├── documents.py        # Cosmos DB document models (Pydantic v2)
+│   │   └── schemas.py          # API request/response schemas
+│   ├── repositories/
+│   │   └── cosmos_repository.py  # Singleton data access layer
+│   ├── services/               # Business logic (source of truth)
+│   └── functions/
+│       ├── http/               # HTTP triggers (API endpoints)
+│       ├── queue/              # Queue triggers (async processing)
+│       └── timer/              # Timer triggers (scheduled cleanup)
 ├── frontend/
 │   ├── src/
-│   │   ├── components/       # React components
-│   │   ├── pages/            # Route pages
-│   │   ├── services/         # API clients
-│   │   └── lib/              # Utilities
+│   │   ├── components/         # React components (Fluent UI v9)
+│   │   ├── pages/              # Route pages
+│   │   ├── services/           # API clients
+│   │   └── lib/                # Utilities
 │   └── public/
 ├── infrastructure/
-│   └── bicep/                # Azure Bicep templates
-└── docs/                     # Documentation
+│   └── bicep/                  # Azure Bicep IaC templates
+├── specs/                      # PRD, Tech Spec, Tasks
+└── docs/                       # Deployment guide
 ```
 
 ### API Endpoints
@@ -321,7 +347,9 @@ This project is licensed under the [GNU Affero General Public License v3.0](LICE
 
 - [Deployment Guide](docs/DEPLOYMENT.md)
 - [Architecture Decisions](architecture_decision_records/)
-- [Revamp Plan](docs/specs/revamp_pathfinder.md)
+- [Product Requirements](specs/PRD-Pathfinder.md)
+- [Technical Specification](specs/Tech_Spec_Pathfinder.md)
+- [Implementation Tasks](specs/Tasks.md)
 
 ---
 

@@ -1,18 +1,23 @@
 """Models module initialization."""
+
 from models.documents import (
     BaseDocument,
     FamilyDocument,
     InvitationDocument,
     ItineraryDocument,
     MessageDocument,
+    NotificationDocument,
     PollDocument,
     TripDocument,
     UserDocument,
 )
 from models.schemas import (
+    AssistantRequest,
     FamilyCreate,
+    FamilyInviteRequest,
     FamilyResponse,
     FamilyUpdate,
+    ItineraryGenerateRequest,
     MessageCreate,
     MessageResponse,
     PollCreate,
@@ -22,6 +27,7 @@ from models.schemas import (
     TripResponse,
     TripUpdate,
     UserProfile,
+    UserResponse,
 )
 
 __all__ = [
@@ -34,17 +40,22 @@ __all__ = [
     "PollDocument",
     "InvitationDocument",
     "ItineraryDocument",
+    "NotificationDocument",
     # Schemas
     "TripCreate",
     "TripUpdate",
     "TripResponse",
     "FamilyCreate",
     "FamilyUpdate",
+    "FamilyInviteRequest",
     "FamilyResponse",
     "UserProfile",
+    "UserResponse",
     "PollCreate",
     "PollVote",
     "PollResponse",
     "MessageCreate",
     "MessageResponse",
+    "ItineraryGenerateRequest",
+    "AssistantRequest",
 ]

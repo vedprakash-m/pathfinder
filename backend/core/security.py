@@ -3,8 +3,9 @@ Security Module
 
 Handles JWT token validation and user authentication via Microsoft Entra ID.
 """
+
 import logging
-from typing import Any, Optional
+from typing import Any
 
 import azure.functions as func
 import jwt
@@ -16,7 +17,7 @@ from repositories.cosmos_repository import cosmos_repo
 logger = logging.getLogger(__name__)
 
 # Cache JWKS client
-_jwks_client: Optional[PyJWKClient] = None
+_jwks_client: PyJWKClient | None = None
 
 
 def get_jwks_client() -> PyJWKClient:
@@ -31,7 +32,7 @@ def get_jwks_client() -> PyJWKClient:
     return _jwks_client
 
 
-def extract_token(req: func.HttpRequest) -> Optional[str]:
+def extract_token(req: func.HttpRequest) -> str | None:
     """
     Extract Bearer token from Authorization header.
 
@@ -47,7 +48,7 @@ def extract_token(req: func.HttpRequest) -> Optional[str]:
     return None
 
 
-async def validate_token(token: str) -> Optional[dict[str, Any]]:
+async def validate_token(token: str) -> dict[str, Any] | None:
     """
     Validate JWT token and return claims.
 
@@ -137,7 +138,7 @@ async def get_or_create_user(claims: dict[str, Any]) -> UserDocument:
     return await cosmos_repo.create(user)
 
 
-async def get_user_from_request(req: func.HttpRequest) -> Optional[UserDocument]:
+async def get_user_from_request(req: func.HttpRequest) -> UserDocument | None:
     """
     Extract and validate user from HTTP request.
 
@@ -168,7 +169,7 @@ async def get_user_from_request(req: func.HttpRequest) -> Optional[UserDocument]
 
 def require_auth(
     req: func.HttpRequest,
-) -> tuple[Optional[UserDocument], Optional[func.HttpResponse]]:
+) -> tuple[UserDocument | None, func.HttpResponse | None]:
     """
     Synchronous auth check that returns user or error response.
 

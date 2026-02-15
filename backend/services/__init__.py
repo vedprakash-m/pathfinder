@@ -1,4 +1,5 @@
 """Services module initialization."""
+
 from services.assistant_service import AssistantService, get_assistant_service
 from services.collaboration_service import CollaborationService, get_collaboration_service
 from services.family_service import FamilyService, get_family_service

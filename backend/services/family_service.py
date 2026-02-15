@@ -3,6 +3,7 @@ Family Service
 
 Business logic for family management operations.
 """
+
 import logging
 from datetime import UTC, datetime, timedelta
 from typing import Optional
@@ -12,6 +13,18 @@ from models.schemas import FamilyCreate, FamilyUpdate
 from repositories.cosmos_repository import cosmos_repo
 
 logger = logging.getLogger(__name__)
+
+
+# Service singleton
+_family_service: Optional["FamilyService"] = None
+
+
+def get_family_service() -> "FamilyService":
+    """Get or create family service singleton."""
+    global _family_service
+    if _family_service is None:
+        _family_service = FamilyService()
+    return _family_service
 
 
 class FamilyService:
@@ -47,7 +60,7 @@ class FamilyService:
         logger.info(f"Created family '{created.name}' by user {user.id}")
         return created
 
-    async def get_family(self, family_id: str) -> Optional[FamilyDocument]:
+    async def get_family(self, family_id: str) -> FamilyDocument | None:
         """
         Get a family by ID.
 
@@ -86,7 +99,7 @@ class FamilyService:
             query=query, parameters=[{"name": "@userId", "value": user_id}], model_class=FamilyDocument, max_items=limit
         )
 
-    async def update_family(self, family_id: str, data: FamilyUpdate, user: UserDocument) -> Optional[FamilyDocument]:
+    async def update_family(self, family_id: str, data: FamilyUpdate, user: UserDocument) -> FamilyDocument | None:
         """
         Update a family.
 
@@ -153,7 +166,7 @@ class FamilyService:
 
     async def invite_member(
         self, family_id: str, email: str, role: str, user: UserDocument
-    ) -> Optional[InvitationDocument]:
+    ) -> InvitationDocument | None:
         """
         Create an invitation to join a family.
 
@@ -192,7 +205,7 @@ class FamilyService:
 
         return created
 
-    async def accept_invitation(self, token: str, user: UserDocument) -> Optional[FamilyDocument]:
+    async def accept_invitation(self, token: str, user: UserDocument) -> FamilyDocument | None:
         """
         Accept a family invitation.
 

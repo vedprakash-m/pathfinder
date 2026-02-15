@@ -3,13 +3,16 @@ Notification Service
 
 Handles in-app notifications and real-time message delivery.
 """
-import uuid
-from datetime import UTC, datetime
-from enum import Enum
-from typing import Any, Optional
 
-from models.documents import BaseDocument
-from repositories.cosmos_repository import CosmosRepository
+import logging
+from datetime import UTC, datetime
+from enum import StrEnum
+from typing import Any
+
+from models.documents import NotificationDocument
+from repositories.cosmos_repository import cosmos_repo
+
+logger = logging.getLogger(__name__)
 
 
 def utc_now() -> datetime:
@@ -17,7 +20,7 @@ def utc_now() -> datetime:
     return datetime.now(UTC)
 
 
-class NotificationType(str, Enum):
+class NotificationType(StrEnum):
     """Types of notifications."""
 
     TRIP_CREATED = "trip_created"
@@ -37,33 +40,8 @@ class NotificationType(str, Enum):
     CONSENSUS_REACHED = "consensus_reached"
 
 
-class NotificationDocument(BaseDocument):
-    """Notification document for Cosmos DB."""
-
-    entity_type: str = "notification"
-    user_id: str
-    title: str
-    body: str
-    notification_type: NotificationType
-    trip_id: Optional[str] = None
-    family_id: Optional[str] = None
-    action_url: Optional[str] = None
-    is_read: bool = False
-    read_at: Optional[datetime] = None
-    metadata: dict[str, Any] = {}
-
-
 class NotificationService:
     """Handles notification creation and delivery."""
-
-    def __init__(self) -> None:
-        self._repo: Optional[CosmosRepository] = None
-
-    @property
-    def repo(self) -> CosmosRepository:
-        if self._repo is None:
-            self._repo = CosmosRepository()
-        return self._repo
 
     async def create_notification(
         self,
@@ -71,10 +49,10 @@ class NotificationService:
         notification_type: NotificationType,
         title: str,
         body: str,
-        trip_id: Optional[str] = None,
-        family_id: Optional[str] = None,
-        action_url: Optional[str] = None,
-        metadata: Optional[dict[str, Any]] = None,
+        trip_id: str | None = None,
+        family_id: str | None = None,
+        action_url: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> NotificationDocument:
         """
         Create a new notification.
@@ -92,26 +70,20 @@ class NotificationService:
         Returns:
             Created notification
         """
-        await self.repo.initialize()
-
         notification = NotificationDocument(
-            id=str(uuid.uuid4()),
-            entity_type="notification",
+            pk=f"notification_{user_id}",
             user_id=user_id,
-            notification_type=notification_type,
+            notification_type=notification_type.value,
             title=title,
             body=body,
             trip_id=trip_id,
             family_id=family_id,
             action_url=action_url,
             metadata=metadata or {},
-            created_at=utc_now(),
-            updated_at=utc_now(),
         )
 
-        await self.repo.create(notification.model_dump(), notification.id)
-
-        return notification
+        created = await cosmos_repo.create(notification)
+        return created
 
     async def notify_users(
         self,
@@ -119,10 +91,10 @@ class NotificationService:
         notification_type: NotificationType,
         title: str,
         body: str,
-        trip_id: Optional[str] = None,
-        family_id: Optional[str] = None,
-        action_url: Optional[str] = None,
-        metadata: Optional[dict[str, Any]] = None,
+        trip_id: str | None = None,
+        family_id: str | None = None,
+        action_url: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> list[NotificationDocument]:
         """
         Send notification to multiple users.
@@ -172,22 +144,23 @@ class NotificationService:
         Returns:
             List of notifications
         """
-        await self.repo.initialize()
-
-        conditions = ["c.entity_type = 'notification'", f"c.user_id = '{user_id}'"]
+        query = """
+            SELECT * FROM c
+            WHERE c.entity_type = 'notification'
+            AND c.user_id = @userId
+        """
+        params = [{"name": "@userId", "value": user_id}]
 
         if unread_only:
-            conditions.append("c.is_read = false")
+            query += " AND c.is_read = false"
 
-        query = f"""
-            SELECT * FROM c
-            WHERE {' AND '.join(conditions)}
-            ORDER BY c.created_at DESC
-            OFFSET {offset} LIMIT {limit}
-        """
+        query += " ORDER BY c.created_at DESC"
 
-        results = await self.repo.query(query)
-        return [NotificationDocument(**n) for n in results]
+        results = await cosmos_repo.query(
+            query=query, parameters=params, model_class=NotificationDocument, max_items=limit
+        )
+
+        return results[offset:] if offset else results
 
     async def get_unread_count(self, user_id: str) -> int:
         """
@@ -199,18 +172,17 @@ class NotificationService:
         Returns:
             Count of unread notifications
         """
-        await self.repo.initialize()
-
-        query = f"""
+        query = """
             SELECT VALUE COUNT(1) FROM c
             WHERE c.entity_type = 'notification'
-            AND c.user_id = '{user_id}'
+            AND c.user_id = @userId
             AND c.is_read = false
         """
+        params = [{"name": "@userId", "value": user_id}]
 
-        return await self.repo.count(query)
+        return await cosmos_repo.count(query=query, parameters=params)
 
-    async def mark_as_read(self, notification_id: str, user_id: str) -> Optional[NotificationDocument]:
+    async def mark_as_read(self, notification_id: str, user_id: str) -> NotificationDocument | None:
         """
         Mark a notification as read.
 
@@ -221,26 +193,20 @@ class NotificationService:
         Returns:
             Updated notification or None
         """
-        await self.repo.initialize()
+        pk = f"notification_{user_id}"
+        notification = await cosmos_repo.get_by_id(notification_id, pk, NotificationDocument)
 
-        # Get existing notification
-        notification_dict = await self.repo.get_by_id(notification_id, notification_id)
-        if not notification_dict:
+        if not notification:
             return None
 
         # Verify ownership
-        if notification_dict.get("user_id") != user_id:
+        if notification.user_id != user_id:
             return None
 
-        # Update
-        now = utc_now()
-        notification_dict["is_read"] = True
-        notification_dict["read_at"] = now.isoformat()
-        notification_dict["updated_at"] = now.isoformat()
+        notification.is_read = True
+        notification.read_at = utc_now()
 
-        await self.repo.update(notification_id, notification_dict, notification_id)
-
-        return NotificationDocument(**notification_dict)
+        return await cosmos_repo.update(notification)
 
     async def mark_all_as_read(self, user_id: str) -> int:
         """
@@ -252,25 +218,23 @@ class NotificationService:
         Returns:
             Number of notifications marked as read
         """
-        await self.repo.initialize()
-
-        # Get all unread
-        query = f"""
+        query = """
             SELECT * FROM c
             WHERE c.entity_type = 'notification'
-            AND c.user_id = '{user_id}'
+            AND c.user_id = @userId
             AND c.is_read = false
         """
+        params = [{"name": "@userId", "value": user_id}]
 
-        results = await self.repo.query(query)
-        now = utc_now()
+        results = await cosmos_repo.query(query=query, parameters=params, model_class=NotificationDocument)
+
         marked = 0
+        now = utc_now()
 
         for notification in results:
-            notification["is_read"] = True
-            notification["read_at"] = now.isoformat()
-            notification["updated_at"] = now.isoformat()
-            await self.repo.update(notification["id"], notification, notification["id"])
+            notification.is_read = True
+            notification.read_at = now
+            await cosmos_repo.update(notification)
             marked += 1
 
         return marked
@@ -286,15 +250,13 @@ class NotificationService:
         Returns:
             True if deleted
         """
-        await self.repo.initialize()
+        pk = f"notification_{user_id}"
+        notification = await cosmos_repo.get_by_id(notification_id, pk, NotificationDocument)
 
-        # Verify ownership first
-        notification = await self.repo.get_by_id(notification_id, notification_id)
-        if not notification or notification.get("user_id") != user_id:
+        if not notification or notification.user_id != user_id:
             return False
 
-        await self.repo.delete(notification_id, notification_id)
-        return True
+        return await cosmos_repo.delete(notification_id, pk)
 
 
 # Notification helper functions for common scenarios
@@ -356,7 +318,7 @@ async def notify_poll_created(
 
 
 # Service singleton
-_notification_service: Optional[NotificationService] = None
+_notification_service: NotificationService | None = None
 
 
 def get_notification_service() -> NotificationService:

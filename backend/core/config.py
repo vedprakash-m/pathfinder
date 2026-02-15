@@ -4,6 +4,7 @@ Configuration Management
 Loads settings from environment variables with sensible defaults.
 Uses Pydantic for validation and type safety.
 """
+
 from functools import lru_cache
 
 from pydantic import Field
@@ -47,6 +48,12 @@ class Settings(BaseSettings):
     CORS_ORIGINS: str = Field(
         default="http://localhost:3000,https://pf-swa.azurestaticapps.net",
         description="Comma-separated list of allowed origins",
+    )
+
+    # Frontend
+    FRONTEND_URL: str = Field(
+        default="http://localhost:3000",
+        description="Frontend URL for redirects and MSAL config",
     )
 
     # Rate Limiting

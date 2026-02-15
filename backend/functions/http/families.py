@@ -3,29 +3,24 @@ Families HTTP Functions
 
 CRUD operations for family and member management.
 """
+
 import logging
-from datetime import UTC, datetime
 
 import azure.functions as func
 
 from core.errors import APIError, ErrorCode, error_response, success_response
 from core.security import get_user_from_request
 from models.schemas import (
-    FamilyCreateRequest,
+    FamilyCreate,
+    FamilyInviteRequest,
     FamilyResponse,
-    FamilyUpdateRequest,
-    InvitationRequest,
+    FamilyUpdate,
     UserResponse,
 )
 from services.family_service import get_family_service
 
 bp = func.Blueprint()
 logger = logging.getLogger(__name__)
-
-
-def utc_now() -> datetime:
-    """Get current UTC time (timezone-aware)."""
-    return datetime.now(UTC)
 
 
 async def require_auth(req: func.HttpRequest):
@@ -65,16 +60,16 @@ async def create_family(req: func.HttpRequest) -> func.HttpResponse:
     """
     Create a new family.
 
-    Body: FamilyCreateRequest
+    Body: FamilyCreate
     """
     try:
         user = await require_auth(req)
 
         body = req.get_json()
-        family_data = FamilyCreateRequest(**body)
+        family_data = FamilyCreate(**body)
 
         service = get_family_service()
-        family = await service.create_family(name=family_data.name, creator_id=user.id)
+        family = await service.create_family(data=family_data, user=user)
 
         family_response = FamilyResponse.from_document(family)
         return success_response(family_response.model_dump(), status_code=201)
@@ -109,7 +104,7 @@ async def get_family(req: func.HttpRequest) -> func.HttpResponse:
             return error_response(APIError(code=ErrorCode.NOT_FOUND, message="Family not found"), status_code=404)
 
         # Check if user is a member
-        if user.id not in family.member_user_ids:
+        if user.id not in family.member_ids:
             return error_response(
                 APIError(code=ErrorCode.AUTHORIZATION_ERROR, message="Access denied"), status_code=403
             )
@@ -142,28 +137,14 @@ async def update_family(req: func.HttpRequest) -> func.HttpResponse:
             )
 
         body = req.get_json()
-        update_data = FamilyUpdateRequest(**body)
+        update_data = FamilyUpdate(**body)
 
         service = get_family_service()
-        family = await service.get_family(family_id)
-
-        if not family:
-            return error_response(APIError(code=ErrorCode.NOT_FOUND, message="Family not found"), status_code=404)
-
-        # Check admin access
-        if family.admin_user_id != user.id:
-            return error_response(
-                APIError(code=ErrorCode.AUTHORIZATION_ERROR, message="Only the admin can update the family"),
-                status_code=403,
-            )
-
-        # Apply updates
-        update_fields = update_data.model_dump(exclude_unset=True)
-        updated_family = await service.update_family(family_id, **update_fields)
+        updated_family = await service.update_family(family_id=family_id, data=update_data, user=user)
 
         if not updated_family:
             return error_response(
-                APIError(code=ErrorCode.INTERNAL_ERROR, message="Failed to update family"), status_code=500
+                APIError(code=ErrorCode.NOT_FOUND, message="Family not found or access denied"), status_code=404
             )
 
         family_response = FamilyResponse.from_document(updated_family)
@@ -200,7 +181,7 @@ async def get_family_members(req: func.HttpRequest) -> func.HttpResponse:
             return error_response(APIError(code=ErrorCode.NOT_FOUND, message="Family not found"), status_code=404)
 
         # Check membership
-        if user.id not in family.member_user_ids:
+        if user.id not in family.member_ids:
             return error_response(
                 APIError(code=ErrorCode.AUTHORIZATION_ERROR, message="Access denied"), status_code=403
             )
@@ -231,7 +212,7 @@ async def invite_member(req: func.HttpRequest) -> func.HttpResponse:
     """
     Invite a new member to the family.
 
-    Body: InvitationRequest
+    Body: FamilyInviteRequest
     """
     try:
         user = await require_auth(req)
@@ -243,29 +224,18 @@ async def invite_member(req: func.HttpRequest) -> func.HttpResponse:
             )
 
         body = req.get_json()
-        invite_data = InvitationRequest(**body)
+        invite_data = FamilyInviteRequest(**body)
 
         service = get_family_service()
-        family = await service.get_family(family_id)
-
-        if not family:
-            return error_response(APIError(code=ErrorCode.NOT_FOUND, message="Family not found"), status_code=404)
-
-        # Check if user can invite (must be member)
-        if user.id not in family.member_user_ids:
-            return error_response(
-                APIError(code=ErrorCode.AUTHORIZATION_ERROR, message="Only members can invite others"), status_code=403
-            )
-
-        invitation = await service.invite_member(family_id=family_id, email=invite_data.email, inviter_id=user.id)
+        invitation = await service.invite_member(
+            family_id=family_id, email=invite_data.email, role=invite_data.role, user=user
+        )
 
         if not invitation:
             return error_response(
-                APIError(code=ErrorCode.INTERNAL_ERROR, message="Failed to create invitation"), status_code=500
+                APIError(code=ErrorCode.AUTHORIZATION_ERROR, message="Not authorized to invite members"),
+                status_code=403,
             )
-
-        # Send notification (if user exists)
-        # This would typically be done via email service for new users
 
         return success_response(
             {
@@ -291,6 +261,8 @@ async def invite_member(req: func.HttpRequest) -> func.HttpResponse:
 async def accept_invitation(req: func.HttpRequest) -> func.HttpResponse:
     """
     Accept a family invitation.
+
+    The invitation_id in the route is used as the invitation token.
     """
     try:
         user = await require_auth(req)
@@ -302,7 +274,8 @@ async def accept_invitation(req: func.HttpRequest) -> func.HttpResponse:
             )
 
         service = get_family_service()
-        family = await service.accept_invitation(invitation_id=invitation_id, user_id=user.id)
+        # accept_invitation takes (token, user) — the invitation_id serves as the token
+        family = await service.accept_invitation(token=invitation_id, user=user)
 
         if not family:
             return error_response(
@@ -326,25 +299,17 @@ async def accept_invitation(req: func.HttpRequest) -> func.HttpResponse:
 async def decline_invitation(req: func.HttpRequest) -> func.HttpResponse:
     """
     Decline a family invitation.
+
+    Note: decline_invitation is not yet implemented in FamilyService.
+    This endpoint returns 501 until the service method is added.
     """
     try:
-        user = await require_auth(req)
-        invitation_id = req.route_params.get("invitation_id")
+        await require_auth(req)
 
-        if not invitation_id:
-            return error_response(
-                APIError(code=ErrorCode.VALIDATION_ERROR, message="Invitation ID is required"), status_code=400
-            )
-
-        service = get_family_service()
-        success = await service.decline_invitation(invitation_id=invitation_id, user_id=user.id)
-
-        if not success:
-            return error_response(
-                APIError(code=ErrorCode.NOT_FOUND, message="Invitation not found or already processed"), status_code=404
-            )
-
-        return success_response({"message": "Invitation declined"})
+        return error_response(
+            APIError(code=ErrorCode.INTERNAL_ERROR, message="Decline invitation not yet implemented"),
+            status_code=501,
+        )
 
     except APIError as e:
         status = 401 if e.code == ErrorCode.AUTHENTICATION_ERROR else 400
@@ -375,31 +340,12 @@ async def remove_member(req: func.HttpRequest) -> func.HttpResponse:
             )
 
         service = get_family_service()
-        family = await service.get_family(family_id)
-
-        if not family:
-            return error_response(APIError(code=ErrorCode.NOT_FOUND, message="Family not found"), status_code=404)
-
-        # Check permissions: admin can remove anyone, members can remove themselves
-        is_admin = family.admin_user_id == user.id
-        is_self = member_id == user.id
-
-        if not is_admin and not is_self:
-            return error_response(
-                APIError(code=ErrorCode.AUTHORIZATION_ERROR, message="Cannot remove other members"), status_code=403
-            )
-
-        # Cannot remove admin
-        if member_id == family.admin_user_id:
-            return error_response(
-                APIError(code=ErrorCode.VALIDATION_ERROR, message="Cannot remove the family admin"), status_code=400
-            )
-
-        success = await service.remove_member(family_id, member_id)
+        success = await service.remove_member(family_id=family_id, member_id=member_id, user=user)
 
         if not success:
             return error_response(
-                APIError(code=ErrorCode.INTERNAL_ERROR, message="Failed to remove member"), status_code=500
+                APIError(code=ErrorCode.NOT_FOUND, message="Family or member not found, or access denied"),
+                status_code=404,
             )
 
         return success_response({"message": "Member removed successfully"})
@@ -418,28 +364,16 @@ async def remove_member(req: func.HttpRequest) -> func.HttpResponse:
 async def get_pending_invitations(req: func.HttpRequest) -> func.HttpResponse:
     """
     Get pending invitations for the current user.
+
+    Note: get_user_invitations is not yet implemented in FamilyService.
+    This endpoint returns 501 until the service method is added.
     """
     try:
-        user = await require_auth(req)
+        await require_auth(req)
 
-        service = get_family_service()
-        invitations = await service.get_user_invitations(user.id)
-
-        return success_response(
-            {
-                "items": [
-                    {
-                        "id": inv.id,
-                        "family_id": inv.family_id,
-                        "email": inv.email,
-                        "status": inv.status,
-                        "created_at": inv.created_at.isoformat(),
-                        "expires_at": inv.expires_at.isoformat() if inv.expires_at else None,
-                    }
-                    for inv in invitations
-                ],
-                "total": len(invitations),
-            }
+        return error_response(
+            APIError(code=ErrorCode.INTERNAL_ERROR, message="Get user invitations not yet implemented"),
+            status_code=501,
         )
 
     except APIError as e:

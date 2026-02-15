@@ -3,6 +3,7 @@ Collaboration Service
 
 Business logic for polls, voting, and consensus building.
 """
+
 import logging
 from datetime import UTC, datetime
 from typing import Any, Optional
@@ -12,6 +13,18 @@ from models.schemas import PollCreate, PollVote
 from repositories.cosmos_repository import cosmos_repo
 
 logger = logging.getLogger(__name__)
+
+
+# Service singleton
+_collaboration_service: Optional["CollaborationService"] = None
+
+
+def get_collaboration_service() -> "CollaborationService":
+    """Get or create collaboration service singleton."""
+    global _collaboration_service
+    if _collaboration_service is None:
+        _collaboration_service = CollaborationService()
+    return _collaboration_service
 
 
 class CollaborationService:
@@ -51,7 +64,7 @@ class CollaborationService:
 
         return created
 
-    async def get_poll(self, poll_id: str) -> Optional[PollDocument]:
+    async def get_poll(self, poll_id: str) -> PollDocument | None:
         """
         Get a poll by ID.
 
@@ -68,7 +81,7 @@ class CollaborationService:
 
         return polls[0] if polls else None
 
-    async def get_trip_polls(self, trip_id: str, status: Optional[str] = None, limit: int = 50) -> list[PollDocument]:
+    async def get_trip_polls(self, trip_id: str, status: str | None = None, limit: int = 50) -> list[PollDocument]:
         """
         Get all polls for a trip.
 
@@ -95,7 +108,7 @@ class CollaborationService:
 
         return await cosmos_repo.query(query=query, parameters=params, model_class=PollDocument, max_items=limit)
 
-    async def vote_on_poll(self, poll_id: str, vote: PollVote, user: UserDocument) -> Optional[PollDocument]:
+    async def vote_on_poll(self, poll_id: str, vote: PollVote, user: UserDocument) -> PollDocument | None:
         """
         Cast a vote on a poll.
 
@@ -161,7 +174,7 @@ class CollaborationService:
 
         return updated
 
-    async def close_poll(self, poll_id: str, user: UserDocument) -> Optional[PollDocument]:
+    async def close_poll(self, poll_id: str, user: UserDocument) -> PollDocument | None:
         """
         Close a poll and calculate results.
 

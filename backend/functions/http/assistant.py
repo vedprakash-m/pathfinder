@@ -3,26 +3,21 @@ AI Assistant HTTP Functions
 
 Conversational AI assistant for trip planning help.
 """
+
 import logging
-from datetime import UTC, datetime
 
 import azure.functions as func
 
 from core.errors import APIError, ErrorCode, error_response, success_response
 from core.security import get_user_from_request
 from models.schemas import (
-    AssistantMessageRequest,
+    AssistantRequest,
     MessageResponse,
 )
 from services.assistant_service import get_assistant_service
 
 bp = func.Blueprint()
 logger = logging.getLogger(__name__)
-
-
-def utc_now() -> datetime:
-    """Get current UTC time (timezone-aware)."""
-    return datetime.now(UTC)
 
 
 async def require_auth(req: func.HttpRequest):
@@ -44,7 +39,7 @@ async def send_message(req: func.HttpRequest) -> func.HttpResponse:
         user = await require_auth(req)
 
         body = req.get_json()
-        message_data = AssistantMessageRequest(**body)
+        message_data = AssistantRequest(**body)
 
         service = get_assistant_service()
         response = await service.send_message(

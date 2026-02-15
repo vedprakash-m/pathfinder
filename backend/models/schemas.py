@@ -4,10 +4,23 @@ API Schemas
 Pydantic models for API request/response validation.
 These are separate from document models to control what's exposed via API.
 """
+
+from __future__ import annotations
+
 from datetime import datetime
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, EmailStr, Field
+
+if TYPE_CHECKING:
+    from models.documents import (
+        FamilyDocument,
+        ItineraryDocument,
+        MessageDocument,
+        PollDocument,
+        TripDocument,
+        UserDocument,
+    )
 
 # ============================================================================
 # User Schemas
@@ -19,16 +32,16 @@ class UserProfile(BaseModel):
 
     id: str
     email: str
-    name: Optional[str] = None
+    name: str | None = None
     role: str
-    picture: Optional[str] = None
+    picture: str | None = None
     is_active: bool = True
     onboarding_completed: bool = False
     family_ids: list[str] = Field(default_factory=list)
     created_at: datetime
 
     @classmethod
-    def from_document(cls, doc: "UserDocument") -> "UserProfile":
+    def from_document(cls, doc: UserDocument) -> UserProfile:
         """Create from UserDocument."""
         return cls(
             id=doc.id,
@@ -49,6 +62,29 @@ class UserPreferencesUpdate(BaseModel):
     preferences: dict[str, Any]
 
 
+class UserResponse(BaseModel):
+    """User response schema for API endpoints."""
+
+    id: str
+    email: str
+    name: str | None = None
+    role: str
+    picture: str | None = None
+    is_active: bool = True
+
+    @classmethod
+    def from_document(cls, doc: UserDocument) -> UserResponse:
+        """Create from UserDocument."""
+        return cls(
+            id=doc.id,
+            email=doc.email,
+            name=doc.name,
+            role=doc.role,
+            picture=doc.picture,
+            is_active=doc.is_active,
+        )
+
+
 # ============================================================================
 # Family Schemas
 # ============================================================================
@@ -58,22 +94,22 @@ class FamilyCreate(BaseModel):
     """Schema for creating a family."""
 
     name: str = Field(..., min_length=1, max_length=100)
-    description: Optional[str] = Field(default=None, max_length=500)
+    description: str | None = Field(default=None, max_length=500)
 
 
 class FamilyUpdate(BaseModel):
     """Schema for updating a family."""
 
-    name: Optional[str] = Field(default=None, min_length=1, max_length=100)
-    description: Optional[str] = Field(default=None, max_length=500)
-    settings: Optional[dict[str, Any]] = None
+    name: str | None = Field(default=None, min_length=1, max_length=100)
+    description: str | None = Field(default=None, max_length=500)
+    settings: dict[str, Any] | None = None
 
 
 class FamilyMember(BaseModel):
     """Family member info for responses."""
 
     id: str
-    name: Optional[str]
+    name: str | None
     email: str
     role: str
 
@@ -83,14 +119,14 @@ class FamilyResponse(BaseModel):
 
     id: str
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     admin_user_id: str
     member_count: int = 0
     members: list[FamilyMember] = Field(default_factory=list)
     created_at: datetime
 
     @classmethod
-    def from_document(cls, doc: "FamilyDocument", members: Optional[list[FamilyMember]] = None) -> "FamilyResponse":
+    def from_document(cls, doc: FamilyDocument, members: list[FamilyMember] | None = None) -> FamilyResponse:
         """Create from FamilyDocument."""
         return cls(
             id=doc.id,
@@ -119,11 +155,11 @@ class TripCreate(BaseModel):
     """Schema for creating a trip."""
 
     title: str = Field(..., min_length=1, max_length=200)
-    description: Optional[str] = Field(default=None, max_length=2000)
-    destination: Optional[str] = Field(default=None, max_length=200)
-    start_date: Optional[datetime] = None
-    end_date: Optional[datetime] = None
-    budget: Optional[float] = Field(default=None, ge=0)
+    description: str | None = Field(default=None, max_length=2000)
+    destination: str | None = Field(default=None, max_length=200)
+    start_date: datetime | None = None
+    end_date: datetime | None = None
+    budget: float | None = Field(default=None, ge=0)
     currency: str = Field(default="USD", max_length=3)
     participating_family_ids: list[str] = Field(default_factory=list)
 
@@ -131,14 +167,14 @@ class TripCreate(BaseModel):
 class TripUpdate(BaseModel):
     """Schema for updating a trip."""
 
-    title: Optional[str] = Field(default=None, min_length=1, max_length=200)
-    description: Optional[str] = Field(default=None, max_length=2000)
-    destination: Optional[str] = Field(default=None, max_length=200)
-    start_date: Optional[datetime] = None
-    end_date: Optional[datetime] = None
-    status: Optional[str] = None
-    budget: Optional[float] = Field(default=None, ge=0)
-    currency: Optional[str] = Field(default=None, max_length=3)
+    title: str | None = Field(default=None, min_length=1, max_length=200)
+    description: str | None = Field(default=None, max_length=2000)
+    destination: str | None = Field(default=None, max_length=200)
+    start_date: datetime | None = None
+    end_date: datetime | None = None
+    status: str | None = None
+    budget: float | None = Field(default=None, ge=0)
+    currency: str | None = Field(default=None, max_length=3)
 
 
 class TripResponse(BaseModel):
@@ -146,12 +182,12 @@ class TripResponse(BaseModel):
 
     id: str
     title: str
-    description: Optional[str] = None
-    destination: Optional[str] = None
-    start_date: Optional[datetime] = None
-    end_date: Optional[datetime] = None
+    description: str | None = None
+    destination: str | None = None
+    start_date: datetime | None = None
+    end_date: datetime | None = None
     status: str
-    budget: Optional[float] = None
+    budget: float | None = None
     currency: str = "USD"
     organizer_user_id: str
     participating_family_ids: list[str] = Field(default_factory=list)
@@ -159,7 +195,7 @@ class TripResponse(BaseModel):
     updated_at: datetime
 
     @classmethod
-    def from_document(cls, doc: "TripDocument") -> "TripResponse":
+    def from_document(cls, doc: TripDocument) -> TripResponse:
         """Create from TripDocument."""
         return cls(
             id=doc.id,
@@ -188,8 +224,8 @@ class PollOption(BaseModel):
 
     id: str = Field(default_factory=lambda: str(__import__("uuid").uuid4()))
     text: str
-    description: Optional[str] = None
-    metadata: Optional[dict[str, Any]] = None
+    description: str | None = None
+    metadata: dict[str, Any] | None = None
 
 
 class PollCreate(BaseModel):
@@ -197,17 +233,17 @@ class PollCreate(BaseModel):
 
     trip_id: str
     title: str = Field(..., min_length=1, max_length=200)
-    description: Optional[str] = Field(default=None, max_length=1000)
+    description: str | None = Field(default=None, max_length=1000)
     poll_type: str = Field(default="single_choice")
     options: list[PollOption]
-    expires_at: Optional[datetime] = None
+    expires_at: datetime | None = None
 
 
 class PollVote(BaseModel):
     """Schema for voting on a poll."""
 
     option_ids: list[str] = Field(..., min_length=1)
-    comment: Optional[str] = Field(default=None, max_length=500)
+    comment: str | None = Field(default=None, max_length=500)
 
 
 class PollResponse(BaseModel):
@@ -217,17 +253,17 @@ class PollResponse(BaseModel):
     trip_id: str
     creator_id: str
     title: str
-    description: Optional[str] = None
+    description: str | None = None
     poll_type: str
     options: list[dict[str, Any]]
     vote_count: int = 0
     user_voted: bool = False
     status: str
-    expires_at: Optional[datetime] = None
+    expires_at: datetime | None = None
     created_at: datetime
 
     @classmethod
-    def from_document(cls, doc: "PollDocument", user_id: Optional[str] = None) -> "PollResponse":
+    def from_document(cls, doc: PollDocument, user_id: str | None = None) -> PollResponse:
         """Create from PollDocument."""
         return cls(
             id=doc.id,
@@ -270,7 +306,7 @@ class MessageResponse(BaseModel):
     created_at: datetime
 
     @classmethod
-    def from_document(cls, doc: "MessageDocument") -> "MessageResponse":
+    def from_document(cls, doc: MessageDocument) -> MessageResponse:
         """Create from MessageDocument."""
         return cls(
             id=doc.id,
@@ -292,20 +328,20 @@ class ItineraryDay(BaseModel):
     """Single day in an itinerary."""
 
     day_number: int
-    date: Optional[datetime] = None
+    date: datetime | None = None
     title: str
     activities: list[dict[str, Any]] = Field(default_factory=list)
     meals: list[dict[str, Any]] = Field(default_factory=list)
-    accommodation: Optional[dict[str, Any]] = None
-    notes: Optional[str] = None
+    accommodation: dict[str, Any] | None = None
+    notes: str | None = None
 
 
 class ItineraryGenerateRequest(BaseModel):
     """Schema for requesting AI itinerary generation."""
 
     trip_id: str
-    preferences: Optional[dict[str, Any]] = None
-    budget_per_day: Optional[float] = None
+    preferences: dict[str, Any] | None = None
+    budget_per_day: float | None = None
     activity_level: str = Field(default="moderate")  # relaxed, moderate, active
     interests: list[str] = Field(default_factory=list)
 
@@ -317,14 +353,14 @@ class ItineraryResponse(BaseModel):
     trip_id: str
     version_number: int
     title: str
-    summary: Optional[str] = None
+    summary: str | None = None
     days: list[dict[str, Any]]
     status: str
     generated_by: str
     created_at: datetime
 
     @classmethod
-    def from_document(cls, doc: "ItineraryDocument") -> "ItineraryResponse":
+    def from_document(cls, doc: ItineraryDocument) -> ItineraryResponse:
         """Create from ItineraryDocument."""
         return cls(
             id=doc.id,
@@ -355,7 +391,8 @@ class AssistantRequest(BaseModel):
     """Schema for AI assistant request."""
 
     message: str = Field(..., min_length=1, max_length=2000)
-    trip_id: Optional[str] = None
+    trip_id: str | None = None
+    family_id: str | None = None
     conversation_history: list[AssistantMessage] = Field(default_factory=list)
 
 

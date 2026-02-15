@@ -20,11 +20,11 @@
 This Technical Specification defines Pathfinder's implementation architecture. It leverages a production-ready, cost-optimized two-layer Azure architecture to deliver all PRD requirements through modern technologies and proven patterns.
 
 **Key Technical Achievements:**
-- ✅ Microsoft Entra External ID migration completed.
-- ✅ Two-layer cost-optimized Azure architecture (70% savings when idle).
-- ✅ Enhanced local validation with 100% CI/CD parity.
-- ✅ Test coverage at 84.2% with robust infrastructure.
-- ✅ Production-ready CI/CD pipeline with comprehensive security.
+- ✅ Microsoft Entra ID authentication with JWKS validation.
+- ✅ Two-layer cost-optimized Azure serverless architecture (90%+ savings when idle).
+- ✅ Azure Functions v2 (Python) with Blueprint-based modular HTTP/Queue/Timer triggers.
+- ✅ Unified Cosmos DB single-container design with synthetic partition keys.
+- ✅ CI/CD pipeline via GitHub Actions with change-detection gating.
 
 ---
 
@@ -51,10 +51,10 @@ This Technical Specification defines Pathfinder's implementation architecture. I
 │  │ Storage     │  │ Key Vault       │  │
 │  │ Account     │  │ (Secrets)       │  │
 │  └─────────────┘  └─────────────────┘  │
-│  ┌─────────────────┐                   │
-│  │ Service Bus     │                   │
-│  │ (Task Queue)    │                   │
-│  └─────────────────┘                   │
+│  ┌─────────────────┐  ┌─────────────┐  │
+│  │ Storage Queues  │  │ SignalR      │  │
+│  │ (Task Queue)    │  │ (Real-time)  │  │
+│  └─────────────────┘  └─────────────┘  │
 │  Cost: $0-5/month when paused          │
 │       Usage-based when active          │
 └─────────────────────────────────────────┘
@@ -63,14 +63,14 @@ This Technical Specification defines Pathfinder's implementation architecture. I
 │       EPHEMERAL COMPUTE LAYER           │
 │          (pathfinder-rg)                │
 │  ┌─────────────┐  ┌─────────────────┐  │
-│  │ Container   │  │ Backend Service │  │
-│  │ Apps Env    │  │ (FastAPI)       │  │
+│  │ Azure       │  │ Backend API     │  │
+│  │ Functions   │  │ (Python 3.13)   │  │
+│  │ (Flex Plan) │  │                 │  │
 │  └─────────────┘  └─────────────────┘  │
-│  ┌─────────────┐  ┌─────────────────┐  │
-│  │ Frontend    │  │ Container       │  │
-│  │ Service     │  │ Registry        │  │
-│  └─────────────┘  └─────────────────┘  │
-│  Cost: $35-50/month (Paused: $0)       │
+│  ┌─────────────────────────────────┐    │
+│  │ Static Web Apps (Frontend)     │    │
+│  └─────────────────────────────────┘    │
+│  Cost: Pay-per-execution (idle: ~$0)   │
 └─────────────────────────────────────────┘
 ```
 
@@ -91,18 +91,18 @@ This Technical Specification defines Pathfinder's implementation architecture. I
 - Vite (Build Tool & Dev Server)
 - Tailwind CSS (Styling Framework)
 - Fluent UI v9 (Microsoft Design System)
-- MSAL Browser (Authentication - Entra External ID)
-- Socket.IO Client (Real-time Communication)
+- MSAL Browser (Authentication - Entra ID)
+- Azure SignalR Client (Real-time Communication)
 - PWA Capabilities (Offline Support & Mobile Experience)
 
 **Backend Stack**
-- FastAPI (API Framework)
-- Python 3.11 (Runtime)
+- Azure Functions v2 Programming Model (Serverless API Framework)
+- Python 3.13 (Runtime)
 - Pydantic v2 (Data Validation & Serialization)
-- azure-cosmos (Cosmos DB SDK)
-- Celery (Asynchronous Task Queue)
-- Socket.IO (WebSocket Server)
-- MSAL Python (Authentication Integration)
+- azure-cosmos (Cosmos DB SDK — async client)
+- Azure Storage Queues (Asynchronous Task Processing)
+- Azure SignalR Service (Real-time Messaging)
+- PyJWT + JWKS (Microsoft Entra ID Token Validation)
 - AsyncIO (Asynchronous Processing)
 
 ---
@@ -308,20 +308,25 @@ All application data is stored in a single `entities` container.
 
 ## 3. API Design & Implementation
 
-### 3.1 RESTful API Architecture (FastAPI)
+### 3.1 RESTful API Architecture (Azure Functions Blueprints)
 
-The backend is a FastAPI application with modular routers for core entities and services.
+The backend uses Azure Functions v2 programming model with Blueprints for modular route registration.
 
-```
-from fastapi import FastAPI, APIRouter
+```python
+# function_app.py — entry point
+import azure.functions as func
+from functions.http.auth import bp as auth_bp
+from functions.http.trips import bp as trips_bp
+from functions.http.families import bp as families_bp
+from functions.http.itineraries import bp as itineraries_bp
+from functions.http.collaboration import bp as collaboration_bp
+from functions.http.assistant import bp as assistant_bp
+from functions.http.signalr import bp as signalr_bp
 
-api_router = APIRouter(prefix="/api/v1")
-api_router.include_router(auth_router, prefix="/auth", tags=["Authentication"])
-api_router.include_router(trips_router, prefix="/trips", tags=["Trip Management"])
-api_router.include_router(families_router, prefix="/families", tags=["Family Management"])
-api_router.include_router(itineraries_router, prefix="/itineraries", tags=["AI Itineraries"])
-api_router.include_router(websocket_router, prefix="/ws", tags=["Real-time Communication"])
-api_router.include_router(ai_router, prefix="/ai", tags=["AI Services"])
+app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
+app.register_blueprint(auth_bp)
+app.register_blueprint(trips_bp)
+# ... all blueprints registered
 ```
 
 ### 3.2 Key API Endpoints
@@ -333,11 +338,12 @@ api_router.include_router(ai_router, prefix="/ai", tags=["AI Services"])
 - `POST /api/v1/ai/itinerary/generate`: Queue AI itinerary generation (async)
 - `POST /api/v1/ai/polls/magic`: Create AI-generated poll options (async)
 
-### 3.3 WebSocket Implementation
+### 3.3 Real-time Communication (Azure SignalR Service)
 
-- Powered by Socket.IO WebSockets
-- **WebSocketManager:** Manages active connections, trip- and family-specific rooms
-- **broadcast_to_trip:** Sends structured events (chat, poll_update, itinerary_change) to trip participants
+- Powered by Azure SignalR Service (serverless mode)
+- **RealtimeService:** Manages JWT-based negotiate endpoint, group membership, and message delivery
+- **SignalR Groups:** Users join trip-scoped groups for real-time events (poll updates, itinerary changes, chat)
+- **Server-to-client:** REST API calls from Azure Functions to SignalR Service for push messaging
 
 ### 3.4 Comprehensive Error Handling & Logging
 
@@ -348,9 +354,8 @@ api_router.include_router(ai_router, prefix="/ai", tags=["AI Services"])
 
 ### 3.5 API Documentation & Contract Management
 
-- FastAPI + OpenAPI: Auto-generated docs at `/docs` and `/redoc`
-- Postman Collection: CI/CD generates and publishes from OpenAPI spec
-- Contract Testing: Validates API responses against OpenAPI schema
+- OpenAPI spec generated manually / from Pydantic schemas
+- Health, readiness, and liveness endpoints at `/api/health`, `/api/health/ready`, `/api/health/live`
 
 ---
 
@@ -391,14 +396,15 @@ api_router.include_router(ai_router, prefix="/ai", tags=["AI Services"])
 
 ### 5.1 Bicep Infrastructure as Code
 
-- **Persistent Data Layer:** Cosmos DB (serverless), Azure Storage, Key Vault
-- **Compute Layer:** Azure Container Apps Environment, backend/frontend apps, Container Registry
-- **Scaling:** minReplicas: 0 for cost savings, maxReplicas: 3 for scalability
+- **Persistent Data Layer:** Cosmos DB (serverless), Azure Storage, Key Vault, Azure SignalR Service (Free tier)
+- **Compute Layer:** Azure Functions (Flex Consumption plan), Azure Static Web Apps (Free tier)
+- **Scaling:** Azure Functions scale to zero when idle; auto-scale on demand
 
-### 5.2 Container Configuration
+### 5.2 Deployment Configuration
 
-- **Backend Dockerfile:** `python:3.11-slim`, uvicorn, non-root user
-- **Frontend Dockerfile:** `node:18-alpine` for build, `nginx:alpine` for runtime, Vite for optimized build
+- **Backend:** Azure Functions v2 Python — deployed via `Azure/functions-action` with Oryx build
+- **Frontend:** Vite production build deployed to Azure Static Web Apps via `Azure/static-web-apps-deploy`
+- **No containers required:** Both services use managed Azure platform runtimes
 
 ---
 
@@ -545,7 +551,7 @@ If user feedback validates the need for contextual enrichment, a minimal impleme
 class ContextEnrichmentService:
     """
     Lightweight service for read-only contextual data.
-    
+
     Design Constraints:
     - Read-only queries only (no transactional features)
     - Aggressive caching (24hr+ TTL)
@@ -553,7 +559,7 @@ class ContextEnrichmentService:
     - Cost-capped ($100/month maximum)
     - Maintains serverless cost optimization
     """
-    
+
     async def get_weather_context(
         self, location: str, dates: List[date]
     ) -> Optional[WeatherContext]:
@@ -563,7 +569,7 @@ class ContextEnrichmentService:
             cached = await self.cache.get(f"weather:{location}")
             if cached:
                 return cached
-            
+
             # Query external API (OpenWeatherMap free tier)
             result = await self.weather_api.query(location, dates)
             await self.cache.set(f"weather:{location}", result, ttl=86400)

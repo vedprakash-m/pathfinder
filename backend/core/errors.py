@@ -4,26 +4,29 @@ Error Handling
 Standardized error handling for the API.
 Provides consistent error responses across all endpoints.
 """
+
 import json
 import logging
-from enum import Enum
-from typing import Any, Optional
+from enum import StrEnum
+from typing import Any
 
 import azure.functions as func
 
 logger = logging.getLogger(__name__)
 
 
-class ErrorCode(str, Enum):
+class ErrorCode(StrEnum):
     """Standard error codes for API responses."""
 
     # Authentication errors (401)
     UNAUTHORIZED = "UNAUTHORIZED"
+    AUTHENTICATION_ERROR = "AUTHENTICATION_ERROR"
     TOKEN_EXPIRED = "TOKEN_EXPIRED"
     INVALID_TOKEN = "INVALID_TOKEN"
 
     # Authorization errors (403)
     FORBIDDEN = "FORBIDDEN"
+    AUTHORIZATION_ERROR = "AUTHORIZATION_ERROR"
     INSUFFICIENT_PERMISSIONS = "INSUFFICIENT_PERMISSIONS"
 
     # Resource errors (404)
@@ -59,7 +62,7 @@ class APIError(Exception):
         message: str,
         code: ErrorCode = ErrorCode.INTERNAL_ERROR,
         status_code: int = 500,
-        details: Optional[dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ):
         super().__init__(message)
         self.message = message
@@ -77,20 +80,31 @@ class APIError(Exception):
 
 
 def error_response(
-    message: str, status_code: int = 500, code: Optional[ErrorCode] = None, details: Optional[dict[str, Any]] = None
+    message: "str | APIError",
+    status_code: int = 500,
+    code: ErrorCode | None = None,
+    details: dict[str, Any] | None = None,
 ) -> func.HttpResponse:
     """
     Create a standardized error response.
 
     Args:
-        message: Human-readable error message
-        status_code: HTTP status code
-        code: Optional error code enum
-        details: Optional additional details
+        message: Human-readable error message, or an APIError instance
+        status_code: HTTP status code (ignored when message is APIError)
+        code: Optional error code enum (ignored when message is APIError)
+        details: Optional additional details (ignored when message is APIError)
 
     Returns:
         Azure Functions HTTP response with error JSON
     """
+    # If an APIError was passed, extract its fields
+    if isinstance(message, APIError):
+        api_error = message
+        return func.HttpResponse(
+            json.dumps(api_error.to_dict()),
+            status_code=status_code if status_code != 500 else api_error.status_code,
+            mimetype="application/json",
+        )
     # Determine error code from status if not provided
     if code is None:
         code_map = {

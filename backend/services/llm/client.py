@@ -3,6 +3,7 @@ LLM Client
 
 OpenAI client wrapper with cost tracking and error handling.
 """
+
 import logging
 import os
 from typing import Any, Optional
@@ -21,7 +22,7 @@ class LLMClient:
     """
 
     _instance: Optional["LLMClient"] = None
-    _client: Optional[AsyncOpenAI] = None
+    _client: AsyncOpenAI | None = None
 
     # Cost per 1K tokens (gpt-5-mini estimated pricing)
     # Update these as pricing changes
@@ -47,7 +48,7 @@ class LLMClient:
     async def complete(
         self,
         prompt: str,
-        system_prompt: Optional[str] = None,
+        system_prompt: str | None = None,
         max_tokens: int = 2000,
         temperature: float = 0.7,
         json_mode: bool = False,
@@ -109,7 +110,7 @@ class LLMClient:
     async def complete_with_history(
         self,
         messages: list[dict[str, str]],
-        system_prompt: Optional[str] = None,
+        system_prompt: str | None = None,
         max_tokens: int = 2000,
         temperature: float = 0.7,
     ) -> dict[str, Any]:

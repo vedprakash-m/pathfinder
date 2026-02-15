@@ -1,4 +1,5 @@
 """Unit tests for ItineraryService."""
+
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, patch
 
@@ -31,9 +32,11 @@ def mock_realtime_service():
 @pytest.fixture
 def itinerary_service(mock_repository, mock_llm_client, mock_realtime_service):
     """Create an itinerary service with mocked dependencies."""
-    with patch("services.itinerary_service.CosmosRepository") as MockRepo, patch(
-        "services.itinerary_service.OpenAIClient"
-    ) as MockLLM, patch("services.itinerary_service.RealtimeService") as MockRealtime:
+    with (
+        patch("services.itinerary_service.CosmosRepository") as MockRepo,
+        patch("services.itinerary_service.OpenAIClient") as MockLLM,
+        patch("services.itinerary_service.RealtimeService") as MockRealtime,
+    ):
         MockRepo.return_value = mock_repository
         MockLLM.return_value = mock_llm_client
         MockRealtime.return_value = mock_realtime_service

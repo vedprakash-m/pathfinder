@@ -3,28 +3,23 @@ Collaboration HTTP Functions
 
 Polls, voting, and consensus features for trip planning.
 """
+
 import logging
-from datetime import UTC, datetime
 
 import azure.functions as func
 
 from core.errors import APIError, ErrorCode, error_response, success_response
 from core.security import get_user_from_request
 from models.schemas import (
-    PollCreateRequest,
+    PollCreate,
     PollResponse,
-    VoteRequest,
+    PollVote,
 )
 from services.collaboration_service import get_collaboration_service
 from services.trip_service import get_trip_service
 
 bp = func.Blueprint()
 logger = logging.getLogger(__name__)
-
-
-def utc_now() -> datetime:
-    """Get current UTC time (timezone-aware)."""
-    return datetime.now(UTC)
 
 
 async def require_auth(req: func.HttpRequest):
@@ -41,7 +36,7 @@ async def list_polls(req: func.HttpRequest) -> func.HttpResponse:
     List all polls for a trip.
 
     Query params:
-    - status: Filter by status (open, closed)
+    - status: Filter by status (active, closed)
     """
     try:
         user = await require_auth(req)
@@ -59,8 +54,8 @@ async def list_polls(req: func.HttpRequest) -> func.HttpResponse:
         if not trip:
             return error_response(APIError(code=ErrorCode.NOT_FOUND, message="Trip not found"), status_code=404)
 
-        has_access = await trip_service.user_has_access(user.id, trip)
-        if not has_access:
+        # user_has_access is sync: (trip, user_id)
+        if not trip_service.user_has_access(trip, user.id):
             return error_response(
                 APIError(code=ErrorCode.AUTHORIZATION_ERROR, message="Access denied"), status_code=403
             )
@@ -91,7 +86,7 @@ async def create_poll(req: func.HttpRequest) -> func.HttpResponse:
     """
     Create a new poll for a trip.
 
-    Body: PollCreateRequest
+    Body: PollCreate
     """
     try:
         user = await require_auth(req)
@@ -103,7 +98,9 @@ async def create_poll(req: func.HttpRequest) -> func.HttpResponse:
             )
 
         body = req.get_json()
-        poll_data = PollCreateRequest(**body)
+        poll_data = PollCreate(**body)
+        # Ensure the trip_id in the body matches the route
+        poll_data.trip_id = trip_id
 
         # Verify trip access
         trip_service = get_trip_service()
@@ -112,23 +109,14 @@ async def create_poll(req: func.HttpRequest) -> func.HttpResponse:
         if not trip:
             return error_response(APIError(code=ErrorCode.NOT_FOUND, message="Trip not found"), status_code=404)
 
-        has_access = await trip_service.user_has_access(user.id, trip)
-        if not has_access:
+        if not trip_service.user_has_access(trip, user.id):
             return error_response(
                 APIError(code=ErrorCode.AUTHORIZATION_ERROR, message="Access denied"), status_code=403
             )
 
-        # Create poll
+        # Create poll — service expects (data: PollCreate, user: UserDocument)
         collab_service = get_collaboration_service()
-        poll = await collab_service.create_poll(
-            trip_id=trip_id,
-            title=poll_data.title,
-            description=poll_data.description,
-            options=poll_data.options,
-            creator_id=user.id,
-            expires_at=poll_data.expires_at,
-            allow_multiple=poll_data.allow_multiple,
-        )
+        poll = await collab_service.create_poll(data=poll_data, user=user)
 
         poll_response = PollResponse.from_document(poll, user.id)
         return success_response(poll_response.model_dump(), status_code=201)
@@ -163,8 +151,7 @@ async def get_poll(req: func.HttpRequest) -> func.HttpResponse:
         if not trip:
             return error_response(APIError(code=ErrorCode.NOT_FOUND, message="Trip not found"), status_code=404)
 
-        has_access = await trip_service.user_has_access(user.id, trip)
-        if not has_access:
+        if not trip_service.user_has_access(trip, user.id):
             return error_response(
                 APIError(code=ErrorCode.AUTHORIZATION_ERROR, message="Access denied"), status_code=403
             )
@@ -192,7 +179,7 @@ async def vote_on_poll(req: func.HttpRequest) -> func.HttpResponse:
     """
     Cast a vote on a poll.
 
-    Body: VoteRequest
+    Body: PollVote
     """
     try:
         user = await require_auth(req)
@@ -205,7 +192,7 @@ async def vote_on_poll(req: func.HttpRequest) -> func.HttpResponse:
             )
 
         body = req.get_json()
-        vote_data = VoteRequest(**body)
+        vote_data = PollVote(**body)
 
         # Verify trip access
         trip_service = get_trip_service()
@@ -214,15 +201,14 @@ async def vote_on_poll(req: func.HttpRequest) -> func.HttpResponse:
         if not trip:
             return error_response(APIError(code=ErrorCode.NOT_FOUND, message="Trip not found"), status_code=404)
 
-        has_access = await trip_service.user_has_access(user.id, trip)
-        if not has_access:
+        if not trip_service.user_has_access(trip, user.id):
             return error_response(
                 APIError(code=ErrorCode.AUTHORIZATION_ERROR, message="Access denied"), status_code=403
             )
 
-        # Cast vote
+        # Cast vote — service expects (poll_id, vote: PollVote, user: UserDocument)
         collab_service = get_collaboration_service()
-        poll = await collab_service.vote_on_poll(poll_id=poll_id, user_id=user.id, option_ids=vote_data.option_ids)
+        poll = await collab_service.vote_on_poll(poll_id=poll_id, vote=vote_data, user=user)
 
         if not poll:
             return error_response(
@@ -271,8 +257,8 @@ async def close_poll(req: func.HttpRequest) -> func.HttpResponse:
         if not poll or poll.trip_id != trip_id:
             return error_response(APIError(code=ErrorCode.NOT_FOUND, message="Poll not found"), status_code=404)
 
-        # Check permissions
-        is_creator = poll.creator_user_id == user.id
+        # Check permissions — PollDocument uses creator_id (not creator_user_id)
+        is_creator = poll.creator_id == user.id
         is_organizer = trip.organizer_user_id == user.id
 
         if not is_creator and not is_organizer:
@@ -283,8 +269,8 @@ async def close_poll(req: func.HttpRequest) -> func.HttpResponse:
                 status_code=403,
             )
 
-        # Close poll
-        closed_poll = await collab_service.close_poll(poll_id)
+        # Close poll — service expects (poll_id, user)
+        closed_poll = await collab_service.close_poll(poll_id=poll_id, user=user)
 
         if not closed_poll:
             return error_response(
@@ -323,8 +309,7 @@ async def get_consensus(req: func.HttpRequest) -> func.HttpResponse:
         if not trip:
             return error_response(APIError(code=ErrorCode.NOT_FOUND, message="Trip not found"), status_code=404)
 
-        has_access = await trip_service.user_has_access(user.id, trip)
-        if not has_access:
+        if not trip_service.user_has_access(trip, user.id):
             return error_response(
                 APIError(code=ErrorCode.AUTHORIZATION_ERROR, message="Access denied"), status_code=403
             )

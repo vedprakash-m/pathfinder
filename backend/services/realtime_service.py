@@ -3,12 +3,13 @@ Realtime Service
 
 Manages Azure SignalR Service integration for real-time messaging.
 """
+
 import base64
 import hashlib
 import hmac
 import json
 from datetime import UTC, datetime, timedelta
-from typing import Any, Optional
+from typing import Any
 from urllib.parse import quote
 
 from core.config import get_settings
@@ -23,7 +24,7 @@ class SignalRMessage:
     """Represents a message to send via SignalR."""
 
     def __init__(
-        self, target: str, arguments: list[Any], user_id: Optional[str] = None, group_name: Optional[str] = None
+        self, target: str, arguments: list[Any], user_id: str | None = None, group_name: str | None = None
     ) -> None:
         self.target = target
         self.arguments = arguments
@@ -40,8 +41,8 @@ class RealtimeService:
         self._hub_name = "pathfinder"
 
         # Parse connection string
-        self._endpoint: Optional[str] = None
-        self._access_key: Optional[str] = None
+        self._endpoint: str | None = None
+        self._access_key: str | None = None
         self._parse_connection_string()
 
     def _parse_connection_string(self) -> None:
@@ -56,7 +57,7 @@ class RealtimeService:
             elif part.startswith("AccessKey="):
                 self._access_key = part[10:]
 
-    def _generate_access_token(self, audience: str, user_id: Optional[str] = None, ttl_seconds: int = 3600) -> str:
+    def _generate_access_token(self, audience: str, user_id: str | None = None, ttl_seconds: int = 3600) -> str:
         """
         Generate a JWT access token for SignalR.
 
@@ -150,14 +151,14 @@ class RealtimeService:
         # For now, we log the intent and return True
         # This will be replaced with actual httpx calls
 
-        endpoint = self.get_server_endpoint(f"users/{quote(user_id)}")
-        headers = self.get_server_headers()
+        _endpoint = self.get_server_endpoint(f"users/{quote(user_id)}")
+        _headers = self.get_server_headers()
 
-        payload = {"target": target, "arguments": [data] if not isinstance(data, list) else data}
+        _payload = {"target": target, "arguments": [data] if not isinstance(data, list) else data}
 
         # TODO: Make actual HTTP POST request
         # async with httpx.AsyncClient() as client:
-        #     response = await client.post(endpoint, json=payload, headers=headers)
+        #     response = await client.post(_endpoint, json=_payload, headers=_headers)
         #     return response.status_code == 202
 
         return True
@@ -174,10 +175,10 @@ class RealtimeService:
         Returns:
             True if sent successfully
         """
-        endpoint = self.get_server_endpoint(f"groups/{quote(group_name)}")
-        headers = self.get_server_headers()
+        _endpoint = self.get_server_endpoint(f"groups/{quote(group_name)}")
+        _headers = self.get_server_headers()
 
-        payload = {"target": target, "arguments": [data] if not isinstance(data, list) else data}
+        _payload = {"target": target, "arguments": [data] if not isinstance(data, list) else data}
 
         # TODO: Make actual HTTP POST request
         return True
@@ -193,8 +194,8 @@ class RealtimeService:
         Returns:
             True if successful
         """
-        endpoint = self.get_server_endpoint(f"groups/{quote(group_name)}/users/{quote(user_id)}")
-        headers = self.get_server_headers()
+        _endpoint = self.get_server_endpoint(f"groups/{quote(group_name)}/users/{quote(user_id)}")
+        _headers = self.get_server_headers()
 
         # TODO: Make actual HTTP PUT request
         return True
@@ -210,8 +211,8 @@ class RealtimeService:
         Returns:
             True if successful
         """
-        endpoint = self.get_server_endpoint(f"groups/{quote(group_name)}/users/{quote(user_id)}")
-        headers = self.get_server_headers()
+        _endpoint = self.get_server_endpoint(f"groups/{quote(group_name)}/users/{quote(user_id)}")
+        _headers = self.get_server_headers()
 
         # TODO: Make actual HTTP DELETE request
         return True
@@ -227,10 +228,10 @@ class RealtimeService:
         Returns:
             True if sent successfully
         """
-        endpoint = self.get_server_endpoint("")
-        headers = self.get_server_headers()
+        _endpoint = self.get_server_endpoint("")
+        _headers = self.get_server_headers()
 
-        payload = {"target": target, "arguments": [data] if not isinstance(data, list) else data}
+        _payload = {"target": target, "arguments": [data] if not isinstance(data, list) else data}
 
         # TODO: Make actual HTTP POST request
         return True
@@ -267,7 +268,7 @@ class RealtimeEvents:
 
 
 # Service singleton
-_realtime_service: Optional[RealtimeService] = None
+_realtime_service: RealtimeService | None = None
 
 
 def get_realtime_service() -> RealtimeService:

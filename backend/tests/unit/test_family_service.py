@@ -1,4 +1,5 @@
 """Unit tests for FamilyService."""
+
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, patch
 
@@ -24,9 +25,10 @@ def mock_notification_service():
 @pytest.fixture
 def family_service(mock_repository, mock_notification_service):
     """Create a family service with mocked dependencies."""
-    with patch("services.family_service.CosmosRepository") as MockRepo, patch(
-        "services.family_service.NotificationService"
-    ) as MockNotif:
+    with (
+        patch("services.family_service.CosmosRepository") as MockRepo,
+        patch("services.family_service.NotificationService") as MockNotif,
+    ):
         MockRepo.return_value = mock_repository
         MockNotif.return_value = mock_notification_service
         service = FamilyService()

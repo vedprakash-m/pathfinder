@@ -1,4 +1,5 @@
 """Unit tests for TripService."""
+
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, patch
 

@@ -3,7 +3,8 @@ LLM Prompts
 
 System prompts and prompt builders for AI features.
 """
-from typing import Any, Optional
+
+from typing import Any
 
 # System prompt for itinerary generation
 ITINERARY_SYSTEM_PROMPT = """You are an expert travel planner assistant for Pathfinder, an AI-powered multi-family trip planning app.
@@ -81,7 +82,7 @@ Context awareness:
 Always maintain user privacy and avoid requesting sensitive personal information."""
 
 
-def build_itinerary_prompt(trip: Any, preferences: Optional[dict[str, Any]] = None) -> str:
+def build_itinerary_prompt(trip: Any, preferences: dict[str, Any] | None = None) -> str:
     """
     Build a prompt for itinerary generation.
 
@@ -147,7 +148,7 @@ def build_itinerary_prompt(trip: Any, preferences: Optional[dict[str, Any]] = No
 
 
 def build_assistant_prompt(
-    message: str, trip: Optional[Any] = None, conversation_history: Optional[list[dict[str, str]]] = None
+    message: str, trip: Any | None = None, conversation_history: list[dict[str, str]] | None = None
 ) -> str:
     """
     Build a prompt for the AI assistant.
@@ -188,7 +189,7 @@ def build_assistant_prompt(
     return "\n".join(prompt_parts)
 
 
-def build_consensus_prompt(poll_results: list[dict[str, Any]], trip_context: Optional[dict[str, Any]] = None) -> str:
+def build_consensus_prompt(poll_results: list[dict[str, Any]], trip_context: dict[str, Any] | None = None) -> str:
     """
     Build a prompt for consensus analysis.
 

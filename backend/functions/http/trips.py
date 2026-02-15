@@ -3,27 +3,23 @@ Trips HTTP Functions
 
 CRUD operations for trip management.
 """
+
 import logging
-from datetime import UTC, datetime
 
 import azure.functions as func
 
 from core.errors import APIError, ErrorCode, error_response, success_response
 from core.security import get_user_from_request
 from models.schemas import (
-    TripCreateRequest,
+    TripCreate,
     TripResponse,
-    TripUpdateRequest,
+    TripUpdate,
+    UserResponse,
 )
 from services.trip_service import get_trip_service
 
 bp = func.Blueprint()
 logger = logging.getLogger(__name__)
-
-
-def utc_now() -> datetime:
-    """Get current UTC time (timezone-aware)."""
-    return datetime.now(UTC)
 
 
 async def require_auth(req: func.HttpRequest):
@@ -87,30 +83,17 @@ async def create_trip(req: func.HttpRequest) -> func.HttpResponse:
     """
     Create a new trip.
 
-    Body: TripCreateRequest
+    Body: TripCreate
     Returns: Created trip
     """
     try:
         user = await require_auth(req)
 
         body = req.get_json()
-        trip_data = TripCreateRequest(**body)
+        trip_data = TripCreate(**body)
 
         service = get_trip_service()
-        trip = await service.create_trip(
-            title=trip_data.title,
-            description=trip_data.description,
-            destination=trip_data.destination,
-            start_date=trip_data.start_date,
-            end_date=trip_data.end_date,
-            organizer_id=user.id,
-            family_ids=trip_data.family_ids,
-            budget=trip_data.budget,
-            currency=trip_data.currency,
-        )
-
-        # Send notifications to family members
-        # (In production, this would be done via queue for better reliability)
+        trip = await service.create_trip(data=trip_data, user=user)
 
         trip_response = TripResponse.from_document(trip)
         return success_response(trip_response.model_dump(), status_code=201)
@@ -142,9 +125,8 @@ async def get_trip(req: func.HttpRequest) -> func.HttpResponse:
         if not trip:
             return error_response(APIError(code=ErrorCode.NOT_FOUND, message="Trip not found"), status_code=404)
 
-        # Check access
-        has_access = await service.user_has_access(user.id, trip)
-        if not has_access:
+        # Check access — user_has_access is sync: (trip, user_id)
+        if not service.user_has_access(trip, user.id):
             return error_response(
                 APIError(code=ErrorCode.AUTHORIZATION_ERROR, message="Access denied"), status_code=403
             )
@@ -165,7 +147,7 @@ async def update_trip(req: func.HttpRequest) -> func.HttpResponse:
     """
     Update a trip.
 
-    Body: TripUpdateRequest (partial update supported)
+    Body: TripUpdate (partial update supported)
     """
     try:
         user = await require_auth(req)
@@ -177,29 +159,14 @@ async def update_trip(req: func.HttpRequest) -> func.HttpResponse:
             )
 
         body = req.get_json()
-        update_data = TripUpdateRequest(**body)
+        update_data = TripUpdate(**body)
 
         service = get_trip_service()
-
-        # Get existing trip
-        trip = await service.get_trip(trip_id)
-        if not trip:
-            return error_response(APIError(code=ErrorCode.NOT_FOUND, message="Trip not found"), status_code=404)
-
-        # Check access (only organizer can update)
-        if trip.organizer_user_id != user.id:
-            return error_response(
-                APIError(code=ErrorCode.AUTHORIZATION_ERROR, message="Only the organizer can update the trip"),
-                status_code=403,
-            )
-
-        # Apply updates
-        update_fields = update_data.model_dump(exclude_unset=True)
-        updated_trip = await service.update_trip(trip_id, **update_fields)
+        updated_trip = await service.update_trip(trip_id=trip_id, data=update_data, user=user)
 
         if not updated_trip:
             return error_response(
-                APIError(code=ErrorCode.INTERNAL_ERROR, message="Failed to update trip"), status_code=500
+                APIError(code=ErrorCode.NOT_FOUND, message="Trip not found or access denied"), status_code=404
             )
 
         trip_response = TripResponse.from_document(updated_trip)
@@ -230,24 +197,11 @@ async def delete_trip(req: func.HttpRequest) -> func.HttpResponse:
             )
 
         service = get_trip_service()
-
-        # Get existing trip
-        trip = await service.get_trip(trip_id)
-        if not trip:
-            return error_response(APIError(code=ErrorCode.NOT_FOUND, message="Trip not found"), status_code=404)
-
-        # Check access (only organizer can delete)
-        if trip.organizer_user_id != user.id:
-            return error_response(
-                APIError(code=ErrorCode.AUTHORIZATION_ERROR, message="Only the organizer can delete the trip"),
-                status_code=403,
-            )
-
-        success = await service.delete_trip(trip_id)
+        success = await service.delete_trip(trip_id=trip_id, user=user)
 
         if not success:
             return error_response(
-                APIError(code=ErrorCode.INTERNAL_ERROR, message="Failed to delete trip"), status_code=500
+                APIError(code=ErrorCode.NOT_FOUND, message="Trip not found or access denied"), status_code=404
             )
 
         return success_response({"message": "Trip deleted successfully"})
@@ -282,9 +236,8 @@ async def get_trip_members(req: func.HttpRequest) -> func.HttpResponse:
         if not trip:
             return error_response(APIError(code=ErrorCode.NOT_FOUND, message="Trip not found"), status_code=404)
 
-        # Check access
-        has_access = await service.user_has_access(user.id, trip)
-        if not has_access:
+        # Check access — user_has_access is sync: (trip, user_id)
+        if not service.user_has_access(trip, user.id):
             return error_response(
                 APIError(code=ErrorCode.AUTHORIZATION_ERROR, message="Access denied"), status_code=403
             )
@@ -295,7 +248,7 @@ async def get_trip_members(req: func.HttpRequest) -> func.HttpResponse:
         family_service = get_family_service()
 
         all_members = []
-        for family_id in trip.family_ids:
+        for family_id in trip.participating_family_ids:
             members = await family_service.get_family_members(family_id)
             all_members.extend(members)
 
@@ -306,8 +259,6 @@ async def get_trip_members(req: func.HttpRequest) -> func.HttpResponse:
             if member.id not in seen_ids:
                 seen_ids.add(member.id)
                 unique_members.append(member)
-
-        from models.schemas import UserResponse
 
         member_responses = [UserResponse.from_document(m) for m in unique_members]
 

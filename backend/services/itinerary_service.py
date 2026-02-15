@@ -3,6 +3,7 @@ Itinerary Service
 
 Business logic for AI-powered itinerary generation and management.
 """
+
 import logging
 from typing import Any, Optional
 
@@ -14,12 +15,24 @@ from services.llm.prompts import ITINERARY_SYSTEM_PROMPT, build_itinerary_prompt
 logger = logging.getLogger(__name__)
 
 
+# Service singleton
+_itinerary_service: Optional["ItineraryService"] = None
+
+
+def get_itinerary_service() -> "ItineraryService":
+    """Get or create itinerary service singleton."""
+    global _itinerary_service
+    if _itinerary_service is None:
+        _itinerary_service = ItineraryService()
+    return _itinerary_service
+
+
 class ItineraryService:
     """Service for itinerary-related operations."""
 
     async def generate_itinerary(
-        self, trip_id: str, preferences: Optional[dict[str, Any]] = None, user: Optional[UserDocument] = None
-    ) -> Optional[ItineraryDocument]:
+        self, trip_id: str, preferences: dict[str, Any] | None = None, user: UserDocument | None = None
+    ) -> ItineraryDocument | None:
         """
         Generate an AI-powered itinerary for a trip.
 
@@ -76,7 +89,7 @@ class ItineraryService:
             logger.exception(f"Failed to generate itinerary: {e}")
             raise
 
-    async def get_itinerary(self, itinerary_id: str) -> Optional[ItineraryDocument]:
+    async def get_itinerary(self, itinerary_id: str) -> ItineraryDocument | None:
         """
         Get an itinerary by ID.
 
@@ -118,7 +131,7 @@ class ItineraryService:
             max_items=limit,
         )
 
-    async def get_current_itinerary(self, trip_id: str) -> Optional[ItineraryDocument]:
+    async def get_current_itinerary(self, trip_id: str) -> ItineraryDocument | None:
         """
         Get the current (approved or latest) itinerary for a trip.
 
@@ -148,7 +161,7 @@ class ItineraryService:
         itineraries = await self.get_trip_itineraries(trip_id, limit=1)
         return itineraries[0] if itineraries else None
 
-    async def approve_itinerary(self, itinerary_id: str, user: UserDocument) -> Optional[ItineraryDocument]:
+    async def approve_itinerary(self, itinerary_id: str, user: UserDocument) -> ItineraryDocument | None:
         """
         Approve an itinerary.
 
@@ -178,7 +191,7 @@ class ItineraryService:
 
     async def update_itinerary(
         self, itinerary_id: str, updates: dict[str, Any], user: UserDocument
-    ) -> Optional[ItineraryDocument]:
+    ) -> ItineraryDocument | None:
         """
         Update an itinerary.
 
@@ -224,7 +237,7 @@ class ItineraryService:
 
         return await cosmos_repo.delete(itinerary_id, itinerary.pk)
 
-    async def _get_trip(self, trip_id: str) -> Optional[TripDocument]:
+    async def _get_trip(self, trip_id: str) -> TripDocument | None:
         """Get trip by ID."""
         query = "SELECT * FROM c WHERE c.entity_type = 'trip' AND c.id = @id"
         trips = await cosmos_repo.query(

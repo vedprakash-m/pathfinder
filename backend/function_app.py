@@ -4,6 +4,7 @@ Pathfinder API - Azure Functions Entry Point
 This is the main entry point for the Azure Functions application.
 All HTTP, Queue, and Timer triggers are registered here via blueprints.
 """
+
 import logging
 
 import azure.functions as func

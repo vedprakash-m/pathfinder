@@ -3,6 +3,7 @@ Authentication HTTP Functions
 
 Handles user authentication with Microsoft Entra ID.
 """
+
 import logging
 from datetime import UTC, datetime
 
@@ -12,7 +13,7 @@ from core.config import get_settings
 from core.errors import APIError, ErrorCode, error_response, success_response
 from core.security import get_user_from_request, validate_token
 from models.schemas import UserResponse
-from repositories.cosmos_repository import CosmosRepository
+from repositories.cosmos_repository import cosmos_repo
 
 bp = func.Blueprint()
 logger = logging.getLogger(__name__)
@@ -133,11 +134,8 @@ async def logout(req: func.HttpRequest) -> func.HttpResponse:
             logger.info(f"User logged out: {user.id}")
 
             # Update last_login timestamp
-            repo = CosmosRepository()
-            await repo.initialize()
-
             user.updated_at = utc_now()
-            await repo.update(user.id, user.model_dump(), user.id)
+            await cosmos_repo.update(user)
 
         return success_response({"message": "Logged out successfully"})
 

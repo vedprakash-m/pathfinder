@@ -3,9 +3,9 @@ Itineraries HTTP Functions
 
 AI-powered itinerary generation and management.
 """
+
 import json
 import logging
-from datetime import UTC, datetime
 
 import azure.functions as func
 
@@ -20,11 +20,6 @@ from services.trip_service import get_trip_service
 
 bp = func.Blueprint()
 logger = logging.getLogger(__name__)
-
-
-def utc_now() -> datetime:
-    """Get current UTC time (timezone-aware)."""
-    return datetime.now(UTC)
 
 
 async def require_auth(req: func.HttpRequest):
@@ -56,15 +51,15 @@ async def get_itinerary(req: func.HttpRequest) -> func.HttpResponse:
         if not trip:
             return error_response(APIError(code=ErrorCode.NOT_FOUND, message="Trip not found"), status_code=404)
 
-        has_access = await trip_service.user_has_access(user.id, trip)
-        if not has_access:
+        # user_has_access is sync: (trip, user_id)
+        if not trip_service.user_has_access(trip, user.id):
             return error_response(
                 APIError(code=ErrorCode.AUTHORIZATION_ERROR, message="Access denied"), status_code=403
             )
 
-        # Get itinerary
+        # Get current itinerary for trip
         itinerary_service = get_itinerary_service()
-        itinerary = await itinerary_service.get_itinerary(trip_id)
+        itinerary = await itinerary_service.get_current_itinerary(trip_id)
 
         if not itinerary:
             return success_response({"exists": False, "message": "No itinerary generated yet"})
@@ -115,16 +110,15 @@ async def generate_itinerary(req: func.HttpRequest) -> func.HttpResponse:
         if not trip:
             return error_response(APIError(code=ErrorCode.NOT_FOUND, message="Trip not found"), status_code=404)
 
-        has_access = await trip_service.user_has_access(user.id, trip)
-        if not has_access:
+        if not trip_service.user_has_access(trip, user.id):
             return error_response(
                 APIError(code=ErrorCode.AUTHORIZATION_ERROR, message="Access denied"), status_code=403
             )
 
-        # Generate itinerary
+        # Generate itinerary — service expects (trip_id, preferences, user)
         itinerary_service = get_itinerary_service()
         itinerary = await itinerary_service.generate_itinerary(
-            trip=trip, preferences=preferences if preferences else None
+            trip_id=trip_id, preferences=preferences if preferences else None, user=user
         )
 
         if not itinerary:
@@ -177,13 +171,21 @@ async def approve_itinerary(req: func.HttpRequest) -> func.HttpResponse:
                 status_code=403,
             )
 
-        # Approve itinerary
+        # First get the current itinerary to get its ID
         itinerary_service = get_itinerary_service()
-        itinerary = await itinerary_service.approve_itinerary(trip_id, user.id)
+        current = await itinerary_service.get_current_itinerary(trip_id)
+
+        if not current:
+            return error_response(
+                APIError(code=ErrorCode.NOT_FOUND, message="No itinerary found to approve"), status_code=404
+            )
+
+        # Approve itinerary — service expects (itinerary_id, user: UserDocument)
+        itinerary = await itinerary_service.approve_itinerary(itinerary_id=current.id, user=user)
 
         if not itinerary:
             return error_response(
-                APIError(code=ErrorCode.NOT_FOUND, message="No itinerary found to approve"), status_code=404
+                APIError(code=ErrorCode.INTERNAL_ERROR, message="Failed to approve itinerary"), status_code=500
             )
 
         itinerary_response = ItineraryResponse.from_document(itinerary)
@@ -231,13 +233,21 @@ async def update_itinerary(req: func.HttpRequest) -> func.HttpResponse:
                 status_code=403,
             )
 
-        # Update itinerary
+        # Get current itinerary to find its ID
         itinerary_service = get_itinerary_service()
-        itinerary = await itinerary_service.update_itinerary(trip_id, body)
+        current = await itinerary_service.get_current_itinerary(trip_id)
+
+        if not current:
+            return error_response(
+                APIError(code=ErrorCode.NOT_FOUND, message="No itinerary found to update"), status_code=404
+            )
+
+        # Update itinerary — service expects (itinerary_id, updates: dict, user: UserDocument)
+        itinerary = await itinerary_service.update_itinerary(itinerary_id=current.id, updates=body, user=user)
 
         if not itinerary:
             return error_response(
-                APIError(code=ErrorCode.NOT_FOUND, message="No itinerary found to update"), status_code=404
+                APIError(code=ErrorCode.INTERNAL_ERROR, message="Failed to update itinerary"), status_code=500
             )
 
         itinerary_response = ItineraryResponse.from_document(itinerary)
@@ -281,8 +291,7 @@ async def regenerate_itinerary(req: func.HttpRequest) -> func.HttpResponse:
         if not trip:
             return error_response(APIError(code=ErrorCode.NOT_FOUND, message="Trip not found"), status_code=404)
 
-        has_access = await trip_service.user_has_access(user.id, trip)
-        if not has_access:
+        if not trip_service.user_has_access(trip, user.id):
             return error_response(
                 APIError(code=ErrorCode.AUTHORIZATION_ERROR, message="Access denied"), status_code=403
             )
@@ -291,10 +300,10 @@ async def regenerate_itinerary(req: func.HttpRequest) -> func.HttpResponse:
         if feedback:
             preferences["feedback"] = feedback
 
-        # Regenerate itinerary
+        # Regenerate itinerary — service expects (trip_id, preferences, user)
         itinerary_service = get_itinerary_service()
         itinerary = await itinerary_service.generate_itinerary(
-            trip=trip, preferences=preferences if preferences else None
+            trip_id=trip_id, preferences=preferences if preferences else None, user=user
         )
 
         if not itinerary:

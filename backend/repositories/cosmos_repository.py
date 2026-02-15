@@ -4,6 +4,7 @@ Cosmos DB Repository
 Unified data access layer for all Cosmos DB operations.
 Uses a single container with partition keys for efficient querying.
 """
+
 import logging
 import os
 from typing import Any, Optional, TypeVar
@@ -26,7 +27,7 @@ class CosmosRepository:
     """
 
     _instance: Optional["CosmosRepository"] = None
-    _client: Optional[CosmosClient] = None
+    _client: CosmosClient | None = None
     _container = None
 
     def __new__(cls):
@@ -80,7 +81,7 @@ class CosmosRepository:
             logger.exception(f"Failed to create document: {e}")
             raise
 
-    async def get_by_id(self, doc_id: str, partition_key: str, model_class: type[T]) -> Optional[T]:
+    async def get_by_id(self, doc_id: str, partition_key: str, model_class: type[T]) -> T | None:
         """
         Get a document by ID and partition key.
 
@@ -106,9 +107,9 @@ class CosmosRepository:
     async def query(
         self,
         query: str,
-        parameters: Optional[list[dict[str, Any]]] = None,
-        model_class: Optional[type[T]] = None,
-        partition_key: Optional[str] = None,
+        parameters: list[dict[str, Any]] | None = None,
+        model_class: type[T] | None = None,
+        partition_key: str | None = None,
         max_items: int = 100,
     ) -> list[Any]:
         """
@@ -226,7 +227,7 @@ class CosmosRepository:
             raise
 
     async def count(
-        self, query: str, parameters: Optional[list[dict[str, Any]]] = None, partition_key: Optional[str] = None
+        self, query: str, parameters: list[dict[str, Any]] | None = None, partition_key: str | None = None
     ) -> int:
         """
         Count documents matching a query.
@@ -264,8 +265,8 @@ class CosmosRepository:
         self,
         entity_type: str,
         model_class: type[T],
-        additional_filter: Optional[str] = None,
-        parameters: Optional[list[dict[str, Any]]] = None,
+        additional_filter: str | None = None,
+        parameters: list[dict[str, Any]] | None = None,
         max_items: int = 100,
     ) -> list[T]:
         """

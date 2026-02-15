@@ -78,8 +78,8 @@ jobs:
         run: |
           cd backend
           pip install -r requirements.txt pytest pytest-asyncio pytest-cov ruff mypy
-          ruff check . --ignore=UP007,E402,F841 || true
-          pytest tests/ -v --cov=. --cov-report=xml || true
+          ruff check . --ignore=UP007,E402,F841
+          pytest tests/ -v --cov=. --cov-report=xml
         env:
           COSMOS_DB_URL: "https://localhost:8081"
           COSMOS_DB_KEY: "test-key"
@@ -117,8 +117,8 @@ jobs:
         run: |
           cd frontend
           npm ci
-          npm run lint || true
-          npm test -- --coverage --watchAll=false || true
+          npm run lint
+          npm test -- --coverage --watchAll=false
         env:
           CI: true
 

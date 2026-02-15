@@ -3,6 +3,7 @@ Trip Service
 
 Business logic for trip management operations.
 """
+
 import logging
 from typing import Optional
 
@@ -11,6 +12,18 @@ from models.schemas import TripCreate, TripUpdate
 from repositories.cosmos_repository import cosmos_repo
 
 logger = logging.getLogger(__name__)
+
+
+# Service singleton
+_trip_service: Optional["TripService"] = None
+
+
+def get_trip_service() -> "TripService":
+    """Get or create trip service singleton."""
+    global _trip_service
+    if _trip_service is None:
+        _trip_service = TripService()
+    return _trip_service
 
 
 class TripService:
@@ -46,7 +59,7 @@ class TripService:
 
         return created
 
-    async def get_trip(self, trip_id: str) -> Optional[TripDocument]:
+    async def get_trip(self, trip_id: str) -> TripDocument | None:
         """
         Get a trip by ID.
 
@@ -64,7 +77,7 @@ class TripService:
 
         return trips[0] if trips else None
 
-    async def get_user_trips(self, user_id: str, status: Optional[str] = None, limit: int = 50) -> list[TripDocument]:
+    async def get_user_trips(self, user_id: str, status: str | None = None, limit: int = 50) -> list[TripDocument]:
         """
         Get all trips for a user (as organizer or participant).
 
@@ -94,9 +107,7 @@ class TripService:
 
         return trips
 
-    async def get_family_trips(
-        self, family_id: str, status: Optional[str] = None, limit: int = 50
-    ) -> list[TripDocument]:
+    async def get_family_trips(self, family_id: str, status: str | None = None, limit: int = 50) -> list[TripDocument]:
         """
         Get all trips for a family.
 
@@ -123,7 +134,7 @@ class TripService:
 
         return await cosmos_repo.query(query=query, parameters=params, model_class=TripDocument, max_items=limit)
 
-    async def update_trip(self, trip_id: str, data: TripUpdate, user: UserDocument) -> Optional[TripDocument]:
+    async def update_trip(self, trip_id: str, data: TripUpdate, user: UserDocument) -> TripDocument | None:
         """
         Update a trip.
 
@@ -202,7 +213,7 @@ class TripService:
         # For now, return True for simplicity
         return True
 
-    async def add_family_to_trip(self, trip_id: str, family_id: str, user: UserDocument) -> Optional[TripDocument]:
+    async def add_family_to_trip(self, trip_id: str, family_id: str, user: UserDocument) -> TripDocument | None:
         """
         Add a family to a trip.
 
@@ -225,7 +236,7 @@ class TripService:
 
         return trip
 
-    async def remove_family_from_trip(self, trip_id: str, family_id: str, user: UserDocument) -> Optional[TripDocument]:
+    async def remove_family_from_trip(self, trip_id: str, family_id: str, user: UserDocument) -> TripDocument | None:
         """
         Remove a family from a trip.
 
@@ -248,7 +259,7 @@ class TripService:
 
         return trip
 
-    async def update_trip_status(self, trip_id: str, status: str, user: UserDocument) -> Optional[TripDocument]:
+    async def update_trip_status(self, trip_id: str, status: str, user: UserDocument) -> TripDocument | None:
         """
         Update trip status.
 

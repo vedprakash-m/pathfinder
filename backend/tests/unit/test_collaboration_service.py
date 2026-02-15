@@ -1,4 +1,5 @@
 """Unit tests for CollaborationService."""
+
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, patch
 
@@ -24,9 +25,10 @@ def mock_realtime_service():
 @pytest.fixture
 def collaboration_service(mock_repository, mock_realtime_service):
     """Create a collaboration service with mocked dependencies."""
-    with patch("services.collaboration_service.CosmosRepository") as MockRepo, patch(
-        "services.collaboration_service.RealtimeService"
-    ) as MockRealtime:
+    with (
+        patch("services.collaboration_service.CosmosRepository") as MockRepo,
+        patch("services.collaboration_service.RealtimeService") as MockRealtime,
+    ):
         MockRepo.return_value = mock_repository
         MockRealtime.return_value = mock_realtime_service
         service = CollaborationService()

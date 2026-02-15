@@ -3,6 +3,7 @@ HTTP Functions Module
 
 Azure Functions HTTP triggers for the Pathfinder API.
 """
+
 from functions.http.assistant import bp as assistant_bp
 from functions.http.auth import bp as auth_bp
 from functions.http.collaboration import bp as collaboration_bp

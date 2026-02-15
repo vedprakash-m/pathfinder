@@ -3,13 +3,14 @@ Health Check HTTP Function
 
 Provides health endpoints for Azure Functions monitoring.
 """
+
 from datetime import UTC, datetime
 
 import azure.functions as func
 
 from core.config import get_settings
-from repositories.cosmos_repository import CosmosRepository
-from services.llm.client import LLMClient
+from repositories.cosmos_repository import cosmos_repo
+from services.llm.client import llm_client
 
 bp = func.Blueprint()
 
@@ -47,7 +48,7 @@ async def readiness_check(req: func.HttpRequest) -> func.HttpResponse:
 
     # Check configuration
     try:
-        settings = get_settings()
+        get_settings()
         checks["checks"]["config"] = {"status": "healthy", "details": "Configuration loaded"}
     except Exception as e:
         checks["checks"]["config"] = {"status": "unhealthy", "details": str(e)}
@@ -55,10 +56,8 @@ async def readiness_check(req: func.HttpRequest) -> func.HttpResponse:
 
     # Check Cosmos DB
     try:
-        repo = CosmosRepository()
-        await repo.initialize()
-        # Simple query to verify connectivity
-        await repo.query("SELECT VALUE COUNT(1) FROM c WHERE c.id = 'health-check'")
+        # Simple query to verify connectivity using singleton
+        await cosmos_repo.count("SELECT VALUE COUNT(1) FROM c WHERE c.id = 'health-check'")
         checks["checks"]["cosmos_db"] = {"status": "healthy", "details": "Connected to Cosmos DB"}
     except Exception as e:
         checks["checks"]["cosmos_db"] = {"status": "unhealthy", "details": str(e)}
@@ -66,8 +65,7 @@ async def readiness_check(req: func.HttpRequest) -> func.HttpResponse:
 
     # Check OpenAI
     try:
-        llm = LLMClient()
-        is_healthy = await llm.check_health()
+        is_healthy = await llm_client.check_health()
         if is_healthy:
             checks["checks"]["openai"] = {"status": "healthy", "details": "OpenAI API accessible"}
         else:

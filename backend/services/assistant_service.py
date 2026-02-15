@@ -3,14 +3,16 @@ AI Assistant Service
 
 Provides conversational AI assistance for trip planning.
 """
-import uuid
+
+import logging
 from datetime import UTC, datetime
-from typing import Optional
 
 from models.documents import MessageDocument, TripDocument
-from repositories.cosmos_repository import CosmosRepository
-from services.llm.client import LLMClient
+from repositories.cosmos_repository import cosmos_repo
+from services.llm.client import llm_client
 from services.llm.prompts import ASSISTANT_SYSTEM_PROMPT, build_assistant_prompt
+
+logger = logging.getLogger(__name__)
 
 
 def utc_now() -> datetime:
@@ -21,24 +23,8 @@ def utc_now() -> datetime:
 class AssistantService:
     """Handles AI assistant conversations."""
 
-    def __init__(self) -> None:
-        self._repo: Optional[CosmosRepository] = None
-        self._llm: Optional[LLMClient] = None
-
-    @property
-    def repo(self) -> CosmosRepository:
-        if self._repo is None:
-            self._repo = CosmosRepository()
-        return self._repo
-
-    @property
-    def llm(self) -> LLMClient:
-        if self._llm is None:
-            self._llm = LLMClient()
-        return self._llm
-
     async def send_message(
-        self, user_id: str, message: str, trip_id: Optional[str] = None, family_id: Optional[str] = None
+        self, user_id: str, message: str, trip_id: str | None = None, family_id: str | None = None
     ) -> MessageDocument:
         """
         Send a message to the AI assistant and get a response.
@@ -52,14 +38,17 @@ class AssistantService:
         Returns:
             MessageDocument containing the AI response
         """
-        await self.repo.initialize()
-
         # Get trip context if provided
-        trip: Optional[TripDocument] = None
+        trip: TripDocument | None = None
         if trip_id:
-            trip_dict = await self.repo.get_by_id(trip_id, trip_id)
-            if trip_dict and trip_dict.get("entity_type") == "trip":
-                trip = TripDocument(**trip_dict)
+            query = "SELECT * FROM c WHERE c.entity_type = 'trip' AND c.id = @tripId"
+            trips = await cosmos_repo.query(
+                query=query,
+                parameters=[{"name": "@tripId", "value": trip_id}],
+                model_class=TripDocument,
+                max_items=1,
+            )
+            trip = trips[0] if trips else None
 
         # Get conversation history for context
         history = await self._get_conversation_history(user_id=user_id, trip_id=trip_id, limit=10)
@@ -68,45 +57,38 @@ class AssistantService:
         user_prompt = build_assistant_prompt(message=message, trip=trip, conversation_history=history)
 
         # Get AI response
-        response = await self.llm.complete_with_history(
-            system_prompt=ASSISTANT_SYSTEM_PROMPT, messages=history + [{"role": "user", "content": user_prompt}]
+        response = await llm_client.complete_with_history(
+            system_prompt=ASSISTANT_SYSTEM_PROMPT,
+            messages=history + [{"role": "user", "content": user_prompt}],
         )
 
         # Store user message
         user_msg = MessageDocument(
-            id=str(uuid.uuid4()),
-            entity_type="message",
+            pk=f"message_{user_id}",
+            trip_id=trip_id or "",
             user_id=user_id,
-            trip_id=trip_id,
-            family_id=family_id,
+            user_name="User",
             content=message,
             message_type="user",
-            is_ai_response=False,
-            created_at=utc_now(),
-            updated_at=utc_now(),
         )
-        await self.repo.create(user_msg.model_dump(), user_msg.id)
+        await cosmos_repo.create(user_msg)
 
         # Store AI response
         ai_msg = MessageDocument(
-            id=str(uuid.uuid4()),
-            entity_type="message",
+            pk=f"message_{user_id}",
+            trip_id=trip_id or "",
             user_id="assistant",
-            trip_id=trip_id,
-            family_id=family_id,
-            content=response,
+            user_name="Pathfinder Assistant",
+            content=response["content"],
             message_type="assistant",
-            is_ai_response=True,
-            created_at=utc_now(),
-            updated_at=utc_now(),
-            metadata={"in_reply_to": user_msg.id, "tokens_used": self.llm.tokens_used},
+            metadata={"tokens_used": response.get("tokens_used", 0), "cost": response.get("cost", 0.0)},
         )
-        await self.repo.create(ai_msg.model_dump(), ai_msg.id)
+        created_msg = await cosmos_repo.create(ai_msg)
 
-        return ai_msg
+        return created_msg
 
     async def get_conversation(
-        self, user_id: str, trip_id: Optional[str] = None, limit: int = 50, offset: int = 0
+        self, user_id: str, trip_id: str | None = None, limit: int = 50, offset: int = 0
     ) -> list[MessageDocument]:
         """
         Get conversation history for a user.
@@ -120,26 +102,25 @@ class AssistantService:
         Returns:
             List of messages
         """
-        await self.repo.initialize()
-
-        # Build query based on context
-        conditions = ["c.entity_type = 'message'", f"(c.user_id = '{user_id}' OR c.user_id = 'assistant')"]
+        query = """
+            SELECT * FROM c
+            WHERE c.entity_type = 'message'
+            AND (c.user_id = @userId OR c.user_id = 'assistant')
+        """
+        params = [{"name": "@userId", "value": user_id}]
 
         if trip_id:
-            conditions.append(f"c.trip_id = '{trip_id}'")
+            query += " AND c.trip_id = @tripId"
+            params.append({"name": "@tripId", "value": trip_id})
 
-        query = f"""
-            SELECT * FROM c
-            WHERE {' AND '.join(conditions)}
-            ORDER BY c.created_at DESC
-            OFFSET {offset} LIMIT {limit}
-        """
+        query += " ORDER BY c.created_at DESC"
 
-        results = await self.repo.query(query)
-        return [MessageDocument(**msg) for msg in results]
+        messages = await cosmos_repo.query(query=query, parameters=params, model_class=MessageDocument, max_items=limit)
+
+        return messages[offset:] if offset else messages
 
     async def _get_conversation_history(
-        self, user_id: str, trip_id: Optional[str] = None, limit: int = 10
+        self, user_id: str, trip_id: str | None = None, limit: int = 10
     ) -> list[dict[str, str]]:
         """
         Get conversation history formatted for LLM context.
@@ -157,12 +138,12 @@ class AssistantService:
         # Convert to LLM format (oldest first)
         history: list[dict[str, str]] = []
         for msg in reversed(messages):
-            role = "assistant" if msg.is_ai_response else "user"
+            role = "assistant" if msg.message_type == "assistant" else "user"
             history.append({"role": role, "content": msg.content})
 
         return history
 
-    async def clear_conversation(self, user_id: str, trip_id: Optional[str] = None) -> int:
+    async def clear_conversation(self, user_id: str, trip_id: str | None = None) -> int:
         """
         Clear conversation history.
 
@@ -173,26 +154,29 @@ class AssistantService:
         Returns:
             Number of messages deleted
         """
-        await self.repo.initialize()
-
-        conditions = ["c.entity_type = 'message'", f"(c.user_id = '{user_id}' OR c.user_id = 'assistant')"]
+        query = """
+            SELECT c.id, c.pk FROM c
+            WHERE c.entity_type = 'message'
+            AND (c.user_id = @userId OR c.user_id = 'assistant')
+        """
+        params = [{"name": "@userId", "value": user_id}]
 
         if trip_id:
-            conditions.append(f"c.trip_id = '{trip_id}'")
+            query += " AND c.trip_id = @tripId"
+            params.append({"name": "@tripId", "value": trip_id})
 
-        query = f"SELECT c.id FROM c WHERE {' AND '.join(conditions)}"
-        results = await self.repo.query(query)
+        results = await cosmos_repo.query(query=query, parameters=params)
 
         deleted = 0
         for msg in results:
-            await self.repo.delete(msg["id"], msg["id"])
+            await cosmos_repo.delete(msg["id"], msg["pk"])
             deleted += 1
 
         return deleted
 
 
 # Service singleton
-_assistant_service: Optional[AssistantService] = None
+_assistant_service: AssistantService | None = None
 
 
 def get_assistant_service() -> AssistantService:
