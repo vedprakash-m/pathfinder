@@ -6,11 +6,16 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import jwt
 import pytest
 
-from core.security import get_current_user_id, get_or_create_user, validate_token
-
 # Skip all tests in this module - Phase 4 rewrite needed
 # Tests mock jwt_client but now security uses cosmos_repo for user lookup
 pytestmark = pytest.mark.skip(reason="Phase 4: Tests need rewrite for new security patterns")
+
+# Import with try/except to avoid collection errors (imports happen before skip marker is applied)
+try:
+    from core.security import get_or_create_user, validate_token
+except ImportError:
+    get_or_create_user = None
+    validate_token = None
 
 
 class TestSecurityModule:
@@ -128,28 +133,5 @@ class TestSecurityModule:
             assert result["id"] == "user_123"
             mock_repo.create.assert_called_once()
 
-    @pytest.mark.asyncio
-    async def test_get_current_user_id_from_oid(self):
-        """Test extracting user ID from OID claim."""
-        claims = {"oid": "user-oid-123", "sub": "user-sub-456"}
-
-        result = get_current_user_id(claims)
-
-        assert result == "user-oid-123"
-
-    @pytest.mark.asyncio
-    async def test_get_current_user_id_from_sub(self):
-        """Test extracting user ID from sub claim when OID is missing."""
-        claims = {"sub": "user-sub-456"}
-
-        result = get_current_user_id(claims)
-
-        assert result == "user-sub-456"
-
-    @pytest.mark.asyncio
-    async def test_get_current_user_id_missing(self):
-        """Test error when no user ID claim is present."""
-        claims = {}
-
-        with pytest.raises(ValueError, match="No user ID"):
-            get_current_user_id(claims)
+    # NOTE: Tests for get_current_user_id removed - function no longer exists
+    # These tests referenced a function that was removed during API unification
