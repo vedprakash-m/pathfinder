@@ -131,13 +131,27 @@
 | 2.2 | Run `python -c "import function_app"` to verify startup | ⬜ Blocked (requires Azure Functions runtime + Cosmos DB connection) |
 | 2.3 | Add `pythonpath = ["."]` to pytest config for proper module resolution | ✅ Done |
 | 2.4 | Skip backend unit tests pending Phase 4 rewrite (tests use old API signatures) | ✅ Done |
-| 2.5 | Set ESLint `--max-warnings 210` (pre-existing warnings, ratchet down in Phase 3) | ✅ Done |
+| 2.5 | Set ESLint `--max-warnings 0` (strict enforcement) | ✅ Done |
+| 2.6 | Add `pydantic[email]` for EmailStr validation | ✅ Done |
+| 2.7 | Fix vitest command in CI (use `npm run test:coverage`) | ✅ Done |
+
+---
+
+## Phase 3 — Frontend Lint & Type Safety ✅ Complete
+
+| # | Task | Status |
+|---|------|--------|
+| 3.1 | Fix `@typescript-eslint/no-unused-vars` (3 warnings) | ✅ Done |
+| 3.2 | Fix `react-refresh/only-export-components` (16 warnings) | ✅ Done |
+| 3.3 | Fix `react-hooks/exhaustive-deps` (16 warnings) | ✅ Done |
+| 3.4 | Fix `@typescript-eslint/no-explicit-any` (169 warnings) | ✅ Done |
+| 3.5 | Fix TypeScript compilation errors | ✅ Done |
+| 3.6 | Set `--max-warnings 0` for strict enforcement | ✅ Done |
 
 ---
 
 ## Future Phases (Not in Scope for This Sprint)
 
-- **Phase 3:** Frontend integration (replace mock data, fix ProfilePage, unify auth, reduce ESLint warnings to 0)
 - **Phase 4:** Test infrastructure (rewrite backend tests against actual service API — currently skipped with pytest.mark.skip)
 - **Phase 5:** AI features (implement SignalR transport methods, LLM orchestration)
 - **Phase 6:** Production hardening (monitoring dashboards, PWA offline, rate limiting)
