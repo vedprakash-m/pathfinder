@@ -235,8 +235,17 @@ jobs:
 
       - name: Health Check
         run: |
-          sleep 30
-          curl -f "https://pf-func-kteh35kinffvo.azurewebsites.net/api/health" || echo "Health check pending..."
+          HEALTH_URL="https://pf-func-kteh35kinffvo.azurewebsites.net/api/health"
+          for i in {1..6}; do
+            if curl --fail --silent --show-error --connect-timeout 5 --max-time 10 "$HEALTH_URL"; then
+              echo "Health check passed"
+              exit 0
+            fi
+            echo "Health check attempt $i/6 failed; retrying in 10s..."
+            sleep 10
+          done
+          echo "Health check failed after retries"
+          exit 1
 
   # ============================================
   # FRONTEND DEPLOYMENT
