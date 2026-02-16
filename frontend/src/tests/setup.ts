@@ -17,6 +17,54 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
+const storageMock = {
+  getItem: vi.fn(() => null),
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+  clear: vi.fn(),
+  key: vi.fn(() => null),
+  length: 0,
+};
+
+Object.defineProperty(window, 'localStorage', {
+  value: storageMock,
+  writable: true,
+});
+
+Object.defineProperty(window, 'sessionStorage', {
+  value: storageMock,
+  writable: true,
+});
+
+const suppressedWarnings = [
+  'was not wrapped in act(...)',
+  'React Router Future Flag Warning',
+  'React does not recognize the `whileInView` prop',
+  'React does not recognize the `whileHover` prop',
+  'Received `false` for a non-boolean attribute `initial`',
+  'storage.setItem is not a function',
+  '`ReactDOMTestUtils.act` is deprecated',
+];
+
+const originalConsoleWarn = console.warn;
+const originalConsoleError = console.error;
+
+console.warn = (...args: unknown[]) => {
+  const first = typeof args[0] === 'string' ? args[0] : '';
+  if (suppressedWarnings.some((warning) => first.includes(warning))) {
+    return;
+  }
+  originalConsoleWarn(...args);
+};
+
+console.error = (...args: unknown[]) => {
+  const first = typeof args[0] === 'string' ? args[0] : '';
+  if (suppressedWarnings.some((warning) => first.includes(warning))) {
+    return;
+  }
+  originalConsoleError(...args);
+};
+
 // Mock IntersectionObserver for framer-motion
 global.IntersectionObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),

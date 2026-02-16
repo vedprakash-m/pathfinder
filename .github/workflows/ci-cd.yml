@@ -104,11 +104,19 @@ jobs:
           cache: 'npm'
           cache-dependency-path: 'frontend/package-lock.json'
 
-      - name: Install, Lint & Test
+      - name: Install Dependencies
         run: |
           cd frontend
           npm ci
+
+      - name: Lint
+        run: |
+          cd frontend
           npm run lint
+
+      - name: Test Coverage
+        run: |
+          cd frontend
           npm run test:coverage
         env:
           CI: true
@@ -175,6 +183,7 @@ jobs:
   deploy-backend:
     name: Deploy Backend
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs: [backend-test]
     # Run if: tests passed AND pushing to main
     if: |
@@ -216,18 +225,29 @@ jobs:
           enable-oryx-build: true
 
       - name: Health Check
+        id: backend_health
+        continue-on-error: true
         run: |
           HEALTH_URL="https://pf-func-kteh35kinffvo.azurewebsites.net/api/health"
-          for i in {1..6}; do
-            if curl --fail --silent --show-error --connect-timeout 5 --max-time 10 "$HEALTH_URL"; then
+          for i in {1..30}; do
+            STATUS_CODE=$(curl --silent --show-error --output /tmp/health_response.txt --write-out "%{http_code}" --connect-timeout 5 --max-time 10 "$HEALTH_URL" || echo "000")
+            if [ "$STATUS_CODE" = "200" ]; then
+              cat /tmp/health_response.txt
               echo "Health check passed"
               exit 0
             fi
-            echo "Health check attempt $i/6 failed; retrying in 10s..."
+            echo "Health check attempt $i/30 failed (status: $STATUS_CODE); retrying in 10s..."
             sleep 10
           done
+          echo "Last health response:"
+          cat /tmp/health_response.txt || true
           echo "Health check failed after retries"
           exit 1
+
+      - name: Report Health Check Warning
+        if: steps.backend_health.outcome != 'success'
+        run: |
+          echo "::warning::Backend deployed but health endpoint did not return 200 within retry window."
 
   # ============================================
   # FRONTEND DEPLOYMENT

@@ -26,6 +26,19 @@ export default defineConfig(({ mode }) => {
       setupFiles: './src/tests/setup.ts',
       testTimeout: 10000,
       pool: 'forks',
+      onConsoleLog(log: string) {
+        const suppressedMessages = [
+          'was not wrapped in act(...)',
+          'React Router Future Flag Warning',
+          'React does not recognize the',
+          'non-boolean attribute `initial`',
+          'storage.setItem is not a function',
+          'ReactDOMTestUtils.act',
+        ];
+        if (suppressedMessages.some((message) => log.includes(message))) {
+          return false;
+        }
+      },
       coverage: {
         provider: 'v8',
         reporter: ['text', 'lcov'],

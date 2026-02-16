@@ -13,7 +13,7 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage --reporter=verbose",
+    "test:coverage": "vitest run --coverage --reporter=dot --silent",
     "test:coverage:ui": "vitest --coverage --ui",
     "test:watch": "vitest --watch",
     "test:ui": "vitest --ui",
