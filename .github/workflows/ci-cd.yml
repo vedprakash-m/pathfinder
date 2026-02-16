@@ -73,28 +73,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: 'pip'
-          cache-dependency-path: 'backend/requirements.txt'
+      - uses: astral-sh/ruff-action@v3
 
-      - name: Install & Test
-        run: |
-          cd backend
-          pip install ruff
-          ruff check .
-          # Pytest skipped - all tests have pytestmark=skip pending Phase 4 rewrite
-          # See Tasks.md for backlog
-        env:
-          COSMOS_DB_URL: "https://localhost:8081"
-          COSMOS_DB_KEY: "test-key"
-          COSMOS_DB_NAME: "pathfinder"
-          SIGNALR_CONNECTION_STRING: "test-connection"
-          OPENAI_API_KEY: "test-key"
-          ENTRA_TENANT_ID: "test-tenant"
-          ENTRA_CLIENT_ID: "test-client"
-          AZURE_STORAGE_CONNECTION_STRING: "DefaultEndpointsProtocol=https;AccountName=test;AccountKey=dGVzdA==;EndpointSuffix=core.windows.net"
+      - name: Lint Backend
+        run: ruff check backend
 
       # Coverage disabled while backend tests are skipped (Phase 4)
       # - uses: codecov/codecov-action@v4
