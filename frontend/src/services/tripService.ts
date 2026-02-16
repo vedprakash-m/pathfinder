@@ -12,7 +12,7 @@ export const tripService = {
   // Get all trips with optional filters
   getTrips: async (filters?: TripFilters): Promise<ApiResponse<PaginatedResponse<Trip>>> => {
     const params = new URLSearchParams();
-    
+
     if (filters?.status?.length) {
       filters.status.forEach(status => params.append('status', status));
     }
@@ -78,20 +78,20 @@ export const tripService = {
 
   // Update participant status
   updateParticipantStatus: async (
-    tripId: string, 
-    userId: string, 
+    tripId: string,
+    userId: string,
     status: 'confirmed' | 'declined'
   ): Promise<ApiResponse<Trip>> => {
     return apiService.patch(`/trips/${tripId}/participants/${userId}`, { status });
   },
 
   // Generate AI itinerary
-  generateItinerary: async (tripId: string, preferences?: Record<string, any>): Promise<ApiResponse<any>> => {
+  generateItinerary: async (tripId: string, preferences?: Record<string, unknown>): Promise<ApiResponse<{ task_id: string; status: string }>> => {
     return apiService.post(`/trips/${tripId}/generate-itinerary`, { preferences });
   },
 
   // Get trip statistics
-  getTripStats: async (tripId: string): Promise<ApiResponse<any>> => {
+  getTripStats: async (tripId: string): Promise<ApiResponse<{ participant_count: number; activity_count: number; total_cost: number }>> => {
     return apiService.get(`/trips/${tripId}/stats`);
   },
 

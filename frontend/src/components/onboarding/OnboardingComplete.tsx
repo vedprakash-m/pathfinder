@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  CheckCircle2, 
-  Sparkles, 
-  MapPin, 
-  Users, 
+import {
+  CheckCircle2,
+  Sparkles,
+  MapPin,
+  Users,
   Calendar,
   MessageSquare,
   Star,
@@ -75,7 +75,7 @@ const OnboardingComplete: React.FC<OnboardingCompleteProps> = ({ onFinish, compl
   useEffect(() => {
     setShowConfetti(true);
     const confettiTimer = setTimeout(() => setShowConfetti(false), 3000);
-    
+
     const tipTimer = setInterval(() => {
       setCurrentTip((prev) => (prev + 1) % tips.length);
     }, 3000);
@@ -84,7 +84,7 @@ const OnboardingComplete: React.FC<OnboardingCompleteProps> = ({ onFinish, compl
       clearTimeout(confettiTimer);
       clearInterval(tipTimer);
     };
-  }, []);
+  }, [tips.length]);
 
   return (
     <div className="max-w-4xl mx-auto text-center">
@@ -235,7 +235,7 @@ const OnboardingComplete: React.FC<OnboardingCompleteProps> = ({ onFinish, compl
         <p className="text-gray-600 mb-6">
           Create your first real trip or explore more sample templates to get inspired.
         </p>
-        
+
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <button
             onClick={onFinish}
@@ -244,7 +244,7 @@ const OnboardingComplete: React.FC<OnboardingCompleteProps> = ({ onFinish, compl
             <span>Start Planning My Trip</span>
             <ArrowRight className="h-5 w-5" />
           </button>
-          
+
           <button
             onClick={onFinish}
             className="border-2 border-gray-300 text-gray-700 px-8 py-3 rounded-lg font-semibold hover:border-gray-400 hover:bg-gray-50 transition-all flex items-center justify-center space-x-2"

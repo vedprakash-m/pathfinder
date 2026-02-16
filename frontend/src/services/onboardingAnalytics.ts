@@ -54,7 +54,7 @@ class OnboardingAnalyticsService {
   private initializeSession(): OnboardingAnalytics {
     const sessionId = this.generateSessionId();
     const now = Date.now();
-    
+
     return {
       sessionId,
       startTime: now,
@@ -72,7 +72,7 @@ class OnboardingAnalyticsService {
 
   private detectDeviceType(): 'mobile' | 'tablet' | 'desktop' {
     if (typeof window === 'undefined') return 'desktop';
-    
+
     const width = window.innerWidth;
     if (width < 768) return 'mobile';
     if (width < 1024) return 'tablet';
@@ -92,55 +92,55 @@ class OnboardingAnalyticsService {
   // Track when user selects trip type
   trackTripTypeSelection(tripType: string): void {
     if (!this.isInitialized) return;
-    
+
     const now = Date.now();
     this.analytics.tripTypeSelected = tripType;
     this.analytics.tripTypeSelectionTime = now - this.analytics.stepStartTime;
     this.analytics.currentStep = 'sample-trip-generation';
     this.analytics.stepStartTime = now;
-    
+
     this.trackEvent('trip_type_selected', { tripType, selectionTime: this.analytics.tripTypeSelectionTime });
   }
 
   // Track when sample trip is generated
   trackSampleTripGeneration(templateId: string): void {
     if (!this.isInitialized) return;
-    
+
     const now = Date.now();
     this.analytics.sampleTripGenerated = templateId;
     this.analytics.sampleTripGenerationTime = now - this.analytics.stepStartTime;
     this.analytics.currentStep = 'trip-review';
     this.analytics.stepStartTime = now;
-    
-    this.trackEvent('sample_trip_generated', { 
-      templateId, 
-      generationTime: this.analytics.sampleTripGenerationTime 
+
+    this.trackEvent('sample_trip_generated', {
+      templateId,
+      generationTime: this.analytics.sampleTripGenerationTime
     });
   }
 
   // Track when user regenerates a trip
   trackTripRegeneration(newTemplateId: string): void {
     if (!this.isInitialized) return;
-    
+
     this.analytics.regenerationCount += 1;
     this.analytics.sampleTripGenerated = newTemplateId;
-    
-    this.trackEvent('trip_regenerated', { 
-      newTemplateId, 
-      regenerationCount: this.analytics.regenerationCount 
+
+    this.trackEvent('trip_regenerated', {
+      newTemplateId,
+      regenerationCount: this.analytics.regenerationCount
     });
   }
 
   // Track completion
   trackCompletion(): void {
     if (!this.isInitialized) return;
-    
+
     const now = Date.now();
     this.analytics.completionTime = now - this.analytics.stepStartTime;
     this.analytics.totalDuration = now - this.analytics.startTime;
     this.analytics.completed = true;
     this.analytics.currentStep = 'completed';
-    
+
     this.trackEvent('onboarding_completed', {
       totalDuration: this.analytics.totalDuration,
       tripTypeSelectionTime: this.analytics.tripTypeSelectionTime,
@@ -158,9 +158,9 @@ class OnboardingAnalyticsService {
   // Track drop-off
   trackDropOff(reason?: string): void {
     if (!this.isInitialized) return;
-    
+
     this.analytics.dropOffStep = this.analytics.currentStep;
-    
+
     this.trackEvent('onboarding_dropped_off', {
       dropOffStep: this.analytics.dropOffStep,
       timeSpent: Date.now() - this.analytics.startTime,
@@ -174,7 +174,7 @@ class OnboardingAnalyticsService {
   // Track API integration success/failure
   trackApiIntegration(endpoint: string, success: boolean, error?: string): void {
     if (!this.isInitialized) return;
-    
+
     this.trackEvent('api_integration', {
       endpoint,
       success,
@@ -184,9 +184,9 @@ class OnboardingAnalyticsService {
   }
 
   // Track user interactions with onboarding elements
-  trackInteraction(element: string, action: string, metadata?: any): void {
+  trackInteraction(element: string, action: string, metadata?: Record<string, unknown>): void {
     if (!this.isInitialized) return;
-    
+
     this.trackEvent('user_interaction', {
       element,
       action,
@@ -199,7 +199,7 @@ class OnboardingAnalyticsService {
   // Track time spent on specific steps
   trackStepTime(step: string, duration: number): void {
     if (!this.isInitialized) return;
-    
+
     this.trackEvent('step_timing', {
       step,
       duration,
@@ -219,7 +219,7 @@ class OnboardingAnalyticsService {
   }
 
   // Private method to track individual events
-  private trackEvent(eventName: string, properties?: Record<string, any>): void {
+  private trackEvent(eventName: string, properties?: Record<string, unknown>): void {
     const event = {
       event: eventName,
       sessionId: this.analytics.sessionId,
@@ -266,7 +266,7 @@ class OnboardingAnalyticsService {
     }
   }
 
-  private async sendToAnalyticsService(event: any): Promise<void> {
+  private async sendToAnalyticsService(event: Record<string, unknown>): Promise<void> {
     try {
       if (process.env.NODE_ENV === 'development') {
         return; // Already logged to console
@@ -285,7 +285,7 @@ class OnboardingAnalyticsService {
   }
 
   // Public method for tracking custom events (used by A/B testing)
-  public trackCustomEvent(eventName: string, properties?: Record<string, any>): void {
+  public trackCustomEvent(eventName: string, properties?: Record<string, unknown>): void {
     this.trackEvent(eventName, properties);
   }
 }
@@ -294,10 +294,10 @@ class OnboardingAnalyticsService {
 export class OnboardingABTesting {
   private static readonly AB_TEST_KEY = 'pathfinder_onboarding_variant';
   private static readonly VARIANTS = ['control', 'variant_a', 'variant_b'] as const;
-  
+
   static getVariant(): string {
     type Variant = typeof OnboardingABTesting.VARIANTS[number];
-    
+
     // Check if user already has a variant assigned
     const stored = localStorage.getItem(this.AB_TEST_KEY);
     if (stored && this.VARIANTS.includes(stored as Variant)) {
@@ -307,7 +307,7 @@ export class OnboardingABTesting {
     // Assign new variant randomly
     const randomIndex = Math.floor(Math.random() * this.VARIANTS.length);
     const variant = this.VARIANTS[randomIndex];
-    
+
     localStorage.setItem(this.AB_TEST_KEY, variant);
     return variant;
   }

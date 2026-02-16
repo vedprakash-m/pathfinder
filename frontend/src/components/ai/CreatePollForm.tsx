@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { X, Plus, Trash2, Brain, Clock, HelpCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -14,11 +14,21 @@ interface PollType {
   description: string;
 }
 
+interface Poll {
+  id: string;
+  title: string;
+  description?: string;
+  poll_type: string;
+  options: PollOption[];
+  expires_at?: string;
+  created_at: string;
+}
+
 interface CreatePollFormProps {
   tripId: string;
   isOpen: boolean;
   onClose: () => void;
-  onPollCreated: (poll: any) => void;
+  onPollCreated: (poll: Poll) => void;
 }
 
 export const CreatePollForm: React.FC<CreatePollFormProps> = ({
@@ -40,13 +50,7 @@ export const CreatePollForm: React.FC<CreatePollFormProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    if (isOpen) {
-      fetchPollTypes();
-    }
-  }, [isOpen]);
-
-  const fetchPollTypes = async () => {
+  const fetchPollTypes = useCallback(async () => {
     try {
       const response = await fetch('/api/v1/polls/types/available', {
         headers: {
@@ -61,7 +65,13 @@ export const CreatePollForm: React.FC<CreatePollFormProps> = ({
     } catch (error) {
       console.error('Error fetching poll types:', error);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchPollTypes();
+    }
+  }, [isOpen, fetchPollTypes]);
 
   const addOption = () => {
     setOptions([...options, { value: '', label: '', description: '' }]);
@@ -105,7 +115,7 @@ export const CreatePollForm: React.FC<CreatePollFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -114,7 +124,7 @@ export const CreatePollForm: React.FC<CreatePollFormProps> = ({
 
     try {
       const validOptions = options.filter(opt => opt.value.trim() && opt.label.trim());
-      
+
       const response = await fetch('/api/v1/polls', {
         method: 'POST',
         headers: {

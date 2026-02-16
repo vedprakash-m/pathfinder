@@ -1,14 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Vote, BarChart3, Clock, Brain, CheckCircle, XCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useWebSocket } from '@/hooks/useWebSocket';
+
+interface PollOptionMetadata {
+  cost_estimate?: number;
+  duration_estimate?: string;
+  location?: string;
+  rating?: number;
+}
+
+interface PollOptionInsights {
+  compatibility_score?: number;
+  recommendation_reason?: string;
+  potential_conflicts?: string[];
+}
 
 interface PollOption {
   value: string;
   label?: string;
   description?: string;
-  metadata?: any;
-  ai_insights?: any;
+  metadata?: PollOptionMetadata;
+  ai_insights?: PollOptionInsights;
 }
 
 interface MagicPoll {
@@ -53,11 +66,22 @@ interface ConsensusRecommendation {
   rationale: string;
 }
 
+interface PollResponsePreferences {
+  priority?: number;
+  notes?: string;
+  flexible?: boolean;
+}
+
+interface PollResponse {
+  choice: string;
+  preferences?: PollResponsePreferences;
+}
+
 interface MagicPollsProps {
   tripId: string;
   className?: string;
   onPollCreate?: (poll: MagicPoll) => void;
-  onPollResponse?: (pollId: string, response: any) => void;
+  onPollResponse?: (pollId: string, response: PollResponse) => void;
 }
 
 export const MagicPolls: React.FC<MagicPollsProps> = ({
@@ -77,78 +101,8 @@ export const MagicPolls: React.FC<MagicPollsProps> = ({
   const [realtimeUpdateCount, setRealtimeUpdateCount] = useState(0);
   const [showRealtimeIndicator, setShowRealtimeIndicator] = useState(false);
 
-  useEffect(() => {
-    fetchTripPolls();
-  }, [tripId]);
-
-  // WebSocket integration for real-time poll updates
-  const { messages: pollNotifications } = useWebSocket<{
-    type: string;
-    event: string;
-    poll_id: string;
-    voter_id?: string;
-    data: any;
-    timestamp: string;
-  }>(['poll_notification'], [tripId]);
-
-  // Handle real-time poll notifications
-  useEffect(() => {
-    if (pollNotifications.length > 0) {
-      const latestNotification = pollNotifications[pollNotifications.length - 1];
-      
-      // Show real-time update indicator
-      setShowRealtimeIndicator(true);
-      setRealtimeUpdateCount(prev => prev + 1);
-      
-      // Hide indicator after 3 seconds
-      const timer = setTimeout(() => {
-        setShowRealtimeIndicator(false);
-      }, 3000);
-      
-      switch (latestNotification.event) {
-        case 'poll_created':
-          // Refresh polls list when new poll is created
-          fetchTripPolls();
-          break;
-        
-        case 'poll_vote':
-          // Update poll results in real-time when someone votes
-          if (selectedPoll?.id === latestNotification.poll_id) {
-            fetchPollDetails(latestNotification.poll_id);
-          }
-          // Also update the poll in the list
-          setPolls(prevPolls => 
-            prevPolls.map(poll => 
-              poll.id === latestNotification.poll_id 
-                ? { ...poll, ...latestNotification.data }
-                : poll
-            )
-          );
-          break;
-        
-        case 'poll_results':
-          // Update AI analysis and results when available
-          if (selectedPoll?.id === latestNotification.poll_id) {
-            setAiAnalysis(latestNotification.data.ai_analysis);
-            setConsensusRecommendation(latestNotification.data.consensus);
-          }
-          break;
-        
-        case 'poll_completed':
-          // Update poll status and show final consensus
-          if (selectedPoll?.id === latestNotification.poll_id) {
-            setConsensusRecommendation(latestNotification.data);
-            fetchPollDetails(latestNotification.poll_id);
-          }
-          fetchTripPolls();
-          break;
-      }
-      
-      return () => clearTimeout(timer);
-    }
-  }, [pollNotifications, selectedPoll, tripId]);
-
-  const fetchTripPolls = async () => {
+  // Define callbacks before using them in useEffect
+  const fetchTripPolls = useCallback(async () => {
     try {
       const response = await fetch(`/api/v1/polls/trip/${tripId}`, {
         headers: {
@@ -163,9 +117,9 @@ export const MagicPolls: React.FC<MagicPollsProps> = ({
     } catch (error) {
       console.error('Error fetching polls:', error);
     }
-  };
+  }, [tripId, token]);
 
-  const fetchPollDetails = async (pollId: string) => {
+  const fetchPollDetails = useCallback(async (pollId: string) => {
     try {
       setIsLoading(true);
       const response = await fetch(`/api/v1/polls/${pollId}`, {
@@ -177,9 +131,10 @@ export const MagicPolls: React.FC<MagicPollsProps> = ({
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
+          setSelectedPoll(data.data.poll);
           setPollResults(data.data.results);
-          setAiAnalysis(data.data.ai_analysis);
-          setConsensusRecommendation(data.data.consensus_recommendation);
+          setAiAnalysis(data.data.ai_analysis as AIAnalysis | null);
+          setConsensusRecommendation(data.data.consensus_recommendation as ConsensusRecommendation | null);
         }
       }
     } catch (error) {
@@ -187,9 +142,81 @@ export const MagicPolls: React.FC<MagicPollsProps> = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [token]);
 
-  const submitPollResponse = async (pollId: string, choice: string, preferences?: any) => {
+  useEffect(() => {
+    fetchTripPolls();
+  }, [tripId, fetchTripPolls]);
+
+  // WebSocket integration for real-time poll updates
+  const { messages: pollNotifications } = useWebSocket<{
+    type: string;
+    event: string;
+    poll_id: string;
+    voter_id?: string;
+    data: Record<string, unknown>;
+    timestamp: string;
+  }>(['poll_notification'], [tripId]);
+
+  // Handle real-time poll notifications
+  useEffect(() => {
+    if (pollNotifications.length > 0) {
+      const latestNotification = pollNotifications[pollNotifications.length - 1];
+
+      // Show real-time update indicator
+      setShowRealtimeIndicator(true);
+      setRealtimeUpdateCount(prev => prev + 1);
+
+      // Hide indicator after 3 seconds
+      const timer = setTimeout(() => {
+        setShowRealtimeIndicator(false);
+      }, 3000);
+
+      switch (latestNotification.event) {
+        case 'poll_created':
+          // Refresh polls list when new poll is created
+          fetchTripPolls();
+          break;
+
+        case 'poll_vote':
+          // Update poll results in real-time when someone votes
+          if (selectedPoll?.id === latestNotification.poll_id) {
+            fetchPollDetails(latestNotification.poll_id);
+          }
+          // Also update the poll in the list
+          setPolls(prevPolls =>
+            prevPolls.map(poll =>
+              poll.id === latestNotification.poll_id
+                ? { ...poll, ...(latestNotification.data as Partial<MagicPoll>) }
+                : poll
+            )
+          );
+          break;
+
+        case 'poll_results':
+          // Update AI analysis and results when available
+          if (selectedPoll?.id === latestNotification.poll_id) {
+            const resultData = latestNotification.data as { ai_analysis?: AIAnalysis; consensus?: ConsensusRecommendation };
+            setAiAnalysis(resultData.ai_analysis || null);
+            setConsensusRecommendation(resultData.consensus || null);
+          }
+          break;
+
+        case 'poll_completed':
+          // Update poll status and show final consensus
+          if (selectedPoll?.id === latestNotification.poll_id) {
+            setConsensusRecommendation(latestNotification.data as unknown as ConsensusRecommendation);
+            fetchPollDetails(latestNotification.poll_id);
+          }
+          fetchTripPolls();
+          break;
+      }
+
+      return () => clearTimeout(timer);
+    }
+  }, [pollNotifications, selectedPoll, tripId, fetchPollDetails, fetchTripPolls]);
+
+  const submitPollResponse = async (pollId: string, choice: string, preferences?: PollResponsePreferences) => {
     try {
       const response = await fetch(`/api/v1/polls/${pollId}/respond`, {
         method: 'POST',
@@ -212,7 +239,7 @@ export const MagicPolls: React.FC<MagicPollsProps> = ({
           // Refresh poll details
           await fetchPollDetails(pollId);
           await fetchTripPolls();
-          
+
           if (onPollResponse) {
             onPollResponse(pollId, { choice, preferences });
           }
@@ -227,12 +254,12 @@ export const MagicPolls: React.FC<MagicPollsProps> = ({
     const now = new Date();
     const expiry = new Date(expiresAt);
     const diff = expiry.getTime() - now.getTime();
-    
+
     if (diff <= 0) return 'Expired';
-    
+
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    
+
     if (hours > 24) {
       const days = Math.floor(hours / 24);
       return `${days} day${days > 1 ? 's' : ''} left`;
@@ -265,7 +292,7 @@ export const MagicPolls: React.FC<MagicPollsProps> = ({
   };
 
   const PollCard: React.FC<{ poll: MagicPoll }> = ({ poll }) => (
-    <div 
+    <div
       className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
       onClick={() => {
         setSelectedPoll(poll);
@@ -285,11 +312,11 @@ export const MagicPolls: React.FC<MagicPollsProps> = ({
           {poll.status}
         </span>
       </div>
-      
+
       {poll.description && (
         <p className="text-gray-600 text-sm mb-3">{poll.description}</p>
       )}
-      
+
       <div className="flex items-center justify-between text-sm text-gray-500">
         <span className="capitalize">{poll.poll_type.replace('_', ' ')}</span>
         {poll.expires_at && poll.status === 'active' && (
@@ -343,7 +370,7 @@ export const MagicPolls: React.FC<MagicPollsProps> = ({
                     </button>
                   )}
                 </div>
-                
+
                 {/* AI Insights */}
                 {option.ai_insights && (
                   <div className="mt-2 p-2 bg-blue-50 rounded border border-blue-200">
@@ -402,16 +429,16 @@ export const MagicPolls: React.FC<MagicPollsProps> = ({
               <Brain className="h-5 w-5" />
               <span>AI Analysis</span>
             </h3>
-            
+
             <div className="text-sm text-purple-800 mb-3">
               <strong>Consensus Level:</strong>
               <span className={`ml-2 font-medium ${getConsensusColor(aiAnalysis.consensus_level)}`}>
                 {Math.round(aiAnalysis.consensus_level * 100)}%
               </span>
             </div>
-            
+
             <p className="text-purple-700 mb-3">{aiAnalysis.summary}</p>
-            
+
             {aiAnalysis.conflicts && aiAnalysis.conflicts.length > 0 && (
               <div className="mb-3">
                 <strong className="text-purple-900">Conflicts Identified:</strong>
@@ -422,7 +449,7 @@ export const MagicPolls: React.FC<MagicPollsProps> = ({
                 </ul>
               </div>
             )}
-            
+
             {aiAnalysis.patterns && aiAnalysis.patterns.length > 0 && (
               <div>
                 <strong className="text-purple-900">Patterns:</strong>
@@ -448,7 +475,7 @@ export const MagicPolls: React.FC<MagicPollsProps> = ({
                 Recommended: {consensusRecommendation.recommended_choice}
               </p>
               <p className="text-sm mb-2">
-                {consensusRecommendation.vote_count} out of {consensusRecommendation.total_votes} votes 
+                {consensusRecommendation.vote_count} out of {consensusRecommendation.total_votes} votes
                 ({Math.round(consensusRecommendation.consensus_strength * 100)}% consensus)
               </p>
               <p className="text-sm">
@@ -471,7 +498,7 @@ export const MagicPolls: React.FC<MagicPollsProps> = ({
           <span className="text-sm font-medium">Live Update</span>
         </div>
       )}
-      
+
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900 flex items-center space-x-2">
           <Vote className="h-6 w-6 text-blue-500" />
@@ -497,7 +524,7 @@ export const MagicPolls: React.FC<MagicPollsProps> = ({
           {polls.map((poll) => (
             <PollCard key={poll.id} poll={poll} />
           ))}
-          
+
           {polls.length === 0 && (
             <div className="col-span-full text-center py-12 text-gray-500">
               <Vote className="h-12 w-12 mx-auto mb-4 text-gray-300" />

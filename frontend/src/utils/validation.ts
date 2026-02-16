@@ -62,7 +62,7 @@ export const createTripSchema = z
       .nonnegative('Budget must be a positive number')
       .optional(),
     is_public: z.boolean().optional(),
-    preferences: z.record(z.any()).optional(),
+    preferences: z.record(z.unknown()).optional(),
   })
   .refine(
     (data) => {
@@ -133,7 +133,7 @@ export const registerSchema = z.object({
 // Validate helper function
 export const validateForm = <T>(
   schema: z.ZodType<T>,
-  data: any
+  data: unknown
 ): { isValid: boolean; errors: Record<string, string> } => {
   try {
     schema.parse(data);

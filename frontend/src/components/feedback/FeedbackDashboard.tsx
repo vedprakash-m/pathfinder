@@ -1,8 +1,8 @@
 /**
  * Real-Time Feedback Dashboard Component
- * 
+ *
  * Solves Pain Point #3: "No effective way to gather and incorporate changes/feedback during planning process"
- * 
+ *
  * Features:
  * - Live feedback submission and tracking
  * - In-context commenting and suggestions
@@ -11,7 +11,7 @@
  * - Real-time collaboration status
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card,
   Text,
@@ -101,21 +101,17 @@ export const FeedbackDashboard: React.FC<FeedbackDashboardProps> = ({ tripId }) 
   const [error, setError] = useState<string | null>(null);
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
-  
+
   // Feedback form state
   const [feedbackType, setFeedbackType] = useState<string>('suggestion');
   const [targetElement, setTargetElement] = useState<string>('');
   const [feedbackContent, setFeedbackContent] = useState<string>('');
   const [suggestedChange, setSuggestedChange] = useState<string>('');
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, [tripId]);
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
-      
+
       // Simulated data for demonstration
       const simulatedData: FeedbackDashboardData = {
         trip_id: tripId,
@@ -208,7 +204,11 @@ export const FeedbackDashboard: React.FC<FeedbackDashboardProps> = ({ tripId }) 
     } finally {
       setLoading(false);
     }
-  };
+  }, [tripId]);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [tripId, fetchDashboardData]);
 
   const handleSubmitFeedback = async () => {
     if (!feedbackContent.trim() || !targetElement.trim()) {
@@ -217,7 +217,7 @@ export const FeedbackDashboard: React.FC<FeedbackDashboardProps> = ({ tripId }) 
 
     try {
       setSubmittingFeedback(true);
-      
+
       // Simulate API call
       console.log('Submitting feedback:', {
         feedback_type: feedbackType,
@@ -225,21 +225,21 @@ export const FeedbackDashboard: React.FC<FeedbackDashboardProps> = ({ tripId }) 
         content: feedbackContent,
         suggested_change: suggestedChange || undefined
       });
-      
+
       // Simulate successful submission
       setTimeout(() => {
         setSubmittingFeedback(false);
         setShowFeedbackDialog(false);
-        
+
         // Reset form
         setFeedbackContent('');
         setSuggestedChange('');
         setTargetElement('');
-        
+
         // Refresh dashboard
         fetchDashboardData();
       }, 1000);
-      
+
     } catch (err) {
       setError('Failed to submit feedback');
       setSubmittingFeedback(false);
@@ -269,7 +269,7 @@ export const FeedbackDashboard: React.FC<FeedbackDashboardProps> = ({ tripId }) 
       rejected: { color: 'danger' as const, text: 'Rejected' },
       implemented: { color: 'success' as const, text: 'Implemented' }
     };
-    
+
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
     return <Badge color={config.color}>{config.text}</Badge>;
   };
@@ -301,8 +301,8 @@ export const FeedbackDashboard: React.FC<FeedbackDashboardProps> = ({ tripId }) 
     return (
       <MessageBar intent="error">
         {error}
-        <Button 
-          appearance="transparent" 
+        <Button
+          appearance="transparent"
           onClick={fetchDashboardData}
           style={{ marginLeft: '10px' }}
         >
@@ -316,8 +316,8 @@ export const FeedbackDashboard: React.FC<FeedbackDashboardProps> = ({ tripId }) 
     return null;
   }
 
-  const collaborationScore = Math.min(100, 
-    (dashboardData.total_feedback_items * 8) + 
+  const collaborationScore = Math.min(100,
+    (dashboardData.total_feedback_items * 8) +
     (parseFloat(dashboardData.collaboration_health.response_rate) || 0) +
     (dashboardData.collaboration_health.active_discussions * 5)
   );
@@ -327,7 +327,7 @@ export const FeedbackDashboard: React.FC<FeedbackDashboardProps> = ({ tripId }) 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Title2>💬 Real-Time Feedback</Title2>
-        
+
         <Dialog open={showFeedbackDialog} onOpenChange={(_, data) => setShowFeedbackDialog(data.open)}>
           <DialogTrigger disableButtonEnhancement>
             <Button appearance="primary" icon={<Send24Regular />}>
@@ -338,9 +338,9 @@ export const FeedbackDashboard: React.FC<FeedbackDashboardProps> = ({ tripId }) 
             <DialogBody>
               <DialogTitle>Submit Trip Feedback</DialogTitle>
               <DialogContent style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                
+
                 <Field label="Feedback Type">
-                  <Dropdown 
+                  <Dropdown
                     value={feedbackType}
                     onOptionSelect={(_, data) => setFeedbackType(data.optionValue || 'suggestion')}
                   >
@@ -384,8 +384,8 @@ export const FeedbackDashboard: React.FC<FeedbackDashboardProps> = ({ tripId }) 
                 <DialogTrigger disableButtonEnhancement>
                   <Button appearance="secondary">Cancel</Button>
                 </DialogTrigger>
-                <Button 
-                  appearance="primary" 
+                <Button
+                  appearance="primary"
                   onClick={handleSubmitFeedback}
                   disabled={submittingFeedback || !feedbackContent.trim() || !targetElement.trim()}
                 >
@@ -407,8 +407,8 @@ export const FeedbackDashboard: React.FC<FeedbackDashboardProps> = ({ tripId }) 
               {collaborationScore}%
             </Badge>
           </div>
-          
-          
+
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginTop: '16px' }}>
             <div>
               <Caption1>Feedback Velocity</Caption1>
@@ -431,7 +431,7 @@ export const FeedbackDashboard: React.FC<FeedbackDashboardProps> = ({ tripId }) 
         <Card>
           <div style={{ padding: '16px' }}>
             <Title3 style={{ marginBottom: '12px' }}>📊 Feedback Overview</Title3>
-            
+
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <div>
                 <Text style={{ fontSize: '24px', fontWeight: 'bold', color: '#0078D4' }}>
@@ -464,7 +464,7 @@ export const FeedbackDashboard: React.FC<FeedbackDashboardProps> = ({ tripId }) 
         <Card>
           <div style={{ padding: '16px' }}>
             <Title3 style={{ marginBottom: '12px' }}>📈 Feedback Trends</Title3>
-            
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
                 <Caption1>Most Common Type</Caption1>
@@ -487,12 +487,12 @@ export const FeedbackDashboard: React.FC<FeedbackDashboardProps> = ({ tripId }) 
       <Card>
         <div style={{ padding: '16px' }}>
           <Title3 style={{ marginBottom: '16px' }}>💭 Recent Feedback</Title3>
-          
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {dashboardData.recent_feedback.map((feedback) => (
-              <div key={feedback.id} style={{ 
-                border: '1px solid #E5E5E5', 
-                borderRadius: '8px', 
+              <div key={feedback.id} style={{
+                border: '1px solid #E5E5E5',
+                borderRadius: '8px',
                 padding: '16px',
                 backgroundColor: '#FAFAFA'
               }}>
@@ -500,10 +500,10 @@ export const FeedbackDashboard: React.FC<FeedbackDashboardProps> = ({ tripId }) 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     {getFeedbackIcon(feedback.feedback_type)}
                     <Body1 style={{ fontWeight: "600" }}>{feedback.target_element}</Body1>
-                    <div style={{ 
-                      width: '8px', 
-                      height: '8px', 
-                      borderRadius: '50%', 
+                    <div style={{
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
                       backgroundColor: getUrgencyColor(feedback.urgency_level || 'Low')
                     }} />
                   </div>
@@ -512,15 +512,15 @@ export const FeedbackDashboard: React.FC<FeedbackDashboardProps> = ({ tripId }) 
                     {getStatusBadge(feedback.status)}
                   </div>
                 </div>
-                
+
                 <Body1 style={{ marginBottom: '8px' }}>{feedback.content}</Body1>
-                
+
                 {feedback.suggested_change && (
-                  <div style={{ 
-                    backgroundColor: '#F3F2F1', 
-                    padding: '8px', 
-                    borderRadius: '4px', 
-                    marginBottom: '8px' 
+                  <div style={{
+                    backgroundColor: '#F3F2F1',
+                    padding: '8px',
+                    borderRadius: '4px',
+                    marginBottom: '8px'
                   }}>
                     <Caption1 style={{ fontWeight: 'bold' }}>Suggested Change:</Caption1>
                     <Caption1>{feedback.suggested_change}</Caption1>
@@ -584,4 +584,4 @@ export const FeedbackDashboard: React.FC<FeedbackDashboardProps> = ({ tripId }) 
   );
 };
 
-export default FeedbackDashboard; 
+export default FeedbackDashboard;

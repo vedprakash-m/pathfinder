@@ -1,6 +1,45 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import apiService from '../services/api';
+import { AxiosError } from 'axios';
+
+// Type guard for axios error responses
+interface ErrorResponse {
+  detail?: string;
+}
+
+function isAxiosError(error: unknown): error is AxiosError<ErrorResponse> {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'isAxiosError' in error &&
+    (error as AxiosError).isAxiosError === true
+  );
+}
+
+function getErrorMessage(error: unknown): string {
+  if (isAxiosError(error)) {
+    return error.response?.data?.detail || error.message || 'An error occurred';
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return 'An error occurred';
+}
+
+function getErrorStatus(error: unknown): number | undefined {
+  if (isAxiosError(error)) {
+    return error.response?.status;
+  }
+  return undefined;
+}
+
+function getErrorCode(error: unknown): string | undefined {
+  if (isAxiosError(error)) {
+    return error.code;
+  }
+  return undefined;
+}
 
 interface OnboardingStatus {
   completed: boolean;
@@ -35,27 +74,29 @@ export const useOnboarding = () => {
     try {
       setIsLoading(true);
       if (!retry) setError(null);
-      
+
       const response = await apiService.get('/auth/user/onboarding-status');
-      
+
       if (isMountedRef.current) {
         setOnboardingStatus(response.data as OnboardingStatus);
         setRetryCount(0); // Reset retry count on success
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to check onboarding status:', err);
-      
+
       if (!isMountedRef.current) return;
-      
-      const errorMessage = err.response?.data?.detail || err.message || 'Failed to check onboarding status';
+
+      const errorMessage = getErrorMessage(err);
+      const errorStatus = getErrorStatus(err);
+      const errorCode = getErrorCode(err);
       setError(errorMessage);
-      
+
       // Check for authentication failures (401, 403) or credential validation errors
-      const isAuthError = err.response?.status === 401 || 
-                         err.response?.status === 403 || 
+      const isAuthError = errorStatus === 401 ||
+                         errorStatus === 403 ||
                          errorMessage.includes('Could not validate credentials') ||
                          errorMessage.includes('Not authenticated');
-      
+
       // For auth errors, assume onboarding is completed to prevent redirect loops
       if (isAuthError) {
         console.warn('Authentication error detected, assuming onboarding completed to prevent redirect loop');
@@ -63,18 +104,18 @@ export const useOnboarding = () => {
         setIsLoading(false);
         return;
       }
-      
+
       // Set default values if API fails after all retries
       if (retryCount >= 3) {
         setOnboardingStatus({ completed: true }); // Changed to true to prevent redirect loops
         setIsLoading(false);
         return;
       }
-      
+
       // Auto-retry up to 3 times with exponential backoff, but only for network errors
-      const isNetworkError = err.code === 'ERR_NETWORK' || err.message?.includes('Network Error');
-      const isServerError = err.response?.status >= 500;
-      
+      const isNetworkError = errorCode === 'ERR_NETWORK' || errorMessage.includes('Network Error');
+      const isServerError = errorStatus !== undefined && errorStatus >= 500;
+
       if (retryCount < 3 && isMountedRef.current && (isNetworkError || isServerError)) {
         const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
         retryTimeoutRef.current = setTimeout(() => {
@@ -111,7 +152,7 @@ export const useOnboarding = () => {
     try {
       setError(null);
       await apiService.post('/auth/user/complete-onboarding', data);
-      
+
       // Update local state
       if (isMountedRef.current) {
         setOnboardingStatus({
@@ -120,11 +161,11 @@ export const useOnboarding = () => {
           trip_type: data.trip_type
         });
       }
-      
+
       return true;
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to complete onboarding:', err);
-      const errorMessage = err.response?.data?.detail || err.message || 'Failed to complete onboarding';
+      const errorMessage = getErrorMessage(err);
       if (isMountedRef.current) {
         setError(errorMessage);
       }
@@ -134,7 +175,7 @@ export const useOnboarding = () => {
 
   useEffect(() => {
     isMountedRef.current = true;
-    
+
     if (isAuthenticated) {
       checkOnboardingStatus();
     } else {

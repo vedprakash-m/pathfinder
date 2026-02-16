@@ -17,6 +17,66 @@ interface OnlineUser {
   status: string;
 }
 
+interface WebSocketMessageData {
+  id?: string;
+  content?: string;
+  text?: string;
+  user_id?: string;
+  sender_id?: string;
+  user_name?: string;
+  sender_name?: string;
+  avatar?: string;
+  timestamp?: string | number;
+  message_type?: string;
+  type?: string;
+  metadata?: Record<string, unknown>;
+}
+
+interface MessageHistoryData {
+  messages: Array<{
+    id: string;
+    content: string;
+    user_id: string;
+    user_name: string;
+    avatar?: string;
+    timestamp: string;
+    message_type?: string;
+    metadata?: Record<string, unknown>;
+  }>;
+}
+
+interface PresenceUpdateData {
+  online_users?: OnlineUser[];
+}
+
+interface TypingIndicatorData {
+  typing_users?: Array<{ user_id: string; user_name: string }>;
+}
+
+interface WebSocketError {
+  message?: string;
+  code?: string;
+}
+
+interface PollOption {
+  id: string;
+  text: string;
+  votes: number;
+}
+
+interface ChatMessageMetadata {
+  activity?: {
+    id: string;
+    title: string;
+    description: string;
+  };
+  poll?: {
+    id?: string;
+    question: string;
+    options: PollOption[];
+  };
+}
+
 interface TripChatProps {
   tripId: string;
   tripName: string;
@@ -50,52 +110,56 @@ export const TripChat: React.FC<TripChatProps> = ({ tripId, tripName }) => {
       try {
         // Connect to WebSocket
         await webSocketService.connect();
-        
+
         // Join trip room
         webSocketService.joinRoom(tripId);
 
         // Set up message listeners
-        webSocketService.on('message', (messageData: any) => {
+        webSocketService.on('message', (messageData: WebSocketMessageData) => {
+          const messageType = (messageData.message_type || messageData.type || 'text') as ChatMessageProps['type'];
           const newMessage: ChatMessageProps = {
             id: messageData.id || Date.now().toString(),
             content: messageData.content || messageData.text || '',
             sender: {
-              id: messageData.user_id || messageData.sender_id,
+              id: messageData.user_id || messageData.sender_id || 'unknown',
               name: messageData.user_name || messageData.sender_name || 'Unknown User',
               avatar: messageData.avatar,
             },
             timestamp: new Date(messageData.timestamp || Date.now()),
             isOwn: messageData.user_id === user.id || messageData.sender_id === user.id,
-            type: messageData.message_type || messageData.type || 'text',
-            metadata: messageData.metadata,
+            type: messageType,
+            metadata: messageData.metadata as ChatMessageProps['metadata'],
           };
-          
+
           setMessages(prev => [...prev, newMessage]);
         });
 
-        webSocketService.on('message_history', (data: any) => {
-          const historyMessages: ChatMessageProps[] = data.messages.map((msg: any) => ({
-            id: msg.id,
-            content: msg.content,
-            sender: {
-              id: msg.user_id,
-              name: msg.user_name,
-              avatar: msg.avatar,
-            },
-            timestamp: new Date(msg.timestamp),
-            isOwn: msg.user_id === user.id,
-            type: msg.message_type || 'text',
-            metadata: msg.metadata,
-          }));
-          
+        webSocketService.on('message_history', (data: MessageHistoryData) => {
+          const historyMessages: ChatMessageProps[] = data.messages.map((msg) => {
+            const msgType = (msg.message_type || 'text') as ChatMessageProps['type'];
+            return {
+              id: msg.id,
+              content: msg.content,
+              sender: {
+                id: msg.user_id,
+                name: msg.user_name,
+                avatar: msg.avatar,
+              },
+              timestamp: new Date(msg.timestamp),
+              isOwn: msg.user_id === user.id,
+              type: msgType,
+              metadata: msg.metadata as ChatMessageProps['metadata'],
+            };
+          });
+
           setMessages(historyMessages);
         });
 
-        webSocketService.on('presence_update', (data: any) => {
+        webSocketService.on('presence_update', (data: PresenceUpdateData) => {
           setOnlineUsers(data.online_users || []);
         });
 
-        webSocketService.on('typing_indicator', (data: any) => {
+        webSocketService.on('typing_indicator', (data: TypingIndicatorData) => {
           setTypingUsers(data.typing_users || []);
         });
 
@@ -108,7 +172,7 @@ export const TripChat: React.FC<TripChatProps> = ({ tripId, tripName }) => {
           setIsConnected(false);
         });
 
-        webSocketService.on('error', (error: any) => {
+webSocketService.on('error', (error: WebSocketError) => {
           console.error('WebSocket error:', error);
           setIsConnecting(false);
         });
@@ -130,7 +194,7 @@ export const TripChat: React.FC<TripChatProps> = ({ tripId, tripName }) => {
     };
   }, [user, tripId]);
 
-  const handleSendMessage = (content: string, type?: 'text' | 'activity' | 'poll', metadata?: any) => {
+  const handleSendMessage = (content: string, type?: 'text' | 'activity' | 'poll', metadata?: ChatMessageMetadata) => {
     if (!content.trim() || !isConnected) return;
 
     const messageData = {
@@ -178,7 +242,7 @@ export const TripChat: React.FC<TripChatProps> = ({ tripId, tripName }) => {
           </CardHeader>
 
           {/* Messages Container */}
-          <div 
+          <div
             ref={chatContainerRef}
             className="flex-1 p-4 overflow-y-auto max-h-96 space-y-2"
             style={{ minHeight: '400px' }}
@@ -198,7 +262,7 @@ export const TripChat: React.FC<TripChatProps> = ({ tripId, tripName }) => {
                 {messages.map((message) => (
                   <ChatMessage key={message.id} {...message} />
                 ))}
-                
+
                 {/* Typing Indicators */}
                 {typingUsers.length > 0 && (
                   <div className="flex items-center gap-2 text-sm text-neutral-500 py-2">
@@ -208,7 +272,7 @@ export const TripChat: React.FC<TripChatProps> = ({ tripId, tripName }) => {
                       <div className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                     </div>
                     <span>
-                      {typingUsers.map(u => u.user_name).join(', ')} 
+                      {typingUsers.map(u => u.user_name).join(', ')}
                       {typingUsers.length === 1 ? ' is' : ' are'} typing...
                     </span>
                   </div>

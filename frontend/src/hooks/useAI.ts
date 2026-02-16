@@ -4,7 +4,19 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import { AIService, type MagicPoll, type AssistantMessage, type ResponseCard, type ConsensusAnalysis } from '../services/aiService';
+import { AIService, type MagicPoll, type AssistantMessage, type ResponseCard, type ConsensusAnalysis, type CreatePollRequest, type PollResults, type ConsensusRecommendation, type ItineraryRequest } from '../services/aiService';
+
+// Type aliases for itinerary generation
+type ItineraryPreferences = ItineraryRequest['preferences'];
+type ItineraryConstraints = ItineraryRequest['constraints'];
+
+// Status response type for itinerary generation
+interface ItineraryStatusResponse {
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  progress?: number;
+  itinerary?: unknown;
+  error?: string;
+}
 
 export interface AIState {
   isLoading: boolean;
@@ -21,26 +33,26 @@ export interface AIState {
 export interface UseAIReturn {
   // State
   state: AIState;
-  
+
   // Assistant functions
-  sendAssistantMessage: (message: string, context?: any) => Promise<AssistantMessage | null>;
-  getContextualSuggestions: (context?: any) => Promise<ResponseCard[]>;
+  sendAssistantMessage: (message: string, context?: Record<string, unknown>) => Promise<AssistantMessage | null>;
+  getContextualSuggestions: (context?: Record<string, unknown>) => Promise<ResponseCard[]>;
   sendFeedback: (interactionId: string, rating: number, text?: string) => Promise<void>;
-  
+
   // Magic Polls functions
-  createMagicPoll: (pollData: any) => Promise<MagicPoll | null>;
+  createMagicPoll: (pollData: CreatePollRequest) => Promise<MagicPoll | null>;
   getTripPolls: (tripId?: string) => Promise<MagicPoll[]>;
   votePoll: (pollId: string, selectedOptions: string[]) => Promise<void>;
-  getPollResults: (pollId: string) => Promise<any>;
-  
+  getPollResults: (pollId: string) => Promise<PollResults | null>;
+
   // Consensus functions
   getConsensusAnalysis: (tripId: string) => Promise<ConsensusAnalysis | null>;
-  getConsensusRecommendation: (tripId: string, decisionType: string) => Promise<any>;
-  
+  getConsensusRecommendation: (tripId: string, decisionType: string) => Promise<ConsensusRecommendation | null>;
+
   // Itinerary functions
-  generateItinerary: (tripId: string, preferences: any, constraints: any) => Promise<string | null>;
-  getItineraryStatus: (taskId: string) => Promise<any>;
-  
+  generateItinerary: (tripId: string, preferences: ItineraryPreferences, constraints: ItineraryConstraints) => Promise<string | null>;
+  getItineraryStatus: (taskId: string) => Promise<ItineraryStatusResponse | null>;
+
   // Utility functions
   refreshCostStatus: () => Promise<void>;
   clearError: () => void;
@@ -63,9 +75,9 @@ export const useAI = (context?: {
   });
 
   // Helper function to handle AI errors
-  const handleAIError = useCallback((error: any) => {
+  const handleAIError = useCallback((error: unknown) => {
     const errorInfo = AIService.handleAIError(error);
-    
+
     setState(prev => ({
       ...prev,
       error: errorInfo.message,
@@ -79,7 +91,7 @@ export const useAI = (context?: {
   // Helper function to update loading state
   const withLoading = useCallback(async <T>(operation: () => Promise<T>): Promise<T | null> => {
     setState(prev => ({ ...prev, isLoading: true, error: undefined }));
-    
+
     try {
       const result = await operation();
       setState(prev => ({ ...prev, isLoading: false }));
@@ -90,7 +102,7 @@ export const useAI = (context?: {
   }, [handleAIError]);
 
   // Assistant functions
-  const sendAssistantMessage = useCallback(async (message: string, customContext?: any) => {
+  const sendAssistantMessage = useCallback(async (message: string, customContext?: Record<string, unknown>) => {
     return withLoading(async () => {
       const mentionRequest = {
         message,
@@ -100,7 +112,7 @@ export const useAI = (context?: {
     });
   }, [context, withLoading]);
 
-  const getContextualSuggestions = useCallback(async (customContext?: any): Promise<ResponseCard[]> => {
+  const getContextualSuggestions = useCallback(async (customContext?: Record<string, unknown>): Promise<ResponseCard[]> => {
     const result = await withLoading(async () => {
       return await AIService.getContextualSuggestions({ ...context, ...customContext });
     });
@@ -115,11 +127,11 @@ export const useAI = (context?: {
   }, [withLoading]);
 
   // Magic Polls functions
-  const createMagicPoll = useCallback(async (pollData: any) => {
+  const createMagicPoll = useCallback(async (pollData: CreatePollRequest) => {
     return withLoading(async () => {
       return await AIService.createMagicPoll({
         ...pollData,
-        tripId: pollData.tripId || context?.tripId
+        tripId: pollData.tripId || context?.tripId || ''
       });
     });
   }, [context, withLoading]);
@@ -163,7 +175,7 @@ export const useAI = (context?: {
     });
   }, [context, withLoading]);
 
-  const getConsensusRecommendation = useCallback(async (tripId?: string, decisionType?: string) => {
+  const getConsensusRecommendation = useCallback(async (tripId?: string, decisionType?: string): Promise<ConsensusRecommendation | null> => {
     const targetTripId = tripId || context?.tripId;
     if (!targetTripId) {
       setState(prev => ({ ...prev, error: 'Trip ID required for consensus recommendation' }));
@@ -176,7 +188,7 @@ export const useAI = (context?: {
   }, [context, withLoading]);
 
   // Itinerary functions
-  const generateItinerary = useCallback(async (tripId?: string, preferences?: any, constraints?: any) => {
+  const generateItinerary = useCallback(async (tripId?: string, preferences?: ItineraryPreferences, constraints?: ItineraryConstraints) => {
     const targetTripId = tripId || context?.tripId;
     if (!targetTripId) {
       setState(prev => ({ ...prev, error: 'Trip ID required for itinerary generation' }));
@@ -192,7 +204,7 @@ export const useAI = (context?: {
     });
   }, [context, withLoading]);
 
-  const getItineraryStatus = useCallback(async (taskId: string) => {
+  const getItineraryStatus = useCallback(async (taskId: string): Promise<ItineraryStatusResponse | null> => {
     return withLoading(async () => {
       return await AIService.getItineraryStatus(taskId);
     });
@@ -223,26 +235,26 @@ export const useAI = (context?: {
 
   return {
     state,
-    
+
     // Assistant
     sendAssistantMessage,
     getContextualSuggestions,
     sendFeedback,
-    
+
     // Magic Polls
     createMagicPoll,
     getTripPolls,
     votePoll,
     getPollResults,
-    
+
     // Consensus
     getConsensusAnalysis,
     getConsensusRecommendation,
-    
+
     // Itinerary
     generateItinerary,
     getItineraryStatus,
-    
+
     // Utilities
     refreshCostStatus,
     clearError

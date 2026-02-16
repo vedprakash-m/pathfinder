@@ -240,8 +240,8 @@ describe('API Service Integration', () => {
 
       const result = await familyService.inviteMember('fam-123', invitation);
 
-      expect(result.data.email).toBe('newmember@example.com');
-      expect(result.data.status).toBe('pending');
+      expect(result.data.invitation_id).toBe('inv-123');
+      expect(result.data.expires_at).toBe('2024-02-14');
       expect(apiService.post).toHaveBeenCalledWith(
         '/families/fam-123/invite',
         invitation,

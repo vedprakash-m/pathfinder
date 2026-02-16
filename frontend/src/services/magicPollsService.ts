@@ -9,7 +9,7 @@ export interface PollOption {
   value: string;
   label?: string;
   description?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface CreatePollRequest {
@@ -23,7 +23,7 @@ export interface CreatePollRequest {
 
 export interface PollResponse {
   choice: string;
-  preferences?: Record<string, any>;
+  preferences?: Record<string, unknown>;
   comments?: string;
 }
 
@@ -48,7 +48,7 @@ export interface PollResponseWithUser {
   user_id: string;
   family_id: string;
   choice: string;
-  preferences?: Record<string, any>;
+  preferences?: Record<string, unknown>;
   comments?: string;
   created_at: string;
   user_name: string;
@@ -58,7 +58,7 @@ export interface PollResponseWithUser {
 export interface GeneratePollOptionsRequest {
   trip_id: string;
   poll_type: string;
-  context: Record<string, any>;
+  context: Record<string, unknown>;
   prompt?: string;
 }
 

@@ -92,7 +92,7 @@ const BudgetOverview: React.FC<{
           </Button>
         </div>
       </CardHeader>
-      
+
       <div className="p-6">
         <div className="grid md:grid-cols-2 gap-6">
           {/* Budget Stats */}
@@ -111,9 +111,9 @@ const BudgetOverview: React.FC<{
                   </Field>
                   <div className="flex gap-2">
                     <Button size="small" onClick={handleSaveBudget}>Save</Button>
-                    <Button 
-                      size="small" 
-                      appearance="outline" 
+                    <Button
+                      size="small"
+                      appearance="outline"
                       onClick={() => {
                         setIsEditing(false);
                         setNewBudget(totalBudget.toString());
@@ -137,12 +137,12 @@ const BudgetOverview: React.FC<{
                 <Title3 className="text-green-600">{formatCurrency(totalAllocated)}</Title3>
                 <Body2 className="text-green-700">Allocated</Body2>
               </div>
-              
+
               <div className="p-3 bg-amber-50 rounded-lg text-center">
                 <Title3 className="text-amber-600">{formatCurrency(totalSpent)}</Title3>
                 <Body2 className="text-amber-700">Spent</Body2>
               </div>
-              
+
               <div className={`p-3 rounded-lg text-center ${remaining >= 0 ? 'bg-blue-50' : 'bg-red-50'}`}>
                 <Title3 className={remaining >= 0 ? 'text-blue-600' : 'text-red-600'}>
                   {formatCurrency(Math.abs(remaining))}
@@ -151,7 +151,7 @@ const BudgetOverview: React.FC<{
                   {remaining >= 0 ? 'Remaining' : 'Over Budget'}
                 </Body2>
               </div>
-              
+
               <div className={`p-3 rounded-lg text-center ${unallocated >= 0 ? 'bg-neutral-50' : 'bg-red-50'}`}>
                 <Title3 className={unallocated >= 0 ? 'text-neutral-600' : 'text-red-600'}>
                   {formatCurrency(Math.abs(unallocated))}
@@ -182,7 +182,7 @@ const BudgetOverview: React.FC<{
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value: any) => formatCurrency(value as number)} />
+                  <Tooltip formatter={(value: number | string | Array<number | string>) => formatCurrency(value as number)} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
@@ -232,7 +232,7 @@ const BudgetCategories: React.FC<{
           </Button>
         </div>
       </CardHeader>
-      
+
       <div className="p-6">
         {/* Add Category Form */}
         {isAdding && (
@@ -277,7 +277,7 @@ const BudgetCategories: React.FC<{
                 <Card className="p-4">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <div 
+                      <div
                         className="w-4 h-4 rounded-full"
                         style={{ backgroundColor: category.color }}
                       />
@@ -289,15 +289,15 @@ const BudgetCategories: React.FC<{
                       )}
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button 
-                        appearance="outline" 
+                      <Button
+                        appearance="outline"
                         size="small"
                         icon={<PencilIcon className="w-3 h-3" />}
                       >
                         Edit
                       </Button>
-                      <Button 
-                        appearance="outline" 
+                      <Button
+                        appearance="outline"
                         size="small"
                         icon={<TrashIcon className="w-3 h-3" />}
                         onClick={() => onDeleteCategory(category.id)}
@@ -413,7 +413,7 @@ export const TripBudget: React.FC<TripBudgetProps> = ({
             </Button>
           </div>
         </CardHeader>
-        
+
         <div className="p-6">
           <div className="text-center py-8">
             <Body1 className="text-neutral-600 mb-4">No expenses recorded yet</Body1>

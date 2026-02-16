@@ -1,5 +1,5 @@
 // Core API response types
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   data: T;
   message?: string;
   success: boolean;
@@ -61,7 +61,7 @@ export interface RegisterData {
   emergency_contact_name?: string;
   emergency_contact_phone?: string;
   profile_picture_url?: string;
-  preferences?: Record<string, any>;
+  preferences?: Record<string, unknown>;
 }
 
 // User creation interface for backend integration (for Entra ID users)
@@ -71,7 +71,7 @@ export interface UserCreate {
   entra_id: string;
   picture?: string;
   phone?: string;
-  preferences?: Record<string, any>;
+  preferences?: Record<string, unknown>;
 }
 
 export interface LoginResponse {
@@ -183,15 +183,15 @@ export interface Activity {
   notes?: string;
 }
 
-export type ActivityCategory = 
-  | 'accommodation' 
-  | 'transportation' 
-  | 'dining' 
-  | 'sightseeing' 
-  | 'entertainment' 
-  | 'shopping' 
-  | 'outdoor' 
-  | 'cultural' 
+export type ActivityCategory =
+  | 'accommodation'
+  | 'transportation'
+  | 'dining'
+  | 'sightseeing'
+  | 'entertainment'
+  | 'shopping'
+  | 'outdoor'
+  | 'cultural'
   | 'relaxation'
   | 'other';
 
@@ -216,7 +216,7 @@ export interface Reservation {
   status: ReservationStatus;
   cost: number;
   currency: string;
-  details: Record<string, any>;
+  details: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }
@@ -250,7 +250,7 @@ export interface PlaceDetails {
 }
 
 // WebSocket message types
-export interface WebSocketMessage<T = any> {
+export interface WebSocketMessage<T = unknown> {
   type: 'trip_update' | 'itinerary_update' | 'reservation_update' | 'family_update' | 'notification';
   message_type: string;
   data: T;
@@ -310,5 +310,5 @@ export interface NotificationPreferences {
 export interface ApiError {
   message: string;
   code?: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 }

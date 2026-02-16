@@ -40,7 +40,7 @@ export const familyService = {
   },
 
   // Invite family member
-  inviteMember: async (familyId: string, inviteData: InviteFamilyMemberRequest): Promise<ApiResponse<any>> => {
+  inviteMember: async (familyId: string, inviteData: InviteFamilyMemberRequest): Promise<ApiResponse<{ invitation_id: string; expires_at: string }>> => {
     return apiService.post(`/families/${familyId}/invite`, inviteData, {
       invalidateUrlPatterns: ['families']
     });
@@ -53,8 +53,8 @@ export const familyService = {
 
   // Update member role
   updateMemberRole: async (
-    familyId: string, 
-    userId: string, 
+    familyId: string,
+    userId: string,
     role: 'admin' | 'member',
     permissions: string[]
   ): Promise<ApiResponse<Family>> => {

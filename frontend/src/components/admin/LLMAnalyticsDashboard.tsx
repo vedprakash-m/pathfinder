@@ -11,7 +11,7 @@ import {
   makeStyles,
   tokens
 } from '@fluentui/react-components';
-import { 
+import {
   CheckmarkCircle20Regular,
   ErrorCircle20Regular,
   Warning20Regular,
@@ -83,9 +83,24 @@ interface LLMHealth {
   };
 }
 
+interface OrchestrationAnalytics {
+  total_requests: number;
+  successful_requests: number;
+  failed_requests: number;
+  average_latency_ms: number;
+  cost_breakdown: Record<string, number>;
+}
+
+interface LocalUsage {
+  requests_today: number;
+  tokens_used: number;
+  average_response_time_ms: number;
+  cache_hit_rate: number;
+}
+
 interface LLMAnalytics {
-  orchestration_analytics: any;
-  local_usage: any;
+  orchestration_analytics: OrchestrationAnalytics | null;
+  local_usage: LocalUsage | null;
   optimization_suggestions: string[];
   summary: {
     total_requests: number;
@@ -95,8 +110,16 @@ interface LLMAnalytics {
   };
 }
 
+interface OrchestrationBudget {
+  monthly_limit: number;
+  monthly_used: number;
+  monthly_remaining: number;
+  daily_limit: number;
+  daily_used: number;
+}
+
 interface BudgetStatus {
-  orchestration_budget: any;
+  orchestration_budget: OrchestrationBudget | null;
   local_budget: {
     daily_limit: number;
     daily_used: number;
@@ -113,7 +136,7 @@ const LLMAnalyticsDashboard: React.FC = () => {
   const [budget, setBudget] = useState<BudgetStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [testResult, setTestResult] = useState<any>(null);
+  const [testResult, setTestResult] = useState<{ success: boolean; message?: string; latency_ms?: number; service_used?: string; error?: string } | null>(null);
   const [testing, setTesting] = useState(false);
 
   useEffect(() => {
@@ -133,11 +156,11 @@ const LLMAnalyticsDashboard: React.FC = () => {
           'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
         },
       });
-      
+
       if (!healthResponse.ok) {
         throw new Error('Failed to fetch LLM health');
       }
-      
+
       const healthData = await healthResponse.json();
       setHealth(healthData);
 
@@ -147,7 +170,7 @@ const LLMAnalyticsDashboard: React.FC = () => {
           'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
         },
       });
-      
+
       if (analyticsResponse.ok) {
         const analyticsData = await analyticsResponse.json();
         setAnalytics(analyticsData);
@@ -159,7 +182,7 @@ const LLMAnalyticsDashboard: React.FC = () => {
           'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
         },
       });
-      
+
       if (budgetResponse.ok) {
         const budgetData = await budgetResponse.json();
         setBudget(budgetData);
@@ -265,15 +288,15 @@ const LLMAnalyticsDashboard: React.FC = () => {
                   </Badge>
                 </div>
               </div>
-              
+
               <div className={styles.metric}>
                 <Text>Orchestration Service:</Text>
                 <Badge
                   appearance={health.orchestration_service.enabled ? 'filled' : 'outline'}
                   color={health.orchestration_service.enabled && health.orchestration_service.healthy ? 'success' : 'important'}
                 >
-                  {health.orchestration_service.enabled ? 
-                    (health.orchestration_service.healthy ? 'ACTIVE' : 'DEGRADED') : 
+                  {health.orchestration_service.enabled ?
+                    (health.orchestration_service.healthy ? 'ACTIVE' : 'DEGRADED') :
                     'DISABLED'
                   }
                 </Badge>
@@ -360,12 +383,12 @@ const LLMAnalyticsDashboard: React.FC = () => {
 
               <div className={styles.metric}>
                 <Text>Remaining:</Text>
-                <Text 
+                <Text
                   className={styles.metricValue}
-                  style={{ 
-                    color: health.usage_stats.budget_remaining < health.usage_stats.budget_limit * 0.2 ? 
-                      tokens.colorPaletteRedForeground1 : 
-                      tokens.colorPaletteGreenForeground1 
+                  style={{
+                    color: health.usage_stats.budget_remaining < health.usage_stats.budget_limit * 0.2 ?
+                      tokens.colorPaletteRedForeground1 :
+                      tokens.colorPaletteGreenForeground1
                   }}
                 >
                   ${health.usage_stats.budget_remaining.toFixed(4)}
@@ -391,8 +414,8 @@ const LLMAnalyticsDashboard: React.FC = () => {
             <>
               <div className={styles.budgetProgress}>
                 <Text>Daily Budget Usage</Text>
-                <ProgressBar 
-                  value={getBudgetUsagePercentage()} 
+                <ProgressBar
+                  value={getBudgetUsagePercentage()}
                   max={100}
                   color={getBudgetUsagePercentage() > 80 ? 'error' : getBudgetUsagePercentage() > 60 ? 'warning' : 'success'}
                 />
@@ -446,8 +469,8 @@ const LLMAnalyticsDashboard: React.FC = () => {
 
             <div className={styles.metric}>
               <Text>Orchestration:</Text>
-              <Badge 
-                appearance="filled" 
+              <Badge
+                appearance="filled"
                 color={analytics.summary.orchestration_enabled ? 'success' : 'important'}
               >
                 {analytics.summary.orchestration_enabled ? 'ENABLED' : 'DISABLED'}
@@ -473,4 +496,4 @@ const LLMAnalyticsDashboard: React.FC = () => {
   );
 };
 
-export default LLMAnalyticsDashboard; 
+export default LLMAnalyticsDashboard;

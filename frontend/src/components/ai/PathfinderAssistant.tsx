@@ -11,11 +11,17 @@ interface Message {
   responseCards?: ResponseCard[];
 }
 
+interface CardContent {
+  text?: string;
+  items?: string[];
+  data?: Record<string, unknown>;
+}
+
 interface ResponseCard {
   id: string;
   card_type: string;
   title: string;
-  content: any;
+  content: CardContent;
   actions?: Array<{
     label: string;
     action: string;
@@ -23,15 +29,32 @@ interface ResponseCard {
   is_dismissed: boolean;
 }
 
+interface TripContextData {
+  id?: string;
+  name?: string;
+  destination?: string;
+  start_date?: string;
+  end_date?: string;
+  status?: string;
+  participants?: Array<{ id: string; name: string }>;
+}
+
+interface AssistantActionData {
+  card_id?: string;
+  card_type?: string;
+  action_value?: string;
+  context?: Record<string, unknown>;
+}
+
 interface PathfinderAssistantProps {
   context?: {
     trip_id?: string;
     family_id?: string;
     current_page?: string;
-    trip_data?: any;
+    trip_data?: TripContextData;
   };
   className?: string;
-  onAssistantAction?: (action: string, data: any) => void;
+  onAssistantAction?: (action: string, data: AssistantActionData) => void;
 }
 
 export const PathfinderAssistant: React.FC<PathfinderAssistantProps> = ({
@@ -146,7 +169,7 @@ export const PathfinderAssistant: React.FC<PathfinderAssistantProps> = ({
     }
   };
 
-  const handleCardAction = (action: string, cardData: any) => {
+  const handleCardAction = (action: string, cardData: AssistantActionData) => {
     if (onAssistantAction) {
       onAssistantAction(action, cardData);
     }
@@ -164,7 +187,7 @@ export const PathfinderAssistant: React.FC<PathfinderAssistantProps> = ({
       // Update messages to mark card as dismissed
       setMessages(prev => prev.map(msg => ({
         ...msg,
-        responseCards: msg.responseCards?.map(card => 
+        responseCards: msg.responseCards?.map(card =>
           card.id === cardId ? { ...card, is_dismissed: true } : card
         )
       })));
@@ -182,15 +205,15 @@ export const PathfinderAssistant: React.FC<PathfinderAssistantProps> = ({
           {message.isUser ? <User className="h-4 w-4 text-white" /> : <Bot className="h-4 w-4 text-white" />}
         </div>
         <div className={`px-4 py-2 rounded-lg ${
-          message.isUser 
-            ? 'bg-blue-500 text-white' 
+          message.isUser
+            ? 'bg-blue-500 text-white'
             : 'bg-gray-100 text-gray-900 border'
         }`}>
           <p className="text-sm whitespace-pre-wrap">{message.content}</p>
           <p className="text-xs opacity-70 mt-1">
             {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </p>
-          
+
           {/* Feedback buttons for assistant messages */}
           {!message.isUser && message.interactionId && (
             <div className="flex items-center mt-2 space-x-2">
@@ -229,11 +252,11 @@ export const PathfinderAssistant: React.FC<PathfinderAssistantProps> = ({
             <X className="h-4 w-4" />
           </button>
         </div>
-        
+
         {card.content.text && (
           <p className="text-blue-800 text-sm mb-3">{card.content.text}</p>
         )}
-        
+
         {card.actions && card.actions.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {card.actions.map((action, index) => (
@@ -290,7 +313,7 @@ export const PathfinderAssistant: React.FC<PathfinderAssistantProps> = ({
             <p className="text-xs mt-1">Ask me anything about trip planning!</p>
           </div>
         )}
-        
+
         {messages.map((message) => (
           <div key={message.id}>
             <MessageCard message={message} />
@@ -300,7 +323,7 @@ export const PathfinderAssistant: React.FC<PathfinderAssistantProps> = ({
             ))}
           </div>
         ))}
-        
+
         {isLoading && (
           <div className="flex justify-start mb-4">
             <div className="flex flex-row">
@@ -317,7 +340,7 @@ export const PathfinderAssistant: React.FC<PathfinderAssistantProps> = ({
             </div>
           </div>
         )}
-        
+
         <div ref={messagesEndRef} />
       </div>
 

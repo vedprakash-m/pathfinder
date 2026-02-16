@@ -199,7 +199,7 @@ const PageErrorFallback: React.FC<ErrorFallbackProps> = ({
                 Try Again ({maxRetries - retryCount} left)
               </Button>
             )}
-            
+
             <Button
               appearance="outline"
               icon={<HomeIcon className="w-4 h-4" />}
@@ -261,7 +261,7 @@ const SectionErrorFallback: React.FC<ErrorFallbackProps> = ({
       <div className="flex-shrink-0">
         <ExclamationTriangleIcon className="w-6 h-6 text-orange-600" />
       </div>
-      
+
       <div className="flex-1">
         <Title2 className="text-gray-900 mb-2">Section Error</Title2>
         <Body2 className="text-gray-600 mb-4">
@@ -279,7 +279,7 @@ const SectionErrorFallback: React.FC<ErrorFallbackProps> = ({
               Retry
             </Button>
           )}
-          
+
           <Button
             size="small"
             appearance="subtle"
@@ -361,7 +361,7 @@ export const withErrorBoundary = <P extends object>(
   );
 
   WithErrorBoundaryComponent.displayName = `withErrorBoundary(${WrappedComponent.displayName || WrappedComponent.name})`;
-  
+
   return WithErrorBoundaryComponent;
 };
 
@@ -369,7 +369,7 @@ export const withErrorBoundary = <P extends object>(
 
 // Hook for manual error reporting
 export const useErrorHandler = () => {
-  const reportError = (error: Error, context?: Record<string, any>) => {
+  const reportError = (error: Error, context?: Record<string, unknown>) => {
     errorHandler.handle(error, {
       context,
       showToast: true,
@@ -380,14 +380,14 @@ export const useErrorHandler = () => {
 
   const reportAsyncError = async <T,>(
     operation: () => Promise<T>,
-    context?: Record<string, any>
-  ): Promise<{ data: T | null; error: any }> => {
+    context?: Record<string, unknown>
+  ): Promise<{ data: T | null; error: Error | null }> => {
     try {
       const data = await operation();
       return { data, error: null };
     } catch (error) {
       reportError(error as Error, context);
-      return { data: null, error };
+      return { data: null, error: error as Error };
     }
   };
 

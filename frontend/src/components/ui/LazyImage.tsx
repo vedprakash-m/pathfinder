@@ -28,7 +28,7 @@ export const LazyImage: React.FC<LazyImageProps> = ({
   const imageRef = useRef<HTMLImageElement>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState(false);
-  
+
   // Optimize the image URL
   const optimizedSrc = optimizeImage(src, {
     width,
@@ -36,36 +36,33 @@ export const LazyImage: React.FC<LazyImageProps> = ({
     quality,
     format,
   });
-  
+
   useEffect(() => {
-    if (!imageRef.current) return;
-    
+    const imageElement = imageRef.current;
+    if (!imageElement) return;
+
     const handleImageLoad = () => {
       setIsLoaded(true);
       if (onLoad) onLoad();
     };
-    
+
     const handleImageError = () => {
       setError(true);
       console.error(`Failed to load image: ${optimizedSrc}`);
     };
-    
+
     // Set up lazy loading
-    const cleanup = lazyLoadImage(imageRef.current, optimizedSrc, handleImageLoad);
-    
+    const cleanup = lazyLoadImage(imageElement, optimizedSrc, handleImageLoad);
+
     // Add error handling
-    if (imageRef.current) {
-      imageRef.current.addEventListener('error', handleImageError);
-    }
-    
+    imageElement.addEventListener('error', handleImageError);
+
     return () => {
       if (cleanup) cleanup();
-      if (imageRef.current) {
-        imageRef.current.removeEventListener('error', handleImageError);
-      }
+      imageElement.removeEventListener('error', handleImageError);
     };
   }, [optimizedSrc, onLoad]);
-  
+
   return (
     <div className={`relative overflow-hidden ${className}`} style={{ width, height }}>
       {!isLoaded && placeholderSrc && (
@@ -76,7 +73,7 @@ export const LazyImage: React.FC<LazyImageProps> = ({
           style={{ opacity: isLoaded ? 0 : 1 }}
         />
       )}
-      
+
       <img
         ref={imageRef}
         alt={alt}
@@ -85,7 +82,7 @@ export const LazyImage: React.FC<LazyImageProps> = ({
         height={height}
         {...props}
       />
-      
+
       {error && (
         <div className="absolute inset-0 flex items-center justify-center bg-neutral-100 text-neutral-500">
           <span>Failed to load image</span>

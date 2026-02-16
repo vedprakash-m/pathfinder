@@ -1,7 +1,17 @@
 import { useState, useEffect, useCallback, useContext, createContext, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import authService from '@/services/auth';
-import { User, UserProfile } from '@/types';
+import { User, UserProfile, RegisterData } from '@/types';
+
+// Type guard for error objects with message property
+function isErrorWithMessage(error: unknown): error is { message: string } {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error &&
+    typeof (error as { message: unknown }).message === 'string'
+  );
+}
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -9,7 +19,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
-  register: (userData: any) => Promise<boolean>;
+  register: (userData: RegisterData) => Promise<boolean>;
   updateProfile: (userData: Partial<User>) => Promise<boolean>;
   error: string | null;
 }
@@ -25,12 +35,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const checkAuthStatus = useCallback(async () => {
     try {
       setIsLoading(true);
-      
+
       if (!authService.isAuthenticated()) {
         setUser(null);
         return;
       }
-      
+
       const isTokenValid = await authService.validateToken();
       if (!isTokenValid) {
         // Token invalid, clear storage and redirect to login
@@ -38,7 +48,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(null);
         return;
       }
-      
+
       // Get user profile
       const response = await authService.getCurrentUser();
       setUser(response.data);
@@ -59,7 +69,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       const response = await authService.login({ email, password });
       // Transform User to UserProfile by adding missing fields
       const userProfile: UserProfile = {
@@ -68,10 +78,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         trips_count: 0
       };
       setUser(userProfile);
-      
+
       return true;
-    } catch (error: any) {
-      setError(error.message || 'Login failed');
+    } catch (error: unknown) {
+      setError(isErrorWithMessage(error) ? error.message : 'Login failed');
       return false;
     } finally {
       setIsLoading(false);
@@ -91,15 +101,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const register = async (userData: any): Promise<boolean> => {
+  const register = async (userData: RegisterData): Promise<boolean> => {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       await authService.register(userData);
       return true;
-    } catch (error: any) {
-      setError(error.message || 'Registration failed');
+    } catch (error: unknown) {
+      setError(isErrorWithMessage(error) ? error.message : 'Registration failed');
       return false;
     } finally {
       setIsLoading(false);
@@ -110,13 +120,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       const response = await authService.updateProfile(userData);
       setUser(prev => prev ? { ...prev, ...response.data } : null);
-      
+
       return true;
-    } catch (error: any) {
-      setError(error.message || 'Profile update failed');
+    } catch (error: unknown) {
+      setError(isErrorWithMessage(error) ? error.message : 'Profile update failed');
       return false;
     } finally {
       setIsLoading(false);

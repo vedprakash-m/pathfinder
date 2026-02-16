@@ -25,11 +25,22 @@ import { useFormValidation } from '@/hooks/useFormValidation';
 import { createTripSchema } from '@/utils/validation';
 import type { CreateTripRequest, ApiResponse, Trip } from '@/types';
 
+interface TripPreferencesData {
+  travelStyle?: string;
+  accommodationType?: string;
+  activityLevel?: string;
+  groupSize?: number;
+  kidFriendly?: boolean;
+  accessible?: boolean;
+  cultural?: boolean;
+  [key: string]: string | number | boolean | undefined;
+}
+
 const TripPreferences: React.FC<{
-  preferences: any;
-  onChange: (preferences: any) => void;
+  preferences: TripPreferencesData;
+  onChange: (preferences: TripPreferencesData) => void;
 }> = ({ preferences, onChange }) => {
-  const updatePreference = (key: string, value: any) => {
+  const updatePreference = (key: string, value: string | number | boolean) => {
     onChange({
       ...preferences,
       [key]: value
@@ -43,7 +54,7 @@ const TripPreferences: React.FC<{
           <Dropdown
             placeholder="Select travel style"
             value={preferences.travelStyle || ''}
-            onOptionSelect={(_, data) => updatePreference('travelStyle', data.optionValue)}
+            onOptionSelect={(_, data) => data.optionValue && updatePreference('travelStyle', data.optionValue)}
           >
             <Option value="luxury">Luxury</Option>
             <Option value="mid-range">Mid-range</Option>
@@ -56,7 +67,7 @@ const TripPreferences: React.FC<{
           <Dropdown
             placeholder="Select accommodation"
             value={preferences.accommodationType || ''}
-            onOptionSelect={(_, data) => updatePreference('accommodationType', data.optionValue)}
+            onOptionSelect={(_, data) => data.optionValue && updatePreference('accommodationType', data.optionValue)}
           >
             <Option value="hotel">Hotel</Option>
             <Option value="resort">Resort</Option>
@@ -72,7 +83,7 @@ const TripPreferences: React.FC<{
           <Dropdown
             placeholder="Select activity level"
             value={preferences.activityLevel || ''}
-            onOptionSelect={(_, data) => updatePreference('activityLevel', data.optionValue)}
+            onOptionSelect={(_, data) => data.optionValue && updatePreference('activityLevel', data.optionValue)}
           >
             <Option value="relaxed">Relaxed</Option>
             <Option value="moderate">Moderate</Option>
@@ -85,7 +96,7 @@ const TripPreferences: React.FC<{
           <Input
             type="number"
             placeholder="Number of people"
-            value={preferences.groupSize || ''}
+            value={String(preferences.groupSize || '')}
             onChange={(e) => updatePreference('groupSize', parseInt(e.target.value) || 0)}
           />
         </Field>
@@ -99,7 +110,7 @@ const TripPreferences: React.FC<{
             onChange={(e) => updatePreference('kidFriendly', e.currentTarget.checked)}
           />
         </div>
-        
+
         <div className="flex items-center justify-between">
           <Body2>Accessible accommodations</Body2>
           <Switch
@@ -107,7 +118,7 @@ const TripPreferences: React.FC<{
             onChange={(e) => updatePreference('accessible', e.currentTarget.checked)}
           />
         </div>
-        
+
         <div className="flex items-center justify-between">
           <Body2>Include cultural experiences</Body2>
           <Switch
@@ -124,7 +135,16 @@ export const CreateTripPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const initialFormData = {
+  const initialFormData: {
+    name: string;
+    description: string;
+    destination: string;
+    start_date: string;
+    end_date: string;
+    budget_total: number;
+    preferences: TripPreferencesData;
+    is_public: boolean;
+  } = {
     name: '',
     description: '',
     destination: '',
@@ -152,7 +172,7 @@ export const CreateTripPage: React.FC = () => {
         navigate(`/trips/${response.data.id}`);
       }
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       console.error('Error creating trip:', error);
       // Add a general error
       const updatedErrors = { ...errors, general: 'Failed to create trip. Please try again.' };
@@ -164,11 +184,11 @@ export const CreateTripPage: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateAll()) {
       return;
     }
-    
+
     createTripMutation.mutate();
   };
 
@@ -328,7 +348,7 @@ export const CreateTripPage: React.FC = () => {
             </CardHeader>
             <div className="p-4">
               <TripPreferences
-                preferences={formData.preferences}
+                preferences={(formData.preferences || {}) as TripPreferencesData}
                 onChange={(preferences) => updateFormData({ preferences })}
               />
             </div>
@@ -385,7 +405,7 @@ export const CreateTripPage: React.FC = () => {
           >
             Cancel
           </Button>
-          
+
           <Button
             type="submit"
             appearance="primary"

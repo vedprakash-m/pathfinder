@@ -28,19 +28,20 @@ const OnboardingPage: React.FC = () => {
     try {
       setIsCompleting(true);
       setCompletionError(null);
-      
+
       await completeOnboarding({
         trip_type: data.tripType,
         completion_time: data.completionTime
       });
-      
+
       // Redirect to dashboard after a short delay
       setTimeout(() => {
         navigate('/dashboard');
       }, 1500);
-    } catch (error: any) {
-      console.error('Failed to complete onboarding:', error);
-      setCompletionError(error.message || 'Failed to complete onboarding. Please try again.');
+    } catch (error: unknown) {
+      const err = error as Error;
+      console.error('Failed to complete onboarding:', err);
+      setCompletionError(err.message || 'Failed to complete onboarding. Please try again.');
     } finally {
       setIsCompleting(false);
     }

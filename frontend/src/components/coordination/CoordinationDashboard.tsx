@@ -1,8 +1,8 @@
 /**
  * Smart Coordination Dashboard Component
- * 
+ *
  * Solves Pain Point #2: "Too much manual coordination required between families"
- * 
+ *
  * Features:
  * - Real-time automation status
  * - Smart notification management
@@ -10,7 +10,7 @@
  * - One-click coordination actions
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card,
   Text,
@@ -51,9 +51,21 @@ interface CoordinationStatus {
   };
 }
 
+interface CoordinationEventContext {
+  source?: string;
+  trigger_reason?: string;
+  metadata?: Record<string, unknown>;
+  trip_name?: string;
+  meeting_type?: string;
+  scheduled_time?: string;
+  family_count?: number;
+  consensus_score?: number;
+  [key: string]: unknown;
+}
+
 interface CoordinationDashboardProps {
   tripId: string;
-  onTriggerEvent?: (eventType: string, contextData: any) => void;
+  onTriggerEvent?: (eventType: string, contextData: CoordinationEventContext) => void;
 }
 
 export const CoordinationDashboard: React.FC<CoordinationDashboardProps> = ({
@@ -65,18 +77,13 @@ export const CoordinationDashboard: React.FC<CoordinationDashboardProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [triggeringEvent, setTriggeringEvent] = useState<string | null>(null);
 
-  // Fetch coordination status
-  useEffect(() => {
-    fetchCoordinationStatus();
-  }, [tripId]);
-
-  const fetchCoordinationStatus = async () => {
+  const fetchCoordinationStatus = useCallback(async () => {
     try {
       setLoading(true);
       // In production, this would make actual API call
       // const response = await fetch(`/api/v1/coordination/status/${tripId}`);
       // const data = await response.json();
-      
+
       // Simulated data for demonstration
       const simulatedData: CoordinationStatus = {
         trip_id: tripId,
@@ -118,12 +125,17 @@ export const CoordinationDashboard: React.FC<CoordinationDashboardProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [tripId]);
 
-  const handleTriggerEvent = async (eventType: string, contextData: any = {}) => {
+  // Fetch coordination status
+  useEffect(() => {
+    fetchCoordinationStatus();
+  }, [tripId, fetchCoordinationStatus]);
+
+  const handleTriggerEvent = async (eventType: string, contextData: CoordinationEventContext = {}) => {
     try {
       setTriggeringEvent(eventType);
-      
+
       // In production, this would make actual API call
       // const response = await fetch('/api/v1/coordination/trigger-event', {
       //   method: 'POST',
@@ -134,20 +146,20 @@ export const CoordinationDashboard: React.FC<CoordinationDashboardProps> = ({
       //     context_data: contextData
       //   })
       // });
-      
+
       // Simulate successful trigger
       console.log(`Triggering coordination event: ${eventType}`, contextData);
-      
+
       if (onTriggerEvent) {
         onTriggerEvent(eventType, contextData);
       }
-      
+
       // Refresh status after triggering event
       setTimeout(() => {
         fetchCoordinationStatus();
         setTriggeringEvent(null);
       }, 1000);
-      
+
     } catch (err) {
       setError(`Failed to trigger ${eventType} event`);
       console.error('Error triggering coordination event:', err);
@@ -161,7 +173,7 @@ export const CoordinationDashboard: React.FC<CoordinationDashboardProps> = ({
     const diffMs = now.getTime() - eventTime.getTime();
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMins / 60);
-    
+
     if (diffMins < 1) return 'Just now';
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
@@ -208,8 +220,8 @@ export const CoordinationDashboard: React.FC<CoordinationDashboardProps> = ({
     return (
       <MessageBar intent="error">
         {error}
-        <Button 
-          appearance="transparent" 
+        <Button
+          appearance="transparent"
           onClick={fetchCoordinationStatus}
           style={{ marginLeft: '10px' }}
         >
@@ -227,7 +239,7 @@ export const CoordinationDashboard: React.FC<CoordinationDashboardProps> = ({
     100,
     Math.max(
       0,
-      (coordinationStatus.notification_summary.sent_today * 10) + 
+      (coordinationStatus.notification_summary.sent_today * 10) +
       (coordinationStatus.pending_actions.length > 0 ? 70 : 90) -
       (coordinationStatus.notification_summary.failed * 20)
     )
@@ -251,8 +263,8 @@ export const CoordinationDashboard: React.FC<CoordinationDashboardProps> = ({
         <div style={{ padding: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
             <div>
-              {automationHealthScore >= 80 ? 
-                <CheckmarkCircle24Regular /> : 
+              {automationHealthScore >= 80 ?
+                <CheckmarkCircle24Regular /> :
                 <Warning24Regular />
               }
             </div>
@@ -261,9 +273,9 @@ export const CoordinationDashboard: React.FC<CoordinationDashboardProps> = ({
               {automationHealthScore}%
             </Badge>
           </div>
-          
+
             color={automationHealthScore >= 80 ? "success" : automationHealthScore >= 60 ? "warning" : "danger"}
-          
+
           <Caption1 style={{ marginTop: '8px' }}>
             {automationHealthScore >= 80 && "Coordination running smoothly"}
             {automationHealthScore >= 60 && automationHealthScore < 80 && "Some coordination issues detected"}
@@ -276,7 +288,7 @@ export const CoordinationDashboard: React.FC<CoordinationDashboardProps> = ({
       <Card>
         <div style={{ padding: '16px' }}>
           <Title3 style={{ marginBottom: '12px' }}>Today's Notifications</Title3>
-          
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
             <div style={{ textAlign: 'center' }}>
               <Text style={{ fontSize: '24px', fontWeight: 'bold', color: '#107C10' }}>
@@ -284,14 +296,14 @@ export const CoordinationDashboard: React.FC<CoordinationDashboardProps> = ({
               </Text>
               <Caption1>Sent</Caption1>
             </div>
-            
+
             <div style={{ textAlign: 'center' }}>
               <Text style={{ fontSize: '24px', fontWeight: 'bold', color: '#FF8C00' }}>
                 {coordinationStatus.notification_summary.pending}
               </Text>
               <Caption1>Pending</Caption1>
             </div>
-            
+
             <div style={{ textAlign: 'center' }}>
               <Text style={{ fontSize: '24px', fontWeight: 'bold', color: '#D13438' }}>
                 {coordinationStatus.notification_summary.failed}
@@ -306,20 +318,20 @@ export const CoordinationDashboard: React.FC<CoordinationDashboardProps> = ({
       <Card>
         <div style={{ padding: '16px' }}>
           <Title3 style={{ marginBottom: '12px' }}>Recent Automation Events</Title3>
-          
+
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {coordinationStatus.recent_events.map((event, index) => (
               <div key={index} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
                 <div style={{ color: '#0078D4', marginTop: '2px' }}>
                   {getEventIcon(event.event_type)}
                 </div>
-                
+
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Body1 style={{ fontWeight: "600" }}>{getEventTitle(event.event_type)}</Body1>
                     <Caption1>{formatTimeAgo(event.timestamp)}</Caption1>
                   </div>
-                  
+
                   <Caption1 style={{ color: '#6C6C6C', marginTop: '4px' }}>
                     Actions: {event.actions_executed.join(', ')}
                   </Caption1>
@@ -335,7 +347,7 @@ export const CoordinationDashboard: React.FC<CoordinationDashboardProps> = ({
         <Card>
           <div style={{ padding: '16px' }}>
             <Title3 style={{ marginBottom: '12px' }}>Pending Actions</Title3>
-            
+
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               {coordinationStatus.pending_actions.map((action, index) => (
                 <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -355,20 +367,20 @@ export const CoordinationDashboard: React.FC<CoordinationDashboardProps> = ({
           <Caption1 style={{ marginBottom: '16px' }}>
             Trigger coordination events manually for testing or special situations.
           </Caption1>
-          
+
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             <Button
               appearance="secondary"
               icon={<PeopleTeam24Regular />}
               disabled={triggeringEvent === 'family_joined'}
-              onClick={() => handleTriggerEvent('family_joined', { 
+              onClick={() => handleTriggerEvent('family_joined', {
                 trip_name: 'Test Trip',
-                family_count: 3 
+                family_count: 3
               })}
             >
               {triggeringEvent === 'family_joined' ? <Spinner size="tiny" /> : 'Simulate Family Joined'}
             </Button>
-            
+
             <Button
               appearance="secondary"
               icon={<Send24Regular />}
@@ -381,7 +393,7 @@ export const CoordinationDashboard: React.FC<CoordinationDashboardProps> = ({
             >
               {triggeringEvent === 'preferences_updated' ? <Spinner size="tiny" /> : 'Test Consensus Update'}
             </Button>
-            
+
             <Button
               appearance="secondary"
               icon={<CalendarLtr24Regular />}
@@ -407,4 +419,4 @@ export const CoordinationDashboard: React.FC<CoordinationDashboardProps> = ({
   );
 };
 
-export default CoordinationDashboard; 
+export default CoordinationDashboard;

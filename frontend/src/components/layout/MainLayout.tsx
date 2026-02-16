@@ -31,7 +31,7 @@ interface MainLayoutProps {
 interface NavItem {
   name: string;
   path: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   allowedRoles?: UserRole[];
   badge?: string;
 }
@@ -41,12 +41,12 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const { logout } = useAuth();
   const { user } = useAuthStore();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  
-  const { 
-    canManageTrips, 
-    canManageFamilies, 
+
+  const {
+    canManageTrips,
+    canManageFamilies,
     isSuperAdmin,
-    getUserRoleDisplayName 
+    getUserRoleDisplayName
   } = useRolePermissions();
 
   const navigationItems: NavItem[] = [
@@ -94,13 +94,13 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               <Link to="/dashboard" className="flex items-center">
                 <h1 className="text-xl font-bold text-primary-600 mr-8">Pathfinder</h1>
               </Link>
-              
+
               {/* Desktop Navigation */}
               <div className="hidden md:flex space-x-1">
                 {navigationItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = isActiveRoute(item.path);
-                  
+
                   // Check if user has permission for this nav item
                   if (item.allowedRoles && !item.allowedRoles.some(role => {
                     switch (role) {
@@ -114,7 +114,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                   })) {
                     return null;
                   }
-                  
+
                   return (
                     <Link
                       key={item.name}
@@ -180,7 +180,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                     </div>
                   </Button>
                 </MenuTrigger>
-                
+
                 <MenuPopover>
                   <MenuList>
                     <MenuItem icon={<UserCircleIcon className="w-4 h-4" />}>
@@ -188,7 +188,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                         Profile Settings
                       </Link>
                     </MenuItem>
-                    
+
                     {canManageFamilies() && (
                       <MenuItem icon={<UsersIcon className="w-4 h-4" />}>
                         <Link to="/families" className="block w-full">
@@ -196,7 +196,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                         </Link>
                       </MenuItem>
                     )}
-                    
+
                     {isSuperAdmin() && (
                       <MenuItem icon={<ShieldCheckIcon className="w-4 h-4" />}>
                         <Link to="/admin/dashboard" className="block w-full">
@@ -204,7 +204,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                         </Link>
                       </MenuItem>
                     )}
-                    
+
                     <MenuItem
                       icon={<ArrowRightOnRectangleIcon className="w-4 h-4" />}
                       onClick={handleLogout}
@@ -251,7 +251,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 {navigationItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = isActiveRoute(item.path);
-                  
+
                   // Check permissions for mobile nav
                   if (item.allowedRoles && !item.allowedRoles.some(role => {
                     switch (role) {
@@ -265,7 +265,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                   })) {
                     return null;
                   }
-                  
+
                   return (
                     <Link
                       key={item.name}
@@ -289,7 +289,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                     </Link>
                   );
                 })}
-                
+
                 {/* Mobile Quick Actions */}
                 {canManageTrips() && (
                   <Link
@@ -306,7 +306,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           )}
         </div>
       </nav>
-      
+
       {/* Main content */}
       <main className="flex-1">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">

@@ -10,6 +10,13 @@ import {
   ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline';
 
+interface FamilyPreferences {
+  budget_range?: string;
+  accommodation_type?: string;
+  dietary_restrictions?: string[];
+  accessibility_needs?: string[];
+}
+
 interface Family {
   id: string;
   name: string;
@@ -20,7 +27,7 @@ interface Family {
     email: string;
     role: 'parent' | 'child';
   }>;
-  preferences?: Record<string, any>;
+  preferences?: FamilyPreferences;
 }
 
 interface TripFamiliesProps {
@@ -78,8 +85,8 @@ const FamilyCard: React.FC<{ family: Family; onManage: () => void }> = ({ family
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Badge 
-                color={getStatusColor(family.status)} 
+              <Badge
+                color={getStatusColor(family.status)}
                 icon={getStatusIcon(family.status)}
                 className="capitalize"
               >
@@ -88,7 +95,7 @@ const FamilyCard: React.FC<{ family: Family; onManage: () => void }> = ({ family
             </div>
           </div>
         </CardHeader>
-        
+
         <div className="p-4 pt-0">
           {/* Family Members */}
           <div className="space-y-2 mb-4">
@@ -135,8 +142,8 @@ const FamilyCard: React.FC<{ family: Family; onManage: () => void }> = ({ family
               Manage
             </Button>
             {family.status === 'pending' && (
-              <Button 
-                appearance="outline" 
+              <Button
+                appearance="outline"
                 size="small"
                 icon={<EnvelopeIcon className="w-4 h-4" />}
               >
@@ -176,7 +183,7 @@ export const TripFamilies: React.FC<TripFamiliesProps> = ({
           <Title3 className="text-green-600">{confirmedFamilies.length}</Title3>
           <Body2 className="text-neutral-600">Confirmed</Body2>
         </Card>
-        
+
         <Card className="text-center p-4">
           <div className="w-12 h-12 bg-amber-50 rounded-full mx-auto mb-3 flex items-center justify-center">
             <ClockIcon className="w-6 h-6 text-amber-600" />
@@ -184,7 +191,7 @@ export const TripFamilies: React.FC<TripFamiliesProps> = ({
           <Title3 className="text-amber-600">{pendingFamilies.length}</Title3>
           <Body2 className="text-neutral-600">Pending</Body2>
         </Card>
-        
+
         <Card className="text-center p-4">
           <div className="w-12 h-12 bg-red-50 rounded-full mx-auto mb-3 flex items-center justify-center">
             <ExclamationTriangleIcon className="w-6 h-6 text-red-600" />
@@ -199,7 +206,7 @@ export const TripFamilies: React.FC<TripFamiliesProps> = ({
         <CardHeader>
           <div className="flex items-center justify-between">
             <Title2>Family Management</Title2>
-            <Button 
+            <Button
               appearance="primary"
               icon={<PlusIcon className="w-4 h-4" />}
               onClick={onInviteFamily}

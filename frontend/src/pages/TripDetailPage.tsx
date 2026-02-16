@@ -31,10 +31,23 @@ import { TripFamilies } from '@/components/trip/TripFamilies';
 import { TripBudget } from '@/components/trip/TripBudget';
 import { PathfinderAssistant } from '@/components/ai/PathfinderAssistant';
 import { MagicPolls } from '@/components/ai/MagicPolls';
-// import TripItinerary from '@/components/trip/TripItinerary';
+import { RoleGuard, useRolePermissions, UserRole } from '@/components/auth/RoleBasedRoute';
+import { useAuth } from '@/contexts/AuthContext';
+import type { TripStatus, Trip, Activity, ApiResponse } from '@/types';
+
+interface TripItineraryProps {
+  tripId?: string;
+  startDate: string;
+  endDate: string;
+  itinerary?: Array<{ date: string; activities: Activity[] }>;
+  onAddActivity?: (dayDate: string, activity: Partial<Activity>) => void;
+  onUpdateActivity?: (activityId: string, updates: Partial<Activity>) => void;
+  onDeleteActivity?: (activityId: string) => void;
+  onGenerateItinerary?: () => void;
+}
 
 // Temporary placeholder component for TripItinerary
-const TripItinerary: React.FC<any> = ({ startDate, endDate, itinerary, onAddActivity: _onAddActivity, onDeleteActivity: _onDeleteActivity, onGenerateItinerary: _onGenerateItinerary }) => (
+const TripItinerary: React.FC<TripItineraryProps> = ({ startDate, endDate, itinerary, onAddActivity: _onAddActivity, onDeleteActivity: _onDeleteActivity, onGenerateItinerary: _onGenerateItinerary }) => (
   <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
     <h3 className="text-lg font-semibold text-gray-900 mb-4">Trip Itinerary</h3>
     <p className="text-gray-600">Itinerary component temporarily disabled for build testing</p>
@@ -43,9 +56,6 @@ const TripItinerary: React.FC<any> = ({ startDate, endDate, itinerary, onAddActi
     </p>
   </div>
 );
-import { RoleGuard, useRolePermissions, UserRole } from '@/components/auth/RoleBasedRoute';
-import { useAuth } from '@/contexts/AuthContext';
-import type { TripStatus } from '@/types';
 
 const StatusBadge: React.FC<{ status: TripStatus }> = ({ status }) => {
   const getStatusColor = (status: TripStatus) => {
@@ -70,12 +80,12 @@ const StatusBadge: React.FC<{ status: TripStatus }> = ({ status }) => {
   );
 };
 
-const TripHeader: React.FC<{ trip: any }> = ({ trip }) => {
-  const { 
+const TripHeader: React.FC<{ trip: Trip | ApiResponse<Trip> }> = ({ trip }) => {
+  const {
     isFamilyAdmin,
-    user 
+    user
   } = useRolePermissions();
-  
+
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('en-US', {
       weekday: 'long',
@@ -93,9 +103,10 @@ const TripHeader: React.FC<{ trip: any }> = ({ trip }) => {
     return diffDays;
   };
 
-  const tripData = trip.data || trip; // Handle both ApiResponse<Trip> and Trip
+  // Handle both ApiResponse<Trip> and Trip
+  const tripData = 'data' in trip && trip.data ? trip.data : trip as Trip;
   const daysUntil = getDaysUntilTrip(tripData.start_date);
-  
+
   // Check if current user is the trip organizer (creator)
   const isCurrentUserTripOrganizer = tripData.created_by === user?.id;
 
@@ -120,7 +131,7 @@ const TripHeader: React.FC<{ trip: any }> = ({ trip }) => {
                   <Badge color="success">Family Admin</Badge>
                 )}
               </div>
-              
+
               <div className="flex flex-wrap items-center gap-4 text-neutral-600 mb-4">
                 <div className="flex items-center gap-2">
                   <MapPinIcon className="w-5 h-5" />
@@ -167,7 +178,7 @@ const TripHeader: React.FC<{ trip: any }> = ({ trip }) => {
               >
                 Share
               </Button>
-              
+
               {/* Chat button - available to all participants */}
               <Button
                 appearance="outline"
@@ -175,9 +186,9 @@ const TripHeader: React.FC<{ trip: any }> = ({ trip }) => {
               >
                 Chat
               </Button>
-              
+
               {/* Edit Trip - Only Trip Organizers can edit trip settings */}
-              <RoleGuard 
+              <RoleGuard
                 allowedRoles={[UserRole.TRIP_ORGANIZER, UserRole.SUPER_ADMIN]}
                 fallback={
                   /* Family Admins can edit family-specific settings */
@@ -206,9 +217,14 @@ const TripHeader: React.FC<{ trip: any }> = ({ trip }) => {
   );
 };
 
-const TripOverview: React.FC<{ trip: any }> = ({ trip }) => {
-  const tripData = trip.data || trip; // Handle both ApiResponse<Trip> and Trip
-  
+interface TripWithPreferences extends Trip {
+  preferences?: Record<string, unknown>;
+}
+
+const TripOverview: React.FC<{ trip: Trip | ApiResponse<Trip> }> = ({ trip }) => {
+  // Handle both ApiResponse<Trip> and Trip
+  const tripData = ('data' in trip && trip.data) ? trip.data as TripWithPreferences : trip as TripWithPreferences;
+
   return (
     <div className="grid lg:grid-cols-3 gap-6">
       {/* Trip Details */}
@@ -230,7 +246,7 @@ const TripOverview: React.FC<{ trip: any }> = ({ trip }) => {
                     {tripData.description || 'No description provided'}
                   </Body1>
                 </div>
-                
+
                 <div>
                   <Body2 className="font-medium text-neutral-700">Duration</Body2>
                   <Body1 className="text-neutral-600 mt-1">
@@ -391,7 +407,7 @@ export const TripDetailPage: React.FC = () => {
         { id: '2', name: 'Jane Smith', email: 'jane@smith.com', role: 'parent' as const },
         { id: '3', name: 'Tommy Smith', email: '', role: 'child' as const },
       ],
-      preferences: { 'dietary': 'vegetarian', 'activity_level': 'moderate' }
+      preferences: { budget_range: 'moderate', dietary_restrictions: ['vegetarian'] }
     },
     {
       id: '2',
@@ -401,7 +417,7 @@ export const TripDetailPage: React.FC = () => {
         { id: '4', name: 'Mike Johnson', email: 'mike@johnson.com', role: 'parent' as const },
         { id: '5', name: 'Sarah Johnson', email: 'sarah@johnson.com', role: 'parent' as const },
       ],
-      preferences: { 'activity_level': 'high', 'accommodation': 'hotel' }
+      preferences: { budget_range: 'high', accommodation_type: 'hotel' }
     }
   ];
 
@@ -423,12 +439,12 @@ export const TripDetailPage: React.FC = () => {
           id: '1',
           title: 'Airport Departure',
           description: 'Flight from hometown to destination',
-          location: 'Local Airport',
+          location: { name: 'Local Airport' },
           start_time: `${tripData.start_date}T08:00:00`,
           end_time: `${tripData.start_date}T10:00:00`,
           category: 'transportation' as const,
-          estimated_cost: 500,
-          is_confirmed: true,
+          cost: 500,
+          booking_required: true,
         }
       ]
     }
@@ -445,10 +461,10 @@ export const TripDetailPage: React.FC = () => {
             startDate={tripData.start_date}
             endDate={tripData.end_date}
             itinerary={mockItinerary}
-            onAddActivity={(dayDate: string, activity: any) => {
+            onAddActivity={(dayDate: string, activity: Partial<Activity>) => {
               console.log('Add activity:', dayDate, activity);
             }}
-            onUpdateActivity={(activityId: string, updates: any) => {
+            onUpdateActivity={(activityId: string, updates: Partial<Activity>) => {
               console.log('Update activity:', activityId, updates);
             }}
             onDeleteActivity={(activityId: string) => {

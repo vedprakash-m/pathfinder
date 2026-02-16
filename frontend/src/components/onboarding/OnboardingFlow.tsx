@@ -12,6 +12,11 @@ import { useOnboardingAnalytics } from '../../services/onboardingAnalytics';
 export type TripType = 'weekend-getaway' | 'family-vacation' | 'adventure-trip';
 export type OnboardingStep = 'welcome' | 'trip-type' | 'sample-trip' | 'consensus-demo' | 'complete';
 
+interface StepData {
+  tripType?: TripType;
+  tripId?: string;
+}
+
 interface OnboardingFlowProps {
   onComplete: (data: { tripType: TripType; completionTime: number }) => void;
 }
@@ -27,17 +32,17 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
   // Initialize analytics tracking
   useEffect(() => {
     analytics.startSession(user?.id);
-    
+
     // Track drop-off when user leaves page
     const handleBeforeUnload = () => {
       if (currentStep !== 'complete') {
         analytics.trackDropOff('page_leave');
       }
     };
-    
+
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [user, analytics]);
+  }, [user, analytics, currentStep]);
 
   // Track onboarding analytics
   useEffect(() => {
@@ -50,19 +55,23 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
     }
   }, [user, startTime, currentStep]);
 
-  const handleStepComplete = (step: OnboardingStep, data?: any) => {
+  const handleStepComplete = (step: OnboardingStep, data?: StepData) => {
     switch (step) {
       case 'welcome':
         setCurrentStep('trip-type');
         break;
       case 'trip-type':
-        setSelectedTripType(data.tripType);
-        analytics.trackTripTypeSelection(data.tripType);
+        if (data?.tripType) {
+          setSelectedTripType(data.tripType);
+          analytics.trackTripTypeSelection(data.tripType);
+        }
         setCurrentStep('sample-trip');
         break;
       case 'sample-trip':
-        setSampleTripId(data.tripId);
-        analytics.trackSampleTripGeneration(data.tripId);
+        if (data?.tripId) {
+          setSampleTripId(data.tripId);
+          analytics.trackSampleTripGeneration(data.tripId);
+        }
         setCurrentStep('consensus-demo');
         break;
       case 'consensus-demo':
@@ -126,7 +135,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
               Skip tour
             </button>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2" role="progressbar" 
+          <div className="w-full bg-gray-200 rounded-full h-2" role="progressbar"
                aria-label="Onboarding progress"
                aria-valuenow={
                  currentStep === 'welcome' ? 20 :

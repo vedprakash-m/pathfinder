@@ -2,13 +2,13 @@ import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
-import { 
-  Send, 
-  Smile, 
-  Paperclip, 
-  Calendar, 
+import {
+  Send,
+  Smile,
+  Paperclip,
+  Calendar,
   Vote,
-  X 
+  X
 } from 'lucide-react';
 import {
   Popover,
@@ -18,8 +18,27 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
+interface PollOption {
+  id: string;
+  text: string;
+  votes: number;
+}
+
+interface MessageMetadata {
+  activity?: {
+    id: string;
+    title: string;
+    description: string;
+  };
+  poll?: {
+    id?: string;
+    question: string;
+    options: PollOption[];
+  };
+}
+
 interface ChatInputProps {
-  onSendMessage: (content: string, type?: 'text' | 'activity' | 'poll', metadata?: any) => void;
+  onSendMessage: (content: string, type?: 'text' | 'activity' | 'poll', metadata?: MessageMetadata) => void;
   disabled?: boolean;
   placeholder?: string;
 }
@@ -47,7 +66,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
     if (isActivityMode) {
       if (!activityTitle.trim() || !activityDescription.trim()) return;
-      
+
       onSendMessage(message || `Suggested activity: ${activityTitle}`, 'activity', {
         activity: {
           id: Date.now().toString(),
@@ -55,13 +74,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           description: activityDescription
         }
       });
-      
+
       setActivityTitle('');
       setActivityDescription('');
       setIsActivityMode(false);
     } else if (isPollMode) {
       if (!pollQuestion.trim() || pollOptions.filter(opt => opt.trim()).length < 2) return;
-      
+
       onSendMessage(message || `Created poll: ${pollQuestion}`, 'poll', {
         poll: {
           id: Date.now().toString(),
@@ -73,7 +92,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           }))
         }
       });
-      
+
       setPollQuestion('');
       setPollOptions(['', '']);
       setIsPollMode(false);
@@ -96,7 +115,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setMessage(e.target.value);
-    
+
     // Auto-resize textarea
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -237,9 +256,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             onChange={handleTextareaChange}
             onKeyPress={handleKeyPress}
             placeholder={
-              isActivityMode 
-                ? "Add a message about this activity..." 
-                : isPollMode 
+              isActivityMode
+                ? "Add a message about this activity..."
+                : isPollMode
                 ? "Add a message about this poll..."
                 : placeholder
             }

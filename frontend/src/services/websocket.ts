@@ -1,7 +1,7 @@
 import { WebSocketMessage } from '@/types';
 
 // Types for WebSocket events
-export type MessageHandler<T = any> = (data: T) => void;
+export type MessageHandler<T = unknown> = (data: T) => void;
 
 interface WebSocketHandlers {
   [key: string]: MessageHandler[];
@@ -18,8 +18,8 @@ export class WebSocketService {
   private queue: string[] = []; // Queue messages if socket isn't connected
 
   constructor(private baseUrl: string = '') {
-    this.baseUrl = baseUrl || (window.location.protocol === 'https:' 
-      ? `wss://${window.location.host}/ws` 
+    this.baseUrl = baseUrl || (window.location.protocol === 'https:'
+      ? `wss://${window.location.host}/ws`
       : `ws://${window.location.host}/ws`);
   }
 
@@ -49,20 +49,20 @@ export class WebSocketService {
           this.isConnected = true;
           this.reconnectAttempts = 0;
           console.log('WebSocket connected');
-          
+
           // Send any queued messages
           while (this.queue.length > 0) {
             const message = this.queue.shift();
             if (message) this.sendRaw(message);
           }
-          
+
           resolve();
         };
 
         this.socket.onclose = (event) => {
           this.isConnected = false;
           console.log(`WebSocket disconnected: ${event.code} ${event.reason}`);
-          
+
           if (!event.wasClean) {
             this.attemptReconnect();
           }
@@ -99,7 +99,7 @@ export class WebSocketService {
       this.socket.close();
       this.socket = null;
     }
-    
+
     this.isConnected = false;
     this.queue = []; // Clear the queue
   }
@@ -109,9 +109,9 @@ export class WebSocketService {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
       const delay = this.reconnectDelay * Math.pow(1.5, this.reconnectAttempts - 1);
-      
+
       console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts}) in ${delay}ms`);
-      
+
       this.reconnectTimeoutId = window.setTimeout(() => {
         this.connect()
           .catch(() => {
@@ -124,7 +124,7 @@ export class WebSocketService {
   }
 
   // Send a message
-  send<T = any>(type: string, payload: T, roomId?: string): void {
+  send<T = unknown>(type: string, payload: T, roomId?: string): void {
     const message: WebSocketMessage<T> = {
       type: 'trip_update', // Default type, can be overridden
       message_type: type,
@@ -133,7 +133,7 @@ export class WebSocketService {
       room_id: roomId,
       timestamp: new Date().toISOString()
     };
-    
+
     this.sendRaw(JSON.stringify(message));
   }
 
@@ -144,10 +144,10 @@ export class WebSocketService {
     } else {
       // Queue the message to send when connected
       this.queue.push(message);
-      
+
       // If socket isn't connecting or connected, try to connect
-      if (!this.socket || 
-          (this.socket.readyState !== WebSocket.CONNECTING && 
+      if (!this.socket ||
+          (this.socket.readyState !== WebSocket.CONNECTING &&
            this.socket.readyState !== WebSocket.OPEN)) {
         this.connect().catch(console.error);
       }
@@ -155,13 +155,13 @@ export class WebSocketService {
   }
 
   // Register a message handler
-  on<T = any>(type: string, callback: MessageHandler<T>): () => void {
+  on<T = unknown>(type: string, callback: MessageHandler<T>): () => void {
     if (!this.handlers[type]) {
       this.handlers[type] = [];
     }
-    
+
     this.handlers[type].push(callback as MessageHandler);
-    
+
     // Return unsubscribe function
     return () => {
       this.handlers[type] = this.handlers[type].filter(cb => cb !== callback);
@@ -188,7 +188,7 @@ export class WebSocketService {
         }
       });
     }
-    
+
     // Also trigger any 'all' message handlers
     if (this.handlers['all']) {
       this.handlers['all'].forEach(callback => {

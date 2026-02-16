@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
@@ -96,7 +96,7 @@ const TripCard: React.FC<{ trip: Trip }> = ({ trip }) => {
                   {formatDate(trip.start_date)} - {formatDate(trip.end_date)}
                 </Body2>
               </div>
-              
+
               <div className="flex items-center gap-2 text-neutral-600">
                 <UsersIcon className="w-4 h-4" />
                 <Body2>
@@ -129,12 +129,12 @@ const TripCard: React.FC<{ trip: Trip }> = ({ trip }) => {
 };
 
 const QuickActions: React.FC = () => {
-  const { 
-    canManageTrips, 
-    canManageFamilies, 
+  const {
+    canManageTrips,
+    canManageFamilies,
     isSuperAdmin,
     isFamilyAdmin,
-    isTripOrganizer 
+    isTripOrganizer
   } = useRolePermissions();
 
   return (
@@ -220,7 +220,7 @@ const QuickActions: React.FC = () => {
 export const DashboardPage: React.FC = () => {
   const { user } = useAuthStore();
   const { setTrips } = useTripStore();
-  const { 
+  const {
     isSuperAdmin,
     isFamilyAdmin,
     isTripOrganizer,
@@ -233,7 +233,7 @@ export const DashboardPage: React.FC = () => {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  const trips = tripsResponse?.data?.items || [];
+  const trips = useMemo(() => tripsResponse?.data?.items || [], [tripsResponse?.data?.items]);
 
   useEffect(() => {
     if (trips.length > 0) {
@@ -241,13 +241,13 @@ export const DashboardPage: React.FC = () => {
     }
   }, [trips, setTrips]);
 
-  const upcomingTrips = trips.filter((trip: any) => {
+  const upcomingTrips = trips.filter((trip: Trip) => {
     const tripDate = new Date(trip.start_date);
     const today = new Date();
     return tripDate >= today && trip.status !== 'cancelled';
   });
 
-  const recentTrips = trips.filter((trip: any) => {
+  const recentTrips = trips.filter((trip: Trip) => {
     const tripDate = new Date(trip.start_date);
     const today = new Date();
     return tripDate < today || trip.status === 'completed';
@@ -381,7 +381,7 @@ export const DashboardPage: React.FC = () => {
             </Link>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {upcomingTrips.slice(0, 6).map((trip: any, index: number) => (
+            {upcomingTrips.slice(0, 6).map((trip: Trip, index: number) => (
               <motion.div
                 key={trip.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -409,7 +409,7 @@ export const DashboardPage: React.FC = () => {
             </Link>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {recentTrips.map((trip: any, index: number) => (
+            {recentTrips.map((trip: Trip, index: number) => (
               <motion.div
                 key={trip.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -438,7 +438,7 @@ export const DashboardPage: React.FC = () => {
             {canManageTrips() ? "No trips yet" : "No family trips yet"}
           </Title2>
           <Body1 className="text-neutral-600 mb-8 max-w-md mx-auto">
-            {canManageTrips() 
+            {canManageTrips()
               ? "Start planning your first family adventure with our AI-powered trip planner."
               : "Your family admin will invite you to trips, or you can ask them to create one."
             }

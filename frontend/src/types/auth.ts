@@ -14,7 +14,7 @@ export interface VedUser {
     profileId: string;                           // Vedprakash domain profile ID
     subscriptionTier: 'free' | 'premium' | 'enterprise';
     appsEnrolled: string[];                      // List of enrolled apps
-    preferences: Record<string, any>;            // User preferences
+    preferences: Record<string, unknown>;        // User preferences
   };
 }
 

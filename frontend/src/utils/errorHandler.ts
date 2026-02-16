@@ -4,6 +4,7 @@
  * Enhanced with correlation IDs, retry logic, and comprehensive error classification.
  */
 
+import React from 'react';
 import { toast } from 'react-hot-toast';
 
 // ==================== UTILITY FUNCTIONS ====================
@@ -38,7 +39,7 @@ export interface StandardError {
   code?: string | number;
   statusCode?: number;
   timestamp: Date;
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
   recoverable: boolean;
   retryable: boolean;
   userFriendlyMessage: string;
@@ -50,7 +51,7 @@ export interface ErrorHandlerOptions {
   showToast?: boolean;
   logToConsole?: boolean;
   reportToService?: boolean;
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
   fallbackMessage?: string;
   onRetry?: () => void;
   onRecover?: () => void;
@@ -65,95 +66,131 @@ export interface RetryOptions {
   onRetry?: (error: StandardError, attempt: number) => void;
 }
 
+// Helper type for error-like objects
+interface ErrorLike {
+  message?: string;
+  code?: string;
+  name?: string;
+  stack?: string;
+  status?: number;
+  response?: {
+    status?: number;
+    data?: { message?: string };
+  };
+  config?: {
+    url?: string;
+  };
+}
+
+function isErrorLike(error: unknown): error is ErrorLike {
+  return typeof error === 'object' && error !== null;
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (isErrorLike(error) && error.message) return error.message;
+  return 'Unknown error';
+}
+
+function getStatusCode(error: unknown): number | undefined {
+  if (isErrorLike(error)) {
+    return error.response?.status ?? error.status;
+  }
+  return undefined;
+}
+
 // ==================== ENHANCED ERROR CLASSIFICATION ====================
 class ErrorClassifier {
-  static classifyError(error: any, context?: Record<string, any>): StandardError {
+  static classifyError(error: unknown, context?: Record<string, unknown>): StandardError {
     const correlationId = generateCorrelationId();
     const timestamp = new Date();
-    
+    const errLike = isErrorLike(error) ? error : null;
+    const statusCode = getStatusCode(error);
+    const message = getErrorMessage(error);
+
     // Network errors
     if (this.isNetworkError(error)) {
       return {
         type: ErrorType.NETWORK,
         severity: ErrorSeverity.MEDIUM,
-        message: error?.message || 'Network request failed',
-        code: error?.code || 'NETWORK_ERROR',
-        statusCode: error?.response?.status,
+        message: message || 'Network request failed',
+        code: errLike?.code || 'NETWORK_ERROR',
+        statusCode,
         timestamp,
         context,
         recoverable: true,
         retryable: true,
-        userFriendlyMessage: navigator.onLine ? 
-          'Network request failed. Please try again.' : 
+        userFriendlyMessage: navigator.onLine ?
+          'Network request failed. Please try again.' :
           'No internet connection. Please check your connection.',
         correlationId,
-        originalError: error
+        originalError: error instanceof Error ? error : undefined
       };
     }
-    
+
     // Authentication errors
     if (this.isAuthError(error)) {
-      const statusCode = error?.response?.status || error?.status;
       return {
         type: ErrorType.AUTH,
         severity: ErrorSeverity.HIGH,
-        message: error?.message || (statusCode === 401 ? 'Authentication required' : 'Access denied'),
+        message: message || (statusCode === 401 ? 'Authentication required' : 'Access denied'),
         code: statusCode === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN',
         statusCode,
         timestamp,
         context,
         recoverable: statusCode === 401,
         retryable: false,
-        userFriendlyMessage: statusCode === 401 ? 
-          'Please sign in to continue.' : 
+        userFriendlyMessage: statusCode === 401 ?
+          'Please sign in to continue.' :
           'You don\'t have permission to access this resource.',
         correlationId,
-        originalError: error
+        originalError: error instanceof Error ? error : undefined
       };
     }
-    
+
     // Validation errors
     if (this.isValidationError(error)) {
       return {
         type: ErrorType.VALIDATION,
         severity: ErrorSeverity.LOW,
-        message: error?.response?.data?.message || error?.message || 'Validation failed',
+        message: errLike?.response?.data?.message || message || 'Validation failed',
         code: 'VALIDATION_ERROR',
-        statusCode: error?.response?.status || error?.status,
+        statusCode,
         timestamp,
         context,
         recoverable: true,
         retryable: false,
         userFriendlyMessage: 'Please check your input and try again.',
         correlationId,
-        originalError: error
+        originalError: error instanceof Error ? error : undefined
       };
     }
-    
+
     // Server errors
     if (this.isServerError(error)) {
+      const errObj = error as { response?: { status?: number }; status?: number };
       return {
         type: ErrorType.SERVER,
         severity: ErrorSeverity.HIGH,
-        message: error?.message || 'Server error occurred',
+        message: message || 'Server error occurred',
         code: 'SERVER_ERROR',
-        statusCode: error?.response?.status || error?.status,
+        statusCode: errObj?.response?.status || errObj?.status,
         timestamp,
         context,
         recoverable: true,
         retryable: true,
         userFriendlyMessage: 'Server error. Please try again in a moment.',
         correlationId,
-        originalError: error
+        originalError: error instanceof Error ? error : undefined
       };
     }
-    
+
     // Permission errors
     if (this.isPermissionError(error)) {
       return {
         type: ErrorType.PERMISSION,
         severity: ErrorSeverity.MEDIUM,
-        message: error?.message || 'Insufficient permissions',
+        message: message || 'Insufficient permissions',
         code: 'PERMISSION_DENIED',
         timestamp,
         context,
@@ -161,10 +198,10 @@ class ErrorClassifier {
         retryable: false,
         userFriendlyMessage: 'You don\'t have permission to perform this action.',
         correlationId,
-        originalError: error
+        originalError: error instanceof Error ? error : undefined
       };
     }
-    
+
     // Rate limit errors
     if (this.isRateLimitError(error)) {
       return {
@@ -179,15 +216,15 @@ class ErrorClassifier {
         retryable: true,
         userFriendlyMessage: 'Too many requests. Please wait a moment and try again.',
         correlationId,
-        originalError: error
+        originalError: error instanceof Error ? error : undefined
       };
     }
-    
+
     // Default unknown error
     return {
       type: ErrorType.UNKNOWN,
       severity: ErrorSeverity.MEDIUM,
-      message: error?.message || 'An unexpected error occurred',
+      message: message || 'An unexpected error occurred',
       code: 'UNKNOWN_ERROR',
       timestamp,
       context,
@@ -195,42 +232,47 @@ class ErrorClassifier {
       retryable: false,
       userFriendlyMessage: 'Something went wrong. Please try again.',
       correlationId,
-      originalError: error
+      originalError: error instanceof Error ? error : undefined
     };
   }
-  
-  private static isNetworkError(error: any): boolean {
+
+  private static isNetworkError(error: unknown): boolean {
+    const errLike = isErrorLike(error) ? error : null;
     return (
-      error?.code === 'NETWORK_ERROR' ||
-      error?.message?.includes('Network Error') ||
-      error?.message?.includes('Failed to fetch') ||
-      error?.name === 'NetworkError' ||
+      errLike?.code === 'NETWORK_ERROR' ||
+      errLike?.message?.includes('Network Error') ||
+      errLike?.message?.includes('Failed to fetch') ||
+      errLike?.name === 'NetworkError' ||
       !navigator.onLine
     );
   }
-  
-  private static isAuthError(error: any): boolean {
-    const statusCode = error?.response?.status || error?.status;
-    return statusCode === 401 || statusCode === 403 || error?.code === 'AUTH_ERROR';
+
+  private static isAuthError(error: unknown): boolean {
+    const statusCode = getStatusCode(error);
+    const errLike = isErrorLike(error) ? error : null;
+    return statusCode === 401 || statusCode === 403 || errLike?.code === 'AUTH_ERROR';
   }
-  
-  private static isValidationError(error: any): boolean {
-    const statusCode = error?.response?.status || error?.status;
-    return statusCode === 400 || statusCode === 422 || error?.code === 'VALIDATION_ERROR';
+
+  private static isValidationError(error: unknown): boolean {
+    const statusCode = getStatusCode(error);
+    const errLike = isErrorLike(error) ? error : null;
+    return statusCode === 400 || statusCode === 422 || errLike?.code === 'VALIDATION_ERROR';
   }
-  
-  private static isServerError(error: any): boolean {
-    const statusCode = error?.response?.status || error?.status;
-    return statusCode >= 500 && statusCode < 600;
+
+  private static isServerError(error: unknown): boolean {
+    const statusCode = getStatusCode(error);
+    return statusCode !== undefined && statusCode >= 500 && statusCode < 600;
   }
-  
-  private static isPermissionError(error: any): boolean {
-    return error?.code === 'PERMISSION_DENIED' || error?.message?.includes('permission');
+
+  private static isPermissionError(error: unknown): boolean {
+    const errLike = isErrorLike(error) ? error : null;
+    return errLike?.code === 'PERMISSION_DENIED' || errLike?.message?.includes('permission') === true;
   }
-  
-  private static isRateLimitError(error: any): boolean {
-    const statusCode = error?.response?.status || error?.status;
-    return statusCode === 429 || error?.code === 'RATE_LIMIT_EXCEEDED';
+
+  private static isRateLimitError(error: unknown): boolean {
+    const statusCode = getStatusCode(error);
+    const errLike = isErrorLike(error) ? error : null;
+    return statusCode === 429 || errLike?.code === 'RATE_LIMIT_EXCEEDED';
   }
 }
 
@@ -252,15 +294,16 @@ export class ErrorHandler {
   /**
    * Handle an error with unified processing
    */
-  handle(error: any, options: ErrorHandlerOptions = {}): StandardError {
+  handle(error: unknown, options: ErrorHandlerOptions = {}): StandardError {
     const classified = ErrorClassifier.classifyError(error);
-    
+
+    const errLike = typeof error === 'object' && error !== null ? error as ErrorLike : null;
     const standardError: StandardError = {
       type: classified.type || ErrorType.UNKNOWN,
       severity: classified.severity || ErrorSeverity.MEDIUM,
-      message: classified.message || error.message || 'Unknown error',
+      message: classified.message || getErrorMessage(error),
       details: this.extractErrorDetails(error),
-      code: error.code || error.status,
+      code: errLike?.code || errLike?.status,
       timestamp: new Date(),
       context: options.context,
       recoverable: classified.recoverable ?? true,
@@ -313,29 +356,29 @@ export class ErrorHandler {
     delayMs: number = 1000
   ) {
     return async (options: ErrorHandlerOptions = {}): Promise<T> => {
-      let lastError: any;
-      
+      let lastError: unknown;
+
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {
           return await operation();
         } catch (error) {
           lastError = error;
-          
+
           if (attempt === maxRetries) {
             throw this.handle(error, options);
           }
-          
+
           const classified = ErrorClassifier.classifyError(error);
           if (!classified.retryable) {
             throw this.handle(error, options);
           }
-          
+
           // Wait before retry
           await new Promise(resolve => setTimeout(resolve, delayMs * Math.pow(2, attempt)));
         }
       }
-      
-      throw lastError;
+
+      throw lastError as Error;
     };
   }
 
@@ -358,37 +401,38 @@ export class ErrorHandler {
    */
   getErrorStats(): Record<string, number> {
     const stats: Record<string, number> = {};
-    
+
     for (const error of this.errorLog) {
       const key = `${error.type}_${error.severity}`;
       stats[key] = (stats[key] || 0) + 1;
     }
-    
+
     return stats;
   }
 
   // ==================== PRIVATE METHODS ====================
-  private extractErrorDetails(error: any): string {
+  private extractErrorDetails(error: unknown): string {
     const details: string[] = [];
-    
-    if (error.stack) {
-      details.push(`Stack: ${error.stack.split('\n')[0]}`);
+    const errLike = typeof error === 'object' && error !== null ? error as ErrorLike : null;
+
+    if (errLike?.stack) {
+      details.push(`Stack: ${errLike.stack.split('\n')[0]}`);
     }
-    
-    if (error.response?.data) {
-      details.push(`Response: ${JSON.stringify(error.response.data).substring(0, 200)}`);
+
+    if (errLike?.response?.data) {
+      details.push(`Response: ${JSON.stringify(errLike.response.data).substring(0, 200)}`);
     }
-    
-    if (error.config?.url) {
-      details.push(`URL: ${error.config.url}`);
+
+    if (errLike?.config?.url) {
+      details.push(`URL: ${errLike.config.url}`);
     }
-    
+
     return details.join(' | ');
   }
 
   private addToLog(error: StandardError): void {
     this.errorLog.push(error);
-    
+
     // Maintain log size limit
     if (this.errorLog.length > this.maxLogSize) {
       this.errorLog = this.errorLog.slice(-this.maxLogSize);
@@ -484,9 +528,9 @@ export class ErrorHandler {
       case ErrorSeverity.HIGH:
         return { ...baseStyle, background: '#ef4444', color: 'white' };
       case ErrorSeverity.CRITICAL:
-        return { 
-          ...baseStyle, 
-          background: '#dc2626', 
+        return {
+          ...baseStyle,
+          background: '#dc2626',
           color: 'white',
           fontWeight: 'bold',
           border: '2px solid #991b1b'
@@ -500,7 +544,7 @@ export class ErrorHandler {
 // ==================== CONVENIENCE FUNCTIONS ====================
 export const errorHandler = ErrorHandler.getInstance();
 
-export const handleError = (error: any, options?: ErrorHandlerOptions) => {
+export const handleError = (error: unknown, options?: ErrorHandlerOptions) => {
   return errorHandler.handle(error, options);
 };
 
@@ -521,9 +565,9 @@ export const withRetry = <T>(
 
 // ==================== ERROR BOUNDARIES ====================
 export const createErrorBoundaryHandler = (context: string) => {
-  return (error: Error, errorInfo: any) => {
+  return (error: Error, errorInfo: React.ErrorInfo) => {
     errorHandler.handle(error, {
-      context: { errorInfo, boundary: context },
+      context: { componentStack: errorInfo.componentStack, boundary: context },
       showToast: true,
       logToConsole: true,
       reportToService: true,
@@ -539,11 +583,11 @@ export const validateAndHandle = <T>(
 ): { isValid: boolean; error?: StandardError } => {
   try {
     const result = validator(data);
-    
+
     if (result === true) {
       return { isValid: true };
     }
-    
+
     const error = errorHandler.handle(
       new Error(typeof result === 'string' ? result : 'Validation failed'),
       {
@@ -551,7 +595,7 @@ export const validateAndHandle = <T>(
         context: { data, validator: validator.name }
       }
     );
-    
+
     return { isValid: false, error };
   } catch (error) {
     const handledError = errorHandler.handle(error, options);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
   Card,
@@ -46,11 +46,7 @@ export const ConsensusDashboard: React.FC<ConsensusDashboardProps> = ({
   const [consensusData, setConsensusData] = useState<ConsensusData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchConsensusData();
-  }, [tripId]);
-
-  const fetchConsensusData = async () => {
+  const fetchConsensusData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -73,7 +69,11 @@ export const ConsensusDashboard: React.FC<ConsensusDashboardProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [tripId]);
+
+  useEffect(() => {
+    fetchConsensusData();
+  }, [tripId, fetchConsensusData]);
 
   const analyzeConsensus = async () => {
     try {
@@ -223,7 +223,7 @@ export const ConsensusDashboard: React.FC<ConsensusDashboardProps> = ({
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-neutral-50 rounded-lg p-4">
               <div className="flex items-center gap-3">
                 <ExclamationTriangleIcon className="w-5 h-5 text-orange-600" />
@@ -233,7 +233,7 @@ export const ConsensusDashboard: React.FC<ConsensusDashboardProps> = ({
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-neutral-50 rounded-lg p-4">
               <div className="flex items-center gap-3">
                 <ClockIcon className="w-5 h-5 text-red-600" />
@@ -286,4 +286,4 @@ export const ConsensusDashboard: React.FC<ConsensusDashboardProps> = ({
       )}
     </motion.div>
   );
-}; 
+};

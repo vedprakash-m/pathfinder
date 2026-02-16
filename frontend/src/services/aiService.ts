@@ -6,7 +6,7 @@
 import { apiService } from './api';
 
 // Types for AI features
-export interface AIResponse<T = any> {
+export interface AIResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
@@ -17,11 +17,11 @@ export interface ResponseCard {
   id: string;
   cardType: string;
   title: string;
-  content: any;
+  content: Record<string, unknown>;
   actions?: Array<{
     label: string;
     action: string;
-    data?: any;
+    data?: Record<string, unknown>;
   }>;
   isDismissed?: boolean;
 }
@@ -43,7 +43,7 @@ export interface MentionRequest {
     tripId?: string;
     familyId?: string;
     currentPage?: string;
-    tripData?: any;
+    tripData?: Record<string, unknown>;
   };
 }
 
@@ -52,8 +52,8 @@ export interface PollOption {
   value: string;
   label?: string;
   description?: string;
-  metadata?: any;
-  aiInsights?: any;
+  metadata?: Record<string, unknown>;
+  aiInsights?: Record<string, unknown>;
 }
 
 export interface MagicPoll {
@@ -410,12 +410,13 @@ export class AIService {
   /**
    * Error Handling and Graceful Degradation
    */
-  static handleAIError(error: any): {
+  static handleAIError(error: unknown): {
     message: string;
     fallbackAction?: string;
     retryable: boolean;
   } {
-    if (error.response?.status === 429) {
+    const axiosError = error as { response?: { status?: number } };
+    if (axiosError.response?.status === 429) {
       return {
         message: 'AI usage limit reached. Please try again later or use manual options.',
         fallbackAction: 'manual_mode',
@@ -423,7 +424,7 @@ export class AIService {
       };
     }
 
-    if (error.response?.status === 503) {
+    if (axiosError.response?.status === 503) {
       return {
         message: 'AI services temporarily unavailable. Using basic features.',
         fallbackAction: 'basic_mode',

@@ -9,7 +9,7 @@ azure-keyvault-secrets>=4.7.0
 azure-storage-queue>=12.8.0
 
 # Web/API
-pydantic>=2.5.0
+pydantic[email]>=2.5.0
 pydantic-settings>=2.1.0
 httpx>=0.25.0
 

@@ -43,7 +43,7 @@ export class AuthIntegrationService {
 
       // User doesn't exist in backend, create new user with auto-family creation
       console.log('🆕 Creating new user in backend with auto-family creation...');
-      
+
       const newUserData: UserCreate = {
         email: user.email,
         name: user.name || `${user.givenName || ''} ${user.familyName || ''}`.trim() || user.email.split('@')[0],
@@ -55,7 +55,7 @@ export class AuthIntegrationService {
 
       // Register user - this triggers auto-family creation in backend
       const registerResponse = await apiService.post<UserProfile>('/auth/register', newUserData);
-      
+
       if (!registerResponse.data) {
         throw new Error('Failed to register user in backend');
       }
@@ -64,7 +64,7 @@ export class AuthIntegrationService {
 
       // Now get the full user profile with family information
       const userProfileResponse = await apiService.get<UserProfile>('/auth/me');
-      
+
       if (userProfileResponse.data) {
         console.log('✅ User profile retrieved with family data');
         return userProfileResponse.data;
@@ -97,7 +97,7 @@ export class AuthIntegrationService {
   static async testAutoFamilyCreation(): Promise<boolean> {
     try {
       console.log('🧪 Testing auto-family creation workflow...');
-      
+
       // Get current user
       const userResponse = await apiService.get<UserProfile>('/auth/me');
       if (!userResponse.data) {
@@ -107,7 +107,7 @@ export class AuthIntegrationService {
 
       const user = userResponse.data;
       console.log('✅ Current user:', user.email, 'Role:', user.role);
-      
+
       // Check if user has Family Admin role (default for new users)
       if (user.role !== UserRole.FAMILY_ADMIN) {
         console.log('⚠️ User role is not FAMILY_ADMIN:', user.role);
@@ -121,7 +121,7 @@ export class AuthIntegrationService {
       }
 
       console.log('✅ User has', user.families.length, 'family(ies):');
-      user.families.forEach((family: any) => {
+      user.families.forEach((family: { name: string; role: string }) => {
         console.log(`  - ${family.name} (Role: ${family.role})`);
       });
 

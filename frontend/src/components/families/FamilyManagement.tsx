@@ -106,9 +106,9 @@ const CreateFamilyDialog: React.FC<CreateFamilyDialogProps> = ({
                 Cancel
               </Button>
             </DialogTrigger>
-            <Button 
-              type="submit" 
-              appearance="primary" 
+            <Button
+              type="submit"
+              appearance="primary"
               disabled={!formData.name.trim() || isLoading}
             >
               {isLoading ? 'Creating...' : 'Create Family'}
@@ -136,7 +136,7 @@ const InviteMemberDialog: React.FC<InviteMemberDialogProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Extract only the required fields for the API
-    const { message, ...apiData } = formData;
+    const { message: _message, ...apiData } = formData;
     onSubmit(apiData);
   };
 
@@ -172,9 +172,9 @@ const InviteMemberDialog: React.FC<InviteMemberDialogProps> = ({
                 Cancel
               </Button>
             </DialogTrigger>
-            <Button 
-              type="submit" 
-              appearance="primary" 
+            <Button
+              type="submit"
+              appearance="primary"
               disabled={!formData.email.trim() || isLoading}
             >
               {isLoading ? 'Sending...' : 'Send Invitation'}
@@ -244,10 +244,10 @@ export const FamilyManagement: React.FC<FamilyManagementProps> = ({ className = 
   const queryClient = useQueryClient();
 
   // Fetch families
-  const { 
-    data: familiesResponse, 
-    isLoading, 
-    error 
+  const {
+    data: familiesResponse,
+    isLoading,
+    error
   } = useQuery({
     queryKey: ['families'],
     queryFn: () => familyService.getFamilies(),
@@ -324,8 +324,8 @@ export const FamilyManagement: React.FC<FamilyManagementProps> = ({ className = 
       {/* Header */}
       <div className="flex items-center justify-between">
         <Title2>Family Management</Title2>
-        <Button 
-          appearance="primary" 
+        <Button
+          appearance="primary"
           icon={<PlusIcon className="w-4 h-4" />}
           onClick={() => setCreateDialogOpen(true)}
         >
@@ -340,8 +340,8 @@ export const FamilyManagement: React.FC<FamilyManagementProps> = ({ className = 
           <Body1 className="text-gray-500 mb-4">
             Create your first family to start planning trips together.
           </Body1>
-          <Button 
-            appearance="primary" 
+          <Button
+            appearance="primary"
             onClick={() => setCreateDialogOpen(true)}
             icon={<PlusIcon className="w-4 h-4" />}
           >

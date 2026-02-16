@@ -34,14 +34,14 @@ export function useFormValidation<T>(schema: z.ZodType<T>, initialData: Partial<
    */
   const updateFormData = (updates: Partial<T>) => {
     setFormData((prev) => ({ ...prev, ...updates }));
-    
+
     // Clear errors for updated fields
     const newErrors = { ...errors };
     Object.keys(updates).forEach((key) => {
       delete newErrors[key];
     });
     setErrors(newErrors);
-    
+
     // Mark fields as touched
     const newTouched = { ...touched };
     Object.keys(updates).forEach((key) => {
@@ -58,7 +58,7 @@ export function useFormValidation<T>(schema: z.ZodType<T>, initialData: Partial<
       ...prev,
       [field]: true,
     }));
-    
+
     // Validate individual field on blur
     validateField(field as string);
   };
@@ -70,21 +70,21 @@ export function useFormValidation<T>(schema: z.ZodType<T>, initialData: Partial<
     try {
       // Try to validate the entire form and extract field-specific errors
       schema.parse(formData);
-      
+
       // Clear error if validation passes
       setErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors[field];
         return newErrors;
       });
-      
+
       return true;
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const fieldErrors = error.errors.filter((err: any) => 
+        const fieldErrors = error.errors.filter((err: z.ZodIssue) =>
           err.path[0] === field || err.path.join('.') === field
         );
-        
+
         if (fieldErrors.length > 0) {
           setErrors((prev) => ({
             ...prev,
@@ -103,7 +103,7 @@ export function useFormValidation<T>(schema: z.ZodType<T>, initialData: Partial<
   const validateAll = (): boolean => {
     const { isValid, errors: validationErrors } = validateForm(schema, formData);
     setErrors(validationErrors);
-    
+
     // Mark all fields as touched if validation fails
     if (!isValid) {
       const allTouched: Record<string, boolean> = {};
@@ -112,7 +112,7 @@ export function useFormValidation<T>(schema: z.ZodType<T>, initialData: Partial<
       });
       setTouched((prev) => ({ ...prev, ...allTouched }));
     }
-    
+
     return isValid;
   };
 
@@ -131,7 +131,7 @@ export function useFormValidation<T>(schema: z.ZodType<T>, initialData: Partial<
   const getFieldState = (field: keyof T) => {
     const isTouched = !!touched[field as string];
     const hasError = !!errors[field as string];
-    
+
     return {
       error: isTouched && hasError ? errors[field as string] : undefined,
       validationState: isTouched && hasError ? 'error' as const : 'none' as const,

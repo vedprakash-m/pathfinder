@@ -13,9 +13,11 @@ const RouteLoadingFallback = () => (
  * @param importFunc - Dynamic import function for the route component
  * @returns Lazily loaded route component with suspense
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const lazyRoute = (importFunc: () => Promise<{ default: React.ComponentType<any> }>) => {
   const LazyComponent = React.lazy(importFunc);
-  
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (props: any) => (
     <Suspense fallback={<RouteLoadingFallback />}>
       <LazyComponent {...props} />
@@ -34,7 +36,7 @@ export const LazySettings = lazyRoute(() => import('@/pages/SettingsPage'));
 export const LazyNotifications = lazyRoute(() => import('@/pages/NotificationsPage'));
 
 // Prefetch route to improve perceived performance for likely navigation targets
-export const prefetchRoute = (importFunc: () => Promise<any>) => {
+export const prefetchRoute = (importFunc: () => Promise<unknown>) => {
   // This will start loading the component in the background
   importFunc();
 };

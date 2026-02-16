@@ -24,10 +24,10 @@ interface RoleBasedRouteProps {
  * Role-based route wrapper that checks user roles with backend verification
  * Part of UX Implementation Plan Phase 2 - Backend Integration
  */
-export const RoleBasedRoute: React.FC<RoleBasedRouteProps> = ({ 
-  children, 
-  allowedRoles, 
-  fallbackPath = '/unauthorized' 
+export const RoleBasedRoute: React.FC<RoleBasedRouteProps> = ({
+  children,
+  allowedRoles,
+  fallbackPath = '/unauthorized'
 }) => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const authStore = useAuthStore();
@@ -44,7 +44,7 @@ export const RoleBasedRoute: React.FC<RoleBasedRouteProps> = ({
 
       try {
         setBackendLoading(true);
-        
+
         // Use the Auth Integration Service to sync with backend
         const response = await authService.getCurrentUser();
         if (response && response.data) {
@@ -96,12 +96,12 @@ export const RoleBasedRoute: React.FC<RoleBasedRouteProps> = ({
  * Higher-order component for role-based route protection
  * Usage: export default withRoleProtection(MyComponent, [UserRole.FAMILY_ADMIN]);
  */
-export const withRoleProtection = (
-  WrappedComponent: React.ComponentType<any>,
+export const withRoleProtection = <P extends Record<string, unknown>>(
+  WrappedComponent: React.ComponentType<P>,
   allowedRoles: UserRole[],
   fallbackPath?: string
 ) => {
-  return (props: any) => (
+  return (props: P) => (
     <RoleBasedRoute allowedRoles={allowedRoles} fallbackPath={fallbackPath}>
       <WrappedComponent {...props} />
     </RoleBasedRoute>
@@ -121,7 +121,7 @@ export const useRolePermissions = () => {
   useEffect(() => {
     const syncUser = async () => {
       if (!isAuthenticated) return;
-      
+
       try {
         const response = await authService.getCurrentUser();
         if (response.data) {
@@ -179,7 +179,7 @@ export const useRolePermissions = () => {
 
   const getUserRoleDisplayName = (): string => {
     if (!user?.role) return 'Guest';
-    
+
     switch (user.role) {
       case UserRole.SUPER_ADMIN:
         return 'Super Admin';

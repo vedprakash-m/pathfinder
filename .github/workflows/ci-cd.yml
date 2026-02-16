@@ -119,7 +119,7 @@ jobs:
           cd frontend
           npm ci
           npm run lint
-          npm test -- --coverage --watchAll=false
+          npm run test:coverage
         env:
           CI: true
 

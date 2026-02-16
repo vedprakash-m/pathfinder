@@ -88,7 +88,7 @@ const TripCard: React.FC<{ trip: Trip }> = ({ trip }) => {
                   {formatDate(trip.start_date)} - {formatDate(trip.end_date)}
                 </Body2>
               </div>
-              
+
               <div className="flex items-center gap-2 text-neutral-600">
                 <UsersIcon className="w-4 h-4" />
                 <Body2>
@@ -131,21 +131,21 @@ export const TripsPage: React.FC = () => {
   });
 
   const tripsData = trips?.data?.items || [];
-  
-  const filteredTrips = tripsData.filter((trip: any) => {
+
+  const filteredTrips = tripsData.filter((trip: Trip) => {
     const matchesSearch = trip.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          trip.destination.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || trip.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
-  const upcomingTrips = filteredTrips.filter((trip: any) => {
+  const upcomingTrips = filteredTrips.filter((trip: Trip) => {
     const tripDate = new Date(trip.start_date);
     const today = new Date();
     return tripDate >= today && trip.status !== 'completed' && trip.status !== 'cancelled';
   });
 
-  const pastTrips = filteredTrips.filter((trip: any) => {
+  const pastTrips = filteredTrips.filter((trip: Trip) => {
     const tripDate = new Date(trip.start_date);
     const today = new Date();
     return tripDate < today || trip.status === 'completed';
@@ -186,7 +186,7 @@ export const TripsPage: React.FC = () => {
           <Title1 className="text-neutral-900 mb-2">Your Trips</Title1>
           <Body1 className="text-neutral-600">
             {tripsData?.length === 0
-              ? hasAnyRole([UserRole.FAMILY_ADMIN, UserRole.TRIP_ORGANIZER]) 
+              ? hasAnyRole([UserRole.FAMILY_ADMIN, UserRole.TRIP_ORGANIZER])
                 ? "Start planning your first adventure"
                 : "View trips shared with you"
               : `${tripsData?.length} ${tripsData?.length === 1 ? 'trip' : 'trips'} total`
@@ -303,8 +303,8 @@ export const TripsPage: React.FC = () => {
           <Body1 className="text-neutral-600 mb-6">
             Try adjusting your search or filters to find what you're looking for.
           </Body1>
-          <Button 
-            appearance="outline" 
+          <Button
+            appearance="outline"
             onClick={() => {
               setSearchTerm('');
               setStatusFilter('all');
@@ -328,7 +328,7 @@ export const TripsPage: React.FC = () => {
           </div>
           <Title2 className="text-neutral-900 mb-4">No trips yet</Title2>
           <Body1 className="text-neutral-600 mb-8 max-w-md mx-auto">
-            {hasAnyRole([UserRole.FAMILY_ADMIN, UserRole.TRIP_ORGANIZER]) 
+            {hasAnyRole([UserRole.FAMILY_ADMIN, UserRole.TRIP_ORGANIZER])
               ? "Start planning your first family adventure with our AI-powered trip planner."
               : "Your family admins and trip organizers will create trips that you can join and enjoy."
             }

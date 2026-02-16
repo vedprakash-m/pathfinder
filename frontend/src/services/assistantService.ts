@@ -18,7 +18,7 @@ export interface ResponseCard {
   id: string;
   card_type: string;
   title: string;
-  content: any;
+  content: Record<string, unknown>;
   actions?: Array<{
     label: string;
     action: string;
@@ -32,7 +32,7 @@ export interface MentionRequest {
     trip_id?: string;
     family_id?: string;
     current_page?: string;
-    trip_data?: any;
+    trip_data?: Record<string, unknown>;
   };
 }
 
@@ -121,7 +121,7 @@ export class AssistantService {
   /**
    * Execute an action from a response card
    */
-  static async executeCardAction(cardId: string, action: string, data?: any): Promise<any> {
+  static async executeCardAction(cardId: string, action: string, data?: Record<string, unknown>): Promise<unknown> {
     try {
       const response = await apiService.post(`/assistant/cards/${cardId}/action`, {
         action,

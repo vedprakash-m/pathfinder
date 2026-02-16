@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  ThumbsUp, 
-  ThumbsDown, 
-  Users, 
+import {
+  ThumbsUp,
+  ThumbsDown,
+  Users,
   Trophy,
   Sparkles,
   ChevronRight,
@@ -90,6 +90,100 @@ const InteractiveConsensusDemo: React.FC<InteractiveConsensusDemoProps> = ({ onC
 
   const currentMember = sampleFamily[currentMemberIndex];
 
+  const calculateConsensus = useCallback(() => {
+    setScenario(prevScenario => {
+      const newScenario = { ...prevScenario };
+
+      newScenario.activities.forEach(activity => {
+        const votes = Object.values(activity.votes);
+        const upVotes = votes.filter(v => v === 'up').length;
+        const downVotes = votes.filter(v => v === 'down').length;
+        const totalVotes = upVotes + downVotes;
+
+        // Calculate consensus score (0-100)
+        if (totalVotes === 0) {
+          activity.consensusScore = 0;
+        } else {
+          const positiveRatio = upVotes / totalVotes;
+          activity.consensusScore = Math.round(positiveRatio * 100);
+        }
+
+        // Add AI comments based on votes
+        if (activity.votes.mom === 'up') {
+          activity.comments.push({
+            memberId: 'mom',
+            message: 'Love this choice! Great reviews online.',
+            timestamp: new Date()
+          });
+        }
+
+        if (activity.votes.teen === 'up') {
+          activity.comments.push({
+            memberId: 'teen',
+            message: 'Yes! My friends love this place 🔥',
+            timestamp: new Date()
+          });
+        } else if (activity.votes.teen === 'down') {
+          activity.comments.push({
+            memberId: 'teen',
+            message: 'Not really my vibe...',
+            timestamp: new Date()
+          });
+        }
+      });
+
+      // Sort by consensus score
+      newScenario.activities.sort((a, b) => b.consensusScore - a.consensusScore);
+
+      return newScenario;
+    });
+    setShowResults(true);
+  }, []);
+
+  const simulateAIVote = useCallback(() => {
+    const member = sampleFamily[currentMemberIndex];
+    setScenario(prevScenario => {
+      const newScenario = { ...prevScenario };
+
+      // Simulate different preferences for each family member
+      newScenario.activities.forEach(activity => {
+        let vote: 'up' | 'down' | null = null;
+
+        if (member.id === 'mom') {
+          // Mom prefers Italian and Asian cuisine
+          if (activity.id === 'italian' || activity.id === 'asian') {
+            vote = Math.random() > 0.3 ? 'up' : 'down';
+          } else {
+            vote = Math.random() > 0.7 ? 'up' : 'down';
+          }
+        } else if (member.id === 'teen') {
+          // Teen prefers burgers and casual dining
+          if (activity.id === 'american') {
+            vote = 'up';
+          } else if (activity.id === 'asian') {
+            vote = Math.random() > 0.5 ? 'up' : 'down';
+          } else {
+            vote = 'down';
+          }
+        }
+
+        activity.votes[member.id] = vote;
+      });
+
+      return newScenario;
+    });
+
+    if (currentMemberIndex < sampleFamily.length - 1) {
+      setTimeout(() => {
+        setCurrentMemberIndex(prev => prev + 1);
+      }, 1000);
+    } else {
+      setTimeout(() => {
+        calculateConsensus();
+      }, 1000);
+    }
+  }, [currentMemberIndex, calculateConsensus]);
+
   // Simulate AI family member votes
   useEffect(() => {
     if (currentMemberIndex > 0 && currentMemberIndex < sampleFamily.length) {
@@ -98,63 +192,21 @@ const InteractiveConsensusDemo: React.FC<InteractiveConsensusDemoProps> = ({ onC
       }, 1500);
       return () => clearTimeout(timer);
     }
-  }, [currentMemberIndex]);
-
-  const simulateAIVote = () => {
-    const member = sampleFamily[currentMemberIndex];
-    const newScenario = { ...scenario };
-    
-    // Simulate different preferences for each family member
-    newScenario.activities.forEach(activity => {
-      let vote: 'up' | 'down' | null = null;
-      
-      if (member.id === 'mom') {
-        // Mom prefers Italian and Asian cuisine
-        if (activity.id === 'italian' || activity.id === 'asian') {
-          vote = Math.random() > 0.3 ? 'up' : 'down';
-        } else {
-          vote = Math.random() > 0.7 ? 'up' : 'down';
-        }
-      } else if (member.id === 'teen') {
-        // Teen prefers burgers and casual dining
-        if (activity.id === 'american') {
-          vote = 'up';
-        } else if (activity.id === 'asian') {
-          vote = Math.random() > 0.5 ? 'up' : 'down';
-        } else {
-          vote = 'down';
-        }
-      }
-      
-      activity.votes[member.id] = vote;
-    });
-
-    setScenario(newScenario);
-    
-    if (currentMemberIndex < sampleFamily.length - 1) {
-      setTimeout(() => {
-        setCurrentMemberIndex(currentMemberIndex + 1);
-      }, 1000);
-    } else {
-      setTimeout(() => {
-        calculateConsensus();
-      }, 1000);
-    }
-  };
+  }, [currentMemberIndex, simulateAIVote]);
 
   const handleUserVote = (activityId: string, vote: 'up' | 'down') => {
     const newUserVotes = { ...userVotes, [activityId]: vote };
     setUserVotes(newUserVotes);
-    
+
     const newScenario = { ...scenario };
     newScenario.activities.forEach(activity => {
       if (activity.id === activityId) {
         activity.votes[currentMember.id] = vote;
       }
     });
-    
+
     setScenario(newScenario);
-    
+
     // Check if user has voted on all activities
     const totalVotes = Object.values(newUserVotes).filter(v => v !== null).length;
     if (totalVotes === scenario.activities.length) {
@@ -162,54 +214,6 @@ const InteractiveConsensusDemo: React.FC<InteractiveConsensusDemoProps> = ({ onC
         setCurrentMemberIndex(1);
       }, 1000);
     }
-  };
-
-  const calculateConsensus = () => {
-    const newScenario = { ...scenario };
-    
-    newScenario.activities.forEach(activity => {
-      const votes = Object.values(activity.votes);
-      const upVotes = votes.filter(v => v === 'up').length;
-      const downVotes = votes.filter(v => v === 'down').length;
-      const totalVotes = upVotes + downVotes;
-      
-      // Calculate consensus score (0-100)
-      if (totalVotes === 0) {
-        activity.consensusScore = 0;
-      } else {
-        const positiveRatio = upVotes / totalVotes;
-        activity.consensusScore = Math.round(positiveRatio * 100);
-      }
-      
-      // Add AI comments based on votes
-      if (activity.votes.mom === 'up') {
-        activity.comments.push({
-          memberId: 'mom',
-          message: 'Love this choice! Great reviews online.',
-          timestamp: new Date()
-        });
-      }
-      
-      if (activity.votes.teen === 'up') {
-        activity.comments.push({
-          memberId: 'teen',
-          message: 'Yes! My friends love this place 🔥',
-          timestamp: new Date()
-        });
-      } else if (activity.votes.teen === 'down') {
-        activity.comments.push({
-          memberId: 'teen',
-          message: 'Not really my vibe...',
-          timestamp: new Date()
-        });
-      }
-    });
-    
-    // Sort by consensus score
-    newScenario.activities.sort((a, b) => b.consensusScore - a.consensusScore);
-    
-    setScenario(newScenario);
-    setShowResults(true);
   };
 
   const getVoteCount = (activity: Activity, voteType: 'up' | 'down') => {
@@ -280,7 +284,7 @@ const InteractiveConsensusDemo: React.FC<InteractiveConsensusDemoProps> = ({ onC
                   <div className="flex-1">
                     <h4 className="font-semibold text-gray-800 mb-1">{activity.name}</h4>
                     <p className="text-sm text-gray-600 mb-3">{activity.description}</p>
-                    
+
                     {/* Comments */}
                     {activity.comments.length > 0 && (
                       <div className="space-y-2 mb-3">
@@ -376,7 +380,7 @@ const InteractiveConsensusDemo: React.FC<InteractiveConsensusDemoProps> = ({ onC
             <h3 className="text-xl font-semibold text-gray-800">Decision Reached!</h3>
           </div>
           <p className="text-gray-600 mb-4">
-            Based on everyone's votes and preferences, Pathfinder recommends <strong>{scenario.activities[0].name}</strong> 
+            Based on everyone's votes and preferences, Pathfinder recommends <strong>{scenario.activities[0].name}</strong>
             with a {scenario.activities[0].consensusScore}% family consensus score.
           </p>
           <div className="bg-white rounded-lg p-4">

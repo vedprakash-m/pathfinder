@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  MapPin, 
-  Clock, 
-  Users, 
-  Star, 
+import {
+  MapPin,
+  Clock,
+  Users,
+  Star,
   Calendar,
   Loader2,
   Sparkles,
@@ -28,73 +28,73 @@ interface SampleTripDemoProps {
   onComplete: (tripId: string) => void;
 }
 
+// Sample family data for demonstration
+const sampleFamily: SampleFamily[] = [
+  {
+    id: 'dad',
+    name: 'David',
+    role: 'Dad',
+    avatar: '👨‍💼',
+    preferences: ['Photography', 'Hiking', 'Local cuisine']
+  },
+  {
+    id: 'mom',
+    name: 'Sarah',
+    role: 'Mom',
+    avatar: '👩‍💻',
+    preferences: ['Spa activities', 'Shopping', 'Wine tasting']
+  },
+  {
+    id: 'teen',
+    name: 'Alex',
+    role: 'Teen (16)',
+    avatar: '🧑‍🎓',
+    preferences: ['Adventure sports', 'Social media spots', 'Gaming']
+  }
+];
+
+const generationSteps = [
+  'Analyzing family preferences...',
+  'Finding best destinations...',
+  'Creating personalized itinerary...',
+  'Optimizing for group consensus...'
+];
+
 const SampleTripDemo: React.FC<SampleTripDemoProps> = ({ tripType, onComplete }) => {
   const [isGenerating, setIsGenerating] = useState(true);
   const [currentTemplate, setCurrentTemplate] = useState<TripTemplate | null>(null);
   const [animationStep, setAnimationStep] = useState(0);
   const analytics = useOnboardingAnalytics();
 
-  // Sample family data for demonstration
-  const sampleFamily: SampleFamily[] = [
-    {
-      id: 'dad',
-      name: 'David',
-      role: 'Dad',
-      avatar: '👨‍💼',
-      preferences: ['Photography', 'Hiking', 'Local cuisine']
-    },
-    {
-      id: 'mom',
-      name: 'Sarah',
-      role: 'Mom',
-      avatar: '👩‍💻',
-      preferences: ['Spa activities', 'Shopping', 'Wine tasting']
-    },
-    {
-      id: 'teen',
-      name: 'Alex',
-      role: 'Teen (16)',
-      avatar: '🧑‍🎓',
-      preferences: ['Adventure sports', 'Social media spots', 'Gaming']
-    }
-  ];
-
-  const generationSteps = [
-    'Analyzing family preferences...',
-    'Finding best destinations...',
-    'Creating personalized itinerary...',
-    'Optimizing for group consensus...'
-  ];
-
   useEffect(() => {
     // Generate sample trip using backend API
     const generateTrip = async () => {
       setIsGenerating(true);
       setAnimationStep(0);
-      
+
       try {
         // Show generation steps
         for (let i = 0; i < generationSteps.length; i++) {
           setAnimationStep(i);
           await new Promise(resolve => setTimeout(resolve, 800));
         }
-        
+
         // Try to call backend API first, fallback to template service
         let template: TripTemplate | null = null;
-        
+
         try {
           // Convert tripType to backend format
           const backendTripType = tripType.replace('-', '_') as 'weekend_getaway' | 'family_vacation' | 'adventure_trip';
-          
+
           // Call backend to create sample trip
           const response = await apiService.onboarding.createSampleTrip(backendTripType);
-          
+
           if (response.success && response.data) {
             // Extract itinerary data from response
             const itineraryData = response.data.itinerary || {};
             const activities = Array.isArray(itineraryData.activities) ? itineraryData.activities : [];
             const durationDays = itineraryData.duration_days || 3;
-            
+
             // Convert backend response to frontend template format
             template = {
               id: response.data.id || `sample_${Date.now()}`,
@@ -108,15 +108,17 @@ const SampleTripDemo: React.FC<SampleTripDemoProps> = ({ tripType, onComplete })
               highlights: activities.map((act: { name?: string; description?: string }) => act.name || act.description || '').slice(0, 4) || ['Great activities'],
               itinerary: activities.map((act: { name?: string; description?: string; difficulty?: string }, idx: number) => ({
                 day: idx + 1,
-                activities: [act.name || 'Activity'],
+                title: act.name || 'Day Activity',
+                activities: [{ id: `act-${idx}`, name: act.name || 'Activity', description: act.description || '', duration: '2 hours', type: 'sightseeing' as const, location: '', cost: '', ageRecommendation: 'All ages', tags: [] }],
+                meals: [],
                 description: act.description || ''
               })),
               tags: itineraryData.tags || ['AI Generated', 'Sample'],
               imageUrl: '',
-              difficulty: (activities.length > 0 && activities[0].difficulty) || 'Easy' as const,
+              difficulty: ((activities.length > 0 && activities[0].difficulty) || 'Easy') as 'Easy' | 'Moderate' | 'Challenging',
               bestSeason: ['Spring', 'Summer', 'Fall']
             };
-            
+
             // Track successful API integration
             analytics.trackApiIntegration('sample_trip_created', true);
           }
@@ -124,13 +126,13 @@ const SampleTripDemo: React.FC<SampleTripDemoProps> = ({ tripType, onComplete })
           console.warn('Backend API not available, using template service:', apiError);
           analytics.trackApiIntegration('sample_trip_created', false);
         }
-        
+
         // Fallback to template service if API fails
         if (!template) {
           const fallbackTemplate = TripTemplateService.getRandomTemplate(tripType);
           template = fallbackTemplate || null;
         }
-        
+
         if (template) {
           setCurrentTemplate(template);
           setIsGenerating(false);
@@ -191,12 +193,12 @@ const SampleTripDemo: React.FC<SampleTripDemoProps> = ({ tripType, onComplete })
               <motion.div
                 key={index}
                 className={`flex items-center space-x-3 p-3 rounded-lg transition-all duration-500 ${
-                  index <= animationStep 
-                    ? 'bg-blue-50 text-blue-800' 
+                  index <= animationStep
+                    ? 'bg-blue-50 text-blue-800'
                     : 'bg-gray-50 text-gray-500'
                 }`}
                 initial={{ opacity: 0, x: -20 }}
-                animate={{ 
+                animate={{
                   opacity: index <= animationStep ? 1 : 0.5,
                   x: 0
                 }}

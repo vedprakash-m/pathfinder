@@ -19,7 +19,7 @@ export interface ConsensusAnalysis {
   trip_id: string;
   consensus_score: number;
   status: 'building' | 'emerging' | 'strong' | 'complete' | 'conflicted';
-  agreed_preferences: Record<string, any>;
+  agreed_preferences: Record<string, unknown>;
   conflicts: Array<{
     type: string;
     description: string;
@@ -34,7 +34,7 @@ export interface ConsensusAnalysis {
   family_positions: Record<string, {
     family_id: string;
     family_name: string;
-    preferences: Record<string, any>;
+    preferences: Record<string, unknown>;
     flexibility_score: number;
   }>;
 }
@@ -56,7 +56,7 @@ export interface ConflictResolution {
   conflict_id: string;
   resolution_type: 'compromise' | 'vote' | 'alternate' | 'defer';
   description: string;
-  proposed_solution: any;
+  proposed_solution: unknown;
   family_responses: Record<string, {
     status: 'pending' | 'accepted' | 'rejected';
     comments?: string;

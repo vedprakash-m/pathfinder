@@ -18,17 +18,17 @@ export const optimizeImage = (src: string, options: {
   // This can be adapted to work with your image CDN or optimization service
   let optimizedUrl = src;
   const params = new URLSearchParams();
-  
+
   if (options.width) params.append('w', options.width.toString());
   if (options.height) params.append('h', options.height.toString());
   if (options.quality) params.append('q', options.quality.toString());
   if (options.format) params.append('fm', options.format);
-  
+
   // Append query params if any were added
   if ([...params.entries()].length > 0) {
     optimizedUrl += `${src.includes('?') ? '&' : '?'}${params.toString()}`;
   }
-  
+
   return optimizedUrl;
 };
 
@@ -38,7 +38,7 @@ export const optimizeImage = (src: string, options: {
  */
 export const lazyLoadImage = (imageRef: HTMLImageElement, src: string, onLoad?: () => void) => {
   if (!imageRef) return;
-  
+
   // Use native lazy loading if supported
   if ('loading' in HTMLImageElement.prototype) {
     imageRef.loading = 'lazy';
@@ -46,7 +46,7 @@ export const lazyLoadImage = (imageRef: HTMLImageElement, src: string, onLoad?: 
     if (onLoad) imageRef.addEventListener('load', onLoad);
     return;
   }
-  
+
   // Fallback to IntersectionObserver
   const observer = new IntersectionObserver(entries => {
     entries.forEach(entry => {
@@ -60,9 +60,9 @@ export const lazyLoadImage = (imageRef: HTMLImageElement, src: string, onLoad?: 
   }, {
     rootMargin: '200px', // Start loading when image is 200px from viewport
   });
-  
+
   observer.observe(imageRef);
-  
+
   return () => {
     if (imageRef) observer.unobserve(imageRef);
   };
@@ -73,7 +73,9 @@ export const lazyLoadImage = (imageRef: HTMLImageElement, src: string, onLoad?: 
  * @param importFunc - Dynamic import function for a component
  * @returns A lazy-loaded component
  */
-export const lazyImport = (importFunc: () => Promise<any>) => {
+export const lazyImport = <P extends Record<string, unknown> = Record<string, unknown>>(
+  importFunc: () => Promise<{ default: React.ComponentType<P> }>
+) => {
   return React.lazy(importFunc);
 };
 
@@ -81,15 +83,18 @@ export const lazyImport = (importFunc: () => Promise<any>) => {
  * Measure component render time
  * Useful for identifying slow-rendering components
  */
-export const withPerformanceTracking = (WrappedComponent: React.ComponentType<any>, componentName: string) => {
-  return function PerformanceTrackedComponent(props: any) {
+export const withPerformanceTracking = <P extends Record<string, unknown>>(
+  WrappedComponent: React.ComponentType<P>,
+  componentName: string
+) => {
+  return function PerformanceTrackedComponent(props: P) {
     const startTime = performance.now();
-    
+
     React.useEffect(() => {
       const endTime = performance.now();
       console.log(`[Performance] ${componentName} rendered in ${endTime - startTime}ms`);
-    }, []);
-    
+    }, [startTime]);
+
     return React.createElement(WrappedComponent, props);
   };
 };
@@ -99,16 +104,14 @@ export const withPerformanceTracking = (WrappedComponent: React.ComponentType<an
  */
 export function memoize<T, R>(fn: (arg: T) => R): (arg: T) => R {
   const cache = new Map<T, R>();
-  
+
   return (arg: T) => {
     if (cache.has(arg)) {
       return cache.get(arg)!;
     }
-    
+
     const result = fn(arg);
     cache.set(arg, result);
     return result;
   };
 }
-
-
