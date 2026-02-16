@@ -5,7 +5,7 @@ import path from 'path'
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  
+
   const config = {
     plugins: [react()],
     resolve: {
@@ -24,10 +24,20 @@ export default defineConfig(({ mode }) => {
       globals: true,
       environment: 'jsdom',
       setupFiles: './src/tests/setup.ts',
-      testTimeout: 30000, // Increase timeout to 30 seconds
+      testTimeout: 10000,
+      pool: 'forks',
       coverage: {
         provider: 'v8',
-        reporter: ['text', 'json', 'html'],
+        reporter: ['text', 'lcov'],
+        include: ['src/**/*.{ts,tsx}'],
+        exclude: [
+          'src/tests/**',
+          'src/**/*.test.{ts,tsx}',
+          'src/**/*.d.ts',
+          'src/main.tsx',
+          'src/vite-env.d.ts',
+        ],
+        reportsDirectory: './coverage',
       },
     },
   }
