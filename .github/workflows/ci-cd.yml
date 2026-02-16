@@ -77,9 +77,9 @@ jobs:
       - name: Install & Test
         run: |
           cd backend
-          pip install -r requirements.txt pytest pytest-asyncio pytest-cov ruff mypy
+          pip install -r requirements.txt pytest pytest-asyncio pytest-timeout ruff
           ruff check .
-          PYTHONPATH=. pytest tests/ -v --cov=. --cov-report=xml
+          PYTHONPATH=. pytest tests/ -v --timeout=60
         env:
           COSMOS_DB_URL: "https://localhost:8081"
           COSMOS_DB_KEY: "test-key"
@@ -90,11 +90,12 @@ jobs:
           ENTRA_CLIENT_ID: "test-client"
           AZURE_STORAGE_CONNECTION_STRING: "DefaultEndpointsProtocol=https;AccountName=test;AccountKey=dGVzdA==;EndpointSuffix=core.windows.net"
 
-      - uses: codecov/codecov-action@v4
-        with:
-          files: backend/coverage.xml
-          flags: backend
-          fail_ci_if_error: false
+      # Coverage disabled while backend tests are skipped (Phase 4)
+      # - uses: codecov/codecov-action@v4
+      #   with:
+      #     files: backend/coverage.xml
+      #     flags: backend
+      #     fail_ci_if_error: false
 
   # ============================================
   # FRONTEND: TEST & BUILD
