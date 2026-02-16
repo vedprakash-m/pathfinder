@@ -78,8 +78,8 @@ jobs:
         run: |
           cd backend
           pip install -r requirements.txt pytest pytest-asyncio pytest-cov ruff mypy
-          ruff check . --ignore=UP007,E402,F841
-          pytest tests/ -v --cov=. --cov-report=xml
+          ruff check .
+          PYTHONPATH=. pytest tests/ -v --cov=. --cov-report=xml
         env:
           COSMOS_DB_URL: "https://localhost:8081"
           COSMOS_DB_KEY: "test-key"
@@ -88,6 +88,7 @@ jobs:
           OPENAI_API_KEY: "test-key"
           ENTRA_TENANT_ID: "test-tenant"
           ENTRA_CLIENT_ID: "test-client"
+          AZURE_STORAGE_CONNECTION_STRING: "DefaultEndpointsProtocol=https;AccountName=test;AccountKey=dGVzdA==;EndpointSuffix=core.windows.net"
 
       - uses: codecov/codecov-action@v4
         with:
