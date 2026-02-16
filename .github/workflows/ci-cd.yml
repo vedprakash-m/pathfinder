@@ -91,33 +91,37 @@ jobs:
   frontend-test:
     name: Frontend Test
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
     needs: changes
     if: needs.changes.outputs.frontend == 'true' || github.event.inputs.deploy_frontend == 'true'
 
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: 'frontend/package-lock.json'
+          cache: 'pnpm'
+          cache-dependency-path: 'frontend/pnpm-lock.yaml'
 
       - name: Install Dependencies
         run: |
           cd frontend
-          npm ci
+          pnpm install --frozen-lockfile
 
       - name: Lint
         run: |
           cd frontend
-          npm run lint
+          pnpm lint
 
       - name: Test Coverage
         run: |
           cd frontend
-          npm run test:coverage
+          pnpm test:coverage
         env:
           CI: true
 
@@ -136,17 +140,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: 'frontend/package-lock.json'
+          cache: 'pnpm'
+          cache-dependency-path: 'frontend/pnpm-lock.yaml'
 
       - name: Build
         run: |
           cd frontend
-          npm ci
-          npm run build
+          pnpm install --frozen-lockfile
+          pnpm build
         env:
           VITE_ENTRA_EXTERNAL_TENANT_ID: ${{ vars.ENTRA_TENANT_ID || 'vedid.onmicrosoft.com' }}
           VITE_ENTRA_EXTERNAL_CLIENT_ID: ${{ secrets.ENTRA_CLIENT_ID }}
@@ -221,8 +229,8 @@ jobs:
         with:
           app-name: pf-func-kteh35kinffvo
           package: deploy/
-          scm-do-build-during-deployment: true
-          enable-oryx-build: true
+          sku: flexconsumption
+          remote-build: true
 
       - name: Health Check
         id: backend_health
