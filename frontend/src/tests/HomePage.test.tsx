@@ -50,9 +50,7 @@ describe('HomePage', () => {
     render(<HomePage />);
 
     // Check for main headline text
-    expect(screen.getByText(/plan trips that/i)).toBeInTheDocument();
-    expect(screen.getByText(/everyone/i)).toBeInTheDocument();
-    expect(screen.getByText(/will love/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/plan trips that.*everyone.*will love/i);
   });
 
   it('displays features section', () => {
@@ -83,7 +81,7 @@ describe('HomePage', () => {
 
     // Check for features section header
     expect(screen.getByText(/Everything you need for/i)).toBeInTheDocument();
-    expect(screen.getByText(/AI-Powered Planning/i)).toBeInTheDocument();
+    expect(screen.getByText('AI-Powered Planning')).toBeInTheDocument();
   });
 
   it('shows call to action buttons when not authenticated', () => {
@@ -130,7 +128,8 @@ describe('HomePage', () => {
 
     render(<HomePage />);
 
-    // Check for Dashboard button in nav
-    expect(screen.getByRole('button', { name: /dashboard/i })).toBeInTheDocument();
+    // Check for Dashboard links (nav link + hero CTA both exist when authenticated)
+    const dashboardLinks = screen.getAllByRole('link', { name: /dashboard/i });
+    expect(dashboardLinks.length).toBeGreaterThan(0);
   });
 });

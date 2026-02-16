@@ -25,7 +25,7 @@ export default defineConfig(({ mode }) => {
       environment: 'jsdom',
       setupFiles: './src/tests/setup.ts',
       testTimeout: 10000,
-      pool: 'forks',
+      pool: 'threads',
       onConsoleLog(log: string) {
         const suppressedMessages = [
           'was not wrapped in act(...)',

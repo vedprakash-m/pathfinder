@@ -72,11 +72,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          sparse-checkout: backend
 
       - uses: astral-sh/ruff-action@v3
-
-      - name: Lint Backend
-        run: ruff check backend
+        with:
+          src: backend
 
       # Coverage disabled while backend tests are skipped (Phase 4)
       # - uses: codecov/codecov-action@v4

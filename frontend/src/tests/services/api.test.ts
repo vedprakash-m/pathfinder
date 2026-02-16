@@ -228,7 +228,8 @@ describe('API Service Integration', () => {
 
       const mockResponse = {
         data: {
-          id: 'invitation-id',
+          invitation_id: 'inv-123',
+          expires_at: '2024-02-14',
           familyId: 'fam-123',
           ...invitation,
           status: 'pending',
